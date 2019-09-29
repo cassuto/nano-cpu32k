@@ -8,7 +8,7 @@
 		C helper functions for CPU description.
 	* opcodes/disassemble.h:
 		Disassemble function prototype
-		
+
 == gas ==
 	* gas/config/tc-ncpu32k.c:
 	* gas/config/tc-ncpu32k.h:
@@ -43,7 +43,7 @@
 	* ld/emulparams/elf32ncpu32k_linux.sh
 	* ld/emulparams/elf32ncpu32k.sh:
 		Emulation scripts for linux or elf mode.
-	
+
 == common ==
 	* include/elf/common.h:
 		1.ELF magic number:
@@ -66,7 +66,7 @@
 	* ld/Makefile.am -> ld/Makefile.in
 	
 	* config.guess
-	
+
 -----------------[ GCC ]-----------------
 
 == gcc ==
@@ -81,8 +81,17 @@
 		
 	* gcc/common/config/ncpu32k/ncpu32k-common.c
 
+== libgcc ==
+	* libgcc/config/ncpu32k/ncpu32k.S
+
 == Building scripts ==
 	* gcc/configure.ac -> gcc/configure
 		conftest
 	* gcc/config.gcc
 		Target-Machine source files
+
+	* libgcc/config.host
+	
+	* config.guess
+	* config.sub
+	* configure.ac -> configure
