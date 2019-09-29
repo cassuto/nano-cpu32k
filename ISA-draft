@@ -41,10 +41,10 @@ ASR *
 ADD *
 SUB *
 MUL *
-MULU *
 DIV *
 DIVU *
 MOD *
+MODU *
 CMP
 
 - FPU float number
@@ -69,10 +69,10 @@ LDWU
 STB *
 STH *
 STW
-FENCE
+BARR
 
 - exception
-EXC
+RAISE
 RET
 
 - trans
@@ -114,10 +114,10 @@ ISA GROUP - VIRT:
 1a ADD.I *
 1b SUB *
 1c MUL *
-1d MULU *
-1e DIV *
-1f DIVU *
-20 MOD *
+1d DIV *
+1e DIVU *
+1f MOD *
+20 MODU *
 21 LDB *
 22 LDBU *
 23 LDH *
