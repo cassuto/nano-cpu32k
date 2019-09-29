@@ -1,0 +1,88 @@
+
+-----------------[ Binutils ]-----------------
+
+== opcodes ==
+	* cpu/ncpu32k.cpu:
+		CPU generator description for cgen.
+	* cpu/ncpu32k.opc:
+		C helper functions for CPU description.
+	* opcodes/disassemble.h:
+		Disassemble function prototype
+		
+== gas ==
+	* gas/config/tc-ncpu32k.c:
+	* gas/config/tc-ncpu32k.h:
+		Assembler implemention (based on cgen).
+
+== bfd ==
+	* bfd/archures.c:
+		Define architecture `bfd_arch_ncpu32k`, and machine id `bfd_mach_ncpu32k`
+		This file is used to generates "bfd/libbfd.h", "bfd/bfd-in2.h".
+		Command: `cd build/bfd && make headers` to regenerate these files.
+
+	* bfd/cpu-ncpu32k.c:
+		Define architecture parameters.
+		
+	* bfd/reloc.c
+		Define relocations `bfd_reloc_code_type`.
+		
+	* bfd/targets.c
+		Define ncpu32k target vector.
+		
+	* bfd/elf-bfd.h:
+		Define elf_target_id.
+		
+	* bfd/elf32-ncpu32k.c:
+		ELF 32bit implemention.
+
+== binutils ==
+	* binutils/readelf.c:
+		Misc.
+
+== ld ==
+	* ld/emulparams/elf32ncpu32k_linux.sh
+	* ld/emulparams/elf32ncpu32k.sh:
+		Emulation scripts for linux or elf mode.
+	
+== common ==
+	* include/elf/common.h:
+		1.ELF magic number:
+			EM_NCPU32K		0x4e43
+	* include/elf/ncpu32k.h:
+		Declare Relocation.
+
+== Building scripts ==
+	* opcodes/configure.ac -> opcodes/configure
+	* opcodes/Makefile.am -> opcodes/Makefile.in
+	
+	* gas/configure.tgt
+	* gas/configure.ac -> gas/configure
+	* gas/Makefile.am -> gas/Makefile.in
+	
+	* bfd/Makefile.am -> bfd/Makefile.in
+	* bfd/configure.ac -> bfd/configure
+	
+	* ld/configure.tgt
+	* ld/Makefile.am -> ld/Makefile.in
+	
+	* config.guess
+	
+-----------------[ GCC ]-----------------
+
+== gcc ==
+	* gcc/config/ncpu32k/ncpu32k.h:
+		1. Register operands
+		2. Stack layout; argument passing; function entry, exit and calling.
+		3. Condition code stuff
+		4. Control the assembler format that we output.
+		5. Debug things for DBX (STABS)
+		6. Debug things for DWARF2
+		7. Assembler Label Output
+		
+	* gcc/common/config/ncpu32k/ncpu32k-common.c
+
+== Building scripts ==
+	* gcc/configure.ac -> gcc/configure
+		conftest
+	* gcc/config.gcc
+		Target-Machine source files
