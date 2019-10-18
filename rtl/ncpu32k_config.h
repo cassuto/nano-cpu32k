@@ -111,13 +111,6 @@
 `define NCPU_AU_MODU 7
 `define NCPU_AU_MHI 8
 
-`define NCPU_BU_IOPW 5 // One-hot Insn Opocde Bitwidth
-`define NCPU_BU_JMP 0
-`define NCPU_BU_BT 1
-`define NCPU_BU_BF 2
-`define NCPU_BU_RAISE 3
-`define NCPU_BU_RET 4
-
 `define NCPU_EU_IOPW 2 // One-hot Insn Opocde Bitwidth
 `define NCPU_EU_WSMR 0
 `define NCPU_EU_RSMR 1

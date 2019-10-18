@@ -68,6 +68,14 @@ module ncpu32k_core(
        .rd_i                            (regf_rd_i[`NCPU_DW-1:0]),    // Templated
        .rd_we_i                         (regf_rd_we_i));          // Templated
    
+   // SMR.PSR.CC - Condition Control Register
+   wire [`NCPU_DW-1:0] smr_psr_cc_i;
+   wire                smr_psr_cc;
+   wire                smr_psr_cc_w;
+   wire                smr_psr_cc_we;
+   ncpu32k_dff_lr #(1) dff_smr_psr_cc (clk_i, rst_n_i, smr_psr_cc_we, smr_psr_cc_i, smr_psr_cc_w);
+   assign smr_psr_cc = (smr_psr_cc_we ? smr_psr_cc_i : smr_psr_cc_w);
+   
    // Pipeline Dispatcher
    wire pipe1_flow;
    wire pipe2_flow;
@@ -83,15 +91,20 @@ module ncpu32k_core(
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 1: Fetch
    /////////////////////////////////////////////////////////////////////////////
+   wire fetch_jmp;
+   wire fetch_jmpfar;
+   wire [`NCPU_AW-1:0] fetch_jmp_offset;
+   wire [`NCPU_AW-1:0] fetch_jmpfar_addr;
+   
+   // Program Counter Register
    wire [`NCPU_AW-1:0] pc_addr;
    wire [`NCPU_AW-1:0] pc_addr_nxt;
-   
    ncpu32k_dff_lr #(`NCPU_AW, `ERST_VECTOR) dff_pc_addr (clk_i, rst_n_i, 1'b1, pc_addr_nxt[`NCPU_AW-1:0], pc_addr[`NCPU_AW-1:0]);
    
-   assign pc_addr_nxt = pc_addr + `IW_LOG2;
+   assign pc_addr_nxt = fetch_jmpfar ? fetch_jmpfar_addr : 
+                           pc_addr + (fetch_jmp ? fetch_jmp_offset : `IW_LOG2);
    
    wire [`NCPU_IW-1:0] insn;
-   
    // Insn Bus addressing
    assign addr_o = pc_addr;
    // Insn Bus reading
@@ -251,7 +264,6 @@ module ncpu32k_core(
    
    wire [`NCPU_LU_IOPW-1:0] lu_opc_bus;
    wire [`NCPU_AU_IOPW-1:0] au_opc_bus;
-   wire [`NCPU_BU_IOPW-1:0] bu_opc_bus;
    wire [`NCPU_BU_IOPW-1:0] eu_opc_bus;
    
    //
@@ -285,12 +297,6 @@ module ncpu32k_core(
    assign au_opc_bus[`NCPU_AU_MODU] = (op_modu);
    assign au_opc_bus[`NCPU_AU_MHI] = (op_mhi);
    
-   assign bu_opc_bus[`NCPU_BU_JMP] = (op_jmp | op_jmp_i);
-   assign bu_opc_bus[`NCPU_BU_BT] = (op_bt);
-   assign bu_opc_bus[`NCPU_BU_BF] = (op_bf);
-   assign bu_opc_bus[`NCPU_BU_RAISE] = (op_raise);
-   assign bu_opc_bus[`NCPU_BU_RET] = (op_ret);
-   
    assign eu_opc_bus[`NCPU_EU_WSMR] = (op_wsmr);
    assign eu_opc_bus[`NCPU_EU_RSMR] = (op_rsmr);
 
@@ -306,25 +312,29 @@ module ncpu32k_core(
    wire insn_non_op = (op_barr | op_raise | op_ret);
    
    // Insn writeback register file
-   wire wb_regf = (op_barr | (|bu_opc_bus) | op_cmp);
+   wire wb_regf = !(op_barr | (|bu_opc_bus) | op_cmp);
    wire [`NCPU_REG_AW-1:0] wb_reg_addr = f_rd;
    
    // PC-Relative address (sign-extended)
-   wire [`DW-1:0] rel21 = {{`DW-23{f_rel21[20]}}, f_rel21[20:0], 2'b00};
+   wire [`AW-1:0] rel21 = {{`NCPU_AW-23{f_rel21[20]}}, f_rel21[20:0], 2'b00};
    // Sign-extended Integer
-   wire [`DW-1:0] simm16 = {{`DW-16{f_imm16[15]}}, f_imm16[15:0]};
+   wire [`DW-1:0] simm16 = {{`NCPU_DW-16{f_imm16[15]}}, f_imm16[15:0]};
    // Zero-extended Integer
-   wire [`DW-1:0] uimm16 = {{`DW-16{1'b0}}, f_imm16[15:0]};
+   wire [`DW-1:0] uimm16 = {{`NCPU_DW-16{1'b0}}, f_imm16[15:0]};
    
    // Insn requires Signed imm.
    wire imm_signed = (op_xor_i | op_and_i | op_mu_load | op_mu_store);
-   // Insn requires PC-Relative imm.
-   wire imm_pcrel = (op_jmp_i | op_bt | op_bf);
-   
    wire [`NCPU_DW-1:0] imm_oper_r;
-   wire [`NCPU_DW-1:0] imm_oper = (imm_signed ? simm16 : imm_pcrel ? : rel21 : uimm16);
+   wire [`NCPU_DW-1:0] imm_oper = (imm_signed ? simm16 : uimm16);
    
-   // Fetch operand from Regfile when needed
+   // To Insn-Fetch unit
+   wire bcc = (op_bt | op_bf) & (smr_psr_cc);
+   assign fetch_jmp = op_jmp_i | bcc;
+   assign fetch_jmp_offset = rel21;
+   
+   wire jmp_reg = (op_jmp);
+   
+   // Acquire operand(s) from Regfile when needed
    assign regf_rs1_re_i = (!insn_non_op);
    assign regf_rs1_addr_i = f_rs1;
    assign regf_rs2_re_i = (!insn_imm & !insn_non_op);
@@ -339,7 +349,6 @@ module ncpu32k_core(
    wire [`NCPU_DW-1:0] exc_operand_2_i;
    wire [`NCPU_LU_IOPW-1:0] exc_lu_opc_bus_i;
    wire [`NCPU_AU_IOPW-1:0] exc_au_opc_bus_i;
-   wire [`NCPU_BU_IOPW-1:0] exc_bu_opc_bus_i;
    wire [`NCPU_BU_IOPW-1:0] exc_eu_opc_bus_i;
    wire exc_emu_insn_i;
    wire exc_mu_load_i;
@@ -349,6 +358,7 @@ module ncpu32k_core(
    wire [2:0] exc_mu_load_size_i;
    wire exc_wb_regf_i;
    wire [`NCPU_REG_AW-1:0] exc_wb_reg_addr_i;
+   wire exc_jmp_reg_i;
    
    assign exc_operand_1_i = operand_1_r;
    assign exc_operand_2_i = operand_2_r;
@@ -360,8 +370,6 @@ module ncpu32k_core(
                    (clk_i,rst_n_i, pipe2_flow, lu_opc_bus[`NCPU_LU_IOPW-1:0], exc_lu_opc_bus_i[`NCPU_LU_IOPW-1:0]);
    ncpu32k_dff_lr #(`NCPU_AU_IOPW) dff_exc_au_opc_bus_i
                    (clk_i,rst_n_i, pipe2_flow, au_opc_bus[`NCPU_AU_IOPW-1:0], exc_au_opc_bus_i[`NCPU_AU_IOPW-1:0]);
-   ncpu32k_dff_lr #(`NCPU_BU_IOPW) dff_exc_bu_opc_bus_i
-                   (clk_i,rst_n_i, pipe2_flow, bu_opc_bus[`NCPU_BU_IOPW-1:0], exc_bu_opc_bus_i[`NCPU_BU_IOPW-1:0]);
    ncpu32k_dff_lr #(`NCPU_EU_IOPW) dff_exc_eu_opc_bus_i
                    (clk_i,rst_n_i, pipe2_flow, eu_opc_bus[`NCPU_EU_IOPW-1:0], exc_eu_opc_bus_i[`NCPU_EU_IOPW-1:0]);
 
@@ -383,6 +391,9 @@ module ncpu32k_core(
                    (clk_i,rst_n_i, pipe2_flow, wb_regf, exc_wb_regf_i);
    ncpu32k_dff_lr #(`NCPU_REG_AW) dff_exc_wb_reg_addr_i
                    (clk_i,rst_n_i, pipe2_flow, wb_reg_addr, exc_wb_reg_addr_i);
+
+   ncpu32k_dff_lr #(1) dff_exc_jmp_reg_i
+                   (clk_i,rst_n_i, pipe2_flow, jmp_reg, exc_jmp_reg_i);
 
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 3: Execution && Load/Store
@@ -487,6 +498,10 @@ module ncpu32k_core(
                                     ({`NCPU_DW{lu_op_adder}} & lu_adder[`NCPU_DW-1:0]) |
                                     ({`NCPU_DW{exc_mu_load_i}} & mu_load[`NCPU_DW-1:0]) |
                                     ({`NCPU_DW{exc_mu_store_i}} & mu_store[`NCPU_DW-1:0]);
+   
+   // Register-operand jmp
+   assign fetch_jmpfar = exc_jmp_reg_i;
+   assign fetch_jmpfar_addr = {{(`NCPU_AW-`NCPU_DW){1'b0}}, exc_operand_1_i[`NCPU_DW-1:0]};
    
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 4: Commit & WriteBack
