@@ -1,2 +1,5 @@
 /testbench/sim
 /toolchain
+
+*.bin
+*.o

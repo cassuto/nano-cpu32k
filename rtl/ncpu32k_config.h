@@ -121,9 +121,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 //`define ENABLE_ASR
-//`define ENABLE_ASR_I
 `define ENABLE_ADD
-`define ENABLE_ADD_I
 `define ENABLE_SUB
 //`define ENABLE_MUL
 //`define ENABLE_DIV

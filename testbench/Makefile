@@ -2,7 +2,7 @@ AS = ../toolchain/bin/ncpu32k-unknown-elf-as
 OBJCOPY = ../toolchain/bin/ncpu32k-unknown-elf-objcopy
 PYTHON = python
 
-TARGETS := insn.mem ../synthesis/ise/insn.mem
+TARGETS := sim/insn.mem
 
 .PHONY: all clean
 

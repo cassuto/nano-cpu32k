@@ -22,7 +22,7 @@ module tb_ncpu32k_sram();
    initial begin
       rst_n = 1'b0;
       #10 rst_n= 1'b1;
-      #1000 $stop;
+      #450 $stop;
    end
    
    // Instruction memory.

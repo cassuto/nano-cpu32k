@@ -33,7 +33,9 @@ module ncpu32k_core(
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [`NCPU_DW-1:0]  rs1_o;                  // From regfile0 of ncpu32k_regfile.v
+   wire                 rs1_valid_o;            // From regfile0 of ncpu32k_regfile.v
    wire [`NCPU_DW-1:0]  rs2_o;                  // From regfile0 of ncpu32k_regfile.v
+   wire                 rs2_valid_o;            // From regfile0 of ncpu32k_regfile.v
    // End of automatics
    
    /////////////////////////////////////////////////////////////////////////////
@@ -50,6 +52,8 @@ module ncpu32k_core(
    
    /* ncpu32k_regfile AUTO_TEMPLATE (
       ..*_i                             (regf_@"vl-name"[]),
+      .clk_i                            (clk_i),
+      .rst_n_i                          (rst_n_i),
    );*/
    
    ncpu32k_regfile regfile0
@@ -57,9 +61,11 @@ module ncpu32k_core(
        // Outputs
        .rs1_o                           (rs1_o[`NCPU_DW-1:0]),
        .rs2_o                           (rs2_o[`NCPU_DW-1:0]),
+       .rs1_valid_o                     (rs1_valid_o),
+       .rs2_valid_o                     (rs2_valid_o),
        // Inputs
-       .clk_i                           (regf_clk_i),            // Templated
-       .rst_n_i                         (regf_rst_n_i),          // Templated
+       .clk_i                           (clk_i),                 // Templated
+       .rst_n_i                         (rst_n_i),               // Templated
        .rs1_addr_i                      (regf_rs1_addr_i[`NCPU_REG_AW-1:0]), // Templated
        .rs2_addr_i                      (regf_rs2_addr_i[`NCPU_REG_AW-1:0]), // Templated
        .rs1_re_i                        (regf_rs1_re_i),         // Templated
@@ -69,10 +75,10 @@ module ncpu32k_core(
        .rd_we_i                         (regf_rd_we_i));          // Templated
    
    // SMR.PSR.CC - Condition Control Register
-   wire [`NCPU_DW-1:0] smr_psr_cc_i;
-   wire                smr_psr_cc;
-   wire                smr_psr_cc_w;
-   wire                smr_psr_cc_we;
+   wire                 smr_psr_cc_i;
+   wire                 smr_psr_cc;
+   wire                 smr_psr_cc_w;
+   wire                 smr_psr_cc_we;
    
    ncpu32k_cell_dff_lr #(1) dff_smr_psr_cc (clk_i, rst_n_i, smr_psr_cc_we, smr_psr_cc_i, smr_psr_cc_w);
    
@@ -109,7 +115,7 @@ module ncpu32k_core(
    
    wire [`NCPU_IW-1:0] insn;
    // Insn Bus addressing
-   assign addr_o = pc_addr;
+   assign iaddr_o = pc_addr;
    // Insn Bus reading
    assign ibus_rd_o = 1'b1;
    assign insn = insn_i;
@@ -137,22 +143,16 @@ module ncpu32k_core(
    // VIRT insns
 `ifdef ENABLE_ASR
    wire enable_asr = 1'b1;
-`else
-   wire enable_asr = 1'b0;
-`endif
-`ifdef ENABLE_ASR_I
    wire enable_asr_i = 1'b1;
 `else
+   wire enable_asr = 1'b0;
    wire enable_asr_i = 1'b0;
 `endif
 `ifdef ENABLE_ADD
    wire enable_add = 1'b1;
-`else
-   wire enable_add = 1'b0;
-`endif
-`ifdef ENABLE_ADD_I
    wire enable_add_i = 1'b1;
 `else
+   wire enable_add = 1'b0;
    wire enable_add_i = 1'b0;
 `endif
 `ifdef ENABLE_SUB
@@ -313,39 +313,29 @@ module ncpu32k_core(
                      op_add_i |
                      op_mu_load | op_mu_store |
                      op_wsmr | op_rsmr);
+   // Insn requires Signed imm.
+   wire imm_signed = (op_xor_i | op_and_i | op_add_i | op_mu_load | op_mu_store);
    // Insn presents no operand.
    wire insn_non_op = (op_barr | op_raise | op_ret);
    
    // Insn writeback register file
-   wire wb_regf = !(op_barr | bu_sel | op_cmp);
+   wire wb_regf = !(op_barr | bu_sel | op_cmp | emu_insn);
    wire [`NCPU_REG_AW-1:0] wb_reg_addr = f_rd;
    
    // PC-Relative address (sign-extended)
    wire [`NCPU_AW-1:0] rel21 = {{`NCPU_AW-23{f_rel21[20]}}, f_rel21[20:0], 2'b00};
-   // Sign-extended Integer
-   wire [`NCPU_DW-1:0] simm16 = {{`NCPU_DW-16{f_imm16[15]}}, f_imm16[15:0]};
-   // Zero-extended Integer
-   wire [`NCPU_DW-1:0] uimm16 = {{`NCPU_DW-16{1'b0}}, f_imm16[15:0]};
-   
-   // Insn requires Signed imm.
-   wire imm_signed = (op_xor_i | op_and_i | op_mu_load | op_mu_store);
-   wire [`NCPU_DW-1:0] imm_oper_r;
-   wire [`NCPU_DW-1:0] imm_oper = (imm_signed ? simm16 : uimm16);
-   
-   // To Insn-Fetch unit
+   // PC-Relative jump
    wire bcc = (op_bt | op_bf) & (smr_psr_cc);
    assign fetch_jmp = op_jmp_i | bcc;
    assign fetch_jmp_offset = rel21;
-   
+   // Register-Indirect jump
    wire jmp_reg = (op_jmp);
    
-   // Acquire operand(s) from Regfile when needed
+   // Request operand(s) from Regfile when needed
    assign regf_rs1_re_i = (!insn_non_op);
    assign regf_rs1_addr_i = f_rs1;
    assign regf_rs2_re_i = (!insn_imm & !insn_non_op);
    assign regf_rs2_addr_i = f_rs2;
-   wire [`NCPU_DW-1:0] operand_1_r = (regf_rs1_re_i ? rs1_o : imm_oper_r);
-   wire [`NCPU_DW-1:0] operand_2_r = (regf_rs2_re_i ? rs2_o : imm_oper_r);
    
    assign pipe2_ready = 1'b1;
    
@@ -361,15 +351,27 @@ module ncpu32k_core(
    wire exc_mu_barr_i;
    wire [2:0] exc_mu_store_size_i;
    wire [2:0] exc_mu_load_size_i;
+   wire imm_signed_r;
+   wire [15:0] imm16_r;
    wire exc_wb_regf_i;
    wire [`NCPU_REG_AW-1:0] exc_wb_reg_addr_i;
    wire exc_jmp_reg_i;
    
-   assign exc_operand_1_i = operand_1_r;
-   assign exc_operand_2_i = operand_2_r;
+   ncpu32k_cell_dff_lr #(1) dff_imm_signed_r
+                   (clk_i,rst_n_i, pipe2_flow, imm_signed, imm_signed_r);
+   ncpu32k_cell_dff_lr #(16) dff_imm16_r
+                   (clk_i,rst_n_i, pipe2_flow, f_imm16[15:0], imm16_r[15:0]);
+
+   // Sign-extended Integer
+   wire [`NCPU_DW-1:0] simm16_r = {{`NCPU_DW-16{imm16_r[15]}}, imm16_r[15:0]};
+   // Zero-extended Integer
+   wire [`NCPU_DW-1:0] uimm16_r = {{`NCPU_DW-16{1'b0}}, imm16_r[15:0]};
+   // Immediate Operand
+   wire [`NCPU_DW-1:0] imm_oper_r = (imm_signed_r ? simm16_r : uimm16_r);
    
-   ncpu32k_cell_dff_lr #(`NCPU_DW) dff_imm_oper_r
-                   (clk_i,rst_n_i, pipe2_flow, imm_oper[`NCPU_DW-1:0], imm_oper_r[`NCPU_DW-1:0]);
+   // Final Operands
+   assign exc_operand_1_i = (rs1_valid_o ? rs1_o : imm_oper_r);
+   assign exc_operand_2_i = (rs2_valid_o ? rs2_o : imm_oper_r);
    
    ncpu32k_cell_dff_lr #(`NCPU_LU_IOPW) dff_exc_lu_opc_bus_i
                    (clk_i,rst_n_i, pipe2_flow, lu_opc_bus[`NCPU_LU_IOPW-1:0], exc_lu_opc_bus_i[`NCPU_LU_IOPW-1:0]);
@@ -429,9 +431,13 @@ module ncpu32k_core(
    wire [`NCPU_DW-1:0] lu_shift;
 
    assign shift_lsw = exc_lu_opc_bus_i[`NCPU_LU_LSL] ? reverse_bits(exc_operand_1_i) : exc_operand_1_i;
+`ifdef ENABLE_ASR
    assign shift_msw = exc_lu_opc_bus_i[`NCPU_LU_ASR] ? {`NCPU_DW{exc_operand_1_i[`NCPU_DW-1]}} : {`NCPU_DW{1'b0}};
    assign shift_wide = {shift_msw, shift_lsw} >> exc_operand_2_i[4:0];
    assign shift_right = shift_wide[`NCPU_DW-1:0];
+`else
+   assign shift_right = shift_lsw >> exc_operand_2_i[4:0];
+`endif
    assign lu_shift = exc_lu_opc_bus_i[`NCPU_LU_LSL] ? reverse_bits(shift_right) : shift_right;
    assign lu_op_shift = exc_lu_opc_bus_i[`NCPU_LU_LSL] | exc_lu_opc_bus_i[`NCPU_LU_LSR] | exc_lu_opc_bus_i[`NCPU_LU_ASR];
 
@@ -440,9 +446,9 @@ module ncpu32k_core(
    // AU (Arithmetic Unit)
    ///////////////////////////
    
-   wire [`NCPU_DW-1:0] lu_adder;
-   wire [`NCPU_DW-1:0] lu_mul;
-   wire [`NCPU_DW-1:0] lu_div;
+   wire [`NCPU_DW-1:0] au_adder;
+   wire [`NCPU_DW-1:0] au_mul;
+   wire [`NCPU_DW-1:0] au_div;
    
    // Full Adder
    wire [`NCPU_DW-1:0] adder_operand2_com;
@@ -451,16 +457,16 @@ module ncpu32k_core(
    wire                adder_carry_out;
    wire                adder_overflow;
    
-   assign adder_sub = (exc_lu_opc_bus_i[`NCPU_AU_SUB]);
+   assign adder_sub = (exc_au_opc_bus_i[`NCPU_AU_SUB]);
    assign adder_carry_in = adder_sub;
    assign adder_operand2_com = adder_sub ? ~exc_operand_2_i : exc_operand_2_i;
 
-   assign {adder_carry_out, lu_adder} = exc_operand_1_i + adder_operand2_com + {{`NCPU_DW-1{1'b0}}, adder_carry_in};
+   assign {adder_carry_out, au_adder} = exc_operand_1_i + adder_operand2_com + {{`NCPU_DW-1{1'b0}}, adder_carry_in};
 
    assign adder_overflow = (exc_operand_1_i[`NCPU_DW-1] == adder_operand2_com[`NCPU_DW-1]) &
-                          (exc_operand_1_i[`NCPU_DW-1] ^ lu_adder[`NCPU_DW-1]);
+                          (exc_operand_1_i[`NCPU_DW-1] ^ au_adder[`NCPU_DW-1]);
 
-   wire lu_op_adder = exc_lu_opc_bus_i[`NCPU_AU_ADD] | adder_sub;
+   wire au_op_adder = exc_au_opc_bus_i[`NCPU_AU_ADD] | adder_sub;
 
    // Multiplier
 `ifdef ENABLE_MUL
@@ -500,7 +506,7 @@ module ncpu32k_core(
                       ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_XOR]}} & lu_xor[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{lu_op_shift}} & lu_shift[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{lu_op_adder}} & lu_adder[`NCPU_DW-1:0]) |
+                      ({`NCPU_DW{au_op_adder}} & au_adder[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{exc_mu_load_i}} & mu_load[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{exc_mu_store_i}} & mu_store[`NCPU_DW-1:0]);
    

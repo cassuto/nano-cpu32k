@@ -156,3 +156,13 @@ ISA GROUP - VIRT:
 ;;FIXME!
 
 Note that, in 32bit arch, behave of LDW instruction is equal to LDWU.
+
+
+Tested in step 1:
+add
+sub
+or
+and
+xor
+lsl
+lsr
