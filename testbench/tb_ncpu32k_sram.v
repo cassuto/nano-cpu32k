@@ -40,17 +40,6 @@ module tb_ncpu32k_sram();
                            insn_mem[insn_ram_addr][7:0]};
    wire insn_ready = 1'b1;
 
-   // Nano86 CPU Core
-   NANO_86 nano86_inst(
-      .clk_i         (clk),
-      .rst_n_i       (rst_n),
-      .d_i           (),
-      .insn_i        (insn),
-      .d_o           (),
-      .addr_o        (),
-      .iaddr_o       (insn_addr)
-   );
-   
    ncpu32k_core ncpu32k_inst(
       .clk_i         (clk),
       .rst_n_i       (rst_n),

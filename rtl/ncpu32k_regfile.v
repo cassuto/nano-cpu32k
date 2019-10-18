@@ -35,44 +35,46 @@ module ncpu32k_regfile(
 
    ncpu32k_cell_dpram_sclk
       #(
-         .ADDR_WIDTH (`NCPU_REG_AW),
-         .DATA_WIDTH (`NCPU_DW),
-         .CLEAR_ON_INIT (1),
-         .SYNC_READ (1),
-         .ENABLE_BYPASS (1)
+         .ADDR_WIDTH                   (`NCPU_REG_AW),
+         .DATA_WIDTH                   (`NCPU_DW),
+         .CLEAR_ON_INIT                (1),
+         .SYNC_READ                    (1),
+         .ENABLE_BYPASS                (1)
          )
       dpram_sclk0
-         (/*AUTOINST*/
+         (
           // Outputs
-          .dout                         (rs1_o[`NCPU_DW-1:0]),
+          .dout                        (rs1_o),
           // Inputs
-          .clk_i                        (clk_i),
-          .rst_i                        (rst_i),
-          .raddr                        (rs1_addr_i[`NCPU_REG_AW-1:0]),
-          .re                           (rs1_re_i),
-          .waddr                        (rd_addr_i[`NCPU_REG_AW-1:0]),
-          .we                           (rd_we_i),
-          .din                          (rd_i[`NCPU_DW-1:0])); 
-   
+          .clk_i                       (clk_i),
+          .rst_n_i                     (rst_n_i),
+          .raddr                       (rs1_addr_i),
+          .re                          (rs1_re_i),
+          .waddr                       (rd_addr_i),
+          .we                          (rd_we_i),
+          .din                         (rd_i)
+         ); 
+
    ncpu32k_cell_dpram_sclk
       #(
-         .ADDR_WIDTH (`NCPU_REG_AW),
-         .DATA_WIDTH (`NCPU_DW),
-         .CLEAR_ON_INIT (1),
-         .INV_OUT_DISABLED (0),
-         .ENABLE_BYPASS (1)
+         .ADDR_WIDTH                   (`NCPU_REG_AW),
+         .DATA_WIDTH                   (`NCPU_DW),
+         .CLEAR_ON_INIT                (1),
+         .SYNC_READ                    (0),
+         .ENABLE_BYPASS                (1)
          )
       dpram_sclk1
-         (/*AUTOINST*/
+         (
           // Outputs
-          .dout                         (rs2_o[`NCPU_DW-1:0]),
+          .dout                        (rs2_o),
           // Inputs
-          .clk_i                        (clk_i),
-          .rst_i                        (rst_i),
-          .raddr                        (rs2_addr_i[`NCPU_REG_AW-1:0]),
-          .re                           (rs2_re_i),
-          .waddr                        (rd_addr_i[`NCPU_REG_AW-1:0]),
-          .we                           (rd_we_i),
-          .din                          (rd_i[`NCPU_DW-1:0])); 
+          .clk_i                       (clk_i),
+          .rst_n_i                     (rst_n_i),
+          .raddr                       (rs2_addr_i),
+          .re                          (rs2_re_i),
+          .waddr                       (rd_addr_i),
+          .we                          (rd_we_i),
+          .din                         (rd_i)
+         ); 
          
 endmodule

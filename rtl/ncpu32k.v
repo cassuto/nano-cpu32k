@@ -32,8 +32,8 @@ module ncpu32k_core(
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [`NCPU_DW-1:0]       rs1_o;                  // From regfile0 of ncpu32k_regfile.v
-   wire [`NCPU_DW-1:0]       rs2_o;                  // From regfile0 of ncpu32k_regfile.v
+   wire [`NCPU_DW-1:0]  rs1_o;                  // From regfile0 of ncpu32k_regfile.v
+   wire [`NCPU_DW-1:0]  rs2_o;                  // From regfile0 of ncpu32k_regfile.v
    // End of automatics
    
    /////////////////////////////////////////////////////////////////////////////
@@ -65,7 +65,7 @@ module ncpu32k_core(
        .rs1_re_i                        (regf_rs1_re_i),         // Templated
        .rs2_re_i                        (regf_rs2_re_i),         // Templated
        .rd_addr_i                       (regf_rd_addr_i[`NCPU_REG_AW-1:0]), // Templated
-       .rd_i                            (regf_rd_i[`NCPU_DW-1:0]),    // Templated
+       .rd_i                            (regf_rd_i[`NCPU_DW-1:0]), // Templated
        .rd_we_i                         (regf_rd_we_i));          // Templated
    
    // SMR.PSR.CC - Condition Control Register
@@ -74,7 +74,7 @@ module ncpu32k_core(
    wire                smr_psr_cc_w;
    wire                smr_psr_cc_we;
    
-   ncpu32k_dff_lr #(1) dff_smr_psr_cc (clk_i, rst_n_i, smr_psr_cc_we, smr_psr_cc_i, smr_psr_cc_w);
+   ncpu32k_cell_dff_lr #(1) dff_smr_psr_cc (clk_i, rst_n_i, smr_psr_cc_we, smr_psr_cc_i, smr_psr_cc_w);
    
    assign smr_psr_cc = (smr_psr_cc_we ? smr_psr_cc_i : smr_psr_cc_w);
    
@@ -101,7 +101,7 @@ module ncpu32k_core(
    // Program Counter Register
    wire [`NCPU_AW-1:0] pc_addr;
    wire [`NCPU_AW-1:0] pc_addr_nxt;
-   ncpu32k_dff_lr #(`NCPU_AW, `NCPU_ERST_VECTOR) dff_pc_addr
+   ncpu32k_cell_dff_lr #(`NCPU_AW, `NCPU_ERST_VECTOR) dff_pc_addr
                    (clk_i, rst_n_i, 1'b1, pc_addr_nxt[`NCPU_AW-1:0], pc_addr[`NCPU_AW-1:0]);
    
    assign pc_addr_nxt = fetch_jmpfar ? fetch_jmpfar_addr[`NCPU_AW-1:0]  : 
@@ -119,7 +119,7 @@ module ncpu32k_core(
    // Pipeline
    wire [`NCPU_IW-1:0] dec_insn_i;
    
-   ncpu32k_dff_lr #(`NCPU_IW) dff_dec_insn_i (clk_i, rst_n_i, pipe1_flow, insn[`NCPU_IW-1:0], dec_insn_i[`NCPU_IW-1:0]);
+   ncpu32k_cell_dff_lr #(`NCPU_IW) dff_dec_insn_i (clk_i, rst_n_i, pipe1_flow, insn[`NCPU_IW-1:0], dec_insn_i[`NCPU_IW-1:0]);
    
    
    /////////////////////////////////////////////////////////////////////////////
@@ -368,36 +368,36 @@ module ncpu32k_core(
    assign exc_operand_1_i = operand_1_r;
    assign exc_operand_2_i = operand_2_r;
    
-   ncpu32k_dff_lr #(`NCPU_DW) dff_imm_oper_r
+   ncpu32k_cell_dff_lr #(`NCPU_DW) dff_imm_oper_r
                    (clk_i,rst_n_i, pipe2_flow, imm_oper[`NCPU_DW-1:0], imm_oper_r[`NCPU_DW-1:0]);
    
-   ncpu32k_dff_lr #(`NCPU_LU_IOPW) dff_exc_lu_opc_bus_i
+   ncpu32k_cell_dff_lr #(`NCPU_LU_IOPW) dff_exc_lu_opc_bus_i
                    (clk_i,rst_n_i, pipe2_flow, lu_opc_bus[`NCPU_LU_IOPW-1:0], exc_lu_opc_bus_i[`NCPU_LU_IOPW-1:0]);
-   ncpu32k_dff_lr #(`NCPU_AU_IOPW) dff_exc_au_opc_bus_i
+   ncpu32k_cell_dff_lr #(`NCPU_AU_IOPW) dff_exc_au_opc_bus_i
                    (clk_i,rst_n_i, pipe2_flow, au_opc_bus[`NCPU_AU_IOPW-1:0], exc_au_opc_bus_i[`NCPU_AU_IOPW-1:0]);
-   ncpu32k_dff_lr #(`NCPU_EU_IOPW) dff_exc_eu_opc_bus_i
+   ncpu32k_cell_dff_lr #(`NCPU_EU_IOPW) dff_exc_eu_opc_bus_i
                    (clk_i,rst_n_i, pipe2_flow, eu_opc_bus[`NCPU_EU_IOPW-1:0], exc_eu_opc_bus_i[`NCPU_EU_IOPW-1:0]);
 
-   ncpu32k_dff_lr #(1) dff_exc_emu_insn_i
+   ncpu32k_cell_dff_lr #(1) dff_exc_emu_insn_i
                    (clk_i,rst_n_i, pipe2_flow, emu_insn, exc_emu_insn_i);
                    
-   ncpu32k_dff_lr #(1) dff_exc_mu_load_i
+   ncpu32k_cell_dff_lr #(1) dff_exc_mu_load_i
                    (clk_i,rst_n_i, pipe2_flow, op_mu_load, exc_mu_load_i);
-   ncpu32k_dff_lr #(1) dff_exc_mu_store_i
+   ncpu32k_cell_dff_lr #(1) dff_exc_mu_store_i
                    (clk_i,rst_n_i, pipe2_flow, op_mu_store, exc_mu_store_i);
-   ncpu32k_dff_lr #(1) dff_exc_mu_barr_i
+   ncpu32k_cell_dff_lr #(1) dff_exc_mu_barr_i
                    (clk_i,rst_n_i, pipe2_flow, op_mu_barr, exc_mu_barr_i);
-   ncpu32k_dff_lr #(3) dff_exc_mu_store_size_i
+   ncpu32k_cell_dff_lr #(3) dff_exc_mu_store_size_i
                    (clk_i,rst_n_i, pipe2_flow, mu_store_size[2:0], exc_mu_store_size_i[2:0]);
-   ncpu32k_dff_lr #(3) dff_exc_mu_load_size_i
+   ncpu32k_cell_dff_lr #(3) dff_exc_mu_load_size_i
                    (clk_i,rst_n_i, pipe2_flow, mu_load_size[2:0], exc_mu_load_size_i[2:0]);
                    
-   ncpu32k_dff_lr #(1) dff_exc_wb_regf_i
+   ncpu32k_cell_dff_lr #(1) dff_exc_wb_regf_i
                    (clk_i,rst_n_i, pipe2_flow, wb_regf, exc_wb_regf_i);
-   ncpu32k_dff_lr #(`NCPU_REG_AW) dff_exc_wb_reg_addr_i
+   ncpu32k_cell_dff_lr #(`NCPU_REG_AW) dff_exc_wb_reg_addr_i
                    (clk_i,rst_n_i, pipe2_flow, wb_reg_addr, exc_wb_reg_addr_i);
 
-   ncpu32k_dff_lr #(1) dff_exc_jmp_reg_i
+   ncpu32k_cell_dff_lr #(1) dff_exc_jmp_reg_i
                    (clk_i,rst_n_i, pipe2_flow, jmp_reg, exc_jmp_reg_i);
 
    /////////////////////////////////////////////////////////////////////////////
