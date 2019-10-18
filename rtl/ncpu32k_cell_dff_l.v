@@ -21,10 +21,10 @@ module ncpu32k_cell_dff_l # (
    parameter DW = 1 // Data Width in bits
 )
 (
-   input CLK;
-   input LOAD;
-   input [DW-1:0] D; // Data input
-   output reg [DW-1:0] Q; // Data output
+   input CLK,
+   input LOAD,
+   input [DW-1:0] D, // Data input
+   output reg [DW-1:0] Q // Data output
 );
    always @(posedge CLK) begin
      if (LOAD)

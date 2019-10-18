@@ -22,11 +22,11 @@ module ncpu32k_cell_dff_lr # (
    parameter RST_VECTOR = {DW{1'b0}}
 )
 (
-   input CLK;
-   input RST_n;
-   input LOAD;
-   input [DW-1:0] D; // Data input
-   output reg [DW-1:0] Q; // Data output
+   input CLK,
+   input RST_n,
+   input LOAD,
+   input [DW-1:0] D, // Data input
+   output reg [DW-1:0] Q // Data output
 );
    always @(posedge CLK or negedge RST_n) begin
      if (!RST_n)

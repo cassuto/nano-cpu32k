@@ -20,17 +20,17 @@
 `include "ncpu32k_config.h"
 
 module ncpu32k_regfile(
-   input                         clk_i;
-   input                         rst_n_i;
-   input [`NCPU_REG_AW-1:0]      rs1_addr_i; // Address for operand #1
-   input [`NCPU_REG_AW-1:0]      rs2_addr_i; // Address for operand #2
-   input                         rs1_re_i;   // Read Enable of operand #1
-   input                         rs2_re_i;   // Read Enable of operand #2
-   input [`NCPU_REG_AW-1:0]      rd_addr_i;  // Write address
-   input [`NCPU_DW-1:0]          rd_i;       // Write Input value
-   input                         rd_we_i;    // Write Enable
-   output [`NCPU_DW-1:0]         rs1_o;      // Output value of operand #1
-   output [`NCPU_DW-1:0]         rs2_o;      // Output value of operand #2
+   input                         clk_i,
+   input                         rst_n_i,
+   input [`NCPU_REG_AW-1:0]      rs1_addr_i, // Address for operand #1
+   input [`NCPU_REG_AW-1:0]      rs2_addr_i, // Address for operand #2
+   input                         rs1_re_i,   // Read Enable of operand #1
+   input                         rs2_re_i,   // Read Enable of operand #2
+   input [`NCPU_REG_AW-1:0]      rd_addr_i,  // Write address
+   input [`NCPU_DW-1:0]          rd_i,       // Write Input value
+   input                         rd_we_i,    // Write Enable
+   output [`NCPU_DW-1:0]         rs1_o,      // Output value of operand #1
+   output [`NCPU_DW-1:0]         rs2_o       // Output value of operand #2
 );
 
    ncpu32k_cell_dpram_sclk

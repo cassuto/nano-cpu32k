@@ -26,14 +26,14 @@ module ncpu32k_cell_dpram_sclk
    parameter ENABLE_BYPASS = 1
 )
 (
-   input                           clk_i;
-   input                           rst_n_i;
-   input [ADDR_WIDTH-1:0]          raddr;
-   input                           re;
-   input [ADDR_WIDTH-1:0]          waddr;
-   input                           we;
-   input [DATA_WIDTH-1:0]          din;
-   output [DATA_WIDTH-1:0]         dout;
+   input                           clk_i,
+   input                           rst_n_i,
+   input [ADDR_WIDTH-1:0]          raddr,
+   input                           re,
+   input [ADDR_WIDTH-1:0]          waddr,
+   input                           we,
+   input [DATA_WIDTH-1:0]          din,
+   output [DATA_WIDTH-1:0]         dout
 );
 
    reg [DATA_WIDTH-1:0]            mem_vector[(1<<ADDR_WIDTH)-1:0];

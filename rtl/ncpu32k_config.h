@@ -120,22 +120,22 @@
 // VIRT Instruction
 /////////////////////////////////////////////////////////////////////////////
 
-`define ENABLE_ASR 0
-`define ENABLE_ASR_I 0
-`define ENABLE_ADD 1
-`define ENABLE_ADD_I 1
-`define ENABLE_SUB 1
-`define ENABLE_MUL 0
-`define ENABLE_DIV 0
-`define ENABLE_DIVU 0
-`define ENABLE_MOD 0
-`define ENABLE_MODU 0
-`define ENABLE_LDB 1
-`define ENABLE_LDBU 1
-`define ENABLE_LDH 1
-`define ENABLE_LDHU 1
-`define ENABLE_STB 1
-`define ENABLE_STH 1
-`define ENABLE_MHI 1
+//`define ENABLE_ASR
+//`define ENABLE_ASR_I
+`define ENABLE_ADD
+`define ENABLE_ADD_I
+`define ENABLE_SUB
+//`define ENABLE_MUL
+//`define ENABLE_DIV
+//`define ENABLE_DIVU
+//`define ENABLE_MOD
+//`define ENABLE_MODU
+`define ENABLE_LDB
+`define ENABLE_LDBU
+`define ENABLE_LDH
+`define ENABLE_LDHU
+`define ENABLE_STB
+`define ENABLE_STH
+`define ENABLE_MHI
 
 `endif // _NCPU32K_CONFIG_H

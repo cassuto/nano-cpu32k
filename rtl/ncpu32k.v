@@ -16,19 +16,19 @@
 `include "ncpu32k_config.h"
 
 module ncpu32k_core(
-   input clk_i,
-   input rst_n_i,
-   input [`NCPU_DW-1:0] d_i,  // data
-   input [`NCPU_IW-1:0] insn_i, // instruction
-   input insn_ready_i, // Insn bus is ready
-   input dbus_rd_ready_i, // Data bus Dout is ready
-   input dbus_we_done_i, // Data bus Writing is done
-   output [`NCPU_DW-1:0] d_o,	// data
-   output [`NCPU_AW-1:0] addr_o, // data address
-   output                dbus_rd_o, // data bus ReadEnable
-   output                dbus_we_o, // data bus WriteEnable
-   output [`NCPU_AW-1:0] iaddr_o, // instruction address
-   output                ibus_rd_o // instruction bus ReadEnable
+   input                   clk_i,
+   input                   rst_n_i,
+   input [`NCPU_DW-1:0]    d_i,              // data
+   input [`NCPU_IW-1:0]    insn_i,           // instruction
+   input                   insn_ready_i,     // Insn bus is ready
+   input                   dbus_rd_ready_i,  // Data bus Dout is ready
+   input                   dbus_we_done_i,   // Data bus Writing is done
+   output [`NCPU_DW-1:0]   d_o,	            // data
+   output [`NCPU_AW-1:0]   addr_o,           // data address
+   output                  dbus_rd_o,        // data bus ReadEnable
+   output                  dbus_we_o,        // data bus WriteEnable
+   output [`NCPU_AW-1:0]   iaddr_o,          // instruction address
+   output                  ibus_rd_o         // instruction bus ReadEnable
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -73,7 +73,9 @@ module ncpu32k_core(
    wire                smr_psr_cc;
    wire                smr_psr_cc_w;
    wire                smr_psr_cc_we;
+   
    ncpu32k_dff_lr #(1) dff_smr_psr_cc (clk_i, rst_n_i, smr_psr_cc_we, smr_psr_cc_i, smr_psr_cc_w);
+   
    assign smr_psr_cc = (smr_psr_cc_we ? smr_psr_cc_i : smr_psr_cc_w);
    
    // Pipeline Dispatcher
@@ -94,15 +96,16 @@ module ncpu32k_core(
    wire fetch_jmp;
    wire fetch_jmpfar;
    wire [`NCPU_AW-1:0] fetch_jmp_offset;
-   wire [`NCPU_AW-1:0] fetch_jmpfar_addr;
+   wire [`NCPU_AW:0] fetch_jmpfar_addr;
    
    // Program Counter Register
    wire [`NCPU_AW-1:0] pc_addr;
    wire [`NCPU_AW-1:0] pc_addr_nxt;
-   ncpu32k_dff_lr #(`NCPU_AW, `ERST_VECTOR) dff_pc_addr (clk_i, rst_n_i, 1'b1, pc_addr_nxt[`NCPU_AW-1:0], pc_addr[`NCPU_AW-1:0]);
+   ncpu32k_dff_lr #(`NCPU_AW, `NCPU_ERST_VECTOR) dff_pc_addr
+                   (clk_i, rst_n_i, 1'b1, pc_addr_nxt[`NCPU_AW-1:0], pc_addr[`NCPU_AW-1:0]);
    
-   assign pc_addr_nxt = fetch_jmpfar ? fetch_jmpfar_addr : 
-                           pc_addr + (fetch_jmp ? fetch_jmp_offset : `IW_LOG2);
+   assign pc_addr_nxt = fetch_jmpfar ? fetch_jmpfar_addr[`NCPU_AW-1:0]  : 
+                        pc_addr + (fetch_jmp ? fetch_jmp_offset : `NCPU_IW_LOG2);
    
    wire [`NCPU_IW-1:0] insn;
    // Insn Bus addressing
@@ -132,87 +135,87 @@ module ncpu32k_core(
    wire [20:0] f_rel21 = dec_insn_i[31:11];
    
    // VIRT insns
-`if ENABLE_ASR
+`ifdef ENABLE_ASR
    wire enable_asr = 1'b1;
 `else
    wire enable_asr = 1'b0;
 `endif
-`if ENABLE_ASR_I
+`ifdef ENABLE_ASR_I
    wire enable_asr_i = 1'b1;
 `else
    wire enable_asr_i = 1'b0;
 `endif
-`if ENABLE_ADD
+`ifdef ENABLE_ADD
    wire enable_add = 1'b1;
 `else
    wire enable_add = 1'b0;
 `endif
-`if ENABLE_ADD_I
+`ifdef ENABLE_ADD_I
    wire enable_add_i = 1'b1;
 `else
    wire enable_add_i = 1'b0;
 `endif
-`if ENABLE_SUB
+`ifdef ENABLE_SUB
    wire enable_sub = 1'b1;
 `else
    wire enable_sub = 1'b0;
 `endif
-`if ENABLE_MUL
+`ifdef ENABLE_MUL
    wire enable_mul = 1'b1;
 `else
    wire enable_mul = 1'b0;
 `endif
-`if ENABLE_DIV
+`ifdef ENABLE_DIV
    wire enable_div = 1'b1;
 `else
    wire enable_div = 1'b0;
 `endif
-`if ENABLE_DIVU
+`ifdef ENABLE_DIVU
    wire enable_divu = 1'b1;
 `else
    wire enable_divu = 1'b0;
 `endif
-`if ENABLE_MOD
+`ifdef ENABLE_MOD
    wire enable_mod = 1'b1;
 `else
    wire enable_mod = 1'b0;
 `endif
-`if ENABLE_MODU
+`ifdef ENABLE_MODU
    wire enable_modu = 1'b1;
 `else
    wire enable_modu = 1'b0;
 `endif
-`if ENABLE_LDB
+`ifdef ENABLE_LDB
    wire enable_ldb = 1'b1;
 `else
    wire enable_ldb = 1'b0;
 `endif
-`if ENABLE_LDBU
+`ifdef ENABLE_LDBU
    wire enable_ldbu = 1'b1;
 `else
    wire enable_ldbu = 1'b0;
 `endif
-`if ENABLE_LDH
+`ifdef ENABLE_LDH
    wire enable_ldh = 1'b1;
 `else
    wire enable_ldh = 1'b0;
 `endif
-`if ENABLE_LDHU
+`ifdef ENABLE_LDHU
    wire enable_ldhu = 1'b1;
 `else
    wire enable_ldhu = 1'b0;
 `endif
-`if ENABLE_STB
+`ifdef ENABLE_STB
    wire enable_stb = 1'b1;
 `else
    wire enable_stb = 1'b0;
 `endif
-`if ENABLE_STH
+`ifdef ENABLE_STH
    wire enable_sth = 1'b1;
 `else
    wire enable_sth = 1'b0;
 `endif
-`if ENABLE_MHI
+`ifdef ENABLE_MHI
    wire enable_mhi = 1'b1;
 `else
    wire enable_mhi = 1'b0;
@@ -264,7 +267,7 @@ module ncpu32k_core(
    
    wire [`NCPU_LU_IOPW-1:0] lu_opc_bus;
    wire [`NCPU_AU_IOPW-1:0] au_opc_bus;
-   wire [`NCPU_BU_IOPW-1:0] eu_opc_bus;
+   wire [`NCPU_EU_IOPW-1:0] eu_opc_bus;
    
    //
    // Target Size of Memory Access.
@@ -300,8 +303,10 @@ module ncpu32k_core(
    assign eu_opc_bus[`NCPU_EU_WSMR] = (op_wsmr);
    assign eu_opc_bus[`NCPU_EU_RSMR] = (op_rsmr);
 
+   wire bu_sel = (op_jmp|op_jmp_i|op_bt|op_bf);
+   
    // Insn is to be emulated
-   wire emu_insn = !((|lu_opc_bus) | (|au_opc_bus) | (|bu_opc_bus) | (|eu_opc_bus) | op_mu_load | op_mu_store | op_mu_barr);
+   wire emu_insn = !((|lu_opc_bus) | (|au_opc_bus) | bu_sel | (|eu_opc_bus) | op_mu_load | op_mu_store | op_mu_barr);
    
    // Insn presents rs1 and imm as operand.
    wire insn_imm = (op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |
@@ -312,15 +317,15 @@ module ncpu32k_core(
    wire insn_non_op = (op_barr | op_raise | op_ret);
    
    // Insn writeback register file
-   wire wb_regf = !(op_barr | (|bu_opc_bus) | op_cmp);
+   wire wb_regf = !(op_barr | bu_sel | op_cmp);
    wire [`NCPU_REG_AW-1:0] wb_reg_addr = f_rd;
    
    // PC-Relative address (sign-extended)
-   wire [`AW-1:0] rel21 = {{`NCPU_AW-23{f_rel21[20]}}, f_rel21[20:0], 2'b00};
+   wire [`NCPU_AW-1:0] rel21 = {{`NCPU_AW-23{f_rel21[20]}}, f_rel21[20:0], 2'b00};
    // Sign-extended Integer
-   wire [`DW-1:0] simm16 = {{`NCPU_DW-16{f_imm16[15]}}, f_imm16[15:0]};
+   wire [`NCPU_DW-1:0] simm16 = {{`NCPU_DW-16{f_imm16[15]}}, f_imm16[15:0]};
    // Zero-extended Integer
-   wire [`DW-1:0] uimm16 = {{`NCPU_DW-16{1'b0}}, f_imm16[15:0]};
+   wire [`NCPU_DW-1:0] uimm16 = {{`NCPU_DW-16{1'b0}}, f_imm16[15:0]};
    
    // Insn requires Signed imm.
    wire imm_signed = (op_xor_i | op_and_i | op_mu_load | op_mu_store);
@@ -349,7 +354,7 @@ module ncpu32k_core(
    wire [`NCPU_DW-1:0] exc_operand_2_i;
    wire [`NCPU_LU_IOPW-1:0] exc_lu_opc_bus_i;
    wire [`NCPU_AU_IOPW-1:0] exc_au_opc_bus_i;
-   wire [`NCPU_BU_IOPW-1:0] exc_eu_opc_bus_i;
+   wire [`NCPU_EU_IOPW-1:0] exc_eu_opc_bus_i;
    wire exc_emu_insn_i;
    wire exc_mu_load_i;
    wire exc_mu_store_i;
@@ -426,7 +431,7 @@ module ncpu32k_core(
    assign shift_lsw = exc_lu_opc_bus_i[`NCPU_LU_LSL] ? reverse_bits(exc_operand_1_i) : exc_operand_1_i;
    assign shift_msw = exc_lu_opc_bus_i[`NCPU_LU_ASR] ? {`NCPU_DW{exc_operand_1_i[`NCPU_DW-1]}} : {`NCPU_DW{1'b0}};
    assign shift_wide = {shift_msw, shift_lsw} >> exc_operand_2_i[4:0];
-   assign shift_right = shift_wide[`REG_DBW-1:0];
+   assign shift_right = shift_wide[`NCPU_DW-1:0];
    assign lu_shift = exc_lu_opc_bus_i[`NCPU_LU_LSL] ? reverse_bits(shift_right) : shift_right;
    assign lu_op_shift = exc_lu_opc_bus_i[`NCPU_LU_LSL] | exc_lu_opc_bus_i[`NCPU_LU_LSR] | exc_lu_opc_bus_i[`NCPU_LU_ASR];
 
@@ -450,24 +455,24 @@ module ncpu32k_core(
    assign adder_carry_in = adder_sub;
    assign adder_operand2_com = adder_sub ? ~exc_operand_2_i : exc_operand_2_i;
 
-   assign {adder_carry_out, lu_add} = operand1 + adder_operand2_com + {{`NCPU_DW-1{1'b0}}, adder_carry_in};
+   assign {adder_carry_out, lu_adder} = exc_operand_1_i + adder_operand2_com + {{`NCPU_DW-1{1'b0}}, adder_carry_in};
 
    assign adder_overflow = (exc_operand_1_i[`NCPU_DW-1] == adder_operand2_com[`NCPU_DW-1]) &
-                          (exc_operand_1_i[`NCPU_DW-1] ^ lu_add[`NCPU_DW-1]);
+                          (exc_operand_1_i[`NCPU_DW-1] ^ lu_adder[`NCPU_DW-1]);
 
    wire lu_op_adder = exc_lu_opc_bus_i[`NCPU_AU_ADD] | adder_sub;
 
    // Multiplier
-`if ENABLE_MUL
+`ifdef ENABLE_MUL
 `endif
 
-`if ENABLE_DIV
+`ifdef ENABLE_DIV
 `endif
-`if ENABLE_DIVU
+`ifdef ENABLE_DIVU
 `endif
-`if ENABLE_MOD
+`ifdef ENABLE_MOD
 `endif
-`if ENABLE_MODU
+`ifdef ENABLE_MODU
 `endif
 
    ///////////////////////////
@@ -491,17 +496,17 @@ module ncpu32k_core(
    // If Load/Store, then Wait for dbus.
    assign pipe3_ready = !(exc_mu_load_i|exc_mu_store_i) | (load_ready | store_ready);
 
-   wire [`NCPU_DW-1:0] regf_rd_i = ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
-                                    ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |
-                                    ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_XOR]}} & lu_xor[`NCPU_DW-1:0]) |
-                                    ({`NCPU_DW{lu_op_shift}} & lu_shift[`NCPU_DW-1:0]) |
-                                    ({`NCPU_DW{lu_op_adder}} & lu_adder[`NCPU_DW-1:0]) |
-                                    ({`NCPU_DW{exc_mu_load_i}} & mu_load[`NCPU_DW-1:0]) |
-                                    ({`NCPU_DW{exc_mu_store_i}} & mu_store[`NCPU_DW-1:0]);
+   assign regf_rd_i = ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
+                      ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |
+                      ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_XOR]}} & lu_xor[`NCPU_DW-1:0]) |
+                      ({`NCPU_DW{lu_op_shift}} & lu_shift[`NCPU_DW-1:0]) |
+                      ({`NCPU_DW{lu_op_adder}} & lu_adder[`NCPU_DW-1:0]) |
+                      ({`NCPU_DW{exc_mu_load_i}} & mu_load[`NCPU_DW-1:0]) |
+                      ({`NCPU_DW{exc_mu_store_i}} & mu_store[`NCPU_DW-1:0]);
    
    // Register-operand jmp
    assign fetch_jmpfar = exc_jmp_reg_i;
-   assign fetch_jmpfar_addr = {{(`NCPU_AW-`NCPU_DW){1'b0}}, exc_operand_1_i[`NCPU_DW-1:0]};
+   assign fetch_jmpfar_addr = {{(`NCPU_AW-`NCPU_DW+1){1'b0}}, exc_operand_1_i[`NCPU_DW-1:0]};
    
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 4: Commit & WriteBack
