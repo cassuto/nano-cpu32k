@@ -18,12 +18,11 @@
 
 // Data Operand Bitwidth
 `define NCPU_DW 32
-// Address Bus Bitwidth
+// Address Bus Bitwidth (<= DW)
 `define NCPU_AW 32
 
 // Single instruction Bitwidth
 `define NCPU_IW 32
-`define NCPU_IW_LOG2 4
 
 // Regfile address Bitwidth
 `define NCPU_REG_AW 5

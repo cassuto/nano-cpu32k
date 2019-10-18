@@ -101,32 +101,38 @@ module ncpu32k_core(
    /////////////////////////////////////////////////////////////////////////////
    wire fetch_jmp;
    wire fetch_jmpfar;
-   wire [`NCPU_AW-1:0] fetch_jmp_offset;
-   wire [`NCPU_AW:0] fetch_jmpfar_addr;
+   wire fetch_jmp_ready;
+   wire [`NCPU_AW-3:0] fetch_jmp_offset;
+   wire [`NCPU_AW-3:0] fetch_jmpfar_addr;
+   
+   wire [`NCPU_AW-3:0] pc_addr;
+   wire [`NCPU_AW-3:0] pc_addr_nxt;
    
    // Program Counter Register
-   wire [`NCPU_AW-1:0] pc_addr;
-   wire [`NCPU_AW-1:0] pc_addr_nxt;
-   ncpu32k_cell_dff_lr #(`NCPU_AW, `NCPU_ERST_VECTOR) dff_pc_addr
-                   (clk_i, rst_n_i, 1'b1, pc_addr_nxt[`NCPU_AW-1:0], pc_addr[`NCPU_AW-1:0]);
-   
-   assign pc_addr_nxt = fetch_jmpfar ? fetch_jmpfar_addr[`NCPU_AW-1:0]  : 
-                        pc_addr + (fetch_jmp ? fetch_jmp_offset : `NCPU_IW_LOG2);
+   ncpu32k_cell_dff_lr #(`NCPU_AW-2, (`NCPU_ERST_VECTOR>>2)-1'b1) dff_pc_addr
+                   (clk_i, rst_n_i, 1'b1, pc_addr_nxt[`NCPU_AW-3:0], pc_addr[`NCPU_AW-3:0]);
+   assign pc_addr_nxt = pipe1_flow ?
+                   (fetch_jmpfar ? fetch_jmpfar_addr :
+                    pc_addr + (fetch_jmp ? fetch_jmp_offset : 1'b1)) :
+                    pc_addr;
    
    wire [`NCPU_IW-1:0] insn;
    // Insn Bus addressing
-   assign iaddr_o = pc_addr;
+   assign iaddr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
    // Insn Bus reading
    assign ibus_rd_o = 1'b1;
    assign insn = insn_i;
    
-   assign pipe1_ready = insn_ready_i;
+   assign pipe1_ready = insn_ready_i & fetch_jmp_ready;
    
    // Pipeline
    wire [`NCPU_IW-1:0] dec_insn_i;
+   wire [`NCPU_AW-3:0] dec_insn_pc_i;
    
-   ncpu32k_cell_dff_lr #(`NCPU_IW) dff_dec_insn_i (clk_i, rst_n_i, pipe1_flow, insn[`NCPU_IW-1:0], dec_insn_i[`NCPU_IW-1:0]);
-   
+   ncpu32k_cell_dff_lr #(`NCPU_IW) dff_dec_insn_i
+                  (clk_i, rst_n_i, pipe1_flow, insn[`NCPU_IW-1:0], dec_insn_i[`NCPU_IW-1:0]);
+   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_dec_insn_pc_i
+                  (clk_i, rst_n_i, pipe1_flow, pc_addr_nxt[`NCPU_AW-3:0], dec_insn_pc_i[`NCPU_IW-3:0]);
    
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 2: Decode
@@ -316,26 +322,35 @@ module ncpu32k_core(
    // Insn requires Signed imm.
    wire imm_signed = (op_xor_i | op_and_i | op_add_i | op_mu_load | op_mu_store);
    // Insn presents no operand.
-   wire insn_non_op = (op_barr | op_raise | op_ret);
+   wire insn_non_op = (op_barr | op_raise | op_ret | op_jmp_i | op_bt | op_bf);
    
    // Insn writeback register file
-   wire wb_regf = !(op_barr | bu_sel | op_cmp | emu_insn);
+   wire wb_regf = !(op_barr | op_bt|op_bf | op_cmp | emu_insn);
    wire [`NCPU_REG_AW-1:0] wb_reg_addr = f_rd;
    
    // PC-Relative address (sign-extended)
-   wire [`NCPU_AW-1:0] rel21 = {{`NCPU_AW-23{f_rel21[20]}}, f_rel21[20:0], 2'b00};
+   wire [`NCPU_AW-3:0] rel21 = {{`NCPU_AW-23{f_rel21[20]}}, f_rel21[20:0]};
    // PC-Relative jump
    wire bcc = (op_bt | op_bf) & (smr_psr_cc);
    assign fetch_jmp = op_jmp_i | bcc;
    assign fetch_jmp_offset = rel21;
    // Register-Indirect jump
    wire jmp_reg = (op_jmp);
+   // Link address ?
+   wire jmp_link = (op_jmp | op_jmp_i);
    
    // Request operand(s) from Regfile when needed
    assign regf_rs1_re_i = (!insn_non_op);
    assign regf_rs1_addr_i = f_rs1;
    assign regf_rs2_re_i = (!insn_imm & !insn_non_op);
    assign regf_rs2_addr_i = f_rs2;
+   
+   // Operand of jmp insn is Ready.
+   // We assume that operand is acquired after 1 CLKs exactly.
+   wire jmp_ready;
+   ncpu32k_cell_dff_lr #(1) dff_exc_jmp_ready
+                   (clk_i,rst_n_i, 1'b1, jmp_reg, jmp_ready);
+   assign fetch_jmp_ready = (!jmp_reg | jmp_ready);
    
    assign pipe2_ready = 1'b1;
    
@@ -356,6 +371,8 @@ module ncpu32k_core(
    wire exc_wb_regf_i;
    wire [`NCPU_REG_AW-1:0] exc_wb_reg_addr_i;
    wire exc_jmp_reg_i;
+   wire [`NCPU_AW-2:0] exc_insn_pc_i;
+   wire exc_jmp_link_i;
    
    ncpu32k_cell_dff_lr #(1) dff_imm_signed_r
                    (clk_i,rst_n_i, pipe2_flow, imm_signed, imm_signed_r);
@@ -401,6 +418,11 @@ module ncpu32k_core(
 
    ncpu32k_cell_dff_lr #(1) dff_exc_jmp_reg_i
                    (clk_i,rst_n_i, pipe2_flow, jmp_reg, exc_jmp_reg_i);
+   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_exc_insn_pc_i
+               (clk_i, rst_n_i, pipe2_flow, dec_insn_pc_i[`NCPU_AW-3:0], exc_insn_pc_i[`NCPU_IW-3:0]);
+   ncpu32k_cell_dff_lr #(1) dff_exc_jmp_link_i
+                   (clk_i,rst_n_i, pipe2_flow, jmp_link, exc_jmp_link_i);
+
 
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 3: Execution && Load/Store
@@ -502,17 +524,21 @@ module ncpu32k_core(
    // If Load/Store, then Wait for dbus.
    assign pipe3_ready = !(exc_mu_load_i|exc_mu_store_i) | (load_ready | store_ready);
 
+   // Register-operand jmp
+   assign fetch_jmpfar = exc_jmp_reg_i;
+   assign fetch_jmpfar_addr = exc_operand_1_i[`NCPU_AW-1:2]; // TODO unalign check
+   // Link address
+   wire [`NCPU_DW:0] linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {exc_insn_pc_i[`NCPU_AW-3:0], 2'b00}};
+   
    assign regf_rd_i = ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_XOR]}} & lu_xor[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{lu_op_shift}} & lu_shift[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{au_op_adder}} & au_adder[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{exc_mu_load_i}} & mu_load[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{exc_mu_store_i}} & mu_store[`NCPU_DW-1:0]);
+                      ({`NCPU_DW{exc_mu_store_i}} & mu_store[`NCPU_DW-1:0]) |
+                      ({`NCPU_DW{exc_jmp_link_i}} & linkaddr[`NCPU_DW-1:0]);
    
-   // Register-operand jmp
-   assign fetch_jmpfar = exc_jmp_reg_i;
-   assign fetch_jmpfar_addr = {{(`NCPU_AW-`NCPU_DW+1){1'b0}}, exc_operand_1_i[`NCPU_DW-1:0]};
    
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 4: Commit & WriteBack
