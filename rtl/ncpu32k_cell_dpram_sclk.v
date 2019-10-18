@@ -33,7 +33,8 @@ module ncpu32k_cell_dpram_sclk
    input [ADDR_WIDTH-1:0]          waddr,
    input                           we,
    input [DATA_WIDTH-1:0]          din,
-   output [DATA_WIDTH-1:0]         dout
+   output [DATA_WIDTH-1:0]         dout,
+   output                          dout_valid
 );
 
    reg [DATA_WIDTH-1:0]            mem_vector[(1<<ADDR_WIDTH)-1:0];
@@ -84,8 +85,10 @@ module ncpu32k_cell_dpram_sclk
    generate
       if(SYNC_READ) begin :sync_re
          assign dout = re_r ? dout_w : {DATA_WIDTH{1'b0}};
+         assign dout_valid = re_r;
       end else begin
          assign dout = dout_w;
+         assign dout_valid = re;
       end
    endgenerate
 

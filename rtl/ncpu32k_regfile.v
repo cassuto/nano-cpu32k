@@ -30,21 +30,27 @@ module ncpu32k_regfile(
    input [`NCPU_DW-1:0]          rd_i,       // Write Input value
    input                         rd_we_i,    // Write Enable
    output [`NCPU_DW-1:0]         rs1_o,      // Output value of operand #1
-   output [`NCPU_DW-1:0]         rs2_o       // Output value of operand #2
+   output [`NCPU_DW-1:0]         rs2_o,      // Output value of operand #2
+   output                        rs1_valid_o,// Output of operand #1 is valid
+   output                        rs2_valid_o // Output of operand #2 is valid
 );
-
+   localparam CLEAR_ON_INIT = 1;
+   localparam SYNC_READ = 1;
+   localparam ENABLE_BYPASS = 1;
+   
    ncpu32k_cell_dpram_sclk
       #(
          .ADDR_WIDTH                   (`NCPU_REG_AW),
          .DATA_WIDTH                   (`NCPU_DW),
-         .CLEAR_ON_INIT                (1),
-         .SYNC_READ                    (1),
-         .ENABLE_BYPASS                (1)
+         .CLEAR_ON_INIT                (CLEAR_ON_INIT),
+         .SYNC_READ                    (SYNC_READ),
+         .ENABLE_BYPASS                (ENABLE_BYPASS)
          )
       dpram_sclk0
          (
           // Outputs
           .dout                        (rs1_o),
+          .dout_valid                  (rs1_valid_o),
           // Inputs
           .clk_i                       (clk_i),
           .rst_n_i                     (rst_n_i),
@@ -59,14 +65,15 @@ module ncpu32k_regfile(
       #(
          .ADDR_WIDTH                   (`NCPU_REG_AW),
          .DATA_WIDTH                   (`NCPU_DW),
-         .CLEAR_ON_INIT                (1),
-         .SYNC_READ                    (0),
-         .ENABLE_BYPASS                (1)
+         .CLEAR_ON_INIT                (CLEAR_ON_INIT),
+         .SYNC_READ                    (SYNC_READ),
+         .ENABLE_BYPASS                (ENABLE_BYPASS)
          )
       dpram_sclk1
          (
           // Outputs
           .dout                        (rs2_o),
+          .dout_valid                  (rs2_valid_o),
           // Inputs
           .clk_i                       (clk_i),
           .rst_n_i                     (rst_n_i),
