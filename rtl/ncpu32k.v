@@ -94,7 +94,7 @@ module ncpu32k_core(
    
    assign pipe3_flow = pipe3_ready;
    assign pipe2_flow = pipe3_flow & pipe2_ready;
-   assign pipe1_flow = pipe2_flow & pipe1_ready;
+   assign pipe1_flow = (pipe2_flow & pipe1_ready);
    
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 1: Fetch
@@ -132,7 +132,7 @@ module ncpu32k_core(
    ncpu32k_cell_dff_lr #(`NCPU_IW) dff_dec_insn_i
                   (clk_i, rst_n_i, pipe1_flow, insn[`NCPU_IW-1:0], dec_insn_i[`NCPU_IW-1:0]);
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_dec_insn_pc_i
-                  (clk_i, rst_n_i, pipe1_flow, pc_addr_nxt[`NCPU_AW-3:0], dec_insn_pc_i[`NCPU_IW-3:0]);
+                  (clk_i, rst_n_i, pipe1_flow, pc_addr_nxt[`NCPU_AW-3:0], dec_insn_pc_i[`NCPU_AW-3:0]);
    
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 2: Decode
@@ -345,12 +345,15 @@ module ncpu32k_core(
    assign regf_rs2_re_i = (!insn_imm & !insn_non_op);
    assign regf_rs2_addr_i = f_rs2;
    
-   // Operand of jmp insn is Ready.
-   // We assume that operand is acquired after 1 CLKs exactly.
-   wire jmp_ready;
+   // Is Operand of jmp insn Ready?
+   // Generate set-PC strobe.
+   // NOTE! We assume that operand is acquired after 1 CLKs exactly.
+   wire jmp_ready_w;
    ncpu32k_cell_dff_lr #(1) dff_exc_jmp_ready
-                   (clk_i,rst_n_i, 1'b1, jmp_reg, jmp_ready);
-   assign fetch_jmp_ready = (!jmp_reg | jmp_ready);
+                   (clk_i,rst_n_i, 1'b1, jmp_reg, jmp_ready_w);
+   ncpu32k_cell_dff_lr #(1) dff_fetch_jmpfar
+                   (clk_i,rst_n_i, 1'b1, !fetch_jmp_ready, fetch_jmpfar);
+   assign fetch_jmp_ready = (!jmp_reg | jmp_ready_w);
    
    assign pipe2_ready = 1'b1;
    
@@ -371,7 +374,7 @@ module ncpu32k_core(
    wire exc_wb_regf_i;
    wire [`NCPU_REG_AW-1:0] exc_wb_reg_addr_i;
    wire exc_jmp_reg_i;
-   wire [`NCPU_AW-2:0] exc_insn_pc_i;
+   wire [`NCPU_AW-3:0] exc_insn_pc_i;
    wire exc_jmp_link_i;
    
    ncpu32k_cell_dff_lr #(1) dff_imm_signed_r
@@ -419,7 +422,7 @@ module ncpu32k_core(
    ncpu32k_cell_dff_lr #(1) dff_exc_jmp_reg_i
                    (clk_i,rst_n_i, pipe2_flow, jmp_reg, exc_jmp_reg_i);
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_exc_insn_pc_i
-               (clk_i, rst_n_i, pipe2_flow, dec_insn_pc_i[`NCPU_AW-3:0], exc_insn_pc_i[`NCPU_IW-3:0]);
+               (clk_i, rst_n_i, pipe2_flow, dec_insn_pc_i[`NCPU_AW-3:0], exc_insn_pc_i[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(1) dff_exc_jmp_link_i
                    (clk_i,rst_n_i, pipe2_flow, jmp_link, exc_jmp_link_i);
 
@@ -490,6 +493,8 @@ module ncpu32k_core(
 
    wire au_op_adder = exc_au_opc_bus_i[`NCPU_AU_ADD] | adder_sub;
 
+   
+   
    // Multiplier
 `ifdef ENABLE_MUL
 `endif
@@ -525,10 +530,9 @@ module ncpu32k_core(
    assign pipe3_ready = !(exc_mu_load_i|exc_mu_store_i) | (load_ready | store_ready);
 
    // Register-operand jmp
-   assign fetch_jmpfar = exc_jmp_reg_i;
    assign fetch_jmpfar_addr = exc_operand_1_i[`NCPU_AW-1:2]; // TODO unalign check
-   // Link address
-   wire [`NCPU_DW:0] linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {exc_insn_pc_i[`NCPU_AW-3:0], 2'b00}};
+   // Link address (offset(jmp)+1), which indicates the next insn of current jmp insn.
+   wire [`NCPU_DW:0] linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {exc_insn_pc_i[`NCPU_AW-3:0]+1'b1, 2'b00}};
    
    assign regf_rd_i = ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{exc_lu_opc_bus_i[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |

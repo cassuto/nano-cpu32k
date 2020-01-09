@@ -57,7 +57,7 @@ module ncpu32k_regfile(
           .raddr                       (rs1_addr_i),
           .re                          (rs1_re_i),
           .waddr                       (rd_addr_i),
-          .we                          (rd_we_i),
+          .we                          (rd_we_i & (|rd_addr_i)),
           .din                         (rd_i)
          ); 
 
@@ -80,7 +80,7 @@ module ncpu32k_regfile(
           .raddr                       (rs2_addr_i),
           .re                          (rs2_re_i),
           .waddr                       (rd_addr_i),
-          .we                          (rd_we_i),
+          .we                          (rd_we_i & (|rd_addr_i)),
           .din                         (rd_i)
          ); 
          
