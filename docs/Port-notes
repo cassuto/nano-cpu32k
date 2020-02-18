@@ -18,7 +18,7 @@
 	* bfd/archures.c:
 		Define architecture `bfd_arch_ncpu32k`, and machine id `bfd_mach_ncpu32k`
 		This file is used to generates "bfd/libbfd.h", "bfd/bfd-in2.h".
-		Command: `cd build/bfd && make headers` to regenerate these files.
+		`cd build/bfd && make headers` to regenerate these files.
 
 	* bfd/cpu-ncpu32k.c:
 		Define architecture parameters.
@@ -95,3 +95,21 @@
 	* config.guess
 	* config.sub
 	* configure.ac -> configure
+
+-----------------[ Linux ]-----------------
+
+== arch ==
+	* arch/ncpu32k
+
+== drivers ===
+	* drivers/irq-ncpu32k-irqc.c
+	* drivers/Kconfig
+	* drivers/Makefile
+
+== include ==
+	* include/uapi/linux/audit.h
+	* include/uapi/linux/elf-em.h
+
+== Debugging stuffs ==
+	# ATA_DEBUG - include/linux/libata.h 
+	# ATA_VERBOSE_DEBUG - include/linux/libata.h 

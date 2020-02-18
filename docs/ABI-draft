@@ -1,0 +1,58 @@
+Basic Data types:
+	Word length = 32 bits
+	size of:
+		short = 16 bits
+		int = 32 bits
+		long = 32 bits
+		long long = 64 bits
+		float = 32 bits
+		double = 64 bits
+		long double = 64 bits
+		void* = 32bits
+	char is signed by default.
+	
+Registers:
+
+0    1   2  3  4  5  6  7  8  9  10 11  12   13 14  ...
+nil  lnk sp fp v0 v1 v2 v3 v4 v5 rv rvh rtls    rgot 
+
+2N = Callee-saved register
+2N+1 started from r11(rvh), lnk, sp, rtls, rgot, v0-v5, rv
+	Caller-saved (callee-clobbered, can be used without being saved.) register.
+
+12 = TLS
+14 = GOT
+
+Stack:
+	Stack grows Downward:
+		pushing a word on the stack makes the stack pointer a smaller address.
+		
+	Frame grows Downward:
+		the nominal address of the stack frame is at the
+		high-address end of the local variables; that is, each additional local
+		variable allocated goes at a more negative offset in the frame.
+
+Machine:
+	MAX page size = 0x2000 B
+
+Relocations:
+  BFD_RELOC_NCPU32K_INSN_LO14         : low 14-bit operand in insn.
+  BFD_RELOC_NCPU32K_INSN_HI14         : high 14-bit operand in insn.
+  BFD_RELOC_NCPU32K_INSN_LO18         : low 18-bit operand in insn.
+  BFD_RELOC_NCPU32K_INSN_HI18         : high 18-bit operand in insn.
+  BFD_RELOC_NCPU32K_INSN_REL26       : 26bit PC-relative in instruction (REL26)
+  
+ for ELF PIC:
+  BFD_RELOC_NCPU32K_GOT_PCREL_HI18	  : GOT Address PC-relative high 18-bit
+  BFD_RELOC_NCPU32K_GOT_PCREL_LO14	  : GOT Address PC-relative low 18-bit
+  BFD_RELOC_NCPU32K_PLT_REL26		  : PLT Entry
+  BFD_RELOC_NCPU32K_GOTOFF_HI18
+  BFD_RELOC_NCPU32K_GOTOFF_LO14
+  BFD_RELOC_NCPU32K_GOT14
+
+Thread Local Store (TLS):
+	Four TLS modes:
+		tgd: Global Dynamic model
+		tld: Local Dynamic model
+		tie: Initial Exec model
+		tle: Local Exec model
