@@ -30,7 +30,8 @@ module ncpu32k_cell_pipebuf
    input                      in_valid,
    output                     in_ready,
    output                     out_valid,
-   input                      out_ready
+   input                      out_ready,
+   output                     cas
 );
 
    wire push = (in_valid & in_ready);
@@ -54,5 +55,7 @@ module ncpu32k_cell_pipebuf
          assign in_ready = ~out_valid;
       end
    endgenerate
+   
+   wire cas = push;
    
 endmodule
