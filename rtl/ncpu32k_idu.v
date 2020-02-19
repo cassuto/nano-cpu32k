@@ -18,7 +18,7 @@
 module ncpu32k_idu(         
    input                      clk,
    input                      rst_n,
-   output                     idu_ready_in, /* Insn is accepted by idu */
+   output                     idu_ready_in, /* Insn is accepted by idu  */
    input                      idu_valid_in, /* Insn is prestented at idu's input */
    input [`NCPU_IW-1:0]       idu_insn,
    output [`NCPU_AW-3:0]      idu_insn_pc,
@@ -260,16 +260,16 @@ module ncpu32k_idu(
    assign idu_ready_in = ieu_ready_in;
    
    ncpu32k_cell_dff_lr #(1) dff_ieu_valid_in
-                   (clk_i,rst_n_i, idu_valid_in, idu_valid_in, ieu_valid_in);
+                   (clk_i,rst_n_i, ieu_ready_in, idu_valid_in, ieu_valid_in);
    
    // Pipeline
    wire                  imm_signed_r;
    wire [15:0]           imm16_r;
 
    ncpu32k_cell_dff_lr #(1) dff_imm_signed_r
-                   (clk_i,rst_n_i, idu_valid_in, imm_signed, imm_signed_r);
+                   (clk_i,rst_n_i, ieu_ready_in, imm_signed, imm_signed_r);
    ncpu32k_cell_dff_lr #(16) dff_imm16_r
-                   (clk_i,rst_n_i, idu_valid_in, f_imm16[15:0], imm16_r[15:0]);
+                   (clk_i,rst_n_i, ieu_ready_in, f_imm16[15:0], imm16_r[15:0]);
 
    // Sign-extended Integer
    wire [`NCPU_DW-1:0] simm16_r = {{`NCPU_DW-16{imm16_r[15]}}, imm16_r[15:0]};
@@ -283,36 +283,36 @@ module ncpu32k_idu(
    assign ieu_operand_2_i = (rs2_valid_o ? rs2_o : imm_oper_r);
 
    ncpu32k_cell_dff_lr #(`NCPU_LU_IOPW) dff_ieu_lu_opc_bus_i
-                   (clk_i,rst_n_i, idu_valid_in, lu_opc_bus[`NCPU_LU_IOPW-1:0], ieu_lu_opc_bus_i[`NCPU_LU_IOPW-1:0]);
+                   (clk_i,rst_n_i, ieu_ready_in, lu_opc_bus[`NCPU_LU_IOPW-1:0], ieu_lu_opc_bus_i[`NCPU_LU_IOPW-1:0]);
    ncpu32k_cell_dff_lr #(`NCPU_AU_IOPW) dff_ieu_au_opc_bus_i
-                   (clk_i,rst_n_i, idu_valid_in, au_opc_bus[`NCPU_AU_IOPW-1:0], ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]);
+                   (clk_i,rst_n_i, ieu_ready_in, au_opc_bus[`NCPU_AU_IOPW-1:0], ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]);
    ncpu32k_cell_dff_lr #(`NCPU_EU_IOPW) dff_ieu_eu_opc_bus_i
-                   (clk_i,rst_n_i, idu_valid_in, eu_opc_bus[`NCPU_EU_IOPW-1:0], ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]);
+                   (clk_i,rst_n_i, ieu_ready_in, eu_opc_bus[`NCPU_EU_IOPW-1:0], ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]);
 
    ncpu32k_cell_dff_lr #(1) dff_ieu_emu_insn_i
-                   (clk_i,rst_n_i, idu_valid_in, emu_insn, ieu_emu_insn);
+                   (clk_i,rst_n_i, ieu_ready_in, emu_insn, ieu_emu_insn);
                    
    ncpu32k_cell_dff_lr #(1) dff_ieu_mu_load_i
-                   (clk_i,rst_n_i, idu_valid_in, op_mu_load, ieu_mu_load);
+                   (clk_i,rst_n_i, ieu_ready_in, op_mu_load, ieu_mu_load);
    ncpu32k_cell_dff_lr #(1) dff_ieu_mu_store_i
-                   (clk_i,rst_n_i, idu_valid_in, op_mu_store, ieu_mu_store);
+                   (clk_i,rst_n_i, ieu_ready_in, op_mu_store, ieu_mu_store);
    ncpu32k_cell_dff_lr #(1) dff_ieu_mu_barr_i
-                   (clk_i,rst_n_i, idu_valid_in, op_mu_barr, ieu_mu_barr);
+                   (clk_i,rst_n_i, ieu_ready_in, op_mu_barr, ieu_mu_barr);
    ncpu32k_cell_dff_lr #(3) dff_ieu_mu_store_size_i
-                   (clk_i,rst_n_i, idu_valid_in, mu_store_size[2:0], ieu_mu_store_size[2:0]);
+                   (clk_i,rst_n_i, ieu_ready_in, mu_store_size[2:0], ieu_mu_store_size[2:0]);
    ncpu32k_cell_dff_lr #(3) dff_ieu_mu_load_size_i
-                   (clk_i,rst_n_i, idu_valid_in, mu_load_size[2:0], ieu_mu_load_size[2:0]);
+                   (clk_i,rst_n_i, ieu_ready_in, mu_load_size[2:0], ieu_mu_load_size[2:0]);
                    
    ncpu32k_cell_dff_lr #(1) dff_ieu_wb_regf_i
-                   (clk_i,rst_n_i, idu_valid_in, wb_regf, ieu_wb_regf);
+                   (clk_i,rst_n_i, ieu_ready_in, wb_regf, ieu_wb_regf);
    ncpu32k_cell_dff_lr #(`NCPU_REG_AW) dff_ieu_wb_reg_addr_i
-                   (clk_i,rst_n_i, idu_valid_in, wb_reg_addr, ieu_wb_reg_addr);
+                   (clk_i,rst_n_i, ieu_ready_in, wb_reg_addr, ieu_wb_reg_addr);
 
    ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_reg_i
-                   (clk_i,rst_n_i, idu_valid_in, jmp_reg, ieu_jmp_reg);
+                   (clk_i,rst_n_i, ieu_ready_in, jmp_reg, ieu_jmp_reg);
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_ieu_insn_pc_i
-               (clk_i, rst_n_i, idu_valid_in, idu_insn_pc_i[`NCPU_AW-3:0], ieu_insn_pc[`NCPU_AW-3:0]);
+               (clk_i, rst_n_i, ieu_ready_in, idu_insn_pc_i[`NCPU_AW-3:0], ieu_insn_pc[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_link_i
-                   (clk_i,rst_n_i, idu_valid_in, jmp_link, ieu_jmp_link);
+                   (clk_i,rst_n_i, ieu_ready_in, jmp_link, ieu_jmp_link);
 
 endmodule

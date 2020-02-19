@@ -56,6 +56,6 @@ module ncpu32k_cell_pipebuf
       end
    endgenerate
    
-   wire cas = push;
+   assign cas = push;
    
 endmodule
