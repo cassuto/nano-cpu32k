@@ -27,6 +27,9 @@ module handshake_sram
       if(MEMH_FILE !== "") begin :memh_file_not_emp
          $readmemh (MEMH_FILE, mem);
       end
+      in_ready = 1'b0;
+      out_valid = 1'b0;
+      dout = {DW{1'b0}};
    end
 
    wire [DW-1:0] dout_nxt = (size==3'd3) 
