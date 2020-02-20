@@ -49,6 +49,8 @@ module ncpu32k_ifu(
 
    assign ibus_addr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
    
+   assign insn = ibus_o;
+   
    // Predecoder
    ncpu32k_ipdu predecoder
       (
@@ -69,7 +71,7 @@ module ncpu32k_ifu(
       (
          .clk        (clk),
          .rst_n      (rst_n),
-         .din        (ibus_o),
+         .din        (insn),
          .dout       (idu_insn),
          .in_valid   (ibus_out_valid),
          .in_ready   (ibus_out_ready),
@@ -80,5 +82,4 @@ module ncpu32k_ifu(
       
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_insn_pc
                    (clk,rst_n, pipebuf_cas, pc_addr_nxt, idu_insn_pc);
-   
 endmodule

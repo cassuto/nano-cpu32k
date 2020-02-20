@@ -32,6 +32,8 @@ module ncpu32k_idu(
    output [`NCPU_REG_AW-1:0]  regf_rs2_addr,
    input [`NCPU_DW-1:0]       regf_rs2_dout,
    input                      regf_rs2_dout_valid,
+   output                     ifu_jmpfar,
+   output [`NCPU_AW-3:0]      ifu_jmpfar_addr,
    input                      ieu_in_ready, /* ieu is ready to accepted ops  */
    output                     ieu_in_valid, /* ops is presented at ieu's input */
    output [`NCPU_DW-1:0]      ieu_operand_1,
@@ -48,7 +50,6 @@ module ncpu32k_idu(
    output [2:0]               ieu_mu_load_size,
    output                     ieu_wb_regf,
    output [`NCPU_REG_AW-1:0]  ieu_wb_reg_addr,
-   output                     ieu_jmpreg,
    output [`NCPU_AW-3:0]      ieu_insn_pc,
    output                     ieu_jmplink
 );
@@ -63,6 +64,8 @@ module ncpu32k_idu(
    wire [20:0] f_rel26 = idu_insn[31:6];
    
    // VIRT insns
+   // Please Reserve `ifdef...`else...`endif block for runtime switching
+   // to be implemented in future.
 `ifdef ENABLE_ASR
    wire enable_asr = 1'b1;
    wire enable_asr_i = 1'b1;
@@ -249,6 +252,9 @@ module ncpu32k_idu(
    // Link address ?
    wire jmp_link = (op_jmp | idu_jmprel_link);
    
+   // Register-operand jmp
+   assign ifu_jmpfar_addr = regf_rs1_dout[`NCPU_AW-1:2]; // no unalign check
+   
    // Request operand(s) from Regfile when needed
    // Note that op_mu_store is a special case 
    assign regf_rs1_re = (~insn_non_op);
@@ -331,8 +337,9 @@ module ncpu32k_idu(
    ncpu32k_cell_dff_lr #(`NCPU_REG_AW) dff_ieu_wb_reg_addr
                    (clk,rst_n, pipebuf_cas, wb_reg_addr, ieu_wb_reg_addr);
 
-   ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_reg
-                   (clk,rst_n, pipebuf_cas, jmp_reg, ieu_jmpreg);
+   ncpu32k_cell_dff_lr #(1) dff_ifu_jmpfar
+                   (clk,rst_n, pipebuf_cas, jmp_reg, ifu_jmpfar);
+                   
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_ieu_insn_pc
                (clk, rst_n, pipebuf_cas, idu_insn_pc[`NCPU_AW-3:0], ieu_insn_pc[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_link

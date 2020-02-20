@@ -44,7 +44,6 @@ module ncpu32k_ieu(
    input                      ieu_jmpreg,
    input [`NCPU_AW-3:0]       ieu_insn_pc,
    input                      ieu_jmplink,
-   output [`NCPU_AW-3:0]      ifu_jmpfar_addr,
    output [`NCPU_REG_AW-1:0]  regf_din_addr,
    output [`NCPU_DW-1:0]      regf_din,
    output                     regf_we
@@ -122,9 +121,6 @@ module ncpu32k_ieu(
        .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
        .wb_mu_in_ready                  (wb_mu_in_ready));
         
-   // Register-operand jmp
-   assign ifu_jmpfar_addr = ieu_operand_1[`NCPU_AW-1:2]; // TODO! unalign check
-   
    // Link address (offset(jmp)+1), which indicates the next insn of current jmp insn.
    wire [`NCPU_DW:0] linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {ieu_insn_pc[`NCPU_AW-3:0]+1'b1, 2'b00}};
    

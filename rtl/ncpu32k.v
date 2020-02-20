@@ -37,6 +37,8 @@ module ncpu32k_core(
    wire                 idu_in_valid;           // From ifu of ncpu32k_ifu.v
    wire [`NCPU_IW-1:0]  idu_insn;               // From ifu of ncpu32k_ifu.v
    wire [`NCPU_AW-3:0]  idu_insn_pc;            // From ifu of ncpu32k_ifu.v, ...
+   wire                 idu_jmprel_link;        // From ifu of ncpu32k_ifu.v
+   wire                 idu_op_jmprel;          // From ifu of ncpu32k_ifu.v
    wire [`NCPU_AU_IOPW-1:0] ieu_au_opc_bus;     // From idu of ncpu32k_idu.v
    wire                 ieu_emu_insn;           // From idu of ncpu32k_idu.v
    wire [`NCPU_EU_IOPW-1:0] ieu_eu_opc_bus;     // From idu of ncpu32k_idu.v
@@ -44,7 +46,6 @@ module ncpu32k_core(
    wire                 ieu_in_valid;           // From idu of ncpu32k_idu.v
    wire [`NCPU_AW-3:0]  ieu_insn_pc;            // From idu of ncpu32k_idu.v
    wire                 ieu_jmplink;            // From idu of ncpu32k_idu.v
-   wire                 ieu_jmpreg;             // From idu of ncpu32k_idu.v
    wire [`NCPU_LU_IOPW-1:0] ieu_lu_opc_bus;     // From idu of ncpu32k_idu.v
    wire                 ieu_mu_barr;            // From idu of ncpu32k_idu.v
    wire                 ieu_mu_load;            // From idu of ncpu32k_idu.v
@@ -56,9 +57,8 @@ module ncpu32k_core(
    wire [`NCPU_DW-1:0]  ieu_operand_3;          // From idu of ncpu32k_idu.v
    wire [`NCPU_REG_AW-1:0] ieu_wb_reg_addr;     // From idu of ncpu32k_idu.v
    wire                 ieu_wb_regf;            // From idu of ncpu32k_idu.v
-   wire [`NCPU_AW-3:0]  ifu_jmpfar_addr;        // From ieu of ncpu32k_ieu.v
-   wire                 ifu_jmprel;             // From idu of ncpu32k_idu.v
-   wire [`NCPU_AW-3:0]  ifu_jmprel_offset;      // From idu of ncpu32k_idu.v
+   wire                 ifu_jmpfar;             // From idu of ncpu32k_idu.v
+   wire [`NCPU_AW-3:0]  ifu_jmpfar_addr;        // From idu of ncpu32k_idu.v
    wire [`NCPU_DW-1:0]  regf_din;               // From ieu of ncpu32k_ieu.v
    wire [`NCPU_REG_AW-1:0] regf_din_addr;       // From ieu of ncpu32k_ieu.v
    wire [`NCPU_REG_AW-1:0] regf_rs1_addr;       // From idu of ncpu32k_idu.v
@@ -102,7 +102,7 @@ module ncpu32k_core(
        .regf_din                        (regf_din[`NCPU_DW-1:0]),
        .regf_rd_we                      (regf_rd_we));
    
-   // SMR.PSR.CC - Condition Control Register
+   // MSR.PSR.CC - Condition Control Register
    wire                 msr_psr_cc_i;
    wire                 msr_psr_cc;
    wire                 msr_psr_cc_r;
@@ -110,6 +110,7 @@ module ncpu32k_core(
    
    ncpu32k_cell_dff_lr #(1) dff_msr_psr_cc (clk_i, rst_n_i, msr_psr_cc_we, msr_psr_cc_i, msr_psr_cc_r);
    
+   // MSR Bypass
    assign msr_psr_cc = (msr_psr_cc_we ? msr_psr_cc_i : msr_psr_cc_r);
    
    
@@ -125,16 +126,17 @@ module ncpu32k_core(
        .idu_in_valid                    (idu_in_valid),
        .idu_insn                        (idu_insn[`NCPU_IW-1:0]),
        .idu_insn_pc                     (idu_insn_pc[`NCPU_AW-3:0]),
+       .idu_jmprel_link                 (idu_jmprel_link),
+       .idu_op_jmprel                   (idu_op_jmprel),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
        .ibus_out_valid                  (ibus_out_valid),
        .ibus_o                          (ibus_o[`NCPU_IW-1:0]),
-       .ifu_jmprel                      (ifu_jmprel),
        .ifu_jmpfar                      (ifu_jmpfar),
-       .ifu_jmp_ready                   (ifu_jmp_ready),
-       .ifu_jmprel_offset               (ifu_jmprel_offset[`NCPU_AW-3:0]),
        .ifu_jmpfar_addr                 (ifu_jmpfar_addr[`NCPU_AW-3:0]),
+       .ifu_jmp_ready                   (ifu_jmp_ready),
+       .msr_psr_cc                      (msr_psr_cc),
        .idu_in_ready                    (idu_in_ready));
    
    /////////////////////////////////////////////////////////////////////////////
@@ -146,12 +148,12 @@ module ncpu32k_core(
        // Outputs
        .idu_in_ready                    (idu_in_ready),
        .idu_insn_pc                     (idu_insn_pc[`NCPU_AW-3:0]),
-       .ifu_jmprel                      (ifu_jmprel),
-       .ifu_jmprel_offset               (ifu_jmprel_offset[`NCPU_AW-3:0]),
        .regf_rs1_re                     (regf_rs1_re),
        .regf_rs1_addr                   (regf_rs1_addr[`NCPU_REG_AW-1:0]),
        .regf_rs2_re                     (regf_rs2_re),
        .regf_rs2_addr                   (regf_rs2_addr[`NCPU_REG_AW-1:0]),
+       .ifu_jmpfar                      (ifu_jmpfar),
+       .ifu_jmpfar_addr                 (ifu_jmpfar_addr[`NCPU_AW-3:0]),
        .ieu_in_valid                    (ieu_in_valid),
        .ieu_operand_1                   (ieu_operand_1[`NCPU_DW-1:0]),
        .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),
@@ -167,7 +169,6 @@ module ncpu32k_core(
        .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
        .ieu_wb_regf                     (ieu_wb_regf),
        .ieu_wb_reg_addr                 (ieu_wb_reg_addr[`NCPU_REG_AW-1:0]),
-       .ieu_jmpreg                      (ieu_jmpreg),
        .ieu_insn_pc                     (ieu_insn_pc[`NCPU_AW-3:0]),
        .ieu_jmplink                     (ieu_jmplink),
        // Inputs
@@ -175,11 +176,12 @@ module ncpu32k_core(
        .rst_n                           (rst_n),
        .idu_in_valid                    (idu_in_valid),
        .idu_insn                        (idu_insn[`NCPU_IW-1:0]),
+       .idu_op_jmprel                   (idu_op_jmprel),
+       .idu_jmprel_link                 (idu_jmprel_link),
        .regf_rs1_dout                   (regf_rs1_dout[`NCPU_DW-1:0]),
        .regf_rs1_dout_valid             (regf_rs1_dout_valid),
        .regf_rs2_dout                   (regf_rs2_dout[`NCPU_DW-1:0]),
        .regf_rs2_dout_valid             (regf_rs2_dout_valid),
-       .msr_psr_cc                      (msr_psr_cc),
        .ieu_in_ready                    (ieu_in_ready));
    
 
@@ -196,7 +198,6 @@ module ncpu32k_core(
        .dbus_o                          (dbus_o[`NCPU_DW-1:0]),
        .dbus_size_o                     (dbus_size_o[2:0]),
        .ieu_in_ready                    (ieu_in_ready),
-       .ifu_jmpfar_addr                 (ifu_jmpfar_addr[`NCPU_AW-3:0]),
        .regf_din_addr                   (regf_din_addr[`NCPU_REG_AW-1:0]),
        .regf_din                        (regf_din[`NCPU_DW-1:0]),
        .regf_we                         (regf_we),
