@@ -18,18 +18,17 @@
 module ncpu32k_ifu(         
    input                   clk,
    input                   rst_n,
-   input                   ibus_valid_out, /* Insn is presented at ibus */
-   output                  ibus_ready_out, /* Insn is accepted by ifu */
-   output                  ibus_rd_o,
+   input                   ibus_out_valid, /* Insn is presented at ibus */
+   output                  ibus_out_ready, /* ifu is ready to accepted Insn */
    output [`NCPU_AW-1:0]   ibus_addr_o,
-   input [`NCPU_IW-1:0]    ibus_i,
+   input [`NCPU_IW-1:0]    ibus_o,
    input                   ifu_jmprel,
    input                   ifu_jmpfar,
    input                   ifu_jmp_ready,
    input [`NCPU_AW-3:0]    ifu_jmprel_offset,
    input [`NCPU_AW-3:0]    ifu_jmpfar_addr,
-   input                   idu_ready_in, /* Insn is accepted by idu */
-   output                  idu_valid_in, /* Insn is prestented at idu's input */
+   input                   idu_in_ready, /* idu is ready to accepted Insn */
+   output                  idu_in_valid, /* Insn is prestented at idu's input */
    output [`NCPU_IW-1:0]   idu_insn,
    output [`NCPU_AW-3:0]   idu_insn_pc
 );
@@ -40,18 +39,29 @@ module ncpu32k_ifu(
    
    // Program Counter Register
    ncpu32k_cell_dff_lr #(`NCPU_AW-2, (`NCPU_ERST_VECTOR>>2)-1'b1) dff_pc_addr
-                   (clk, rst_n, ibus_ready_out, pc_addr_nxt[`NCPU_AW-3:0], pc_addr_r[`NCPU_AW-3:0]);
+                   (clk, rst_n, ibus_out_ready, pc_addr_nxt[`NCPU_AW-3:0], pc_addr_r[`NCPU_AW-3:0]);
    assign pc_addr_nxt = ifu_jmpfar ? ifu_jmpfar_addr :
                     pc_addr_r + (ifu_jmprel ? ifu_jmprel_offset : 1'b1);
 
-   // Insn Bus addressing
    assign ibus_addr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
-   // Insn Bus reading
-   assign ibus_rd_o = 1'b1;
-   assign idu_insn = ibus_i;
-   assign idu_insn_pc = pc_addr_nxt;
    
-   assign ibus_ready_out = idu_ready_in;
-   assign idu_valid_in = ibus_valid_out;
+   // Pipeline
+   wire pipebuf_cas;
+   
+   ncpu32k_cell_pipebuf #(`NCPU_IW) pipebuf_ifu
+      (
+         .clk        (clk),
+         .rst_n      (rst_n),
+         .din        (ibus_o),
+         .dout       (idu_insn),
+         .in_valid   (ibus_out_valid),
+         .in_ready   (ibus_out_ready),
+         .out_valid  (idu_in_valid),
+         .out_ready  (idu_in_ready),
+         .cas        (pipebuf_cas)
+      );
+      
+   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_insn_pc
+                   (clk,rst_n, pipebuf_cas, pc_addr_nxt, idu_insn_pc);
    
 endmodule

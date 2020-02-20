@@ -17,7 +17,7 @@
 
 module ncpu32k_ie_mu
 #(
-   parameter ENABLE_PIPEBUF_BYPASS = 0
+   parameter ENABLE_PIPEBUF_BYPASS = 1
 )
 (         
    input                      clk,
@@ -40,8 +40,8 @@ module ncpu32k_ie_mu
    input [2:0]                ieu_mu_store_size,
    input [2:0]                ieu_mu_load_size,
    output [`NCPU_DW-1:0]      mu_load,
-   input                      wb_in_ready, /* WB is ready to accept data */
-   output                     wb_in_valid /* data is presented at WB'input   */
+   input                      wb_mu_in_ready, /* WB is ready to accept data */
+   output                     wb_mu_in_valid /* data is presented at WB'input   */
 );
   
    assign dbus_addr_o = ieu_operand_1 + ieu_operand_2;
@@ -73,7 +73,7 @@ module ncpu32k_ie_mu
    assign push = ieu_mu_in_ready & ieu_mu_in_valid;
    assign pop_dbus = ieu_mu_store ? (dbus_in_ready & dbus_in_valid) :
                      ieu_mu_load ? (dbus_out_ready & dbus_out_valid) : 1'b1;
-   assign pop_wb = wb_in_ready & wb_in_valid;
+   assign pop_wb = wb_mu_in_ready & wb_mu_in_valid;
    
    assign busy_nxt = push | ~(pop_dbus & pop_wb);
    
@@ -85,7 +85,7 @@ module ncpu32k_ie_mu
       end
    endgenerate
    
-   assign wb_in_valid = pop_dbus;
+   assign wb_mu_in_valid = pop_dbus;
    
    assign dbus_in_valid = ieu_mu_store & busy_r;
    assign dbus_out_ready = ieu_mu_load & busy_r;

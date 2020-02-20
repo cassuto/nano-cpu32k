@@ -20,19 +20,19 @@
 `include "ncpu32k_config.h"
 
 module ncpu32k_regfile(
-   input                         clk_i,
-   input                         rst_n_i,
-   input [`NCPU_REG_AW-1:0]      rs1_addr_i, // Address for operand #1
-   input [`NCPU_REG_AW-1:0]      rs2_addr_i, // Address for operand #2
-   input                         rs1_re_i,   // Read Enable of operand #1
-   input                         rs2_re_i,   // Read Enable of operand #2
-   input [`NCPU_REG_AW-1:0]      rd_addr_i,  // Write address
-   input [`NCPU_DW-1:0]          rd_i,       // Write Input value
-   input                         rd_we_i,    // Write Enable
-   output [`NCPU_DW-1:0]         rs1_o,      // Output value of operand #1
-   output [`NCPU_DW-1:0]         rs2_o,      // Output value of operand #2
-   output                        rs1_valid_o,// Output of operand #1 is valid
-   output                        rs2_valid_o // Output of operand #2 is valid
+   input                         clk,
+   input                         rst_n,
+   input [`NCPU_REG_AW-1:0]      regf_rs1_addr, // Address for operand #1
+   input [`NCPU_REG_AW-1:0]      regf_rs2_addr, // Address for operand #2
+   input                         regf_rs1_re,   // Read Enable of operand #1
+   input                         regf_rs2_re,   // Read Enable of operand #2
+   input [`NCPU_REG_AW-1:0]      regf_din_addr,  // Write address
+   input [`NCPU_DW-1:0]          regf_din,       // Write Input value
+   input                         regf_rd_we,    // Write Enable
+   output [`NCPU_DW-1:0]         regf_rs1_dout,      // Output value of operand #1
+   output [`NCPU_DW-1:0]         regf_rs2_dout,      // Output value of operand #2
+   output                        regf_rs1_valid,// Output of operand #1 is valid
+   output                        regf_rs2_valid // Output of operand #2 is valid
 );
    localparam CLEAR_ON_INIT = 1;
    localparam SYNC_READ = 1;
@@ -49,16 +49,16 @@ module ncpu32k_regfile(
       dpram_sclk0
          (
           // Outputs
-          .dout                        (rs1_o),
-          .dout_valid                  (rs1_valid_o),
+          .dout                        (regf_rs1_dout),
+          .dout_valid                  (regf_rs1_valid),
           // Inputs
-          .clk_i                       (clk_i),
-          .rst_n_i                     (rst_n_i),
-          .raddr                       (rs1_addr_i),
-          .re                          (rs1_re_i),
-          .waddr                       (rd_addr_i),
-          .we                          (rd_we_i & (|rd_addr_i)),
-          .din                         (rd_i)
+          .clk_i                       (clk),
+          .rst_n_i                     (rst_n),
+          .raddr                       (regf_rs1_addr),
+          .re                          (regf_rs1_re),
+          .waddr                       (regf_din_addr),
+          .we                          (regf_rd_we & (|regf_din_addr)),
+          .din                         (regf_din)
          ); 
 
    ncpu32k_cell_dpram_sclk
@@ -72,16 +72,16 @@ module ncpu32k_regfile(
       dpram_sclk1
          (
           // Outputs
-          .dout                        (rs2_o),
-          .dout_valid                  (rs2_valid_o),
+          .dout                        (regf_rs2_dout),
+          .dout_valid                  (regf_rs2_valid),
           // Inputs
-          .clk_i                       (clk_i),
-          .rst_n_i                     (rst_n_i),
-          .raddr                       (rs2_addr_i),
-          .re                          (rs2_re_i),
-          .waddr                       (rd_addr_i),
-          .we                          (rd_we_i & (|rd_addr_i)),
-          .din                         (rd_i)
+          .clk_i                       (clk),
+          .rst_n_i                     (rst_n),
+          .raddr                       (regf_rs2_addr),
+          .re                          (regf_rs2_re),
+          .waddr                       (regf_din_addr),
+          .we                          (regf_rd_we & (|regf_din_addr)),
+          .din                         (regf_din)
          ); 
          
 endmodule

@@ -18,16 +18,14 @@
 module ncpu32k_ie_au(         
    input                      clk,
    input                      rst_n,
-   output                     ie_au_ready_in, /* ops is accepted by ie_au */
-   input                      ie_au_valid_in, /* ops is presented at ie_au's input */
-   output [`NCPU_DW-1:0]      ieu_operand_1,
-   output [`NCPU_DW-1:0]      ieu_operand_2,
-   output [`NCPU_AU_IOPW-1:0] ieu_au_opc_bus,
+   input [`NCPU_DW-1:0]       ieu_operand_1,
+   input [`NCPU_DW-1:0]       ieu_operand_2,
+   input [`NCPU_AU_IOPW-1:0]  ieu_au_opc_bus,
+   output                     au_op_adder,
+   output [`NCPU_DW-1:0]      au_adder,
+   output [`NCPU_DW-1:0]      au_mul,
+   output [`NCPU_DW-1:0]      au_div
 );
-
-   wire [`NCPU_DW-1:0] au_adder;
-   wire [`NCPU_DW-1:0] au_mul;
-   wire [`NCPU_DW-1:0] au_div;
    
    // Full Adder
    wire [`NCPU_DW-1:0] adder_operand2_com;
@@ -36,23 +34,22 @@ module ncpu32k_ie_au(
    wire                adder_carry_out;
    wire                adder_overflow;
    
-   assign adder_sub = (exc_au_opc_bus_i[`NCPU_AU_SUB]);
+   assign adder_sub = (ieu_au_opc_bus[`NCPU_AU_SUB]);
    assign adder_carry_in = adder_sub;
-   assign adder_operand2_com = adder_sub ? ~exc_operand_2_i : exc_operand_2_i;
+   assign adder_operand2_com = adder_sub ? ~ieu_operand_2 : ieu_operand_2;
 
-   assign {adder_carry_out, au_adder} = exc_operand_1_i + adder_operand2_com + {{`NCPU_DW-1{1'b0}}, adder_carry_in};
+   assign {adder_carry_out, au_adder} = ieu_operand_1 + adder_operand2_com + {{`NCPU_DW-1{1'b0}}, adder_carry_in};
 
-   assign adder_overflow = (exc_operand_1_i[`NCPU_DW-1] == adder_operand2_com[`NCPU_DW-1]) &
-                          (exc_operand_1_i[`NCPU_DW-1] ^ au_adder[`NCPU_DW-1]);
+   assign adder_overflow = (ieu_operand_1[`NCPU_DW-1] == adder_operand2_com[`NCPU_DW-1]) &
+                          (ieu_operand_1[`NCPU_DW-1] ^ au_adder[`NCPU_DW-1]);
 
-   wire au_op_adder = exc_au_opc_bus_i[`NCPU_AU_ADD] | adder_sub;
+   assign au_op_adder = ieu_au_opc_bus[`NCPU_AU_ADD] | adder_sub;
 
-   
-   
    // Multiplier
 `ifdef ENABLE_MUL
 `endif
 
+   // Divider
 `ifdef ENABLE_DIV
 `endif
 `ifdef ENABLE_DIVU

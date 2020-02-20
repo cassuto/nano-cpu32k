@@ -18,20 +18,26 @@
 module ncpu32k_idu(         
    input                      clk,
    input                      rst_n,
-   output                     idu_ready_in, /* Insn is accepted by idu  */
-   input                      idu_valid_in, /* Insn is prestented at idu's input */
+   output                     idu_in_ready, /* idu is ready to accepted Insn */
+   input                      idu_in_valid, /* Insn is prestented at idu's input */
    input [`NCPU_IW-1:0]       idu_insn,
    output [`NCPU_AW-3:0]      idu_insn_pc,
    output                     ifu_jmprel,
    output [`NCPU_AW-3:0]      ifu_jmprel_offset,
    output                     regf_rs1_re,
    output [`NCPU_REG_AW-1:0]  regf_rs1_addr,
+   input [`NCPU_DW-1:0]       regf_rs1_dout,
+   input                      regf_rs1_dout_valid,
    output                     regf_rs2_re,
    output [`NCPU_REG_AW-1:0]  regf_rs2_addr,
-   input                      ieu_ready_in, /* ops is accepted by ieu */
-   output                     ieu_valid_in, /* ops is presented at ieu's input */
+   input [`NCPU_DW-1:0]       regf_rs2_dout,
+   input                      regf_rs2_dout_valid,
+   input                      msr_psr_cc,
+   input                      ieu_in_ready, /* ieu is ready to accepted ops  */
+   output                     ieu_in_valid, /* ops is presented at ieu's input */
    output [`NCPU_DW-1:0]      ieu_operand_1,
    output [`NCPU_DW-1:0]      ieu_operand_2,
+   output [`NCPU_DW-1:0]      ieu_operand_3,
    output [`NCPU_LU_IOPW-1:0] ieu_lu_opc_bus,
    output [`NCPU_AU_IOPW-1:0] ieu_au_opc_bus,
    output [`NCPU_EU_IOPW-1:0] ieu_eu_opc_bus,
@@ -43,9 +49,9 @@ module ncpu32k_idu(
    output [2:0]               ieu_mu_load_size,
    output                     ieu_wb_regf,
    output [`NCPU_REG_AW-1:0]  ieu_wb_reg_addr,
-   output                     ieu_jmp_reg,
+   output                     ieu_jmpreg,
    output [`NCPU_AW-3:0]      ieu_insn_pc,
-   output                     ieu_jmp_link
+   output                     ieu_jmplink
 );
 
    wire [5:0] f_opcode = idu_insn[5:0];
@@ -223,9 +229,10 @@ module ncpu32k_idu(
    wire bu_sel = (op_jmp|op_jmp_i|op_bt|op_bf);
    
    // Insn is to be emulated
-   wire emu_insn = !((|lu_opc_bus) | (|au_opc_bus) | bu_sel | (|eu_opc_bus) | op_mu_load | op_mu_store | op_mu_barr);
+   wire emu_insn = ~((|lu_opc_bus) | (|au_opc_bus) | bu_sel | (|eu_opc_bus) | op_mu_load | op_mu_store | op_mu_barr);
    
    // Insn presents rs1 and imm as operand.
+   // Note that load and store insn are special cases 
    wire insn_imm = (op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |
                      op_add_i |
                      op_mu_load | op_mu_store |
@@ -236,13 +243,13 @@ module ncpu32k_idu(
    wire insn_non_op = (op_barr | op_raise | op_ret | op_jmp_i | op_bt | op_bf);
    
    // Insn writeback register file
-   wire wb_regf = !(op_barr | op_bt|op_bf | op_cmp | emu_insn);
+   wire wb_regf = ~(op_barr | op_bt|op_bf | op_cmp | emu_insn);
    wire [`NCPU_REG_AW-1:0] wb_reg_addr = f_rd;
    
    // PC-Relative address (sign-extended)
    wire [`NCPU_AW-3:0] rel21 = {{`NCPU_AW-23{f_rel21[20]}}, f_rel21[20:0]};
    // PC-Relative jump
-   wire bcc = (op_bt | op_bf) & (smr_psr_cc);
+   wire bcc = (op_bt | op_bf) & (msr_psr_cc);
    assign ifu_jmprel = op_jmp_i | bcc;
    assign ifu_jmprel_offset = rel21;
    // Register-Indirect jump
@@ -251,25 +258,33 @@ module ncpu32k_idu(
    wire jmp_link = (op_jmp | op_jmp_i);
    
    // Request operand(s) from Regfile when needed
-   assign regf_rs1_re = (!insn_non_op);
+   assign regf_rs1_re = (~insn_non_op);
    assign regf_rs1_addr = f_rs1;
-   assign regf_rs2_re = (!insn_imm & !insn_non_op);
-   assign regf_rs2_addr = f_rs2;
-   
-   // Valid-ready
-   assign idu_ready_in = ieu_ready_in;
-   
-   ncpu32k_cell_dff_lr #(1) dff_ieu_valid_in
-                   (clk_i,rst_n_i, ieu_ready_in, idu_valid_in, ieu_valid_in);
+   assign regf_rs2_re = (~insn_imm & ~insn_non_op) | (op_mu_load|op_mu_store);
+   assign regf_rs2_addr = op_mu_store ? f_rd : f_rs2;
    
    // Pipeline
+   wire pipebuf_cas;
    wire                  imm_signed_r;
    wire [15:0]           imm16_r;
 
+   ncpu32k_cell_pipebuf #(1) pipebuf_ifu
+      (
+         .clk        (clk),
+         .rst_n      (rst_n),
+         .din        (),
+         .dout       (),
+         .in_valid   (idu_in_valid),
+         .in_ready   (idu_in_ready),
+         .out_valid  (ieu_in_valid),
+         .out_ready  (ieu_in_ready),
+         .cas        (pipebuf_cas)
+      );
+   
    ncpu32k_cell_dff_lr #(1) dff_imm_signed_r
-                   (clk_i,rst_n_i, ieu_ready_in, imm_signed, imm_signed_r);
+                   (clk,rst_n, pipebuf_cas, imm_signed, imm_signed_r);
    ncpu32k_cell_dff_lr #(16) dff_imm16_r
-                   (clk_i,rst_n_i, ieu_ready_in, f_imm16[15:0], imm16_r[15:0]);
+                   (clk,rst_n, pipebuf_cas, f_imm16[15:0], imm16_r[15:0]);
 
    // Sign-extended Integer
    wire [`NCPU_DW-1:0] simm16_r = {{`NCPU_DW-16{imm16_r[15]}}, imm16_r[15:0]};
@@ -279,40 +294,45 @@ module ncpu32k_idu(
    wire [`NCPU_DW-1:0] imm_oper_r = (imm_signed_r ? simm16_r : uimm16_r);
    
    // Final Operands
-   assign ieu_operand_1_i = (rs1_valid_o ? rs1_o : imm_oper_r);
-   assign ieu_operand_2_i = (rs2_valid_o ? rs2_o : imm_oper_r);
+   assign ieu_operand_1 = regf_rs1_dout_valid
+                           ? regf_rs1_dout
+                           : imm_oper_r;
+   assign ieu_operand_2 = regf_rs2_dout_valid & (~insn_imm & ~insn_non_op)
+                           ? regf_rs2_dout
+                           : imm_oper_r;
+   assign ieu_operand_3 = (op_mu_store ? regf_rs2_dout : {`NCPU_DW{1'b0}});
 
-   ncpu32k_cell_dff_lr #(`NCPU_LU_IOPW) dff_ieu_lu_opc_bus_i
-                   (clk_i,rst_n_i, ieu_ready_in, lu_opc_bus[`NCPU_LU_IOPW-1:0], ieu_lu_opc_bus_i[`NCPU_LU_IOPW-1:0]);
-   ncpu32k_cell_dff_lr #(`NCPU_AU_IOPW) dff_ieu_au_opc_bus_i
-                   (clk_i,rst_n_i, ieu_ready_in, au_opc_bus[`NCPU_AU_IOPW-1:0], ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]);
-   ncpu32k_cell_dff_lr #(`NCPU_EU_IOPW) dff_ieu_eu_opc_bus_i
-                   (clk_i,rst_n_i, ieu_ready_in, eu_opc_bus[`NCPU_EU_IOPW-1:0], ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]);
+   ncpu32k_cell_dff_lr #(`NCPU_LU_IOPW) dff_ieu_lu_opc_bus
+                   (clk,rst_n, pipebuf_cas, lu_opc_bus[`NCPU_LU_IOPW-1:0], ieu_lu_opc_bus[`NCPU_LU_IOPW-1:0]);
+   ncpu32k_cell_dff_lr #(`NCPU_AU_IOPW) dff_ieu_au_opc_bus
+                   (clk,rst_n, pipebuf_cas, au_opc_bus[`NCPU_AU_IOPW-1:0], ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]);
+   ncpu32k_cell_dff_lr #(`NCPU_EU_IOPW) dff_ieu_eu_opc_bus
+                   (clk,rst_n, pipebuf_cas, eu_opc_bus[`NCPU_EU_IOPW-1:0], ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]);
 
-   ncpu32k_cell_dff_lr #(1) dff_ieu_emu_insn_i
-                   (clk_i,rst_n_i, ieu_ready_in, emu_insn, ieu_emu_insn);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_emu_insn
+                   (clk,rst_n, pipebuf_cas, emu_insn, ieu_emu_insn);
                    
-   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_load_i
-                   (clk_i,rst_n_i, ieu_ready_in, op_mu_load, ieu_mu_load);
-   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_store_i
-                   (clk_i,rst_n_i, ieu_ready_in, op_mu_store, ieu_mu_store);
-   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_barr_i
-                   (clk_i,rst_n_i, ieu_ready_in, op_mu_barr, ieu_mu_barr);
-   ncpu32k_cell_dff_lr #(3) dff_ieu_mu_store_size_i
-                   (clk_i,rst_n_i, ieu_ready_in, mu_store_size[2:0], ieu_mu_store_size[2:0]);
-   ncpu32k_cell_dff_lr #(3) dff_ieu_mu_load_size_i
-                   (clk_i,rst_n_i, ieu_ready_in, mu_load_size[2:0], ieu_mu_load_size[2:0]);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_load
+                   (clk,rst_n, pipebuf_cas, op_mu_load, ieu_mu_load);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_store
+                   (clk,rst_n, pipebuf_cas, op_mu_store, ieu_mu_store);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_barr
+                   (clk,rst_n, pipebuf_cas, op_mu_barr, ieu_mu_barr);
+   ncpu32k_cell_dff_lr #(3) dff_ieu_mu_store_size
+                   (clk,rst_n, pipebuf_cas, mu_store_size[2:0], ieu_mu_store_size[2:0]);
+   ncpu32k_cell_dff_lr #(3) dff_ieu_mu_load_size
+                   (clk,rst_n, pipebuf_cas, mu_load_size[2:0], ieu_mu_load_size[2:0]);
                    
-   ncpu32k_cell_dff_lr #(1) dff_ieu_wb_regf_i
-                   (clk_i,rst_n_i, ieu_ready_in, wb_regf, ieu_wb_regf);
-   ncpu32k_cell_dff_lr #(`NCPU_REG_AW) dff_ieu_wb_reg_addr_i
-                   (clk_i,rst_n_i, ieu_ready_in, wb_reg_addr, ieu_wb_reg_addr);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_wb_regf
+                   (clk,rst_n, pipebuf_cas, wb_regf, ieu_wb_regf);
+   ncpu32k_cell_dff_lr #(`NCPU_REG_AW) dff_ieu_wb_reg_addr
+                   (clk,rst_n, pipebuf_cas, wb_reg_addr, ieu_wb_reg_addr);
 
-   ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_reg_i
-                   (clk_i,rst_n_i, ieu_ready_in, jmp_reg, ieu_jmp_reg);
-   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_ieu_insn_pc_i
-               (clk_i, rst_n_i, ieu_ready_in, idu_insn_pc_i[`NCPU_AW-3:0], ieu_insn_pc[`NCPU_AW-3:0]);
-   ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_link_i
-                   (clk_i,rst_n_i, ieu_ready_in, jmp_link, ieu_jmp_link);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_reg
+                   (clk,rst_n, pipebuf_cas, jmp_reg, ieu_jmpreg);
+   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_ieu_insn_pc
+               (clk, rst_n, pipebuf_cas, idu_insn_pc[`NCPU_AW-3:0], ieu_insn_pc[`NCPU_AW-3:0]);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_link
+                   (clk,rst_n, pipebuf_cas, jmp_link, ieu_jmplink);
 
 endmodule
