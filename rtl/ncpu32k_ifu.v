@@ -39,17 +39,8 @@ module ncpu32k_ifu(
    wire [`NCPU_IW-1:0]  insn;
    wire                 jmprel_taken;
    wire [`NCPU_AW-3:0]  jmprel_offset;
-   
-   // Program Counter Register
-   ncpu32k_cell_dff_lr #(`NCPU_AW-2, (`NCPU_ERST_VECTOR>>2)-1'b1) dff_pc_addr
-                  (clk, rst_n, ibus_out_ready, pc_addr_nxt[`NCPU_AW-3:0], pc_addr_r[`NCPU_AW-3:0]);
-   assign pc_addr_nxt = ifu_jmpfar
-                  ? ifu_jmpfar_addr
-                  : pc_addr_r + (jmprel_taken ? jmprel_offset : 1'b1);
-
-   assign ibus_addr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
-   
-   assign insn = ibus_o;
+   wire                 jmprel_link_nxt;
+   wire                 op_jmprel_nxt;
    
    // Predecoder
    ncpu32k_ipdu predecoder
@@ -60,8 +51,8 @@ module ncpu32k_ifu(
          .msr_psr_cc    (msr_psr_cc),
          .jmprel_taken  (jmprel_taken),
          .jmprel_offset (jmprel_offset),
-         .jmprel_link   (idu_jmprel_link),
-         .op_jmprel     (idu_op_jmprel)
+         .jmprel_link   (jmprel_link_nxt),
+         .op_jmprel     (op_jmprel_nxt)
        );
    
    // Pipeline
@@ -81,5 +72,20 @@ module ncpu32k_ifu(
       );
       
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_insn_pc
-                   (clk,rst_n, pipebuf_cas, pc_addr_nxt, idu_insn_pc);
+                   (clk,rst_n, pipebuf_cas, pc_addr_nxt[`NCPU_AW-3:0], idu_insn_pc[`NCPU_AW-3:0]);
+   ncpu32k_cell_dff_lr #(1) dff_idu_op_jmprel
+                   (clk,rst_n, pipebuf_cas, op_jmprel_nxt, idu_op_jmprel);
+   ncpu32k_cell_dff_lr #(1) dff_idu_jmprel_link
+                   (clk,rst_n, pipebuf_cas, jmprel_link_nxt, idu_jmprel_link);
+                   
+   // Program Counter Register
+   ncpu32k_cell_dff_lr #(`NCPU_AW-2, (`NCPU_ERST_VECTOR>>2)-1'b1) dff_pc_addr
+                  (clk, rst_n, pipebuf_cas, pc_addr_nxt[`NCPU_AW-3:0], pc_addr_r[`NCPU_AW-3:0]);
+   assign pc_addr_nxt = ifu_jmpfar
+                  ? ifu_jmpfar_addr
+                  : pc_addr_r + (jmprel_taken ? jmprel_offset : 1'b1);
+
+   assign ibus_addr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
+   assign insn = ibus_o;
+                   
 endmodule

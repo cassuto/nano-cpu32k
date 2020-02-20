@@ -264,10 +264,9 @@ module ncpu32k_idu(
    
    // Pipeline
    wire                 pipebuf_cas;
-   wire                 insn_imm14_r;
-   wire                 imm14_signed_r;
-   wire [13:0]          imm14_r;
-   wire [17:0]          imm18_r;
+   wire [`NCPU_DW-1:0]  imm_oper_r;
+   wire                 insn_imm_r;
+   wire                 insn_non_op_r;
 
    ncpu32k_cell_pipebuf #(1) pipebuf_ifu
       (
@@ -282,31 +281,29 @@ module ncpu32k_idu(
          .cas        (pipebuf_cas)
       );
    
-   ncpu32k_cell_dff_lr #(1) dff_imm14_signed_r
-                   (clk,rst_n, pipebuf_cas, imm14_signed, imm14_signed_r);
-   ncpu32k_cell_dff_lr #(1) dff_insn_imm14_r
-                   (clk,rst_n, pipebuf_cas, insn_imm14, insn_imm14_r);
-   ncpu32k_cell_dff_lr #(14) dff_imm14_r
-                   (clk,rst_n, pipebuf_cas, f_imm14[13:0], imm14_r[13:0]);
-   ncpu32k_cell_dff_lr #(18) dff_imm18_r
-                   (clk,rst_n, pipebuf_cas, f_imm18[17:0], imm18_r[17:0]);
-
    // Sign-extended 14bit Integer
-   wire [`NCPU_DW-1:0] simm14_r = {{`NCPU_DW-14{imm14_r[13]}}, imm14_r[13:0]};
+   wire [`NCPU_DW-1:0] simm14 = {{`NCPU_DW-14{f_imm14[13]}}, f_imm14[13:0]};
    // Zero-extended 14bit Integer
-   wire [`NCPU_DW-1:0] uimm14_r = {{`NCPU_DW-14{1'b0}}, imm14_r[13:0]};
+   wire [`NCPU_DW-1:0] uimm14 = {{`NCPU_DW-14{1'b0}}, f_imm14[13:0]};
    // Zero-extended 18bit Integer
-   wire [`NCPU_DW-1:0] uimm18_r = {{`NCPU_DW-18{1'b0}}, imm18_r[17:0]};
+   wire [`NCPU_DW-1:0] uimm18 = {{`NCPU_DW-18{1'b0}}, f_imm18[17:0]};
    // Immediate Operand
-   wire [`NCPU_DW-1:0] imm_oper_r = insn_imm14_r
-                           ? (imm14_signed_r ? simm14_r : uimm14_r)
-                           : uimm18_r;
+   wire [`NCPU_DW-1:0] imm_oper_nxt = insn_imm14
+                           ? (imm14_signed ? simm14 : uimm14)
+                           : uimm18;
 
+   ncpu32k_cell_dff_lr #(`NCPU_DW) dff_imm_oper_r
+                   (clk,rst_n, pipebuf_cas, imm_oper_nxt, imm_oper_r);
+   ncpu32k_cell_dff_lr #(1) dff_insn_imm_r
+                   (clk,rst_n, pipebuf_cas, insn_imm, insn_imm_r);
+   ncpu32k_cell_dff_lr #(1) dff_insn_non_op_r
+                   (clk,rst_n, pipebuf_cas, insn_non_op, insn_non_op_r);
+ 
    // Final Operands
    assign ieu_operand_1 = regf_rs1_dout_valid
                            ? regf_rs1_dout
                            : imm_oper_r;
-   assign ieu_operand_2 = regf_rs2_dout_valid & (~insn_imm & ~insn_non_op) // op_mu_store is a special case 
+   assign ieu_operand_2 = regf_rs2_dout_valid & (~insn_imm_r & ~insn_non_op_r) // op_mu_store is a special case 
                            ? regf_rs2_dout
                            : imm_oper_r;
    assign ieu_operand_3 = (op_mu_store ? regf_rs2_dout : {`NCPU_DW{1'b0}});
@@ -335,7 +332,7 @@ module ncpu32k_idu(
    ncpu32k_cell_dff_lr #(1) dff_ieu_wb_regf
                    (clk,rst_n, pipebuf_cas, wb_regf, ieu_wb_regf);
    ncpu32k_cell_dff_lr #(`NCPU_REG_AW) dff_ieu_wb_reg_addr
-                   (clk,rst_n, pipebuf_cas, wb_reg_addr, ieu_wb_reg_addr);
+                   (clk,rst_n, pipebuf_cas, wb_reg_addr[`NCPU_REG_AW-1:0], ieu_wb_reg_addr[`NCPU_REG_AW-1:0]);
 
    ncpu32k_cell_dff_lr #(1) dff_ifu_jmpfar
                    (clk,rst_n, pipebuf_cas, jmp_reg, ifu_jmpfar);

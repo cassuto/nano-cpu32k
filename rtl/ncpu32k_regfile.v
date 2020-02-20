@@ -28,11 +28,11 @@ module ncpu32k_regfile(
    input                         regf_rs2_re,   // Read Enable of operand #2
    input [`NCPU_REG_AW-1:0]      regf_din_addr,  // Write address
    input [`NCPU_DW-1:0]          regf_din,       // Write Input value
-   input                         regf_rd_we,    // Write Enable
+   input                         regf_we,    // Write Enable
    output [`NCPU_DW-1:0]         regf_rs1_dout,      // Output value of operand #1
    output [`NCPU_DW-1:0]         regf_rs2_dout,      // Output value of operand #2
-   output                        regf_rs1_valid,// Output of operand #1 is valid
-   output                        regf_rs2_valid // Output of operand #2 is valid
+   output                        regf_rs1_dout_valid,// Output of operand #1 is valid
+   output                        regf_rs2_dout_valid // Output of operand #2 is valid
 );
    localparam CLEAR_ON_INIT = 1;
    localparam SYNC_READ = 1;
@@ -50,14 +50,14 @@ module ncpu32k_regfile(
          (
           // Outputs
           .dout                        (regf_rs1_dout),
-          .dout_valid                  (regf_rs1_valid),
+          .dout_valid                  (regf_rs1_dout_valid),
           // Inputs
           .clk_i                       (clk),
           .rst_n_i                     (rst_n),
           .raddr                       (regf_rs1_addr),
           .re                          (regf_rs1_re),
           .waddr                       (regf_din_addr),
-          .we                          (regf_rd_we & (|regf_din_addr)),
+          .we                          (regf_we & (|regf_din_addr)),
           .din                         (regf_din)
          ); 
 
@@ -73,14 +73,14 @@ module ncpu32k_regfile(
          (
           // Outputs
           .dout                        (regf_rs2_dout),
-          .dout_valid                  (regf_rs2_valid),
+          .dout_valid                  (regf_rs2_dout_valid),
           // Inputs
           .clk_i                       (clk),
           .rst_n_i                     (rst_n),
           .raddr                       (regf_rs2_addr),
           .re                          (regf_rs2_re),
           .waddr                       (regf_din_addr),
-          .we                          (regf_rd_we & (|regf_din_addr)),
+          .we                          (regf_we & (|regf_din_addr)),
           .din                         (regf_din)
          ); 
          
