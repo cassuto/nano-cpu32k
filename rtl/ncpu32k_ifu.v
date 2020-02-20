@@ -22,28 +22,45 @@ module ncpu32k_ifu(
    output                  ibus_out_ready, /* ifu is ready to accepted Insn */
    output [`NCPU_AW-1:0]   ibus_addr_o,
    input [`NCPU_IW-1:0]    ibus_o,
-   input                   ifu_jmprel,
    input                   ifu_jmpfar,
-   input                   ifu_jmp_ready,
-   input [`NCPU_AW-3:0]    ifu_jmprel_offset,
    input [`NCPU_AW-3:0]    ifu_jmpfar_addr,
+   input                   ifu_jmp_ready,
+   input                   msr_psr_cc,
    input                   idu_in_ready, /* idu is ready to accepted Insn */
    output                  idu_in_valid, /* Insn is prestented at idu's input */
    output [`NCPU_IW-1:0]   idu_insn,
-   output [`NCPU_AW-3:0]   idu_insn_pc
+   output [`NCPU_AW-3:0]   idu_insn_pc,
+   output                  idu_jmprel_link,
+   output                  idu_op_jmprel
 );
 
-   wire [`NCPU_AW-3:0] pc_addr_r;
-   wire [`NCPU_AW-3:0] pc_addr_nxt;
-   wire [`NCPU_IW-1:0] insn;
+   wire [`NCPU_AW-3:0]  pc_addr_r;
+   wire [`NCPU_AW-3:0]  pc_addr_nxt;
+   wire [`NCPU_IW-1:0]  insn;
+   wire                 jmprel_taken;
+   wire [`NCPU_AW-3:0]  jmprel_offset;
    
    // Program Counter Register
    ncpu32k_cell_dff_lr #(`NCPU_AW-2, (`NCPU_ERST_VECTOR>>2)-1'b1) dff_pc_addr
-                   (clk, rst_n, ibus_out_ready, pc_addr_nxt[`NCPU_AW-3:0], pc_addr_r[`NCPU_AW-3:0]);
-   assign pc_addr_nxt = ifu_jmpfar ? ifu_jmpfar_addr :
-                    pc_addr_r + (ifu_jmprel ? ifu_jmprel_offset : 1'b1);
+                  (clk, rst_n, ibus_out_ready, pc_addr_nxt[`NCPU_AW-3:0], pc_addr_r[`NCPU_AW-3:0]);
+   assign pc_addr_nxt = ifu_jmpfar
+                  ? ifu_jmpfar_addr
+                  : pc_addr_r + (jmprel_taken ? jmprel_offset : 1'b1);
 
    assign ibus_addr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
+   
+   // Predecoder
+   ncpu32k_ipdu predecoder
+      (
+         .clk           (clk),
+         .rst_n         (rst_n),
+         .ipdu_insn     (insn),
+         .msr_psr_cc    (msr_psr_cc),
+         .jmprel_taken  (jmprel_taken),
+         .jmprel_offset (jmprel_offset),
+         .jmprel_link   (idu_jmprel_link),
+         .op_jmprel     (idu_op_jmprel)
+       );
    
    // Pipeline
    wire pipebuf_cas;

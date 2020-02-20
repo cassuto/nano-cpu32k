@@ -20,9 +20,10 @@ module ncpu32k_ipdu(
    input                   rst_n,
    input [`NCPU_IW-1:0]    ipdu_insn,
    input                   msr_psr_cc,
-   output                  jmprel,
+   output                  jmprel_taken,
    output [`NCPU_AW-3:0]   jmprel_offset,
-   output                  jmprel_link
+   output                  jmprel_link,
+   output                  op_jmprel
 );
    wire [5:0] f_opcode = ipdu_insn[5:0];
    wire [25:0] f_rel26 = ipdu_insn[31:6];
@@ -36,8 +37,9 @@ module ncpu32k_ipdu(
    wire [`NCPU_AW-3:0] rel26 = {{`NCPU_AW-28{f_rel26[25]}}, f_rel26[25:0]};
    // PC-Relative jump
    wire bcc = (op_bt | op_bf) & (msr_psr_cc);
-   assign jmprel = (op_jmp_i | op_jmp_lnk_i) | bcc;
+   assign jmprel_taken = (op_jmp_i | op_jmp_lnk_i) | bcc;
    assign jmprel_offset = rel26;
    assign jmprel_link = op_jmp_lnk_i;
+   assign op_jmprel = op_jmp_i | op_jmp_lnk_i | (op_bt | op_bf);
    
 endmodule

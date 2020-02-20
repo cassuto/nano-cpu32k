@@ -22,8 +22,8 @@ module ncpu32k_idu(
    input                      idu_in_valid, /* Insn is prestented at idu's input */
    input [`NCPU_IW-1:0]       idu_insn,
    output [`NCPU_AW-3:0]      idu_insn_pc,
-   output                     ifu_jmprel,
-   output [`NCPU_AW-3:0]      ifu_jmprel_offset,
+   input                      idu_op_jmprel,
+   input                      idu_jmprel_link,
    output                     regf_rs1_re,
    output [`NCPU_REG_AW-1:0]  regf_rs1_addr,
    input [`NCPU_DW-1:0]       regf_rs1_dout,
@@ -32,7 +32,6 @@ module ncpu32k_idu(
    output [`NCPU_REG_AW-1:0]  regf_rs2_addr,
    input [`NCPU_DW-1:0]       regf_rs2_dout,
    input                      regf_rs2_dout_valid,
-   input                      msr_psr_cc,
    input                      ieu_in_ready, /* ieu is ready to accepted ops  */
    output                     ieu_in_valid, /* ops is presented at ieu's input */
    output [`NCPU_DW-1:0]      ieu_operand_1,
@@ -55,12 +54,13 @@ module ncpu32k_idu(
 );
 
    wire [5:0] f_opcode = idu_insn[5:0];
-   wire [4:0] f_rd = idu_insn[10:6];
-   wire [4:0] f_rs1 = idu_insn[15:11];
-   wire [4:0] f_rs2 = idu_insn[20:16];
-   wire [10:0] f_attr = idu_insn[31:21];
-   wire [15:0] f_imm16 = idu_insn[31:16];
-   wire [20:0] f_rel21 = idu_insn[31:11];
+   wire [5:0] f_rd = idu_insn[11:6];
+   wire [5:0] f_rs1 = idu_insn[17:12];
+   wire [5:0] f_rs2 = idu_insn[23:18];
+   wire [7:0] f_attr = idu_insn[31:24];
+   wire [13:0] f_imm14 = idu_insn[31:18];
+   wire [17:0] f_imm18 = idu_insn[29:12];
+   wire [20:0] f_rel26 = idu_insn[31:6];
    
    // VIRT insns
 `ifdef ENABLE_ASR
@@ -151,7 +151,6 @@ module ncpu32k_idu(
    wire op_stb = (f_opcode == `NCPU_OP_STB) & enable_stb;
    wire op_sth = (f_opcode == `NCPU_OP_STH) & enable_sth;
    wire op_stw = (f_opcode == `NCPU_OP_STW);
-   wire op_barr = (f_opcode == `NCPU_OP_BARR);
    
    wire op_and = (f_opcode == `NCPU_OP_AND);
    wire op_and_i = (f_opcode == `NCPU_OP_AND_I);
@@ -178,10 +177,8 @@ module ncpu32k_idu(
    wire op_mhi = (f_opcode == `NCPU_OP_MHI) & enable_mhi;
    
    wire op_jmp = (f_opcode == `NCPU_OP_JMP);
-   wire op_jmp_i = (f_opcode == `NCPU_OP_JMP_I);
-   wire op_bt = (f_opcode == `NCPU_OP_BT);
-   wire op_bf = (f_opcode == `NCPU_OP_BF);
-   wire op_raise = (f_opcode == `NCPU_OP_RAISE);
+   
+   wire op_syscall = (f_opcode == `NCPU_OP_SYSCALL);
    wire op_ret = (f_opcode == `NCPU_OP_RET);
    
    wire op_wsmr = (f_opcode == `NCPU_OP_WSMR);
@@ -197,14 +194,14 @@ module ncpu32k_idu(
    // 0 = None operation
    // 1 = 8bit
    // 2 = 16bit
-   // 3 = 32 bit
+   // 3 = 32bit
    // 4 = 64bit
    wire [2:0] mu_store_size = op_stb ? 3'd1 : op_sth ? 3'd2 : op_stw ? 3'd3 : 3'd0;
    wire [2:0] mu_load_size = (op_ldb|op_ldbu) ? 3'd1 : (op_ldh|op_ldhu) ? 3'd2 : (op_ldwu) ? 3'd3 : 3'd0;
    
    wire op_mu_load = |mu_load_size;
    wire op_mu_store = |mu_store_size;
-   wire op_mu_barr = (f_opcode == `NCPU_OP_BARR);
+   wire op_mu_barr = (f_opcode == `NCPU_OP_MBARR);
    
    assign lu_opc_bus[`NCPU_LU_AND] = (op_and | op_and_i);
    assign lu_opc_bus[`NCPU_LU_OR] = (op_or | op_or_i);
@@ -226,47 +223,45 @@ module ncpu32k_idu(
    assign eu_opc_bus[`NCPU_EU_WSMR] = (op_wsmr);
    assign eu_opc_bus[`NCPU_EU_RSMR] = (op_rsmr);
 
-   wire bu_sel = (op_jmp|op_jmp_i|op_bt|op_bf);
+   wire bu_sel = (op_jmp|idu_op_jmprel);
    
    // Insn is to be emulated
    wire emu_insn = ~((|lu_opc_bus) | (|au_opc_bus) | bu_sel | (|eu_opc_bus) | op_mu_load | op_mu_store | op_mu_barr);
    
    // Insn presents rs1 and imm as operand.
-   // Note that load and store insn are special cases 
-   wire insn_imm = (op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |
+   wire insn_imm14 = (op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |
                      op_add_i |
                      op_mu_load | op_mu_store |
                      op_wsmr | op_rsmr);
+   wire insn_imm18 = op_mhi;
+   wire insn_imm = insn_imm14 | insn_imm18;
    // Insn requires Signed imm.
-   wire imm_signed = (op_xor_i | op_and_i | op_add_i | op_mu_load | op_mu_store);
+   wire imm14_signed = (op_xor_i | op_and_i | op_add_i | op_mu_load | op_mu_store);
    // Insn presents no operand.
-   wire insn_non_op = (op_barr | op_raise | op_ret | op_jmp_i | op_bt | op_bf);
+   wire insn_non_op = (op_mu_barr | op_syscall | op_ret | idu_op_jmprel);
    
    // Insn writeback register file
-   wire wb_regf = ~(op_barr | op_bt|op_bf | op_cmp | emu_insn);
-   wire [`NCPU_REG_AW-1:0] wb_reg_addr = f_rd;
+   wire wb_regf = ~(op_syscall | op_ret | op_mu_barr | idu_op_jmprel | op_cmp | emu_insn) | idu_jmprel_link;
+   wire [`NCPU_REG_AW-1:0] wb_reg_addr = f_rd[4:0];
    
-   // PC-Relative address (sign-extended)
-   wire [`NCPU_AW-3:0] rel21 = {{`NCPU_AW-23{f_rel21[20]}}, f_rel21[20:0]};
-   // PC-Relative jump
-   wire bcc = (op_bt | op_bf) & (msr_psr_cc);
-   assign ifu_jmprel = op_jmp_i | bcc;
-   assign ifu_jmprel_offset = rel21;
    // Register-Indirect jump
    wire jmp_reg = (op_jmp);
    // Link address ?
-   wire jmp_link = (op_jmp | op_jmp_i);
+   wire jmp_link = (op_jmp | idu_jmprel_link);
    
    // Request operand(s) from Regfile when needed
+   // Note that op_mu_store is a special case 
    assign regf_rs1_re = (~insn_non_op);
-   assign regf_rs1_addr = f_rs1;
-   assign regf_rs2_re = (~insn_imm & ~insn_non_op) | (op_mu_load|op_mu_store);
-   assign regf_rs2_addr = op_mu_store ? f_rd : f_rs2;
+   assign regf_rs1_addr = f_rs1[4:0];
+   assign regf_rs2_re = (~insn_imm & ~insn_non_op) | (op_mu_store);
+   assign regf_rs2_addr = op_mu_store ? f_rd[4:0] : f_rs2[4:0];
    
    // Pipeline
-   wire pipebuf_cas;
-   wire                  imm_signed_r;
-   wire [15:0]           imm16_r;
+   wire                 pipebuf_cas;
+   wire                 insn_imm14_r;
+   wire                 imm14_signed_r;
+   wire [13:0]          imm14_r;
+   wire [17:0]          imm18_r;
 
    ncpu32k_cell_pipebuf #(1) pipebuf_ifu
       (
@@ -281,23 +276,31 @@ module ncpu32k_idu(
          .cas        (pipebuf_cas)
       );
    
-   ncpu32k_cell_dff_lr #(1) dff_imm_signed_r
-                   (clk,rst_n, pipebuf_cas, imm_signed, imm_signed_r);
-   ncpu32k_cell_dff_lr #(16) dff_imm16_r
-                   (clk,rst_n, pipebuf_cas, f_imm16[15:0], imm16_r[15:0]);
+   ncpu32k_cell_dff_lr #(1) dff_imm14_signed_r
+                   (clk,rst_n, pipebuf_cas, imm14_signed, imm14_signed_r);
+   ncpu32k_cell_dff_lr #(1) dff_insn_imm14_r
+                   (clk,rst_n, pipebuf_cas, insn_imm14, insn_imm14_r);
+   ncpu32k_cell_dff_lr #(14) dff_imm14_r
+                   (clk,rst_n, pipebuf_cas, f_imm14[13:0], imm14_r[13:0]);
+   ncpu32k_cell_dff_lr #(18) dff_imm18_r
+                   (clk,rst_n, pipebuf_cas, f_imm18[17:0], imm18_r[17:0]);
 
-   // Sign-extended Integer
-   wire [`NCPU_DW-1:0] simm16_r = {{`NCPU_DW-16{imm16_r[15]}}, imm16_r[15:0]};
-   // Zero-extended Integer
-   wire [`NCPU_DW-1:0] uimm16_r = {{`NCPU_DW-16{1'b0}}, imm16_r[15:0]};
+   // Sign-extended 14bit Integer
+   wire [`NCPU_DW-1:0] simm14_r = {{`NCPU_DW-14{imm14_r[13]}}, imm14_r[13:0]};
+   // Zero-extended 14bit Integer
+   wire [`NCPU_DW-1:0] uimm14_r = {{`NCPU_DW-14{1'b0}}, imm14_r[13:0]};
+   // Zero-extended 18bit Integer
+   wire [`NCPU_DW-1:0] uimm18_r = {{`NCPU_DW-18{1'b0}}, imm18_r[17:0]};
    // Immediate Operand
-   wire [`NCPU_DW-1:0] imm_oper_r = (imm_signed_r ? simm16_r : uimm16_r);
-   
+   wire [`NCPU_DW-1:0] imm_oper_r = insn_imm14_r
+                           ? (imm14_signed_r ? simm14_r : uimm14_r)
+                           : uimm18_r;
+
    // Final Operands
    assign ieu_operand_1 = regf_rs1_dout_valid
                            ? regf_rs1_dout
                            : imm_oper_r;
-   assign ieu_operand_2 = regf_rs2_dout_valid & (~insn_imm & ~insn_non_op)
+   assign ieu_operand_2 = regf_rs2_dout_valid & (~insn_imm & ~insn_non_op) // op_mu_store is a special case 
                            ? regf_rs2_dout
                            : imm_oper_r;
    assign ieu_operand_3 = (op_mu_store ? regf_rs2_dout : {`NCPU_DW{1'b0}});
