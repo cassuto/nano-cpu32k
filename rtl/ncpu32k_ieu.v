@@ -124,6 +124,9 @@ module ncpu32k_ieu(
    // Link address (offset(jmp)+1), which indicates the next insn of current jmp insn.
    wire [`NCPU_DW:0] linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {ieu_insn_pc[`NCPU_AW-3:0]+1'b1, 2'b00}};
    
+   // WriteBack (commit)
+   wire commit = (ieu_mu_load|ieu_mu_store) ? wb_mu_in_valid : ieu_in_valid;
+   
    assign regf_din = ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_XOR]}} & lu_xor[`NCPU_DW-1:0]) |
@@ -134,7 +137,7 @@ module ncpu32k_ieu(
    
    assign regf_din_addr = ieu_wb_reg_addr;
 
-   assign regf_we = ieu_wb_regf & (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid); /* data is presented at regfile's input */
+   assign regf_we = commit & ieu_wb_regf & (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid); /* data is presented at regfile's input */
    
    assign wb_mu_in_ready = 1'b1; /* data is accepted by regfile */
    

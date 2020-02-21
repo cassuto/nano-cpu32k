@@ -267,9 +267,13 @@ module ncpu32k_idu(
    wire [`NCPU_DW-1:0]  imm_oper_r;
    wire                 insn_imm_r;
    wire                 insn_non_op_r;
-   wire                 stall_jmp = op_jmp | idu_op_jmprel;
+   wire                 stall_jmp = op_add_i; //op_jmp | idu_op_jmprel;
 
-   ncpu32k_cell_pipebuf #(1) pipebuf_ifu
+   reg stall_jmp_r;
+   always @(posedge clk)
+      stall_jmp_r <= #1 stall_jmp;
+   
+   /*ncpu32k_cell_pipebuf #(1) pipebuf_ifu
       (
          .clk        (clk),
          .rst_n      (rst_n),
@@ -280,9 +284,8 @@ module ncpu32k_idu(
          .out_valid  (ieu_in_valid),
          .out_ready  (ieu_in_ready),
          .cas        (pipebuf_cas)
-      );
-   
-   /*
+      );*/
+
    wire out_valid;
    wire out_ready = ieu_in_ready;
    assign ieu_in_valid = out_valid;
@@ -295,9 +298,9 @@ module ncpu32k_idu(
    ncpu32k_cell_dff_lr #(1) dff_out_valid
                    (clk,rst_n, (push | pop), valid_nxt, out_valid);
    
-   assign idu_in_ready = (~out_valid | pop);// & ~stall_jmp;
+   assign idu_in_ready = (~out_valid | pop) & ~stall_jmp_r;
    
-   assign pipebuf_cas = push;*/
+   assign pipebuf_cas = push;
    
    
    // Sign-extended 14bit Integer

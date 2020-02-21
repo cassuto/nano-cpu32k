@@ -7,7 +7,8 @@ module handshake_sram
    parameter DW = 32, //`NCPU_DW,
    parameter AW = `NCPU_AW,
    parameter SIZE_BYTES = 32*1024,
-   parameter MEMH_FILE = ""
+   parameter MEMH_FILE = "",
+   parameter DELAY=3
 )
 (
    input                      clk,
@@ -18,6 +19,7 @@ module handshake_sram
    input [DW-1:0]             din,
    output reg                 out_valid,
    input                      out_ready,
+   output reg [AW-1:0]        out_id=((`NCPU_ERST_VECTOR>>2)-1'b1),
    output reg [DW-1:0]        dout,
    input [2:0]                size
 );
@@ -47,12 +49,74 @@ module handshake_sram
                               8'b0,
                               mem[addr][7:0]};
 
-   always @(posedge clk) begin
-      if(out_ready) begin
-         dout <= dout_nxt;
+   reg [1:0] status_r=2'b0;
+   reg [1:0] status_nxt=2'b0;
+         
+   generate
+      if(DELAY==3)  begin : delay_3
+         reg [DW-1:0] dout_r;
+         
+         always @(posedge clk) begin
+            status_r <= status_nxt;
+            
+            case(status_nxt)
+            2'd0: begin
+               out_valid <= 1'b0;
+            end
+            2'd1: begin
+               dout_r <= dout_nxt;
+               out_id <= addr; // Read command
+            end
+            2'd2: begin
+               out_valid <= 1'b1;
+               dout <= dout_r;
+            end
+            endcase
+         end
+         always @(*) begin
+            case(status_r)
+            2'd0:
+               status_nxt = out_ready ? 2'd1 : 2'd0;
+            2'd1:
+               status_nxt = 2'd2;
+            2'd2:
+               status_nxt = 2'd0;
+            endcase
+         end
+      end else if (DELAY==2) begin : delay_2
+         
+         always @(posedge clk) begin
+            status_r <= status_nxt;
+            
+            case(status_nxt)
+            2'd0: begin
+               out_valid <= 1'b0;
+            end
+            2'd1: begin
+               dout <= dout_nxt;
+               out_id <= addr; // Read command
+               out_valid <= 1'b1;
+            end
+            endcase
+         end
+         always @(*) begin
+            case(status_r)
+            2'd0:
+               status_nxt = out_ready ? 2'd1 : 2'd0;
+            2'd1:
+               status_nxt = 2'd0;
+            endcase
+         end
+      end else if(DELAY==1) begin : delay_1
+         always @(posedge clk) begin
+            if(out_ready) begin
+               dout <= dout_nxt;
+               out_id <= addr; // Read command
+            end
+            out_valid <= out_ready;
+         end
       end
-      out_valid <= out_ready;
-   end
+   endgenerate
    
    always @(posedge clk) begin
       if(in_valid) begin

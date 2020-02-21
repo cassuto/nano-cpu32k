@@ -96,7 +96,7 @@ module ncpu32k_ifu(
    ncpu32k_cell_dff_lr #(1) dff_idu_jmprel_link
                    (clk,rst_n, pipebuf_cas, jmprel_link_nxt, idu_jmprel_link_w);
 
-   assign idu_insn = {`NCPU_IW{idu_in_valid}} & idu_insn_w;
+   assign idu_insn = /*{`NCPU_IW{idu_in_valid}} &*/ idu_insn_w;
    assign idu_insn_pc = idu_insn_pc_w;
    assign idu_op_jmprel = idu_in_valid & idu_op_jmprel_w;
    assign idu_jmprel_link = idu_in_valid & idu_jmprel_link_w;
