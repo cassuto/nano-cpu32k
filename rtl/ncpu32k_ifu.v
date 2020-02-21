@@ -23,16 +23,25 @@ module ncpu32k_ifu(
    output [`NCPU_AW-1:0]   ibus_addr_o,
    input [`NCPU_IW-1:0]    ibus_o,
    input [`NCPU_AW-1:0]    ibus_out_id, /* address of data preseted at ibus_o */
-   input                   ifu_jmpfar,
-   input [`NCPU_AW-3:0]    ifu_jmpfar_addr,
-   input                   ifu_jmp_ready,
    input                   msr_psr_cc,
+   input [`NCPU_AW-3:0]    ifu_flush_jmp_tgt,
+   input                   specul_flush,
    input                   idu_in_ready, /* idu is ready to accepted Insn */
    output                  idu_in_valid, /* Insn is prestented at idu's input */
    output [`NCPU_IW-1:0]   idu_insn,
    output [`NCPU_AW-3:0]   idu_insn_pc,
    output                  idu_jmprel_link,
-   output                  idu_op_jmprel
+   output                  idu_op_jmprel,
+   output                  idu_op_jmpfar,
+   output                  idu_specul_jmpfar,
+   output [`NCPU_AW-3:0]   idu_specul_tgt,
+   output                  idu_specul_jmprel,
+   output                  idu_specul_bcc, /* = MSR.PSR.CC in prediction. not taken */
+   output                  bpu_rd,
+   output                  bpu_jmprel,
+   output [`NCPU_AW-3:0]   bpu_insn_pc,
+   input [`NCPU_AW-3:0]    bpu_jmp_tgt,
+   input                   bpu_jmprel_taken
 );
 
    wire [`NCPU_AW-3:0]  pc_addr_nxt;
@@ -40,7 +49,11 @@ module ncpu32k_ifu(
    wire                 jmprel_taken;
    wire [`NCPU_AW-3:0]  jmprel_offset;
    wire                 jmprel_link_nxt;
+   wire                 op_bcc;
+   wire                 op_bt;
    wire                 op_jmprel_nxt;
+   wire                 op_jmpfar_nxt;
+   wire                 specul;
    
    // Predecoder
    ncpu32k_ipdu predecoder
@@ -48,10 +61,13 @@ module ncpu32k_ifu(
          .clk           (clk),
          .rst_n         (rst_n),
          .ipdu_insn     (insn),
-         .msr_psr_cc    (msr_psr_cc),
+         .bpu_taken     (bpu_jmprel_taken),
          .jmprel_taken  (jmprel_taken),
          .jmprel_offset (jmprel_offset),
          .jmprel_link   (jmprel_link_nxt),
+         .op_bcc        (op_bcc),
+         .op_bt         (op_bt),
+         .op_jmpfar     (op_jmpfar_nxt),
          .op_jmprel     (op_jmprel_nxt)
        );
    
@@ -69,19 +85,29 @@ module ncpu32k_ifu(
    
    assign ibus_out_ready = fetch_ready & reset_cnt[1];
    
+   wire [`NCPU_AW-3:0] jmpfar_tgt;
+   wire [`NCPU_AW-3:0] jmprel_tgt;
+   wire [`NCPU_AW-3:0] fetch_next_tgt;
+   
+   // Speculative execution
+   assign specul = (op_bcc & jmprel_taken) | op_jmpfar_nxt;
+   assign bpu_rd = specul;
+   assign bpu_jmprel = jmprel_taken;
+   assign bpu_insn_pc = ibus_out_id[`NCPU_AW-1:2];
+   // if prediction is _not taken_ , then use the contrary target
+   wire [`NCPU_AW-3:0] specul_tgt_nxt = bpu_jmprel_taken ? fetch_next_tgt : jmprel_tgt;
+   // CC flag in prediction
+   wire specul_bcc_nxt = bpu_jmprel_taken & (op_bt | ~(op_bcc & ~op_bt));
+   
    // Pipeline
    wire pipebuf_cas;
-   wire [`NCPU_IW-1:0]  idu_insn_w;
-   wire [`NCPU_AW-3:0]  idu_insn_pc_w;
-   wire                 idu_op_jmprel_w;
-   wire                 idu_jmprel_link_w;
    
    ncpu32k_cell_pipebuf #(`NCPU_IW) pipebuf_ifu
       (
          .clk        (clk),
          .rst_n      (rst_n),
-         .din        (insn),
-         .dout       (idu_insn_w),
+         .din        (),
+         .dout       (),
          .in_valid   (ibus_out_valid),
          .in_ready   (fetch_ready),
          .out_valid  (idu_in_valid),
@@ -89,26 +115,42 @@ module ncpu32k_ifu(
          .cas        (pipebuf_cas)
       );
    
-   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_insn_pc
-                   (clk,rst_n, pipebuf_cas, ibus_out_id[`NCPU_AW-1:2], idu_insn_pc_w[`NCPU_AW-3:0]);
-   ncpu32k_cell_dff_lr #(1) dff_idu_op_jmprel
-                   (clk,rst_n, pipebuf_cas, op_jmprel_nxt, idu_op_jmprel_w);
-   ncpu32k_cell_dff_lr #(1) dff_idu_jmprel_link
-                   (clk,rst_n, pipebuf_cas, jmprel_link_nxt, idu_jmprel_link_w);
-
-   assign idu_insn = /*{`NCPU_IW{idu_in_valid}} &*/ idu_insn_w;
-   assign idu_insn_pc = idu_insn_pc_w;
-   assign idu_op_jmprel = idu_in_valid & idu_op_jmprel_w;
-   assign idu_jmprel_link = idu_in_valid & idu_jmprel_link_w;
+   assign jmpfar_tgt = bpu_jmp_tgt;
+   assign jmprel_tgt = (ibus_out_id[`NCPU_AW-1:2] + jmprel_offset);
+   assign fetch_next_tgt = (ibus_out_id[`NCPU_AW-1:2] + 1'b1);
+   
+   wire fetch_next = !op_jmpfar_nxt & !jmprel_taken & !specul_flush;
    
    // Program Counter Register
-   assign pc_addr_nxt = ifu_jmpfar
-                  ? ifu_jmpfar_addr
-                  : jmprel_taken
-                     ? ibus_out_id[`NCPU_AW-1:2] + jmprel_offset
-                     : ibus_out_id[`NCPU_AW-1:2] + 1'b1;
+   assign pc_addr_nxt = ({`NCPU_AW-2{op_jmpfar_nxt}} & jmpfar_tgt) |
+                        ({`NCPU_AW-2{jmprel_taken}} & jmprel_tgt) |
+                        ({`NCPU_AW-2{specul_flush}} & ifu_flush_jmp_tgt) |
+                        ({`NCPU_AW-2{fetch_next}} & fetch_next_tgt);
 
    assign ibus_addr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
    assign insn = ibus_o;
+   
+   wire not_flushing = ~specul_flush;
+   
+   // Data path: no need to flush
+   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_insn_pc
+                   (clk,rst_n, pipebuf_cas, ibus_out_id[`NCPU_AW-1:2], idu_insn_pc[`NCPU_AW-3:0]);
+   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_specul_tgt
+                   (clk,rst_n, pipebuf_cas, specul_tgt_nxt, idu_specul_tgt[`NCPU_AW-3:0]);
+   ncpu32k_cell_dff_lr #(1) dff_idu_specul_bcc
+                   (clk,rst_n, pipebuf_cas, specul_bcc_nxt, idu_specul_bcc);
+   // Control path
+   ncpu32k_cell_dff_lr #(`NCPU_IW) dff_idu_insn
+                   (clk,rst_n, pipebuf_cas, insn & {`NCPU_IW{not_flushing}}, idu_insn);
+   ncpu32k_cell_dff_lr #(1) dff_idu_op_jmprel
+                   (clk,rst_n, pipebuf_cas, op_jmprel_nxt & not_flushing, idu_op_jmprel);
+   ncpu32k_cell_dff_lr #(1) dff_idu_jmprel_link
+                   (clk,rst_n, pipebuf_cas, jmprel_link_nxt & not_flushing, idu_jmprel_link);
+   ncpu32k_cell_dff_lr #(1) dff_idu_op_jmpfar
+                   (clk,rst_n, pipebuf_cas, op_jmpfar_nxt & not_flushing, idu_op_jmpfar);
+   ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmpfar
+                   (clk,rst_n, pipebuf_cas, specul & op_jmpfar_nxt & not_flushing, idu_specul_jmpfar);
+   ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmprel
+                   (clk,rst_n, pipebuf_cas, specul & op_jmprel_nxt & not_flushing, idu_specul_jmprel);
 
 endmodule

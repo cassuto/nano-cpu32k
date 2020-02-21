@@ -44,9 +44,20 @@ module ncpu32k_ieu(
    input                      ieu_jmpreg,
    input [`NCPU_AW-3:0]       ieu_insn_pc,
    input                      ieu_jmplink,
+   input                      ieu_specul_jmpfar,
+   input [`NCPU_AW-3:0]       ieu_specul_tgt,
+   input                      ieu_specul_jmprel,
+   input                      ieu_specul_bcc,
    output [`NCPU_REG_AW-1:0]  regf_din_addr,
    output [`NCPU_DW-1:0]      regf_din,
-   output                     regf_we
+   output                     regf_we,
+   input                      msr_psr_cc,
+   output                     specul_flush,
+   output [`NCPU_AW-3:0]      ifu_flush_jmp_tgt,
+   output                     bpu_wb,
+   output                     bpu_wb_jmprel,
+   output [`NCPU_AW-3:0]      bpu_wb_insn_pc,
+   output                     bpu_wb_hit
 );
 
    /*AUTOWIRE*/
@@ -123,9 +134,27 @@ module ncpu32k_ieu(
         
    // Link address (offset(jmp)+1), which indicates the next insn of current jmp insn.
    wire [`NCPU_DW:0] linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {ieu_insn_pc[`NCPU_AW-3:0]+1'b1, 2'b00}};
-   
+      
    // WriteBack (commit)
+   // valid signal from upstream makes sense here, as an insn with invalid info
+   // should never be committed.
    wire commit = (ieu_mu_load|ieu_mu_store) ? wb_mu_in_valid : ieu_in_valid;
+
+   //
+   // Speculative execution checking point
+   // case 1: a jmprel insn is to be committed
+   // case 2: a jmpfar insn is to be committed
+   assign specul_flush = (ieu_specul_jmprel & (ieu_specul_bcc != msr_psr_cc))
+               | (ieu_specul_jmpfar & (ieu_specul_tgt != ieu_operand_1));
+   
+   // Speculative exec is failed, then flush all pre-insns and fetch the right target
+   assign ifu_flush_jmp_tgt = ieu_specul_jmprel ? ieu_specul_tgt
+               : ieu_operand_1; // assert = ieu_specul_jmpfar
+   
+   assign bpu_wb = ieu_specul_jmprel | ieu_specul_jmpfar;
+   assign bpu_wb_jmprel = ieu_specul_jmprel;
+   assign bpu_wb_hit = ~specul_flush;
+   assign bpu_wb_insn_pc = ieu_insn_pc;
    
    assign regf_din = ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |

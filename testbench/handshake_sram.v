@@ -8,7 +8,7 @@ module handshake_sram
    parameter AW = `NCPU_AW,
    parameter SIZE_BYTES = 32*1024,
    parameter MEMH_FILE = "",
-   parameter DELAY=3
+   parameter DELAY=1
 )
 (
    input                      clk,
@@ -26,6 +26,10 @@ module handshake_sram
    reg[7:0] mem[0:SIZE_BYTES-1];
 
    initial begin
+      integer i;
+      for(i=0;i<(1<<SIZE_BYTES);i=i+1) begin : for_size_bytes
+         mem[i] = {DW{1'b0}};
+      end
       if(MEMH_FILE !== "") begin :memh_file_not_emp
          $readmemh (MEMH_FILE, mem);
       end

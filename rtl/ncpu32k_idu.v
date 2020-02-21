@@ -23,7 +23,13 @@ module ncpu32k_idu(
    input [`NCPU_IW-1:0]       idu_insn,
    output [`NCPU_AW-3:0]      idu_insn_pc,
    input                      idu_op_jmprel,
+   input                      idu_op_jmpfar,
    input                      idu_jmprel_link,
+   input                      idu_specul_jmpfar,
+   input [`NCPU_AW-3:0]       idu_specul_tgt,
+   input                      idu_specul_jmprel,
+   input                      idu_specul_bcc,
+   input                      specul_flush,
    output                     regf_rs1_re,
    output [`NCPU_REG_AW-1:0]  regf_rs1_addr,
    input [`NCPU_DW-1:0]       regf_rs1_dout,
@@ -51,7 +57,11 @@ module ncpu32k_idu(
    output                     ieu_wb_regf,
    output [`NCPU_REG_AW-1:0]  ieu_wb_reg_addr,
    output [`NCPU_AW-3:0]      ieu_insn_pc,
-   output                     ieu_jmplink
+   output                     ieu_jmplink,
+   output                     ieu_specul_jmpfar,
+   output [`NCPU_AW-3:0]      ieu_specul_tgt,
+   output                     ieu_specul_jmprel,
+   output                     ieu_specul_bcc
 );
 
    wire [5:0] f_opcode = idu_insn[5:0];
@@ -179,8 +189,6 @@ module ncpu32k_idu(
    wire op_modu = (f_opcode == `NCPU_OP_MODU) & enable_modu;
    wire op_mhi = (f_opcode == `NCPU_OP_MHI) & enable_mhi;
    
-   wire op_jmp = (f_opcode == `NCPU_OP_JMP);
-   
    wire op_syscall = (f_opcode == `NCPU_OP_SYSCALL);
    wire op_ret = (f_opcode == `NCPU_OP_RET);
    
@@ -226,7 +234,7 @@ module ncpu32k_idu(
    assign eu_opc_bus[`NCPU_EU_WSMR] = (op_wsmr);
    assign eu_opc_bus[`NCPU_EU_RSMR] = (op_rsmr);
 
-   wire bu_sel = (op_jmp|idu_op_jmprel);
+   wire bu_sel = (idu_op_jmpfar|idu_op_jmprel);
    
    // Insn is to be emulated
    wire emu_insn = ~((|lu_opc_bus) | (|au_opc_bus) | bu_sel | (|eu_opc_bus) | op_mu_load | op_mu_store | op_mu_barr);
@@ -248,9 +256,9 @@ module ncpu32k_idu(
    wire [`NCPU_REG_AW-1:0] wb_reg_addr = idu_jmprel_link ? `NCPU_REGNO_LNK : f_rd[4:0];
    
    // Register-Indirect jump
-   wire jmp_reg = (op_jmp);
+   wire jmp_reg = (idu_op_jmpfar);
    // Link address ?
-   wire jmp_link = (op_jmp | idu_jmprel_link);
+   wire jmp_link = (idu_op_jmpfar | idu_jmprel_link);
    
    // Register-operand jmp
    assign ifu_jmpfar_addr = regf_rs1_dout[`NCPU_AW-1:2]; // no unalign check
@@ -267,13 +275,8 @@ module ncpu32k_idu(
    wire [`NCPU_DW-1:0]  imm_oper_r;
    wire                 insn_imm_r;
    wire                 insn_non_op_r;
-   wire                 stall_jmp = op_add_i; //op_jmp | idu_op_jmprel;
 
-   reg stall_jmp_r;
-   always @(posedge clk)
-      stall_jmp_r <= #1 stall_jmp;
-   
-   /*ncpu32k_cell_pipebuf #(1) pipebuf_ifu
+   ncpu32k_cell_pipebuf #(1) pipebuf_ifu
       (
          .clk        (clk),
          .rst_n      (rst_n),
@@ -284,8 +287,13 @@ module ncpu32k_idu(
          .out_valid  (ieu_in_valid),
          .out_ready  (ieu_in_ready),
          .cas        (pipebuf_cas)
-      );*/
+      );
 
+   /*reg stall_r=0;
+   always @(posedge clk) begin
+      stall_r<= #1 op_add_i;
+   end
+   
    wire out_valid;
    wire out_ready = ieu_in_ready;
    assign ieu_in_valid = out_valid;
@@ -298,10 +306,10 @@ module ncpu32k_idu(
    ncpu32k_cell_dff_lr #(1) dff_out_valid
                    (clk,rst_n, (push | pop), valid_nxt, out_valid);
    
-   assign idu_in_ready = (~out_valid | pop) & ~stall_jmp_r;
+   assign idu_in_ready = (~out_valid | pop) & ~stall_r;
    
    assign pipebuf_cas = push;
-   
+   */
    
    // Sign-extended 14bit Integer
    wire [`NCPU_DW-1:0] simm14 = {{`NCPU_DW-14{f_imm14[13]}}, f_imm14[13:0]};
@@ -330,6 +338,9 @@ module ncpu32k_idu(
                            : imm_oper_r;
    assign ieu_operand_3 = (op_mu_store ? regf_rs2_dout : {`NCPU_DW{1'b0}});
 
+   wire not_flushing = ~specul_flush;
+   
+   // Data path: no need to flush
    ncpu32k_cell_dff_lr #(`NCPU_LU_IOPW) dff_ieu_lu_opc_bus
                    (clk,rst_n, pipebuf_cas, lu_opc_bus[`NCPU_LU_IOPW-1:0], ieu_lu_opc_bus[`NCPU_LU_IOPW-1:0]);
    ncpu32k_cell_dff_lr #(`NCPU_AU_IOPW) dff_ieu_au_opc_bus
@@ -337,31 +348,47 @@ module ncpu32k_idu(
    ncpu32k_cell_dff_lr #(`NCPU_EU_IOPW) dff_ieu_eu_opc_bus
                    (clk,rst_n, pipebuf_cas, eu_opc_bus[`NCPU_EU_IOPW-1:0], ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]);
 
-   ncpu32k_cell_dff_lr #(1) dff_ieu_emu_insn
-                   (clk,rst_n, pipebuf_cas, emu_insn, ieu_emu_insn);
-                   
-   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_load
-                   (clk,rst_n, pipebuf_cas, op_mu_load, ieu_mu_load);
-   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_store
-                   (clk,rst_n, pipebuf_cas, op_mu_store, ieu_mu_store);
-   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_barr
-                   (clk,rst_n, pipebuf_cas, op_mu_barr, ieu_mu_barr);
    ncpu32k_cell_dff_lr #(3) dff_ieu_mu_store_size
                    (clk,rst_n, pipebuf_cas, mu_store_size[2:0], ieu_mu_store_size[2:0]);
    ncpu32k_cell_dff_lr #(3) dff_ieu_mu_load_size
                    (clk,rst_n, pipebuf_cas, mu_load_size[2:0], ieu_mu_load_size[2:0]);
-                   
-   ncpu32k_cell_dff_lr #(1) dff_ieu_wb_regf
-                   (clk,rst_n, pipebuf_cas, wb_regf, ieu_wb_regf);
+
    ncpu32k_cell_dff_lr #(`NCPU_REG_AW) dff_ieu_wb_reg_addr
                    (clk,rst_n, pipebuf_cas, wb_reg_addr[`NCPU_REG_AW-1:0], ieu_wb_reg_addr[`NCPU_REG_AW-1:0]);
 
-   ncpu32k_cell_dff_lr #(1) dff_ifu_jmpfar
-                   (clk,rst_n, pipebuf_cas, jmp_reg, ifu_jmpfar);
-                   
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_ieu_insn_pc
                (clk, rst_n, pipebuf_cas, idu_insn_pc[`NCPU_AW-3:0], ieu_insn_pc[`NCPU_AW-3:0]);
+                   
+   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_ieu_specul_tgt
+                   (clk,rst_n, pipebuf_cas, idu_specul_tgt[`NCPU_AW-3:0], ieu_specul_tgt[`NCPU_AW-3:0]);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_specul_bcc
+                   (clk,rst_n, pipebuf_cas, idu_specul_bcc, ieu_specul_bcc);
+
+   // Control path
+   ncpu32k_cell_dff_lr #(1) dff_ieu_emu_insn
+                   (clk,rst_n, pipebuf_cas, emu_insn & not_flushing, ieu_emu_insn);
+                   
+   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_load
+                   (clk,rst_n, pipebuf_cas, op_mu_load & not_flushing, ieu_mu_load);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_store
+                   (clk,rst_n, pipebuf_cas, op_mu_store & not_flushing, ieu_mu_store);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_barr
+                   (clk,rst_n, pipebuf_cas, op_mu_barr & not_flushing, ieu_mu_barr);
+
+   ncpu32k_cell_dff_lr #(1) dff_ieu_wb_regf
+                   (clk,rst_n, pipebuf_cas, wb_regf & not_flushing, ieu_wb_regf);
+   
+   ncpu32k_cell_dff_lr #(1) dff_ifu_jmpfar
+                   (clk,rst_n, pipebuf_cas, jmp_reg & not_flushing, ifu_jmpfar);
+           
    ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_link
-                   (clk,rst_n, pipebuf_cas, jmp_link, ieu_jmplink);
+                   (clk,rst_n, pipebuf_cas, jmp_link & not_flushing, ieu_jmplink);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_op_jmpfar
+                   (clk,rst_n, pipebuf_cas, idu_op_jmpfar & not_flushing, ieu_op_jmpfar);
+                   
+   ncpu32k_cell_dff_lr #(1) dff_ieu_specul_jmpfar
+                   (clk,rst_n, pipebuf_cas, idu_specul_jmpfar & not_flushing, ieu_specul_jmpfar);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_specul_jmprel
+                   (clk,rst_n, pipebuf_cas, idu_specul_jmprel & not_flushing, ieu_specul_jmprel);
 
 endmodule
