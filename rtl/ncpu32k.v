@@ -29,7 +29,8 @@ module ncpu32k_core(
    output [`NCPU_AW-1:0]   ibus_addr_o,
    input                   ibus_out_valid,
    output                  ibus_out_ready,
-   input [`NCPU_IW-1:0]    ibus_o
+   input [`NCPU_IW-1:0]    ibus_o,
+   input [`NCPU_AW-1:0]    ibus_out_id
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -133,6 +134,7 @@ module ncpu32k_core(
        .rst_n                           (rst_n),
        .ibus_out_valid                  (ibus_out_valid),
        .ibus_o                          (ibus_o[`NCPU_IW-1:0]),
+       .ibus_out_id                     (ibus_out_id[`NCPU_AW-1:0]),
        .ifu_jmpfar                      (ifu_jmpfar),
        .ifu_jmpfar_addr                 (ifu_jmpfar_addr[`NCPU_AW-3:0]),
        .ifu_jmp_ready                   (ifu_jmp_ready),

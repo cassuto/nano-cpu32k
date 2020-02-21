@@ -20,8 +20,8 @@ module tb_ncpu32k_ie_mu;
    wire dbus_in_valid;
    wire dbus_out_ready;
    reg dbus_out_valid=0;
-   reg wb_in_ready = 0;
-   wire wb_in_valid;
+   reg wb_mu_in_ready = 0;
+   wire wb_mu_in_valid;
    reg [31:0] dbus_i=32'b1;
    wire [31:0] mu_load;
    reg [31:0] operand=32'b1;
@@ -41,8 +41,8 @@ module tb_ncpu32k_ie_mu;
    end
    
    always @(posedge clk) begin
-      if(wb_in_valid) begin
-         wb_in_ready<=1'b1;
+      if(wb_mu_in_valid) begin
+         wb_mu_in_ready<=1'b1;
       end
    end
    
@@ -67,8 +67,8 @@ module tb_ncpu32k_ie_mu;
       //.ieu_mu_store_size,
       //.ieu_mu_load_size,
       .mu_load(mu_load),
-      .wb_in_ready(wb_in_ready), /* WB is ready to accept data */
-      .wb_in_valid(wb_in_valid) /* data is presented at WB'input   */
+      .wb_mu_in_ready(wb_mu_in_ready), /* WB is ready to accept data */
+      .wb_mu_in_valid(wb_mu_in_valid) /* data is presented at WB'input   */
    );
 
 endmodule

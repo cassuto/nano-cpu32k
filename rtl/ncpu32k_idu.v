@@ -245,7 +245,7 @@ module ncpu32k_idu(
    
    // Insn writeback register file
    wire wb_regf = ~(op_syscall | op_ret | op_mu_barr | idu_op_jmprel | op_cmp | emu_insn) | idu_jmprel_link;
-   wire [`NCPU_REG_AW-1:0] wb_reg_addr = f_rd[4:0];
+   wire [`NCPU_REG_AW-1:0] wb_reg_addr = idu_jmprel_link ? `NCPU_REGNO_LNK : f_rd[4:0];
    
    // Register-Indirect jump
    wire jmp_reg = (op_jmp);
@@ -267,6 +267,7 @@ module ncpu32k_idu(
    wire [`NCPU_DW-1:0]  imm_oper_r;
    wire                 insn_imm_r;
    wire                 insn_non_op_r;
+   wire                 stall_jmp = op_jmp | idu_op_jmprel;
 
    ncpu32k_cell_pipebuf #(1) pipebuf_ifu
       (
@@ -280,6 +281,24 @@ module ncpu32k_idu(
          .out_ready  (ieu_in_ready),
          .cas        (pipebuf_cas)
       );
+   
+   /*
+   wire out_valid;
+   wire out_ready = ieu_in_ready;
+   assign ieu_in_valid = out_valid;
+   
+   wire push = (idu_in_valid & idu_in_ready);
+   wire pop = (out_valid & out_ready);
+   
+   wire valid_nxt = (push | ~pop);
+   
+   ncpu32k_cell_dff_lr #(1) dff_out_valid
+                   (clk,rst_n, (push | pop), valid_nxt, out_valid);
+   
+   assign idu_in_ready = (~out_valid | pop);// & ~stall_jmp;
+   
+   assign pipebuf_cas = push;*/
+   
    
    // Sign-extended 14bit Integer
    wire [`NCPU_DW-1:0] simm14 = {{`NCPU_DW-14{f_imm14[13]}}, f_imm14[13:0]};

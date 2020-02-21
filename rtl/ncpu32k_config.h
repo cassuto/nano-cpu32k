@@ -117,6 +117,8 @@
 `define NCPU_EU_WSMR 0
 `define NCPU_EU_RSMR 1
 
+`define NCPU_REGNO_LNK 1 // the only one machine-dependent register
+
 
 /////////////////////////////////////////////////////////////////////////////
 // VIRT Instruction

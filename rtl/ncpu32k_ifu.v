@@ -22,6 +22,7 @@ module ncpu32k_ifu(
    output                  ibus_out_ready, /* ifu is ready to accepted Insn */
    output [`NCPU_AW-1:0]   ibus_addr_o,
    input [`NCPU_IW-1:0]    ibus_o,
+   input [`NCPU_AW-1:0]    ibus_out_id, /* address of data preseted at ibus_o */
    input                   ifu_jmpfar,
    input [`NCPU_AW-3:0]    ifu_jmpfar_addr,
    input                   ifu_jmp_ready,
@@ -34,7 +35,6 @@ module ncpu32k_ifu(
    output                  idu_op_jmprel
 );
 
-   wire [`NCPU_AW-3:0]  pc_addr_r;
    wire [`NCPU_AW-3:0]  pc_addr_nxt;
    wire [`NCPU_IW-1:0]  insn;
    wire                 jmprel_taken;
@@ -55,37 +55,60 @@ module ncpu32k_ifu(
          .op_jmprel     (op_jmprel_nxt)
        );
    
+   wire fetch_ready;
+   
+   // Reset control
+   wire[2:0] reset_cnt;
+   wire[2:0] reset_cnt_nxt;
+   wire reset_cnt_ld;
+   ncpu32k_cell_dff_lr #(3) dff_reset_cnt
+                   (clk,rst_n, reset_cnt_ld, reset_cnt_nxt[2:0], reset_cnt[2:0]);
+   
+   assign reset_cnt_ld = ~reset_cnt[1];
+   assign reset_cnt_nxt = reset_cnt + 1'b1;
+   
+   assign ibus_out_ready = fetch_ready & reset_cnt[1];
+   
    // Pipeline
    wire pipebuf_cas;
+   wire [`NCPU_IW-1:0]  idu_insn_w;
+   wire [`NCPU_AW-3:0]  idu_insn_pc_w;
+   wire                 idu_op_jmprel_w;
+   wire                 idu_jmprel_link_w;
    
    ncpu32k_cell_pipebuf #(`NCPU_IW) pipebuf_ifu
       (
          .clk        (clk),
          .rst_n      (rst_n),
          .din        (insn),
-         .dout       (idu_insn),
+         .dout       (idu_insn_w),
          .in_valid   (ibus_out_valid),
-         .in_ready   (ibus_out_ready),
+         .in_ready   (fetch_ready),
          .out_valid  (idu_in_valid),
          .out_ready  (idu_in_ready),
          .cas        (pipebuf_cas)
       );
-      
+   
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_insn_pc
-                   (clk,rst_n, pipebuf_cas, pc_addr_nxt[`NCPU_AW-3:0], idu_insn_pc[`NCPU_AW-3:0]);
+                   (clk,rst_n, pipebuf_cas, ibus_out_id[`NCPU_AW-1:2], idu_insn_pc_w[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(1) dff_idu_op_jmprel
-                   (clk,rst_n, pipebuf_cas, op_jmprel_nxt, idu_op_jmprel);
+                   (clk,rst_n, pipebuf_cas, op_jmprel_nxt, idu_op_jmprel_w);
    ncpu32k_cell_dff_lr #(1) dff_idu_jmprel_link
-                   (clk,rst_n, pipebuf_cas, jmprel_link_nxt, idu_jmprel_link);
-                   
+                   (clk,rst_n, pipebuf_cas, jmprel_link_nxt, idu_jmprel_link_w);
+
+   assign idu_insn = {`NCPU_IW{idu_in_valid}} & idu_insn_w;
+   assign idu_insn_pc = idu_insn_pc_w;
+   assign idu_op_jmprel = idu_in_valid & idu_op_jmprel_w;
+   assign idu_jmprel_link = idu_in_valid & idu_jmprel_link_w;
+   
    // Program Counter Register
-   ncpu32k_cell_dff_lr #(`NCPU_AW-2, (`NCPU_ERST_VECTOR>>2)-1'b1) dff_pc_addr
-                  (clk, rst_n, pipebuf_cas, pc_addr_nxt[`NCPU_AW-3:0], pc_addr_r[`NCPU_AW-3:0]);
    assign pc_addr_nxt = ifu_jmpfar
                   ? ifu_jmpfar_addr
-                  : pc_addr_r + (jmprel_taken ? jmprel_offset : 1'b1);
+                  : jmprel_taken
+                     ? ibus_out_id[`NCPU_AW-1:2] + jmprel_offset
+                     : ibus_out_id[`NCPU_AW-1:2] + 1'b1;
 
    assign ibus_addr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
    assign insn = ibus_o;
-                   
+
 endmodule
