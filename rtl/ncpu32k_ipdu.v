@@ -20,7 +20,7 @@ module ncpu32k_ipdu(
    input                   rst_n,
    input [`NCPU_IW-1:0]    ipdu_insn,
    input                   bpu_taken,
-   output                  jmprel_taken,
+   output                  jmprel_taken, /* do relative jmp now ? */
    output [`NCPU_AW-3:0]   jmprel_offset,
    output                  jmprel_link,
    output                  op_bcc,

@@ -44,16 +44,16 @@ module ncpu32k_ifu(
    input                   bpu_jmprel_taken
 );
 
-   wire [`NCPU_AW-3:0]  pc_addr_nxt;
-   wire [`NCPU_IW-1:0]  insn;
-   wire                 jmprel_taken;
-   wire [`NCPU_AW-3:0]  jmprel_offset;
-   wire                 jmprel_link_nxt;
-   wire                 op_bcc;
-   wire                 op_bt;
-   wire                 op_jmprel_nxt;
-   wire                 op_jmpfar_nxt;
-   wire                 specul;
+   wire [`NCPU_AW-3:0]     pc_addr_nxt;
+   wire [`NCPU_IW-1:0]     insn;
+   wire                    jmprel_taken;
+   wire [`NCPU_AW-3:0]     jmprel_offset;
+   wire                    jmprel_link_nxt;
+   wire                    op_bcc;
+   wire                    op_bt;
+   wire                    op_jmprel_nxt;
+   wire                    op_jmpfar_nxt;
+   wire                    specul;
    
    // Predecoder
    ncpu32k_ipdu predecoder
@@ -85,18 +85,19 @@ module ncpu32k_ifu(
    
    assign ibus_out_ready = fetch_ready & reset_cnt[1];
    
+   // Branching target
    wire [`NCPU_AW-3:0] jmpfar_tgt;
    wire [`NCPU_AW-3:0] jmprel_tgt;
    wire [`NCPU_AW-3:0] fetch_next_tgt;
    
    // Speculative execution
-   assign specul = (op_bcc & jmprel_taken) | op_jmpfar_nxt;
+   assign specul = bpu_jmprel | op_jmpfar_nxt;
    assign bpu_rd = specul;
-   assign bpu_jmprel = jmprel_taken;
+   assign bpu_jmprel = op_bcc & jmprel_taken;
    assign bpu_insn_pc = ibus_out_id[`NCPU_AW-1:2];
    // if prediction is _not taken_ , then use the contrary target
    wire [`NCPU_AW-3:0] specul_tgt_nxt = bpu_jmprel_taken ? fetch_next_tgt : jmprel_tgt;
-   // CC flag in prediction
+   // calc out predicted CC flag
    wire specul_bcc_nxt = bpu_jmprel_taken & (op_bt | ~(op_bcc & ~op_bt));
    
    // Pipeline
