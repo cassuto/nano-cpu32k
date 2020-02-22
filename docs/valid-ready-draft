@@ -1,0 +1,72 @@
+Document of internal valid-ready handshake protocol
+
+Baisc concept:
+	Data is transferred if-and-only-if:
+			1. at rising edge of clk
+			2. valid & ready is set
+
+Basic constraint:
+	1. valid and ready acts independently.
+		There should not be any combinational logic between valid and ready
+		to avoid logical loop.
+
+Mode: point-to-point
+
+	--------------------+             +----------------------
+	                    |             |
+	upstream  out_ready +-----<-------+ in_ready  downstream
+	 module             |             |             module
+	          out_valid +----->-------+ in_valid
+	                    |             |
+	--------------------+             +----------------------
+		
+Timing:
+	for upstream(output) module:
+		ready-before-valid
+		
+		                 -----       -----       -----
+		                /     \     /     \     /     \
+		clk       ------       -----       -----       -----
+		
+		                 -----------------------------------
+		                /
+		out_ready ------
+		                             -----------------------
+		                            /
+		out_valid ------------------
+		
+		                             -----------------------
+		                            /
+		dout      ------------------\
+							         -----------------------
+		
+		out_ready is input
+		out_valid is output
+		
+		Command or ack is accepted if-and-only-if:
+			1. at rising edge of clk
+			2. ready is set
+
+	for downstream(input) module:
+		valid-before-ready
+		
+		                 -----       -----       -----
+		                /     \     /     \     /     \
+		clk      -------       -----       -----       -----
+		
+		                            -----------
+		                           /           \
+		in_ready ------------------             -----------
+		
+				        -----------------------------------
+		               /
+		in_valid ------
+		
+		                -----------------------------------
+		               /
+		din      ------\
+			            -----------------------------------
+		
+		in_valid is input
+		in_ready is output
+
