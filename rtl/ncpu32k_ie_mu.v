@@ -25,10 +25,10 @@ module ncpu32k_ie_mu
    output [`NCPU_AW-1:0]      dbus_addr_o,
    input                      dbus_in_ready, /* dbus is ready to store */
    output                     dbus_in_valid, /* data is presented at dbus's input */
-   input [`NCPU_DW-1:0]       dbus_i,
+   output [`NCPU_DW-1:0]      dbus_i,
    output                     dbus_out_ready, /* MU is ready to load */
    input                      dbus_out_valid, /* data is presented at dbus's output */
-   output [`NCPU_DW-1:0]      dbus_o,
+   input [`NCPU_DW-1:0]       dbus_o,
    output [2:0]               dbus_size_o,
    output                     ieu_mu_in_ready, /* MU is ready to accept ops */
    input                      ieu_mu_in_valid, /* ops is presented at MU's input */
@@ -47,47 +47,44 @@ module ncpu32k_ie_mu
    assign dbus_addr_o = ieu_operand_1 + ieu_operand_2;
    // Load from memory
    assign dbus_rd_o = ieu_mu_load;
-   assign mu_load = dbus_i;
+   assign mu_load = dbus_o;
 
    // Store to memory
    assign dbus_we_o = ieu_mu_store;
-   assign dbus_o = ieu_operand_3;
+   assign dbus_i = ieu_operand_3;
 
    // Size
    assign dbus_size_o = ({3{ieu_mu_load}} & ieu_mu_load_size) |
                         ({3{ieu_mu_store}} & ieu_mu_store_size);
    
-   // Pipeline handshake
-   wire store_in_ready;
-   wire load_out_valid;
+   // handshake FSM
+   localparam HS_IDLE = 2'd0;
+   localparam HS_LOAD = 2'd1;
+   localparam HS_STORE = 2'd2;
+   localparam HS_PENDING = 2'd3;
    
-   wire busy_r;
-   wire busy_nxt;
-   wire push;
-   wire pop_dbus;
-   wire pop_wb;
+   wire [1:0] hs_status_r;
+   wire [1:0] hs_status_nxt;
    
-   ncpu32k_cell_dff_lr #(1) dff_busy
-                   (clk,rst_n, 1'b1, busy_nxt, busy_r);
+   assign ieu_mu_in_ready = (hs_status_r==HS_IDLE);
+   assign dbus_in_valid = (hs_status_r==HS_STORE);
+   assign dbus_out_ready = (hs_status_r==HS_LOAD);
+   assign wb_mu_in_valid = (hs_status_r==HS_PENDING);
+   assign hs_status_nxt =
+      (
+         // If there is an incoming load/store request, then goto to the corresponding status.
+         // otherwise, keep idle.
+           (hs_status_r==HS_IDLE) ? (ieu_mu_load ? HS_LOAD : ieu_mu_store ? HS_STORE : HS_IDLE)
+         // handshake with dbus output
+         : (hs_status_r==HS_LOAD) ? (dbus_out_valid ? HS_PENDING : HS_LOAD)
+         // handshake with dbus input
+         : (hs_status_r==HS_STORE) ? (dbus_in_ready ? HS_PENDING : HS_STORE)
+         // handshake with downstream
+         : (hs_status_r==HS_PENDING) ? (wb_mu_in_ready ? HS_IDLE : HS_PENDING)
+         : HS_IDLE
+      );
    
-   assign push = ieu_mu_in_ready & ieu_mu_in_valid;
-   assign pop_dbus = ieu_mu_store ? (dbus_in_ready & dbus_in_valid) :
-                     ieu_mu_load ? (dbus_out_ready & dbus_out_valid) : 1'b1;
-   assign pop_wb = wb_mu_in_ready & wb_mu_in_valid;
-   
-   assign busy_nxt = push | ~(pop_dbus & pop_wb);
-   
-   generate
-      if(ENABLE_PIPEBUF_BYPASS) begin :enable_pipebuf_bypass
-         assign ieu_mu_in_ready = ~busy_r | (pop_dbus & pop_wb);
-      end else begin
-         assign ieu_mu_in_ready = ~busy_r;
-      end
-   endgenerate
-   
-   assign wb_mu_in_valid = pop_dbus;
-   
-   assign dbus_in_valid = ieu_mu_store & busy_r;
-   assign dbus_out_ready = ieu_mu_load & busy_r;
-   
+   ncpu32k_cell_dff_lr #(2) dff_hs_status_r
+                (clk,rst_n, 1'b1, hs_status_nxt[1:0], hs_status_r[1:0]);
+
 endmodule
