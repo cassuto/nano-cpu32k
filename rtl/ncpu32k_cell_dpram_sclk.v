@@ -22,7 +22,6 @@ module ncpu32k_cell_dpram_sclk
    parameter ADDR_WIDTH = 32,
    parameter DATA_WIDTH = 32,
    parameter CLEAR_ON_INIT = 1,
-   parameter SYNC_READ = 1,
    parameter ENABLE_BYPASS = 1
 )
 (
@@ -53,11 +52,10 @@ module ncpu32k_cell_dpram_sclk
    endgenerate
 
    // Bypass
+   reg bypass;
    generate
       if (ENABLE_BYPASS) begin : bypass_gen
          reg [DATA_WIDTH-1:0]  din_r;
-         reg                   bypass;
-
          assign dout_w = bypass ? din_r : dout_r;
 
          always @(posedge clk_i)
@@ -74,29 +72,23 @@ module ncpu32k_cell_dpram_sclk
       end
    endgenerate
    
+   // Read output
+   assign dout = dout_w;
+   assign dout_valid = re_r;
+   
    // Sync Read
    always @(posedge clk_i or negedge rst_n_i)
       if (!rst_n_i) begin
          re_r <= 1'b0;
+         dout_r <= {DATA_WIDTH{1'b0}};
       end else
          re_r <= re;
 
-   // Read output
-   generate
-      if(SYNC_READ) begin :sync_re
-         assign dout = re_r ? dout_w : {DATA_WIDTH{1'b0}};
-         assign dout_valid = re_r;
-      end else begin
-         assign dout = dout_w;
-         assign dout_valid = re;
-      end
-   endgenerate
-
-   // Write
+   // Write & Read
    always @(posedge clk_i) begin
       if (we)
          mem_vector[waddr] <= din;
-      if (re)
+      if (re | bypass)
          dout_r <= mem_vector[raddr];
    end
 

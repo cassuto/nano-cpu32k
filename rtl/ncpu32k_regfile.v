@@ -1,5 +1,5 @@
 /**@file
- * Regfile implementation
+ * single-clk-cycle Regfile implementation
  */
 
 /***************************************************************************/
@@ -30,12 +30,9 @@ module ncpu32k_regfile(
    input [`NCPU_DW-1:0]          regf_din,       // Write Input value
    input                         regf_we,    // Write Enable
    output [`NCPU_DW-1:0]         regf_rs1_dout,      // Output value of operand #1
-   output [`NCPU_DW-1:0]         regf_rs2_dout,      // Output value of operand #2
-   output                        regf_rs1_dout_valid,// Output of operand #1 is valid
-   output                        regf_rs2_dout_valid // Output of operand #2 is valid
+   output [`NCPU_DW-1:0]         regf_rs2_dout       // Output value of operand #2
 );
    localparam CLEAR_ON_INIT = 1;
-   localparam SYNC_READ = 1;
    localparam ENABLE_BYPASS = 1;
    
    ncpu32k_cell_dpram_sclk
@@ -43,14 +40,13 @@ module ncpu32k_regfile(
          .ADDR_WIDTH                   (`NCPU_REG_AW),
          .DATA_WIDTH                   (`NCPU_DW),
          .CLEAR_ON_INIT                (CLEAR_ON_INIT),
-         .SYNC_READ                    (SYNC_READ),
          .ENABLE_BYPASS                (ENABLE_BYPASS)
          )
       dpram_sclk0
          (
           // Outputs
           .dout                        (regf_rs1_dout),
-          .dout_valid                  (regf_rs1_dout_valid),
+          .dout_valid                  (),
           // Inputs
           .clk_i                       (clk),
           .rst_n_i                     (rst_n),
@@ -66,14 +62,13 @@ module ncpu32k_regfile(
          .ADDR_WIDTH                   (`NCPU_REG_AW),
          .DATA_WIDTH                   (`NCPU_DW),
          .CLEAR_ON_INIT                (CLEAR_ON_INIT),
-         .SYNC_READ                    (SYNC_READ),
          .ENABLE_BYPASS                (ENABLE_BYPASS)
          )
       dpram_sclk1
          (
           // Outputs
           .dout                        (regf_rs2_dout),
-          .dout_valid                  (regf_rs2_dout_valid),
+          .dout_valid                  (),
           // Inputs
           .clk_i                       (clk),
           .rst_n_i                     (rst_n),
