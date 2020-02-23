@@ -36,6 +36,7 @@ module ncpu32k_ieu(
    input                      ieu_emu_insn,
    input                      ieu_mu_load,
    input                      ieu_mu_store,
+   input                      ieu_mu_sign_ext,
    input                      ieu_mu_barr,
    input [2:0]                ieu_mu_store_size,
    input [2:0]                ieu_mu_load_size,
@@ -111,8 +112,8 @@ module ncpu32k_ieu(
        // Outputs
        .dbus_addr_o                     (dbus_addr_o[`NCPU_AW-1:0]),
        .dbus_in_valid                   (dbus_in_valid),
+       .dbus_i                          (dbus_i[`NCPU_DW-1:0]),
        .dbus_out_ready                  (dbus_out_ready),
-       .dbus_o                          (dbus_o[`NCPU_DW-1:0]),
        .dbus_size_o                     (dbus_size_o[2:0]),
        .ieu_mu_in_ready                 (ieu_mu_in_ready),
        .mu_load                         (mu_load[`NCPU_DW-1:0]),
@@ -121,14 +122,15 @@ module ncpu32k_ieu(
        .clk                             (clk),
        .rst_n                           (rst_n),
        .dbus_in_ready                   (dbus_in_ready),
-       .dbus_i                          (dbus_i[`NCPU_DW-1:0]),
        .dbus_out_valid                  (dbus_out_valid),
+       .dbus_o                          (dbus_o[`NCPU_DW-1:0]),
        .ieu_mu_in_valid                 (ieu_mu_in_valid),
        .ieu_operand_1                   (ieu_operand_1[`NCPU_DW-1:0]),
        .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),
        .ieu_operand_3                   (ieu_operand_3[`NCPU_DW-1:0]),
        .ieu_mu_load                     (ieu_mu_load),
        .ieu_mu_store                    (ieu_mu_store),
+       .ieu_mu_sign_ext                 (ieu_mu_sign_ext),
        .ieu_mu_store_size               (ieu_mu_store_size[2:0]),
        .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
        .wb_mu_in_ready                  (wb_mu_in_ready));
@@ -174,7 +176,8 @@ module ncpu32k_ieu(
    
    assign wb_mu_in_ready = 1'b1; /* data is accepted by regfile */
    
-   /* valid-before-ready timing */
+   // valid-before-ready timing
+   // ieu_mu_in_ready is ignored
    assign ieu_in_ready = (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid);
    
 endmodule

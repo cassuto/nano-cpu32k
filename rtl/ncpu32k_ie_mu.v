@@ -37,6 +37,7 @@ module ncpu32k_ie_mu
    input [`NCPU_DW-1:0]       ieu_operand_3,
    input                      ieu_mu_load,
    input                      ieu_mu_store,
+   input                      ieu_mu_sign_ext,
    input [2:0]                ieu_mu_store_size,
    input [2:0]                ieu_mu_load_size,
    output [`NCPU_DW-1:0]      mu_load,
@@ -47,7 +48,10 @@ module ncpu32k_ie_mu
    assign dbus_addr_o = ieu_operand_1 + ieu_operand_2;
    // Load from memory
    assign dbus_rd_o = ieu_mu_load;
-   assign mu_load = dbus_o;
+   assign mu_load =
+         ({`NCPU_DW{ieu_mu_load_size==3'd3}} & dbus_o) |
+         ({`NCPU_DW{ieu_mu_load_size==3'd2}} & {{16{ieu_mu_sign_ext & dbus_o[15]}}, dbus_o[15:0]}) |
+         ({`NCPU_DW{ieu_mu_load_size==3'd1}} & {{24{ieu_mu_sign_ext & dbus_o[7]}}, dbus_o[7:0]});
 
    // Store to memory
    assign dbus_we_o = ieu_mu_store;

@@ -49,6 +49,7 @@ module ncpu32k_idu(
    output                     ieu_emu_insn,
    output                     ieu_mu_load,
    output                     ieu_mu_store,
+   output                     ieu_mu_sign_ext,
    output                     ieu_mu_barr,
    output [2:0]               ieu_mu_store_size,
    output [2:0]               ieu_mu_load_size,
@@ -208,6 +209,8 @@ module ncpu32k_idu(
    wire [2:0] mu_store_size = op_stb ? 3'd1 : op_sth ? 3'd2 : op_stw ? 3'd3 : 3'd0;
    wire [2:0] mu_load_size = (op_ldb|op_ldbu) ? 3'd1 : (op_ldh|op_ldhu) ? 3'd2 : (op_ldwu) ? 3'd3 : 3'd0;
    
+   assign mu_sign_ext = op_ldb | op_ldh;
+   
    wire op_mu_load = |mu_load_size;
    wire op_mu_store = |mu_store_size;
    wire op_mu_barr = (f_opcode == `NCPU_OP_MBARR);
@@ -279,28 +282,6 @@ module ncpu32k_idu(
          .cas        (pipebuf_cas)
       );
 
-   /*reg stall_r=0;
-   always @(posedge clk) begin
-      stall_r<= #1 op_add_i;
-   end
-   
-   wire out_valid;
-   wire out_ready = ieu_in_ready;
-   assign ieu_in_valid = out_valid;
-   
-   wire push = (idu_in_valid & idu_in_ready);
-   wire pop = (out_valid & out_ready);
-   
-   wire valid_nxt = (push | ~pop);
-   
-   ncpu32k_cell_dff_lr #(1) dff_out_valid
-                   (clk,rst_n, (push | pop), valid_nxt, out_valid);
-   
-   assign idu_in_ready = (~out_valid | pop) & ~stall_r;
-   
-   assign pipebuf_cas = push;
-   */
-   
    wire rs1_frm_regf_r;
    wire rs2_frm_regf_r;
    wire rs2_frm_regf_nxt = regf_rs2_re & (~insn_imm & ~insn_non_op); // op_mu_store is a special case
@@ -372,7 +353,9 @@ module ncpu32k_idu(
                    (clk,rst_n, pipebuf_cas, op_mu_store & not_flushing, ieu_mu_store);
    ncpu32k_cell_dff_lr #(1) dff_ieu_mu_barr
                    (clk,rst_n, pipebuf_cas, op_mu_barr & not_flushing, ieu_mu_barr);
-
+   ncpu32k_cell_dff_lr #(1) dff_ieu_mu_sign_ext
+                   (clk,rst_n, pipebuf_cas, mu_sign_ext & not_flushing, ieu_mu_sign_ext);
+                   
    ncpu32k_cell_dff_lr #(1) dff_ieu_wb_regf
                    (clk,rst_n, pipebuf_cas, wb_regf & not_flushing, ieu_wb_regf);
    

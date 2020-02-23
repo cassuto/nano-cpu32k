@@ -65,6 +65,7 @@ module ncpu32k_core(
    wire                 ieu_mu_barr;            // From idu of ncpu32k_idu.v
    wire                 ieu_mu_load;            // From idu of ncpu32k_idu.v
    wire [2:0]           ieu_mu_load_size;       // From idu of ncpu32k_idu.v
+   wire                 ieu_mu_sign_ext;        // From idu of ncpu32k_idu.v
    wire                 ieu_mu_store;           // From idu of ncpu32k_idu.v
    wire [2:0]           ieu_mu_store_size;      // From idu of ncpu32k_idu.v
    wire [`NCPU_DW-1:0]  ieu_operand_1;          // From idu of ncpu32k_idu.v
@@ -208,6 +209,7 @@ module ncpu32k_core(
        .ieu_emu_insn                    (ieu_emu_insn),
        .ieu_mu_load                     (ieu_mu_load),
        .ieu_mu_store                    (ieu_mu_store),
+       .ieu_mu_sign_ext                 (ieu_mu_sign_ext),
        .ieu_mu_barr                     (ieu_mu_barr),
        .ieu_mu_store_size               (ieu_mu_store_size[2:0]),
        .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
@@ -274,6 +276,7 @@ module ncpu32k_core(
        .ieu_emu_insn                    (ieu_emu_insn),
        .ieu_mu_load                     (ieu_mu_load),
        .ieu_mu_store                    (ieu_mu_store),
+       .ieu_mu_sign_ext                 (ieu_mu_sign_ext),
        .ieu_mu_barr                     (ieu_mu_barr),
        .ieu_mu_store_size               (ieu_mu_store_size[2:0]),
        .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
