@@ -33,11 +33,9 @@ module ncpu32k_idu(
    output                     regf_rs1_re,
    output [`NCPU_REG_AW-1:0]  regf_rs1_addr,
    input [`NCPU_DW-1:0]       regf_rs1_dout,
-   input                      regf_rs1_dout_valid,
    output                     regf_rs2_re,
    output [`NCPU_REG_AW-1:0]  regf_rs2_addr,
    input [`NCPU_DW-1:0]       regf_rs2_dout,
-   input                      regf_rs2_dout_valid,
    output                     ifu_jmpfar,
    output [`NCPU_AW-3:0]      ifu_jmpfar_addr,
    input                      ieu_in_ready, /* ieu is ready to accepted ops  */
@@ -252,7 +250,7 @@ module ncpu32k_idu(
    wire insn_non_op = (op_mu_barr | op_syscall | op_ret | idu_op_jmprel);
    
    // Insn writeback register file
-   wire wb_regf = ~(op_syscall | op_ret | op_mu_barr | idu_op_jmprel | op_cmp | emu_insn) | idu_jmprel_link;
+   wire wb_regf = ~(op_syscall | op_ret | op_mu_barr | idu_op_jmprel | op_cmp | emu_insn | op_mu_store) | idu_jmprel_link;
    wire [`NCPU_REG_AW-1:0] wb_reg_addr = idu_jmprel_link ? `NCPU_REGNO_LNK : f_rd[4:0];
    
    // Register-Indirect jump
@@ -263,18 +261,10 @@ module ncpu32k_idu(
    // Register-operand jmp
    assign ifu_jmpfar_addr = regf_rs1_dout[`NCPU_AW-1:2]; // no unalign check
    
-   // Request operand(s) from Regfile when needed
-   // Note that op_mu_store is a special case 
-   assign regf_rs1_re = (~insn_non_op);
-   assign regf_rs1_addr = f_rs1[4:0];
-   assign regf_rs2_re = (~insn_imm & ~insn_non_op) | (op_mu_store);
-   assign regf_rs2_addr = op_mu_store ? f_rd[4:0] : f_rs2[4:0];
    
    // Pipeline
    wire                 pipebuf_cas;
    wire [`NCPU_DW-1:0]  imm_oper_r;
-   wire                 insn_imm_r;
-   wire                 insn_non_op_r;
 
    ncpu32k_cell_pipebuf #(1) pipebuf_ifu
       (
@@ -311,6 +301,22 @@ module ncpu32k_idu(
    assign pipebuf_cas = push;
    */
    
+   wire rs1_frm_regf_r;
+   wire rs2_frm_regf_r;
+   wire rs2_frm_regf_nxt = regf_rs2_re & (~insn_imm & ~insn_non_op); // op_mu_store is a special case
+   
+   ncpu32k_cell_dff_lr #(1) dff_rs1_dout_valid_r
+                   (clk,rst_n, pipebuf_cas, regf_rs1_re, rs1_frm_regf_r);
+   ncpu32k_cell_dff_lr #(1) dff_rs2_dout_valid_r
+                   (clk,rst_n, pipebuf_cas, rs2_frm_regf_nxt, rs2_frm_regf_r);
+   
+   // Request operand(s) from Regfile when needed
+   // Note that op_mu_store is a special case 
+   assign regf_rs1_re = (~insn_non_op) & pipebuf_cas;
+   assign regf_rs1_addr = f_rs1[4:0];
+   assign regf_rs2_re = ((~insn_imm & ~insn_non_op) | op_mu_store) & pipebuf_cas;
+   assign regf_rs2_addr = op_mu_store ? f_rd[4:0] : f_rs2[4:0];
+   
    // Sign-extended 14bit Integer
    wire [`NCPU_DW-1:0] simm14 = {{`NCPU_DW-14{f_imm14[13]}}, f_imm14[13:0]};
    // Zero-extended 14bit Integer
@@ -324,19 +330,11 @@ module ncpu32k_idu(
 
    ncpu32k_cell_dff_lr #(`NCPU_DW) dff_imm_oper_r
                    (clk,rst_n, pipebuf_cas, imm_oper_nxt, imm_oper_r);
-   ncpu32k_cell_dff_lr #(1) dff_insn_imm_r
-                   (clk,rst_n, pipebuf_cas, insn_imm, insn_imm_r);
-   ncpu32k_cell_dff_lr #(1) dff_insn_non_op_r
-                   (clk,rst_n, pipebuf_cas, insn_non_op, insn_non_op_r);
- 
+
    // Final Operands
-   assign ieu_operand_1 = regf_rs1_dout_valid
-                           ? regf_rs1_dout
-                           : imm_oper_r;
-   assign ieu_operand_2 = regf_rs2_dout_valid & (~insn_imm_r & ~insn_non_op_r) // op_mu_store is a special case 
-                           ? regf_rs2_dout
-                           : imm_oper_r;
-   assign ieu_operand_3 = (op_mu_store ? regf_rs2_dout : {`NCPU_DW{1'b0}});
+   assign ieu_operand_1 = rs1_frm_regf_r ? regf_rs1_dout : imm_oper_r;
+   assign ieu_operand_2 = rs2_frm_regf_r ? regf_rs2_dout : imm_oper_r;
+   assign ieu_operand_3 = (ieu_mu_store ? regf_rs2_dout : {`NCPU_DW{1'b0}});
 
    wire not_flushing = ~specul_flush;
    
