@@ -87,6 +87,7 @@ module ncpu32k_ifu(
    
    // Branching target
    wire [`NCPU_AW-3:0] jmpfar_tgt;
+   wire [`NCPU_AW-3:0] jmprel_tgt_org;
    wire [`NCPU_AW-3:0] jmprel_tgt;
    wire [`NCPU_AW-3:0] fetch_next_tgt;
    
@@ -95,8 +96,17 @@ module ncpu32k_ifu(
    assign bpu_rd = specul;
    assign bpu_jmprel = op_bcc & jmprel_taken;
    assign bpu_insn_pc = ibus_out_id[`NCPU_AW-1:2];
-   // if prediction is _not taken_ , then use the contrary target
-   wire [`NCPU_AW-3:0] specul_tgt_nxt = bpu_jmprel_taken ? fetch_next_tgt : jmprel_tgt;
+   
+   wire [`NCPU_AW-3:0] specul_tgt_nxt = 
+      (
+         bpu_jmprel ?
+            // for jmprel, this is alternate target for failed SE
+            // if prediction is _not taken_ , then use the contrary target
+            (bpu_jmprel_taken ? fetch_next_tgt : jmprel_tgt_org)
+            // for jmpfar, this is the predicated target,
+            // which should be consistent with prediction result
+            : jmpfar_tgt
+      );
    // calc out predicted CC flag
    wire specul_bcc_nxt = bpu_jmprel_taken & (op_bt | ~(op_bcc & ~op_bt));
    
@@ -117,7 +127,8 @@ module ncpu32k_ifu(
       );
    
    assign jmpfar_tgt = bpu_jmp_tgt;
-   assign jmprel_tgt = (ibus_out_id[`NCPU_AW-1:2] + jmprel_offset);
+   assign jmprel_tgt_org = ibus_out_id[`NCPU_AW-1:2] + jmprel_offset;
+   assign jmprel_tgt = (bpu_jmprel_taken ? jmprel_tgt_org : fetch_next_tgt);
    assign fetch_next_tgt = (ibus_out_id[`NCPU_AW-1:2] + 1'b1);
    
    wire fetch_next = !op_jmpfar_nxt & !jmprel_taken & !specul_flush;

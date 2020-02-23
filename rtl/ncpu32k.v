@@ -83,11 +83,9 @@ module ncpu32k_core(
    wire [`NCPU_REG_AW-1:0] regf_din_addr;       // From ieu of ncpu32k_ieu.v
    wire [`NCPU_REG_AW-1:0] regf_rs1_addr;       // From idu of ncpu32k_idu.v
    wire [`NCPU_DW-1:0]  regf_rs1_dout;          // From regfile0 of ncpu32k_regfile.v
-   wire                 regf_rs1_dout_valid;    // From regfile0 of ncpu32k_regfile.v
    wire                 regf_rs1_re;            // From idu of ncpu32k_idu.v
    wire [`NCPU_REG_AW-1:0] regf_rs2_addr;       // From idu of ncpu32k_idu.v
    wire [`NCPU_DW-1:0]  regf_rs2_dout;          // From regfile0 of ncpu32k_regfile.v
-   wire                 regf_rs2_dout_valid;    // From regfile0 of ncpu32k_regfile.v
    wire                 regf_rs2_re;            // From idu of ncpu32k_idu.v
    wire                 regf_we;                // From ieu of ncpu32k_ieu.v
    wire                 specul_flush;           // From ieu of ncpu32k_ieu.v
@@ -110,8 +108,6 @@ module ncpu32k_core(
        // Outputs
        .regf_rs1_dout                   (regf_rs1_dout[`NCPU_DW-1:0]),
        .regf_rs2_dout                   (regf_rs2_dout[`NCPU_DW-1:0]),
-       .regf_rs1_dout_valid             (regf_rs1_dout_valid),
-       .regf_rs2_dout_valid             (regf_rs2_dout_valid),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
@@ -237,9 +233,7 @@ module ncpu32k_core(
        .idu_specul_bcc                  (idu_specul_bcc),
        .specul_flush                    (specul_flush),
        .regf_rs1_dout                   (regf_rs1_dout[`NCPU_DW-1:0]),
-       .regf_rs1_dout_valid             (regf_rs1_dout_valid),
        .regf_rs2_dout                   (regf_rs2_dout[`NCPU_DW-1:0]),
-       .regf_rs2_dout_valid             (regf_rs2_dout_valid),
        .ieu_in_ready                    (ieu_in_ready));
    
 

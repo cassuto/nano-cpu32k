@@ -43,7 +43,7 @@ module ncpu32k_ie_mu
    input                      wb_mu_in_ready, /* WB is ready to accept data */
    output                     wb_mu_in_valid /* data is presented at WB'input   */
 );
-  
+
    assign dbus_addr_o = ieu_operand_1 + ieu_operand_2;
    // Load from memory
    assign dbus_rd_o = ieu_mu_load;

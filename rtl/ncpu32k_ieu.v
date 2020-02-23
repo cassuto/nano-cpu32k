@@ -75,6 +75,7 @@ module ncpu32k_ieu(
    wire [`NCPU_DW-1:0]  mu_load;                // From mu of ncpu32k_ie_mu.v
    wire                 wb_mu_in_valid;         // From mu of ncpu32k_ie_mu.v
    // End of automatics
+   wire                 ieu_mu_in_valid;
 
    ncpu32k_ie_au au
       (/*AUTOINST*/
@@ -168,8 +169,12 @@ module ncpu32k_ieu(
 
    assign regf_we = commit & ieu_wb_regf & (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid); /* data is presented at regfile's input */
    
+   
+   assign ieu_mu_in_valid = ieu_in_valid;
+   
    assign wb_mu_in_ready = 1'b1; /* data is accepted by regfile */
    
+   /* valid-before-ready timing */
    assign ieu_in_ready = (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid);
    
 endmodule
