@@ -8,7 +8,7 @@ module handshake_sram
    parameter AW = `NCPU_AW,
    parameter SIZE_BYTES = 32*1024,
    parameter MEMH_FILE = "",
-   parameter DELAY=1
+   parameter DELAY=2
 )
 (
    input                      clk,
@@ -117,7 +117,8 @@ module handshake_sram
                dout <= dout_nxt;
                out_id <= addr; // Read command
             end
-            out_valid <= out_ready;
+            if(~out_valid) // FIXME? bug 2020-02-22 233916
+               out_valid <= out_ready;
          end
       end
    endgenerate
