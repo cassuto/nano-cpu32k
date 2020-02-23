@@ -21,8 +21,14 @@ module ncpu32k_ie_au(
    input [`NCPU_DW-1:0]       ieu_operand_1,
    input [`NCPU_DW-1:0]       ieu_operand_2,
    input [`NCPU_AU_IOPW-1:0]  ieu_au_opc_bus,
+   input                      ieu_au_cmp_eq,
+   input                      ieu_au_cmp_signed,
    output                     au_op_adder,
    output [`NCPU_DW-1:0]      au_adder,
+   output                     au_op_mhi,
+   output [`NCPU_DW-1:0]      au_mhi,
+   output                     au_cc_we,
+   output                     au_cc_nxt,
    output [`NCPU_DW-1:0]      au_mul,
    output [`NCPU_DW-1:0]      au_div
 );
@@ -34,7 +40,7 @@ module ncpu32k_ie_au(
    wire                adder_carry_out;
    wire                adder_overflow;
    
-   assign adder_sub = (ieu_au_opc_bus[`NCPU_AU_SUB]);
+   assign adder_sub = ieu_au_opc_bus[`NCPU_AU_SUB] | ieu_au_opc_bus[`NCPU_AU_CMP];
    assign adder_carry_in = adder_sub;
    assign adder_operand2_com = adder_sub ? ~ieu_operand_2 : ieu_operand_2;
 
@@ -43,7 +49,19 @@ module ncpu32k_ie_au(
    assign adder_overflow = (ieu_operand_1[`NCPU_DW-1] == adder_operand2_com[`NCPU_DW-1]) &
                           (ieu_operand_1[`NCPU_DW-1] ^ au_adder[`NCPU_DW-1]);
 
-   assign au_op_adder = ieu_au_opc_bus[`NCPU_AU_ADD] | adder_sub;
+   assign au_op_adder = ieu_au_opc_bus[`NCPU_AU_ADD] | ieu_au_opc_bus[`NCPU_AU_SUB];
+
+   // Comparator
+   assign au_cc_we = ieu_au_opc_bus[`NCPU_AU_CMP];
+   // equal
+   wire cmp_eq = ieu_operand_1 == ieu_operand_2;
+   // greater
+   wire cmp_gt_s = (au_adder[`NCPU_DW-1] == adder_overflow) & ~cmp_eq;
+   wire cmp_gt_u = adder_carry_out & ~cmp_eq;
+   
+   assign au_cc_nxt = (ieu_au_cmp_eq & cmp_eq) |
+                     (~ieu_au_cmp_eq & ~ieu_au_cmp_signed & cmp_gt_u) |
+                     (~ieu_au_cmp_eq & ieu_au_cmp_signed & cmp_gt_s);
 
    // Multiplier
 `ifdef ENABLE_MUL
@@ -58,5 +76,9 @@ module ncpu32k_ie_au(
 `endif
 `ifdef ENABLE_MODU
 `endif
+
+   // Move HI18
+   assign au_op_mhi = ieu_au_opc_bus[`NCPU_AU_MHI];
+   assign au_mhi = {ieu_operand_2[17:0], 14'b0};
 
 endmodule

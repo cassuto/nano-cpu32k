@@ -54,6 +54,8 @@ module ncpu32k_core(
    wire                 idu_specul_jmpfar;      // From ifu of ncpu32k_ifu.v
    wire                 idu_specul_jmprel;      // From ifu of ncpu32k_ifu.v
    wire [`NCPU_AW-3:0]  idu_specul_tgt;         // From ifu of ncpu32k_ifu.v
+   wire                 ieu_au_cmp_eq;          // From idu of ncpu32k_idu.v
+   wire                 ieu_au_cmp_signed;      // From idu of ncpu32k_idu.v
    wire [`NCPU_AU_IOPW-1:0] ieu_au_opc_bus;     // From idu of ncpu32k_idu.v
    wire                 ieu_emu_insn;           // From idu of ncpu32k_idu.v
    wire [`NCPU_EU_IOPW-1:0] ieu_eu_opc_bus;     // From idu of ncpu32k_idu.v
@@ -131,8 +133,6 @@ module ncpu32k_core(
    // MSR Bypass
    assign msr_psr_cc = (msr_psr_cc_we ? msr_psr_cc_nxt : msr_psr_cc_r);
    
-   assign msr_psr_cc_we = 0;
-   
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 1: Fetch
    /////////////////////////////////////////////////////////////////////////////
@@ -205,6 +205,8 @@ module ncpu32k_core(
        .ieu_operand_3                   (ieu_operand_3[`NCPU_DW-1:0]),
        .ieu_lu_opc_bus                  (ieu_lu_opc_bus[`NCPU_LU_IOPW-1:0]),
        .ieu_au_opc_bus                  (ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]),
+       .ieu_au_cmp_eq                   (ieu_au_cmp_eq),
+       .ieu_au_cmp_signed               (ieu_au_cmp_signed),
        .ieu_eu_opc_bus                  (ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]),
        .ieu_emu_insn                    (ieu_emu_insn),
        .ieu_mu_load                     (ieu_mu_load),
@@ -255,6 +257,8 @@ module ncpu32k_core(
        .regf_din_addr                   (regf_din_addr[`NCPU_REG_AW-1:0]),
        .regf_din                        (regf_din[`NCPU_DW-1:0]),
        .regf_we                         (regf_we),
+       .msr_psr_cc_nxt                  (msr_psr_cc_nxt),
+       .msr_psr_cc_we                   (msr_psr_cc_we),
        .specul_flush                    (specul_flush),
        .ifu_flush_jmp_tgt               (ifu_flush_jmp_tgt[`NCPU_AW-3:0]),
        .bpu_wb                          (bpu_wb),
@@ -272,6 +276,8 @@ module ncpu32k_core(
        .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),
        .ieu_operand_3                   (ieu_operand_3[`NCPU_DW-1:0]),
        .ieu_au_opc_bus                  (ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]),
+       .ieu_au_cmp_eq                   (ieu_au_cmp_eq),
+       .ieu_au_cmp_signed               (ieu_au_cmp_signed),
        .ieu_lu_opc_bus                  (ieu_lu_opc_bus[`NCPU_LU_IOPW-1:0]),
        .ieu_emu_insn                    (ieu_emu_insn),
        .ieu_mu_load                     (ieu_mu_load),

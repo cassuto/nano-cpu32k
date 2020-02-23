@@ -45,6 +45,8 @@ module ncpu32k_idu(
    output [`NCPU_DW-1:0]      ieu_operand_3,
    output [`NCPU_LU_IOPW-1:0] ieu_lu_opc_bus,
    output [`NCPU_AU_IOPW-1:0] ieu_au_opc_bus,
+   output                     ieu_au_cmp_eq,/* otherwise gt */
+   output                     ieu_au_cmp_signed,
    output [`NCPU_EU_IOPW-1:0] ieu_eu_opc_bus,
    output                     ieu_emu_insn,
    output                     ieu_mu_load,
@@ -194,7 +196,8 @@ module ncpu32k_idu(
    wire op_wsmr = (f_opcode == `NCPU_OP_WSMR);
    wire op_rsmr = (f_opcode == `NCPU_OP_RSMR);
    
-   
+   wire au_cmp_eq;
+   wire au_cmp_signed;
    wire [`NCPU_LU_IOPW-1:0] lu_opc_bus;
    wire [`NCPU_AU_IOPW-1:0] au_opc_bus;
    wire [`NCPU_EU_IOPW-1:0] eu_opc_bus;
@@ -231,6 +234,9 @@ module ncpu32k_idu(
    assign au_opc_bus[`NCPU_AU_MOD] = (op_mod);
    assign au_opc_bus[`NCPU_AU_MODU] = (op_modu);
    assign au_opc_bus[`NCPU_AU_MHI] = (op_mhi);
+   
+   assign au_cmp_eq = op_cmp & f_attr==`NCPU_ATTR_EQ;
+   assign au_cmp_signed = op_cmp & f_attr==`NCPU_ATTR_GT;
    
    assign eu_opc_bus[`NCPU_EU_WSMR] = (op_wsmr);
    assign eu_opc_bus[`NCPU_EU_RSMR] = (op_rsmr);
@@ -326,7 +332,12 @@ module ncpu32k_idu(
                    (clk,rst_n, pipebuf_cas, au_opc_bus[`NCPU_AU_IOPW-1:0], ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]);
    ncpu32k_cell_dff_lr #(`NCPU_EU_IOPW) dff_ieu_eu_opc_bus
                    (clk,rst_n, pipebuf_cas, eu_opc_bus[`NCPU_EU_IOPW-1:0], ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]);
-
+                   
+   ncpu32k_cell_dff_lr #(1) dff_ieu_au_cmp_eq
+                   (clk,rst_n, pipebuf_cas, au_cmp_eq, ieu_au_cmp_eq);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_au_cmp_signed
+                   (clk,rst_n, pipebuf_cas, au_cmp_signed, ieu_au_cmp_signed);
+                   
    ncpu32k_cell_dff_lr #(3) dff_ieu_mu_store_size
                    (clk,rst_n, pipebuf_cas, mu_store_size[2:0], ieu_mu_store_size[2:0]);
    ncpu32k_cell_dff_lr #(3) dff_ieu_mu_load_size

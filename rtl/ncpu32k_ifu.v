@@ -131,13 +131,12 @@ module ncpu32k_ifu(
    assign jmprel_tgt = (bpu_jmprel_taken ? jmprel_tgt_org : fetch_next_tgt);
    assign fetch_next_tgt = (ibus_out_id[`NCPU_AW-1:2] + 1'b1);
    
-   wire fetch_next = !op_jmpfar_nxt & !jmprel_taken & !specul_flush;
-   
    // Program Counter Register
-   assign pc_addr_nxt = ({`NCPU_AW-2{op_jmpfar_nxt}} & jmpfar_tgt) |
-                        ({`NCPU_AW-2{jmprel_taken}} & jmprel_tgt) |
-                        ({`NCPU_AW-2{specul_flush}} & ifu_flush_jmp_tgt) |
-                        ({`NCPU_AW-2{fetch_next}} & fetch_next_tgt);
+   // priority MUX
+   assign pc_addr_nxt = specul_flush ? ifu_flush_jmp_tgt
+                           : op_jmpfar_nxt ? jmpfar_tgt
+                           : jmprel_taken ? jmprel_tgt
+                           : fetch_next_tgt;
 
    assign ibus_addr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
    assign insn = ibus_o;
@@ -164,5 +163,13 @@ module ncpu32k_ifu(
                    (clk,rst_n, pipebuf_cas, specul & op_jmpfar_nxt & not_flushing, idu_specul_jmpfar);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmprel
                    (clk,rst_n, pipebuf_cas, specul & op_jmprel_nxt & not_flushing, idu_specul_jmprel);
+
+   // Assertions
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if(ibus_out_ready & op_jmpfar_nxt & jmprel_taken)
+         $fatal ("\n 'op_jmpfar_nxt' and 'jmprel_taken' should be mutex\n");
+   end
+`endif
 
 endmodule
