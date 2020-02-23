@@ -23,7 +23,7 @@ module ncpu32k_ifu(
    output [`NCPU_AW-1:0]   ibus_addr_o,
    input [`NCPU_IW-1:0]    ibus_o,
    input [`NCPU_AW-1:0]    ibus_out_id, /* address of data preseted at ibus_o */
-   input                   msr_psr_cc,
+   input [`NCPU_DW-1:0]    bpu_msr_epc,
    input [`NCPU_AW-3:0]    ifu_flush_jmp_tgt,
    input                   specul_flush,
    input                   idu_in_ready, /* idu is ready to accepted Insn */
@@ -33,6 +33,8 @@ module ncpu32k_ifu(
    output                  idu_jmprel_link,
    output                  idu_op_jmprel,
    output                  idu_op_jmpfar,
+   output                  idu_op_syscall,
+   output                  idu_op_ret,
    output                  idu_specul_jmpfar,
    output [`NCPU_AW-3:0]   idu_specul_tgt,
    output                  idu_specul_jmprel,
@@ -53,6 +55,8 @@ module ncpu32k_ifu(
    wire                    op_bt;
    wire                    op_jmprel_nxt;
    wire                    op_jmpfar_nxt;
+   wire                    op_syscall;
+   wire                    op_ret;
    wire                    specul;
    
    // Predecoder
@@ -68,7 +72,9 @@ module ncpu32k_ifu(
          .op_bcc        (op_bcc),
          .op_bt         (op_bt),
          .op_jmpfar     (op_jmpfar_nxt),
-         .op_jmprel     (op_jmprel_nxt)
+         .op_jmprel     (op_jmprel_nxt),
+         .op_syscall    (op_syscall),
+         .op_ret        (op_ret)
        );
    
    wire fetch_ready;
@@ -92,23 +98,29 @@ module ncpu32k_ifu(
    wire [`NCPU_AW-3:0] fetch_next_tgt;
    
    // Speculative execution
-   assign specul = bpu_jmprel | op_jmpfar_nxt;
+   assign specul = bpu_jmprel | op_jmpfar_nxt | op_ret;
    assign bpu_rd = specul;
-   assign bpu_jmprel = op_bcc & jmprel_taken;
+   assign bpu_jmprel = op_bcc;
    assign bpu_insn_pc = ibus_out_id[`NCPU_AW-1:2];
    
    wire [`NCPU_AW-3:0] specul_tgt_nxt = 
       (
-         bpu_jmprel ?
+           bpu_jmprel ?
             // for jmprel, this is alternate target for failed SE
             // if prediction is _not taken_ , then use the contrary target
             (bpu_jmprel_taken ? fetch_next_tgt : jmprel_tgt_org)
+         : op_jmpfar_nxt ?
             // for jmpfar, this is the predicated target,
-            // which should be consistent with prediction result
-            : jmpfar_tgt
+            // consistent with BPU result
+            jmpfar_tgt
+         : op_ret ?
+            // for ret, this is the predicated target,
+            // consistent with BPU result
+            bpu_msr_epc
+         : {`NCPU_AW-2{1'b0}}
       );
    // calc out predicted CC flag
-   wire specul_bcc_nxt = bpu_jmprel_taken & (op_bt | ~(op_bcc & ~op_bt));
+   wire specul_bcc_nxt = (bpu_jmprel_taken & op_bt | (~bpu_jmprel_taken & op_bcc & ~op_bt));
    
    // Pipeline
    wire pipebuf_cas;
@@ -128,14 +140,21 @@ module ncpu32k_ifu(
    
    assign jmpfar_tgt = bpu_jmp_tgt;
    assign jmprel_tgt_org = ibus_out_id[`NCPU_AW-1:2] + jmprel_offset;
-   assign jmprel_tgt = (bpu_jmprel_taken ? jmprel_tgt_org : fetch_next_tgt);
+   assign jmprel_tgt = (jmprel_taken ? jmprel_tgt_org : fetch_next_tgt);
    assign fetch_next_tgt = (ibus_out_id[`NCPU_AW-1:2] + 1'b1);
+   
+   // Exceptions
+   wire exp_taken = op_syscall;
+   wire [7:0] exp_vector = op_syscall ? `NCPU_ESYSCALL_VECTOR : `NCPU_ERST_VECTOR;
+   wire [`NCPU_AW-3:0] exp_vect_tgt = {{`NCPU_AW-2-8{1'b0}}, exp_vector[7:0]};
    
    // Program Counter Register
    // priority MUX
    assign pc_addr_nxt = specul_flush ? ifu_flush_jmp_tgt
+                           : exp_taken ? exp_vect_tgt
+                           : op_ret ? bpu_msr_epc
                            : op_jmpfar_nxt ? jmpfar_tgt
-                           : jmprel_taken ? jmprel_tgt
+                           : op_jmprel_nxt ? jmprel_tgt
                            : fetch_next_tgt;
 
    assign ibus_addr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
@@ -159,6 +178,10 @@ module ncpu32k_ifu(
                    (clk,rst_n, pipebuf_cas, jmprel_link_nxt & not_flushing, idu_jmprel_link);
    ncpu32k_cell_dff_lr #(1) dff_idu_op_jmpfar
                    (clk,rst_n, pipebuf_cas, op_jmpfar_nxt & not_flushing, idu_op_jmpfar);
+   ncpu32k_cell_dff_lr #(1) dff_idu_op_ret
+                   (clk,rst_n, pipebuf_cas, op_ret & not_flushing, idu_op_ret);
+   ncpu32k_cell_dff_lr #(1) dff_idu_op_syscall
+                   (clk,rst_n, pipebuf_cas, op_syscall & not_flushing, idu_op_syscall);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmpfar
                    (clk,rst_n, pipebuf_cas, specul & op_jmpfar_nxt & not_flushing, idu_specul_jmpfar);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmprel
@@ -167,7 +190,7 @@ module ncpu32k_ifu(
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if(ibus_out_ready & op_jmpfar_nxt & jmprel_taken)
+      if(ibus_out_ready & op_jmpfar_nxt & op_jmprel_nxt)
          $fatal ("\n 'op_jmpfar_nxt' and 'jmprel_taken' should be mutex\n");
    end
 `endif

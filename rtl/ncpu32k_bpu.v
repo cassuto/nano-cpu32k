@@ -27,6 +27,7 @@ module ncpu32k_bpu
    output                  bpu_jmprel,
    output [`NCPU_AW-3:0]   bpu_jmp_tgt,
    output                  bpu_jmprel_taken,
+   output [`NCPU_DW-1:0]   bpu_msr_epc,
    input                   bpu_wb,
    input                   bpu_wb_jmprel,
    input [`NCPU_AW-3:0]    bpu_wb_insn_pc,
@@ -35,10 +36,12 @@ module ncpu32k_bpu
    
    generate
       if(BPU_JMPREL_STRATEGY=="always_taken") begin : class_always_taken
-         assign bpu_jmprel_taken = 1'b1;
+         assign bpu_jmprel_taken = 1'b0;
       end
    endgenerate
    
    assign bpu_jmp_tgt = {`NCPU_AW-2{1'b0}};
+   
+   assign bpu_msr_epc = {`NCPU_DW{1'b0}};
    
 endmodule

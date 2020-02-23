@@ -27,11 +27,23 @@
 // Regfile address Bitwidth
 `define NCPU_REG_AW 5
 
+// PSR register Bitwidth
+`define NCPU_PSR_DW 10
+
 /////////////////////////////////////////////////////////////////////////////
 // Exception Vector Table
 /////////////////////////////////////////////////////////////////////////////
-`define NCPU_ERST_VECTOR 32'd0
-
+`define NCPU_ERST_VECTOR 8'h0
+`define NCPU_EINSN_VECTOR 8'h4
+`define NCPU_EIRQ_VECTOR 8'h8
+`define NCPU_ESYSCALL_VECTOR 8'hc
+`define NCPU_EBUS_VECTOR 8'h10
+`define NCPU_EIPF_VECTOR 8'h14
+`define NCPU_EDPF_VECTOR 8'h18
+`define NCPU_EITM_VECTOR 8'h1c
+`define NCPU_EDTM_VECTOR 8'h20
+`define NCPU_EALGIN_VECTOR 8'h24
+`define NCPU_EINT_VECTOR 8'h28
 
 /////////////////////////////////////////////////////////////////////////////
 // ISA GROUP - BASE

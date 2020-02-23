@@ -47,6 +47,8 @@ module ncpu32k_ieu(
    input                      ieu_jmpreg,
    input [`NCPU_AW-3:0]       ieu_insn_pc,
    input                      ieu_jmplink,
+   input                      ieu_syscall,
+   input                      ieu_ret,
    input                      ieu_specul_jmpfar,
    input [`NCPU_AW-3:0]       ieu_specul_tgt,
    input                      ieu_specul_jmprel,
@@ -54,9 +56,18 @@ module ncpu32k_ieu(
    output [`NCPU_REG_AW-1:0]  regf_din_addr,
    output [`NCPU_DW-1:0]      regf_din,
    output                     regf_we,
+   input [`NCPU_PSR_DW-1:0]   msr_psr,
    input                      msr_psr_cc,
+   input [`NCPU_DW-1:0]       msr_epc,
+   output                     msr_syscall_ent,
    output                     msr_psr_cc_nxt,
    output                     msr_psr_cc_we,
+   output [`NCPU_PSR_DW-1:0]  msr_epsr_nxt,
+   output                     msr_epsr_we,
+   output [`NCPU_DW-1:0]      msr_epc_nxt,
+   output                     msr_epc_we,
+   output [`NCPU_DW-1:0]      msr_elsa_nxt,
+   output                     msr_elsa_we,
    output                     specul_flush,
    output [`NCPU_AW-3:0]      ifu_flush_jmp_tgt,
    output                     bpu_wb,
@@ -159,15 +170,19 @@ module ncpu32k_ieu(
    wire commit = (ieu_mu_load|ieu_mu_store) ? wb_mu_in_valid : ieu_in_valid;
 
    //
-   // Speculative execution checking point
-   // case 1: a jmprel insn is to be committed
-   // case 2: a jmpfar insn is to be committed
+   // Speculative execution checking point. Flush:
+   // case 1: jmprel: specul_bcc mismatched
+   // case 2: jmpfar: specul_tgt mismatched
+   // case 3: ret: specul_tgt mismatched
    assign specul_flush = (ieu_specul_jmprel & (ieu_specul_bcc != msr_psr_cc))
-               | (ieu_specul_jmpfar & (ieu_specul_tgt != ieu_operand_1));
+               | (ieu_specul_jmpfar & (ieu_specul_tgt != ieu_operand_1))
+               | (ieu_ret & (ieu_specul_tgt != msr_epc));
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target
-   assign ifu_flush_jmp_tgt = ieu_specul_jmprel ? ieu_specul_tgt
-               : ieu_operand_1; // assert = ieu_specul_jmpfar
+   assign ifu_flush_jmp_tgt =
+         ({`NCPU_AW-2{ieu_specul_jmprel}} & ieu_specul_tgt) |
+         ({`NCPU_AW-2{ieu_specul_jmpfar}} & ieu_operand_1) |
+         ({`NCPU_AW-2{ieu_ret}} & msr_epc);
    
    assign bpu_wb = ieu_specul_jmprel | ieu_specul_jmpfar;
    assign bpu_wb_jmprel = ieu_specul_jmprel;
@@ -191,7 +206,13 @@ module ncpu32k_ieu(
    // Write back MSR
    assign msr_psr_cc_nxt = au_cc_nxt;
    assign msr_psr_cc_we = commit & au_cc_we;
-   
+   assign msr_syscall_ent = ieu_syscall;
+   assign msr_epsr_nxt = msr_psr;
+   assign msr_epsr_we = commit & ieu_syscall;
+   assign msr_epc_nxt = linkaddr;
+   assign msr_epc_we = commit & ieu_syscall;
+   assign msr_elsa_nxt = 32'b0;
+   assign msr_elsa_we = 1'b0;
    
    assign ieu_mu_in_valid = ieu_in_valid;
    
@@ -222,6 +243,13 @@ module ncpu32k_ieu(
                         ieu_jmplink)
                   )
          $fatal ("\n ctrls of 'regf_din' MUX should be mutex\n");
+   end
+   
+   always @(posedge clk) begin
+      if((ieu_specul_jmprel|ieu_specul_jmpfar|ieu_ret) &
+            ~(ieu_specul_jmprel^ieu_specul_jmpfar^ieu_ret)) begin
+         $fatal ("\n ctrls of 'ifu_flush_jmp_tgt' MUX should be mutex\n");
+      end
    end
 `endif
 

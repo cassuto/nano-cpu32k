@@ -26,7 +26,9 @@ module ncpu32k_ipdu(
    output                  op_bcc,
    output                  op_bt,
    output                  op_jmprel,
-   output                  op_jmpfar
+   output                  op_jmpfar,
+   output                  op_syscall,
+   output                  op_ret
 );
    wire [5:0] f_opcode = ipdu_insn[5:0];
    wire [25:0] f_rel26 = ipdu_insn[31:6];
@@ -36,6 +38,9 @@ module ncpu32k_ipdu(
    assign op_bt = (f_opcode == `NCPU_OP_BT);
    wire op_bf = (f_opcode == `NCPU_OP_BF);
    assign op_jmpfar = (f_opcode == `NCPU_OP_JMP);
+   
+   assign op_syscall = (f_opcode == `NCPU_OP_SYSCALL);
+   assign op_ret = (f_opcode == `NCPU_OP_RET);
    
    // PC-Relative address (sign-extended)
    wire [`NCPU_AW-3:0] rel26 = {{`NCPU_AW-28{f_rel26[25]}}, f_rel26[25:0]};
