@@ -84,7 +84,7 @@ module handshake_sram
             2'd1:
                status_nxt = 2'd2;
             2'd2:
-               status_nxt = 2'd0;
+               status_nxt = out_ready ? 2'd0 : 2'd2; // handshake with downstream
             endcase
          end
       end else if (DELAY==2) begin : delay_2
@@ -108,7 +108,7 @@ module handshake_sram
             2'd0:
                status_nxt = out_ready ? 2'd1 : 2'd0;
             2'd1:
-               status_nxt = 2'd0;
+               status_nxt = out_ready ? 2'd0 : 2'd1; // handshake with downstream
             endcase
          end
       end else if(DELAY==1) begin : delay_1
@@ -117,7 +117,7 @@ module handshake_sram
                dout <= dout_nxt;
                out_id <= addr; // Read command
             end
-            if(~out_valid) // FIXME? bug 2020-02-22 233916
+            if(~out_valid) // keep setted till handshaked with the downstream
                out_valid <= out_ready;
          end
       end
