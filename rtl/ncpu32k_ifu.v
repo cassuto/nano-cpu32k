@@ -146,7 +146,7 @@ module ncpu32k_ifu(
    // Exceptions
    wire exp_taken = op_syscall;
    wire [7:0] exp_vector = op_syscall ? `NCPU_ESYSCALL_VECTOR : `NCPU_ERST_VECTOR;
-   wire [`NCPU_AW-3:0] exp_vect_tgt = {{`NCPU_AW-2-8{1'b0}}, exp_vector[7:0]};
+   wire [`NCPU_AW-3:0] exp_vect_tgt = {{`NCPU_AW-2-8{1'b0}}, exp_vector[7:2]};
    
    // Program Counter Register
    // priority MUX

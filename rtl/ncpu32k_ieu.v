@@ -56,12 +56,21 @@ module ncpu32k_ieu(
    output [`NCPU_REG_AW-1:0]  regf_din_addr,
    output [`NCPU_DW-1:0]      regf_din,
    output                     regf_we,
+   output                     msr_syscall_ent,
    input [`NCPU_PSR_DW-1:0]   msr_psr,
    input                      msr_psr_cc,
    input [`NCPU_DW-1:0]       msr_epc,
-   output                     msr_syscall_ent,
+   input [`NCPU_PSR_DW-1:0]   msr_epsr,
    output                     msr_psr_cc_nxt,
    output                     msr_psr_cc_we,
+   output                     msr_psr_rm_nxt,
+   output                     msr_psr_rm_we,
+   output                     msr_psr_imme_nxt,
+   output                     msr_psr_imme_we,
+   output                     msr_psr_dmme_nxt,
+   output                     msr_psr_dmme_we,
+   output                     msr_psr_ire_nxt,
+   output                     msr_psr_ire_we,
    output [`NCPU_PSR_DW-1:0]  msr_epsr_nxt,
    output                     msr_epsr_we,
    output [`NCPU_DW-1:0]      msr_epc_nxt,
@@ -182,7 +191,7 @@ module ncpu32k_ieu(
    assign ifu_flush_jmp_tgt =
          ({`NCPU_AW-2{ieu_specul_jmprel}} & ieu_specul_tgt) |
          ({`NCPU_AW-2{ieu_specul_jmpfar}} & ieu_operand_1) |
-         ({`NCPU_AW-2{ieu_ret}} & msr_epc);
+         ({`NCPU_AW-2{ieu_ret}} & msr_epc[`NCPU_AW-1:2]);
    
    assign bpu_wb = ieu_specul_jmprel | ieu_specul_jmpfar;
    assign bpu_wb_jmprel = ieu_specul_jmprel;
@@ -203,10 +212,28 @@ module ncpu32k_ieu(
 
    assign regf_we = commit & ieu_wb_regf & (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid); /* data is presented at regfile's input */
    
+   
+   // Unpack EPSR. Be consistend with ncpu32k_psr
+   wire epsr_cc;
+   wire epsr_rm;
+   wire epsr_ire;
+   wire epsr_imme;
+   wire epsr_dmme;
+   wire [9:0] epsr_res;
+   assign {epsr_res[9],epsr_res[8],epsr_dmme,epsr_imme,epsr_ire,epsr_rm,epsr_res[3],epsr_res[2], epsr_res[1],epsr_cc} = msr_epsr;
+   
    // Write back MSR
-   assign msr_psr_cc_nxt = au_cc_nxt;
-   assign msr_psr_cc_we = commit & au_cc_we;
    assign msr_syscall_ent = ieu_syscall;
+   assign msr_psr_cc_nxt = au_cc_we ? au_cc_nxt : epsr_cc;
+   assign msr_psr_cc_we = commit & (au_cc_we | ieu_ret);
+   assign msr_psr_rm_nxt = epsr_rm;
+   assign msr_psr_rm_we = commit & ieu_ret;
+   assign msr_psr_imme_nxt = epsr_imme;
+   assign msr_psr_imme_we = commit & ieu_ret;
+   assign msr_psr_dmme_nxt = epsr_dmme;
+   assign msr_psr_dmme_we = commit & ieu_ret;
+   assign msr_psr_ire_nxt = epsr_ire;
+   assign msr_psr_ire_we = commit & ieu_ret;
    assign msr_epsr_nxt = msr_psr;
    assign msr_epsr_we = commit & ieu_syscall;
    assign msr_epc_nxt = linkaddr;

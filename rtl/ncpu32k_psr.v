@@ -71,10 +71,10 @@ module ncpu32k_psr(
    
    // Flip-flops
    ncpu32k_cell_dff_lr #(1) dff_msr_psr_cc (clk, rst_n, msr_psr_cc_we, msr_psr_cc_nxt, msr_psr_cc_r);
-   ncpu32k_cell_dff_lr #(1) dff_msr_psr_rm (clk, rst_n, msr_psr_rm_we|psr_ld, msr_psr_rm_nxt|psr_rm_set, msr_psr_rm_r);
-   ncpu32k_cell_dff_lr #(1) dff_msr_psr_ire (clk, rst_n, msr_psr_ire_we|psr_ld, msr_psr_ire_nxt&psr_ire_msk, msr_psr_ire_r);
-   ncpu32k_cell_dff_lr #(1) dff_msr_psr_imme (clk, rst_n, msr_psr_imme_we|psr_ld, msr_psr_imme_nxt&psr_imme_msk, msr_psr_imme_r);
-   ncpu32k_cell_dff_lr #(1) dff_msr_psr_dmme (clk, rst_n, msr_psr_dmme_we|psr_ld, msr_psr_dmme_nxt&psr_dmme_msk, msr_psr_dmme_r);
+   ncpu32k_cell_dff_lr #(1, 1'b1) dff_msr_psr_rm (clk, rst_n, msr_psr_rm_we|psr_ld, msr_psr_rm_nxt|psr_rm_set, msr_psr_rm_r);
+   ncpu32k_cell_dff_lr #(1, 1'b1) dff_msr_psr_ire (clk, rst_n, msr_psr_ire_we|psr_ld, msr_psr_ire_nxt&psr_ire_msk, msr_psr_ire_r);
+   ncpu32k_cell_dff_lr #(1, 1'b1) dff_msr_psr_imme (clk, rst_n, msr_psr_imme_we|psr_ld, msr_psr_imme_nxt&psr_imme_msk, msr_psr_imme_r);
+   ncpu32k_cell_dff_lr #(1, 1'b1) dff_msr_psr_dmme (clk, rst_n, msr_psr_dmme_we|psr_ld, msr_psr_dmme_nxt&psr_dmme_msk, msr_psr_dmme_r);
    
    ncpu32k_cell_dff_lr #(`NCPU_PSR_DW) dff_msr_epsr (clk, rst_n, msr_epsr_we, msr_epsr_nxt, msr_epsr_r);
    
