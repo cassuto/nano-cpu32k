@@ -29,12 +29,21 @@ module tb_ncpu32k_sram();
    wire                 dbus_out_valid;
    wire                 dbus_out_ready;
    wire [`NCPU_DW-1:0]  dbus_o;
-   wire                 ibus_out_valid;
-   wire                 ibus_out_ready;
-   wire [`NCPU_AW-1:0]  ibus_out_id;
-   wire [`NCPU_AW-1:0]  ibus_addr_o;
-   wire [`NCPU_DW-1:0]  ibus_o;
    wire [2:0]           dbus_size_o;
+   wire                 ibus_dout_valid;
+   wire                 ibus_dout_ready;
+   wire [`NCPU_AW-1:0]  ibus_out_id;
+   wire [`NCPU_AW-1:0]  ibus_cmd_addr;
+   wire                 ibus_cmd_ready;
+   wire                 ibus_cmd_valid;
+   wire [`NCPU_DW-1:0]  ibus_dout;
+   wire                 icache_dout_valid;
+   wire                 icache_dout_ready;
+   wire [`NCPU_AW-1:0]  icache_out_id;
+   wire                 icache_cmd_ready;
+   wire                 icache_cmd_valid;
+   wire [`NCPU_AW-1:0]  icache_cmd_addr;
+   wire [`NCPU_DW-1:0]  icache_dout;
    
    handshake_sram d_ram(
       .clk     (clk),
@@ -50,21 +59,41 @@ module tb_ncpu32k_sram();
       .size    (dbus_size_o)
    );
    
-   handshake_sram #(
+   handshake_cmd_sram #(
       .MEMH_FILE("insn.mem")
    ) i_ram
    (
       .clk     (clk),
       .rst_n   (rst_n),
-      .addr    (ibus_addr_o),
+      .cmd_addr    (icache_cmd_addr),
       .in_valid   (1'b0),
       .in_ready   (),
       .din        (),
-      .out_valid  (ibus_out_valid),
-      .out_ready  (ibus_out_ready),
-      .out_id     (ibus_out_id),
-      .dout    (ibus_o),
+      .out_valid  (icache_dout_valid),
+      .out_ready  (icache_dout_ready),
+      .cmd_ready  (icache_cmd_ready),
+      .cmd_valid  (icache_cmd_valid),
+      .dout    (icache_dout),
       .size    (3'd3)
+   );
+   
+   ncpu32k_i_mmu i_mmu
+   (
+      .clk              (clk),
+      .rst_n            (rst_n),
+      .ibus_dout_valid    (ibus_dout_valid),
+      .ibus_dout_ready    (ibus_dout_ready),
+      .ibus_cmd_addr     (ibus_cmd_addr),
+      .ibus_cmd_ready    (ibus_cmd_ready),
+      .ibus_cmd_valid    (ibus_cmd_valid),
+      .ibus_dout         (ibus_dout),
+      .ibus_out_id       (ibus_out_id),
+      .icache_dout_valid    (icache_dout_valid),
+      .icache_dout_ready    (icache_dout_ready),
+      .icache_cmd_ready    (icache_cmd_ready),
+      .icache_cmd_valid    (icache_cmd_valid),
+      .icache_cmd_addr     (icache_cmd_addr),
+      .icache_dout         (icache_dout)
    );
    
    ncpu32k_core ncpu32k_inst(
@@ -78,11 +107,13 @@ module tb_ncpu32k_sram();
       .dbus_out_ready (dbus_out_ready),
       .dbus_i        (dbus_i),
       .dbus_size_o   (dbus_size_o),
-      .ibus_addr_o   (ibus_addr_o),
-      .ibus_out_valid (ibus_out_valid),
-      .ibus_out_ready (ibus_out_ready),
+      .ibus_cmd_addr   (ibus_cmd_addr),
+      .ibus_cmd_ready    (ibus_cmd_ready),
+      .ibus_cmd_valid    (ibus_cmd_valid),
+      .ibus_dout_valid (ibus_dout_valid),
+      .ibus_dout_ready (ibus_dout_ready),
       .ibus_out_id    (ibus_out_id),
-      .ibus_o         (ibus_o)
+      .ibus_dout         (ibus_dout)
    );
 
 endmodule

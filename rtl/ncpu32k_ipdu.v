@@ -20,6 +20,7 @@ module ncpu32k_ipdu(
    input                   rst_n,
    input [`NCPU_IW-1:0]    ipdu_insn,
    input                   bpu_taken,
+   input                   valid,
    output                  jmprel_taken, /* do relative jmp now ? */
    output [`NCPU_AW-3:0]   jmprel_offset,
    output                  jmprel_link,
@@ -30,7 +31,7 @@ module ncpu32k_ipdu(
    output                  op_syscall,
    output                  op_ret
 );
-   wire [5:0] f_opcode = ipdu_insn[5:0];
+   wire [5:0] f_opcode = ipdu_insn[5:0] & {6{valid}};
    wire [25:0] f_rel26 = ipdu_insn[31:6];
    
    wire op_jmp_i = (f_opcode == `NCPU_OP_JMP_I);

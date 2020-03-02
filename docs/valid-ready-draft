@@ -43,9 +43,6 @@ Timing:
 		out_ready is input
 		out_valid is output
 		
-		Command or ack is accepted if-and-only-if:
-			1. at rising edge of clk
-			2. ready is set
 
 	for downstream(input) module:
 		valid-before-ready

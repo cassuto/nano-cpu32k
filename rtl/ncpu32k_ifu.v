@@ -18,11 +18,13 @@
 module ncpu32k_ifu(         
    input                   clk,
    input                   rst_n,
-   input                   ibus_out_valid, /* Insn is presented at ibus */
-   output                  ibus_out_ready, /* ifu is ready to accepted Insn */
-   output [`NCPU_AW-1:0]   ibus_addr_o,
-   input [`NCPU_IW-1:0]    ibus_o,
-   input [`NCPU_AW-1:0]    ibus_out_id, /* address of data preseted at ibus_o */
+   input                   ibus_dout_valid, /* Insn is presented at immu's output */
+   output                  ibus_dout_ready, /* ifu is ready to accepted Insn */
+   input [`NCPU_IW-1:0]    ibus_dout,
+   input                   ibus_cmd_ready, /* ibus is ready to accept cmd */
+   output                  ibus_cmd_valid, /* cmd is presented at ibus'input */
+   output [`NCPU_AW-1:0]   ibus_cmd_addr,
+   input [`NCPU_AW-1:0]    ibus_out_id, /* address of data preseted at ibus_dout */
    input [`NCPU_DW-1:0]    bpu_msr_epc,
    input [`NCPU_AW-3:0]    ifu_flush_jmp_tgt,
    input                   specul_flush,
@@ -66,6 +68,7 @@ module ncpu32k_ifu(
          .rst_n         (rst_n),
          .ipdu_insn     (insn),
          .bpu_taken     (bpu_jmprel_taken),
+         .valid         (ibus_dout_valid),
          .jmprel_taken  (jmprel_taken),
          .jmprel_offset (jmprel_offset),
          .jmprel_link   (jmprel_link_nxt),
@@ -89,7 +92,8 @@ module ncpu32k_ifu(
    assign reset_cnt_ld = ~reset_cnt[1];
    assign reset_cnt_nxt = reset_cnt + 1'b1;
    
-   assign ibus_out_ready = fetch_ready & reset_cnt[1];
+   assign ibus_cmd_valid = reset_cnt[1];
+   assign ibus_dout_ready = fetch_ready & reset_cnt[1];
    
    // Branching target
    wire [`NCPU_AW-3:0] jmpfar_tgt;
@@ -131,7 +135,7 @@ module ncpu32k_ifu(
          .rst_n      (rst_n),
          .din        (),
          .dout       (),
-         .in_valid   (ibus_out_valid),
+         .in_valid   (ibus_dout_valid),
          .in_ready   (fetch_ready),
          .out_valid  (idu_in_valid),
          .out_ready  (idu_in_ready),
@@ -157,8 +161,8 @@ module ncpu32k_ifu(
                            : op_jmprel_nxt ? jmprel_tgt
                            : fetch_next_tgt;
 
-   assign ibus_addr_o = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
-   assign insn = ibus_o;
+   assign ibus_cmd_addr = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
+   assign insn = ibus_dout;
    
    wire not_flushing = ~specul_flush;
    
@@ -190,7 +194,7 @@ module ncpu32k_ifu(
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if(ibus_out_ready & op_jmpfar_nxt & op_jmprel_nxt)
+      if(ibus_dout_ready & op_jmpfar_nxt & op_jmprel_nxt)
          $fatal ("\n 'op_jmpfar_nxt' and 'jmprel_taken' should be mutex\n");
    end
 `endif

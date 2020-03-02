@@ -78,7 +78,7 @@ module ncpu32k_ie_mu
       (
          // If there is an incoming load/store request, then goto to the corresponding status.
          // otherwise, keep idle.
-           (hs_status_r==HS_IDLE) ? (ieu_mu_load ? HS_LOAD : ieu_mu_store ? HS_STORE : HS_IDLE)
+           (hs_status_r==HS_IDLE) ? (ieu_mu_in_valid & ieu_mu_load ? HS_LOAD : ieu_mu_in_valid & ieu_mu_store ? HS_STORE : HS_IDLE)
          // handshake with dbus output
          : (hs_status_r==HS_LOAD) ? (dbus_out_valid ? HS_PENDING : HS_LOAD)
          // handshake with dbus input
