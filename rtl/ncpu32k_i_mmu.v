@@ -25,6 +25,7 @@ module ncpu32k_i_mmu(
    input                   ibus_cmd_valid, /* cmd is presented at ibus'input */
    input [`NCPU_AW-1:0]    ibus_cmd_addr,
    input                   ibus_cmd_flush,
+   output                  ibus_flush_ack,
    output [`NCPU_AW-1:0]   ibus_out_id,
    output [`NCPU_AW-1:0]   ibus_out_id_nxt,
    input                   ibus_hld_id,
@@ -38,9 +39,13 @@ module ncpu32k_i_mmu(
 
    // MMU FSM
    wire hds_cmd;
-   wire hds_icache;
+   wire hds_ibus;
    wire icache_cmd_valid_w;
 
+   ncpu32k_cell_dff_r #(1) dff_flush_ack
+                   (clk,rst_n, ibus_cmd_flush, ibus_flush_ack);
+   wire flush_strobe = (ibus_cmd_flush&~ibus_flush_ack);
+   
    ncpu32k_cell_pipebuf #(`NCPU_IW) pipebuf_ifu
       (
          .clk        (clk),
@@ -50,32 +55,42 @@ module ncpu32k_i_mmu(
          .in_valid   (ibus_cmd_valid),
          .in_ready   (ibus_cmd_ready),
          .out_valid  (icache_cmd_valid_w),
-         .out_ready  (icache_cmd_ready),
+         .out_ready  (icache_cmd_ready | flush_strobe),
          .cas        (hds_cmd)
       );
       
-   assign icache_cmd_valid = /*~ibus_cmd_flush &*/ icache_cmd_valid_w;
+   assign hds_ibus = ibus_dout_valid & ibus_dout_ready;
+      
+   assign icache_cmd_valid = ~flush_strobe & icache_cmd_valid_w;
 
-   assign hds_icache = icache_dout_valid & icache_dout_ready;
+   assign icache_dout_ready = ibus_dout_ready;
+   assign ibus_dout_valid = icache_dout_valid;
+   assign ibus_dout = icache_dout;
+   
+   // Flush current-insn-PC indicator
+   wire [`NCPU_AW-1:0] ibus_out_id_nxt_bypass = ibus_cmd_flush ? ibus_cmd_addr[`NCPU_AW-1:0] : ibus_out_id_nxt[`NCPU_AW-1:0];
       
    localparam RST_FETCH_ADDR = `NCPU_ERST_VECTOR-`NCPU_AW'd4;
    
    // Transfer when handshaked with ibus cmd
    ncpu32k_cell_dff_lr #(`NCPU_AW, RST_FETCH_ADDR) dff_id_nxt
                    (clk,rst_n, hds_cmd, ibus_cmd_addr[`NCPU_AW-1:0], ibus_out_id_nxt[`NCPU_AW-1:0]);
-   // Transfer when handshaked with ibus dout and did not hold on GENPC
-   ncpu32k_cell_dff_lr #(`NCPU_AW, RST_FETCH_ADDR) dff_id
-                   (clk,rst_n, hds_icache & ~ibus_hld_id, ibus_cmd_flush ? ibus_cmd_addr[`NCPU_AW-1:0] : ibus_out_id_nxt[`NCPU_AW-1:0], ibus_out_id[`NCPU_AW-1:0]);
+   // Transfer when handshaked with downstream module
+   ncpu32k_cell_dff_lr #(`NCPU_AW) dff_id
+                   (clk,rst_n, hds_ibus, ibus_out_id_nxt_bypass , ibus_out_id[`NCPU_AW-1:0]);
 
    // TLB
+   wire tlb_load;
    wire [`NCPU_AW-1:0] tlb_addr;
+   
+   // When flushing there is no need to handshake with command
+   assign tlb_load = hds_cmd | ibus_cmd_flush;
+   
    ncpu32k_cell_dff_lr #(`NCPU_AW) dff_tlb
-                   (clk,rst_n, hds_cmd, ibus_cmd_addr[`NCPU_AW-1:0], tlb_addr[`NCPU_AW-1:0]);
+                   (clk,rst_n, tlb_load, ibus_cmd_addr[`NCPU_AW-1:0], tlb_addr[`NCPU_AW-1:0]);
 
    assign icache_cmd_addr = tlb_addr;
    
-   assign icache_dout_ready = ibus_dout_ready;
-   assign ibus_dout_valid = icache_dout_valid;
-   assign ibus_dout = icache_dout;
+   
    
 endmodule

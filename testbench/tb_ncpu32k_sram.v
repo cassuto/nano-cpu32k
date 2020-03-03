@@ -33,13 +33,17 @@ module tb_ncpu32k_sram();
    wire                 ibus_dout_valid;
    wire                 ibus_dout_ready;
    wire [`NCPU_AW-1:0]  ibus_out_id;
+   wire                 ibus_hld_id;
+   wire                 ibus_cmd_flush;
    wire [`NCPU_AW-1:0]  ibus_cmd_addr;
    wire                 ibus_cmd_ready;
    wire                 ibus_cmd_valid;
+   wire                 ibus_flush_ack;
    wire [`NCPU_DW-1:0]  ibus_dout;
    wire                 icache_dout_valid;
    wire                 icache_dout_ready;
    wire [`NCPU_AW-1:0]  icache_out_id;
+   wire [`NCPU_AW-1:0]  ibus_out_id_nxt;
    wire                 icache_cmd_ready;
    wire                 icache_cmd_valid;
    wire [`NCPU_AW-1:0]  icache_cmd_addr;
@@ -88,6 +92,10 @@ module tb_ncpu32k_sram();
       .ibus_cmd_valid    (ibus_cmd_valid),
       .ibus_dout         (ibus_dout),
       .ibus_out_id       (ibus_out_id),
+      .ibus_out_id_nxt   (ibus_out_id_nxt),
+      .ibus_hld_id       (ibus_hld_id),
+      .ibus_cmd_flush     (ibus_cmd_flush),
+      .ibus_flush_ack      (ibus_flush_ack),
       .icache_dout_valid    (icache_dout_valid),
       .icache_dout_ready    (icache_dout_ready),
       .icache_cmd_ready    (icache_cmd_ready),
@@ -113,7 +121,11 @@ module tb_ncpu32k_sram();
       .ibus_dout_valid (ibus_dout_valid),
       .ibus_dout_ready (ibus_dout_ready),
       .ibus_out_id    (ibus_out_id),
-      .ibus_dout         (ibus_dout)
+      .ibus_out_id_nxt   (ibus_out_id_nxt),
+      .ibus_hld_id    (ibus_hld_id),
+      .ibus_dout         (ibus_dout),
+      .ibus_cmd_flush     (ibus_cmd_flush),
+      .ibus_flush_ack      (ibus_flush_ack)
    );
 
 endmodule

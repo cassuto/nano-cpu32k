@@ -1,17 +1,19 @@
 .org 0x0
-jmp r8, _l
-add r1, r0, 123
-.org 0x10
-_l:
-jmp r8,_start
-add r1, r0, 456
+jmp r0, _reset
+
+
+/* test syscall */
+.org 0xc
+ldwu r1, 3(r0)
+cmp r0,eq,r0
+add r1,r0,432
+ret
+add r2,r0,2
+add r2,r0,3
 
 .org 0x100
-_start:
-jmp r0, r8
-add r1, r0, 123
-add r3, r0, -1
-sub r4, r1, r2
-sub r5, r1, r2
-add r6, r0, r1
-jmp r1,_start
+
+_reset:
+syscall 0xc
+add r2,r0,1
+/* end */

@@ -36,7 +36,7 @@ module ncpu32k_bpu
    
    generate
       if(BPU_JMPREL_STRATEGY=="always_taken") begin : class_always_taken
-         assign bpu_jmprel_taken = 1'b0;
+         assign bpu_jmprel_taken = 1'b1;
       end
    endgenerate
    

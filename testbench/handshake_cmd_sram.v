@@ -89,29 +89,17 @@ module handshake_cmd_sram
             endcase
          end
       end else if (DELAY==2) begin : delay_2
-         reg out_valid_r;
-         assign out_valid = out_valid_r;
-         
+         wire push = (cmd_valid & cmd_ready);
+         wire pop = (out_valid & out_ready);
+         wire valid_nxt = (push | ~pop);
+         ncpu32k_cell_dff_lr #(1) dff_out_valid
+                         (clk,rst_n, (push | pop), valid_nxt, out_valid);
+                         
+         assign cmd_ready = ~out_valid;
          always @(posedge clk) begin
-            status_r <= status_nxt;
-            
-            case(status_nxt)
-            2'd0: begin
-               out_valid_r <= 1'b0;
-            end
-            2'd1: begin
+            if(push) begin
                dout <= dout_nxt;
-               out_valid_r <= 1'b1;
             end
-            endcase
-         end
-         always @(*) begin
-            case(status_r)
-            2'd0:
-               status_nxt = out_ready ? 2'd1 : 2'd0;
-            2'd1:
-               status_nxt = out_ready ? 2'd0 : 2'd1; // handshake with downstream
-            endcase
          end
       end else if(DELAY==1) begin : delay_1
          wire push = (cmd_valid & cmd_ready);
@@ -119,7 +107,7 @@ module handshake_cmd_sram
          wire valid_nxt = (push | ~pop);
          ncpu32k_cell_dff_lr #(1) dff_out_valid
                          (clk,rst_n, (push | pop), valid_nxt, out_valid);
-                         
+
          assign cmd_ready = ~out_valid | pop;
          always @(posedge clk) begin
             if(push) begin

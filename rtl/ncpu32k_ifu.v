@@ -28,6 +28,7 @@ module ncpu32k_ifu(
    input [`NCPU_AW-1:0]    ibus_out_id_nxt,
    output                  ibus_hld_id, /* hold on out_id */
    output                  ibus_cmd_flush,
+   input                   ibus_flush_ack,
    input [`NCPU_DW-1:0]    bpu_msr_epc,
    input [`NCPU_AW-3:0]    ifu_flush_jmp_tgt,
    input                   specul_flush,
@@ -71,7 +72,7 @@ module ncpu32k_ifu(
          .rst_n         (rst_n),
          .ipdu_insn     (insn),
          .bpu_taken     (bpu_jmprel_taken),
-         .valid         (1'b1), /* ibus_dout_valid */
+         .valid         (ibus_dout_valid & ibus_dout_ready), /* ibus_dout_valid */
          .jmprel_taken  (jmprel_taken),
          .jmprel_offset (jmprel_offset),
          .jmprel_link   (jmprel_link_nxt),
@@ -96,7 +97,7 @@ module ncpu32k_ifu(
    assign reset_cnt_nxt = reset_cnt + 1'b1;
    
    assign ibus_cmd_valid = reset_cnt[1];
-   assign ibus_dout_ready = fetch_ready & reset_cnt[1];
+   assign ibus_dout_ready = fetch_ready & ~ibus_flush_ack & reset_cnt[1];
    
    // The folowing signals are for flush only
    wire [`NCPU_AW-3:0] flush_insn_pc = ibus_out_id[`NCPU_AW-1:2];
