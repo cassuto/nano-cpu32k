@@ -25,6 +25,9 @@ module ncpu32k_ifu(
    output                  ibus_cmd_valid, /* cmd is presented at ibus'input */
    output [`NCPU_AW-1:0]   ibus_cmd_addr,
    input [`NCPU_AW-1:0]    ibus_out_id, /* address of data preseted at ibus_dout */
+   input [`NCPU_AW-1:0]    ibus_out_id_nxt,
+   output                  ibus_hld_id, /* hold on out_id */
+   output                  ibus_cmd_flush,
    input [`NCPU_DW-1:0]    bpu_msr_epc,
    input [`NCPU_AW-3:0]    ifu_flush_jmp_tgt,
    input                   specul_flush,
@@ -68,7 +71,7 @@ module ncpu32k_ifu(
          .rst_n         (rst_n),
          .ipdu_insn     (insn),
          .bpu_taken     (bpu_jmprel_taken),
-         .valid         (ibus_dout_valid),
+         .valid         (1'b1), /* ibus_dout_valid */
          .jmprel_taken  (jmprel_taken),
          .jmprel_offset (jmprel_offset),
          .jmprel_link   (jmprel_link_nxt),
@@ -95,28 +98,31 @@ module ncpu32k_ifu(
    assign ibus_cmd_valid = reset_cnt[1];
    assign ibus_dout_ready = fetch_ready & reset_cnt[1];
    
+   // The folowing signals are for flush only
+   wire [`NCPU_AW-3:0] flush_insn_pc = ibus_out_id[`NCPU_AW-1:2];
+   wire [`NCPU_AW-3:0] flush_next_tgt = ibus_out_id[`NCPU_AW-1:2] + 1'b1;
+   
    // Branching target
-   wire [`NCPU_AW-3:0] jmpfar_tgt;
-   wire [`NCPU_AW-3:0] jmprel_tgt_org;
-   wire [`NCPU_AW-3:0] jmprel_tgt;
-   wire [`NCPU_AW-3:0] fetch_next_tgt;
+   wire [`NCPU_AW-3:0] flush_jmpfar_tgt;
+   wire [`NCPU_AW-3:0] flush_jmprel_tgt_org;
+   wire [`NCPU_AW-3:0] flush_jmprel_tgt;
    
    // Speculative execution
    assign specul = bpu_jmprel | op_jmpfar_nxt | op_ret;
    assign bpu_rd = specul;
    assign bpu_jmprel = op_bcc;
-   assign bpu_insn_pc = ibus_out_id[`NCPU_AW-1:2];
+   assign bpu_insn_pc = flush_insn_pc;
    
-   wire [`NCPU_AW-3:0] specul_tgt_nxt = 
+   wire [`NCPU_AW-3:0] specul_tgt_nxt =
       (
            bpu_jmprel ?
             // for jmprel, this is alternate target for failed SE
             // if prediction is _not taken_ , then use the contrary target
-            (bpu_jmprel_taken ? fetch_next_tgt : jmprel_tgt_org)
+            (bpu_jmprel_taken ? flush_next_tgt : flush_jmprel_tgt_org)
          : op_jmpfar_nxt ?
             // for jmpfar, this is the predicated target,
             // consistent with BPU result
-            jmpfar_tgt
+            flush_jmpfar_tgt
          : op_ret ?
             // for ret, this is the predicated target,
             // consistent with BPU result
@@ -142,33 +148,38 @@ module ncpu32k_ifu(
          .cas        (pipebuf_cas)
       );
    
-   assign jmpfar_tgt = bpu_jmp_tgt;
-   assign jmprel_tgt_org = ibus_out_id[`NCPU_AW-1:2] + jmprel_offset;
-   assign jmprel_tgt = (jmprel_taken ? jmprel_tgt_org : fetch_next_tgt);
-   assign fetch_next_tgt = (ibus_out_id[`NCPU_AW-1:2] + 1'b1);
+   assign flush_jmpfar_tgt = bpu_jmp_tgt;
+   assign flush_jmprel_tgt_org = flush_insn_pc + jmprel_offset;
+   assign flush_jmprel_tgt = (jmprel_taken ? flush_jmprel_tgt_org : flush_next_tgt);
+   // Hold on the ibus_out_id so that when can send the right branching address that is
+   // relative to the current insn insted of the next one.
+   assign ibus_hld_id = op_jmprel_nxt;
    
    // Exceptions
    wire exp_taken = op_syscall;
    wire [7:0] exp_vector = op_syscall ? `NCPU_ESYSCALL_VECTOR : `NCPU_ERST_VECTOR;
-   wire [`NCPU_AW-3:0] exp_vect_tgt = {{`NCPU_AW-2-8{1'b0}}, exp_vector[7:2]};
+   wire [`NCPU_AW-3:0] flush_exp_vect_tgt = {{`NCPU_AW-2-8{1'b0}}, exp_vector[7:2]};
    
    // Program Counter Register
    // priority MUX
+   // Note that nxt and flush are reusing the same port 
    assign pc_addr_nxt = specul_flush ? ifu_flush_jmp_tgt
-                           : exp_taken ? exp_vect_tgt
+                           : exp_taken ? flush_exp_vect_tgt
                            : op_ret ? bpu_msr_epc
-                           : op_jmpfar_nxt ? jmpfar_tgt
-                           : op_jmprel_nxt ? jmprel_tgt
-                           : fetch_next_tgt;
+                           : op_jmpfar_nxt ? flush_jmpfar_tgt
+                           : op_jmprel_nxt ? flush_jmprel_tgt
+                           : ibus_out_id_nxt[`NCPU_AW-1:2] + 1'b1; /* Non flush */
 
    assign ibus_cmd_addr = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
+   assign ibus_cmd_flush = specul_flush | exp_taken | op_ret | op_jmpfar_nxt | op_jmprel_nxt;
+   
    assign insn = ibus_dout;
    
    wire not_flushing = ~specul_flush;
    
    // Data path: no need to flush
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_insn_pc
-                   (clk,rst_n, pipebuf_cas, ibus_out_id[`NCPU_AW-1:2], idu_insn_pc[`NCPU_AW-3:0]);
+                   (clk,rst_n, pipebuf_cas, flush_insn_pc[`NCPU_AW-3:0], idu_insn_pc[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_specul_tgt
                    (clk,rst_n, pipebuf_cas, specul_tgt_nxt, idu_specul_tgt[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_bcc

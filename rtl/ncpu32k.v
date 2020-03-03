@@ -32,7 +32,10 @@ module ncpu32k_core(
    input                   ibus_dout_valid,
    output                  ibus_dout_ready,
    input [`NCPU_IW-1:0]    ibus_dout,
-   input [`NCPU_AW-1:0]    ibus_out_id
+   input [`NCPU_AW-1:0]    ibus_out_id,
+   input [`NCPU_AW-1:0]    ibus_out_id_nxt,
+   output                  ibus_hld_id,
+   output                  ibus_cmd_flush
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -198,6 +201,8 @@ module ncpu32k_core(
        .ibus_dout_ready                 (ibus_dout_ready),
        .ibus_cmd_valid                  (ibus_cmd_valid),
        .ibus_cmd_addr                   (ibus_cmd_addr[`NCPU_AW-1:0]),
+       .ibus_hld_id                     (ibus_hld_id),
+       .ibus_cmd_flush                  (ibus_cmd_flush),
        .idu_in_valid                    (idu_in_valid),
        .idu_insn                        (idu_insn[`NCPU_IW-1:0]),
        .idu_insn_pc                     (idu_insn_pc[`NCPU_AW-3:0]),
@@ -220,6 +225,7 @@ module ncpu32k_core(
        .ibus_dout                       (ibus_dout[`NCPU_IW-1:0]),
        .ibus_cmd_ready                  (ibus_cmd_ready),
        .ibus_out_id                     (ibus_out_id[`NCPU_AW-1:0]),
+       .ibus_out_id_nxt                 (ibus_out_id_nxt[`NCPU_AW-1:0]),
        .bpu_msr_epc                     (bpu_msr_epc[`NCPU_DW-1:0]),
        .ifu_flush_jmp_tgt               (ifu_flush_jmp_tgt[`NCPU_AW-3:0]),
        .specul_flush                    (specul_flush),
