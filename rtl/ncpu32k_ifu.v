@@ -26,7 +26,6 @@ module ncpu32k_ifu(
    output [`NCPU_AW-1:0]   ibus_cmd_addr,
    input [`NCPU_AW-1:0]    ibus_out_id, /* address of data preseted at ibus_dout */
    input [`NCPU_AW-1:0]    ibus_out_id_nxt,
-   output                  ibus_hld_id, /* hold on out_id */
    output                  ibus_cmd_flush,
    input                   ibus_flush_ack,
    input [`NCPU_DW-1:0]    bpu_msr_epc,
@@ -152,9 +151,6 @@ module ncpu32k_ifu(
    assign flush_jmpfar_tgt = bpu_jmp_tgt;
    assign flush_jmprel_tgt_org = flush_insn_pc + jmprel_offset;
    assign flush_jmprel_tgt = (jmprel_taken ? flush_jmprel_tgt_org : flush_next_tgt);
-   // Hold on the ibus_out_id so that when can send the right branching address that is
-   // relative to the current insn insted of the next one.
-   assign ibus_hld_id = op_jmprel_nxt;
    
    // Exceptions
    wire exp_taken = op_syscall;
