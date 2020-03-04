@@ -8,7 +8,7 @@ module handshake_cmd_sram
    parameter AW = `NCPU_AW,
    parameter SIZE_BYTES = 32*1024,
    parameter MEMH_FILE = "",
-   parameter DELAY=1
+   parameter DELAY=3
 )
 (
    input                      clk,
@@ -38,57 +38,59 @@ module handshake_cmd_sram
       dout = {DW{1'b0}};
    end
 
+   wire [AW-1:0] addr_w;
    wire [DW-1:0] dout_nxt = (size==3'd3) 
-                        ? {mem[cmd_addr+3][7:0],
-                           mem[cmd_addr+2][7:0],
-                           mem[cmd_addr+1][7:0],
-                           mem[cmd_addr][7:0]}
+                        ? {mem[addr_w+3][7:0],
+                           mem[addr_w+2][7:0],
+                           mem[addr_w+1][7:0],
+                           mem[addr_w][7:0]}
                         : (size==3'd2)
                            ? {8'b0,
                               8'b0,
-                              mem[cmd_addr+1][7:0],
-                              mem[cmd_addr][7:0]}
+                              mem[addr_w+1][7:0],
+                              mem[addr_w][7:0]}
                            : {8'b0,
                               8'b0,
                               8'b0,
-                              mem[cmd_addr][7:0]};
-                        
-   reg [1:0] status_r=2'b0;
-   reg [1:0] status_nxt=2'b0;
-         
+                              mem[addr_w][7:0]};
+
+   reg [AW-1:0] addr_r;
    generate
-      if(DELAY==3)  begin : delay_3
-         reg [DW-1:0] dout_r;
-         reg out_valid_r;
-         assign out_valid = out_valid_r;
+      if(DELAY>=3)  begin : delay_n
+         wire push = (cmd_valid & cmd_ready);
+         wire pop = (out_valid & out_ready);
          
+         reg [3:0] valid_nxt;
+         reg [3:0] valid_r = 4'd0;
+         
+         assign addr_w = addr_r;
+         
+         always @* begin
+            if(valid_r==4'd0) begin
+               valid_nxt = push ? 4'd1 : 4'd0;
+            end else if(valid_r >= 4'd1 && valid_r < DELAY) begin
+               valid_nxt = valid_r + 4'd1;
+            end else if(valid_r == DELAY) begin
+               valid_nxt = pop & push ? 4'd1 : pop ? 4'd0 : DELAY;
+            end
+         end
          always @(posedge clk) begin
-            status_r <= status_nxt;
-            
-            case(status_nxt)
-            2'd0: begin
-               out_valid_r <= 1'b0;
+            valid_r <= valid_nxt;
+            case (valid_nxt)
+            4'd1: begin
+               addr_r <= cmd_addr; // Read address
             end
-            2'd1: begin
-               dout_r <= dout_nxt;
-            end
-            2'd2: begin
-               out_valid_r <= 1'b1;
-               dout <= dout_r;
+            DELAY: begin
+               dout <= dout_nxt; // Output
             end
             endcase
          end
-         always @(*) begin
-            case(status_r)
-            2'd0:
-               status_nxt = out_ready ? 2'd1 : 2'd0;
-            2'd1:
-               status_nxt = 2'd2;
-            2'd2:
-               status_nxt = out_ready ? 2'd0 : 2'd2; // handshake with downstream
-            endcase
-         end
+         assign out_valid = valid_r==DELAY;
+         
+         assign cmd_ready = valid_r==4'd0;
+
       end else if (DELAY==2) begin : delay_2
+         assign addr_w = cmd_addr;
          wire push = (cmd_valid & cmd_ready);
          wire pop = (out_valid & out_ready);
          wire valid_nxt = (push | ~pop);
@@ -102,6 +104,7 @@ module handshake_cmd_sram
             end
          end
       end else if(DELAY==1) begin : delay_1
+         assign addr_w = cmd_addr;
          wire push = (cmd_valid & cmd_ready);
          wire pop = (out_valid & out_ready);
          wire valid_nxt = (push | ~pop);
