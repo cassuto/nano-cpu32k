@@ -17,7 +17,7 @@
 
 module ncpu32k_i_mmu
 #(
-   parameter TLB_NSETS_LOG2 = 7 // 128
+   parameter TLB_NSETS_LOG2 = 2
 )
 (
    input                   clk,
@@ -43,15 +43,15 @@ module ncpu32k_i_mmu
    // IMMID
    output [`NCPU_DW-1:0]   msr_immid,
    // TLBL
-   output [`NCPU_DW-1:0]   msr_tlbl,
-   input [`NCPU_TLB_AW-1:0] msr_tlbl_idx,
-   input [`NCPU_DW-1:0]    msr_tlbl_nxt,
-   input                   msr_tlbl_we,
+   output [`NCPU_DW-1:0]   msr_imm_tlbl,
+   input [`NCPU_TLB_AW-1:0] msr_imm_tlbl_idx,
+   input [`NCPU_DW-1:0]    msr_imm_tlbl_nxt,
+   input                   msr_imm_tlbl_we,
    // TLBH
-   output [`NCPU_DW-1:0]   msr_tlbh,
-   input [`NCPU_TLB_AW-1:0] msr_tlbh_idx,
-   input [`NCPU_DW-1:0]    msr_tlbh_nxt,
-   input                   msr_tlbh_we
+   output [`NCPU_DW-1:0]   msr_imm_tlbh,
+   input [`NCPU_TLB_AW-1:0] msr_imm_tlbh_idx,
+   input [`NCPU_DW-1:0]    msr_imm_tlbh_nxt,
+   input                   msr_imm_tlbh_we
    
 );
 
@@ -136,17 +136,17 @@ module ncpu32k_i_mmu
       genvar nset;
       for(nset=0;nset<(1<<TLB_NSETS_LOG2); nset=nset+1) begin : gen_tlbs
          ncpu32k_cell_dff_lr #(`NCPU_DW) dff_tlb_l
-                   (clk,rst_n, tlb_l_load[nset], msr_tlbl_nxt[`NCPU_DW-1:0], tlb_l_r[nset][`NCPU_DW-1:0]);
+                   (clk,rst_n, tlb_l_load[nset], msr_imm_tlbl_nxt[`NCPU_DW-1:0], tlb_l_r[nset][`NCPU_DW-1:0]);
          ncpu32k_cell_dff_lr #(`NCPU_DW) dff_tlb_h
-                   (clk,rst_n, tlb_h_load[nset], msr_tlbh_nxt[`NCPU_DW-1:0], tlb_h_r[nset][`NCPU_DW-1:0]);
+                   (clk,rst_n, tlb_h_load[nset], msr_imm_tlbh_nxt[`NCPU_DW-1:0], tlb_h_r[nset][`NCPU_DW-1:0]);
          
-         assign tlb_l_load[nset] = (msr_tlbl_idx == nset) & msr_tlbl_we;
-         assign tlb_h_load[nset] = (msr_tlbh_idx == nset) & msr_tlbh_we;
+         assign tlb_l_load[nset] = (msr_imm_tlbl_idx == nset) & msr_imm_tlbl_we;
+         assign tlb_h_load[nset] = (msr_imm_tlbh_idx == nset) & msr_imm_tlbh_we;
       end
    endgenerate
    
-   assign msr_tlbl = tlb_l_r[msr_tlbl_idx];
-   assign msr_tlbh = tlb_h_r[msr_tlbh_idx];
+   assign msr_imm_tlbl = tlb_l_r[msr_imm_tlbl_idx];
+   assign msr_imm_tlbh = tlb_h_r[msr_imm_tlbh_idx];
    
    assign icache_cmd_addr = tlb_addr;
    

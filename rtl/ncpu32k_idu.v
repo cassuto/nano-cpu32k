@@ -255,7 +255,7 @@ module ncpu32k_idu(
    wire insn_imm18 = op_mhi;
    wire insn_imm = insn_imm14 | insn_imm18;
    // Insn requires Signed imm.
-   wire imm14_signed = (op_xor_i | op_and_i | op_add_i | op_mu_load | op_mu_store | op_rmsr | op_wmsr);
+   wire imm14_signed = (op_xor_i | op_and_i | op_add_i | op_mu_load | op_mu_store);
    // Insn presents no operand.
    wire insn_non_op = (op_mu_barr | idu_op_syscall | idu_op_ret | idu_op_jmprel);
    
@@ -291,19 +291,24 @@ module ncpu32k_idu(
 
    wire rs1_frm_regf_r;
    wire rs2_frm_regf_r;
-   wire rs2_frm_regf_nxt = regf_rs2_re & (~insn_imm & ~insn_non_op); // op_mu_store is a special case
+   wire rs2_frm_regf_nxt = regf_rs2_re & (~insn_imm & ~insn_non_op); // op_mu_store and op_wmsr are special cases
+   wire rd_readas_rs2_r;
+   wire rd_readas_rs2_nxt;
    
    ncpu32k_cell_dff_lr #(1) dff_rs1_dout_valid_r
                    (clk,rst_n, pipebuf_cas, regf_rs1_re, rs1_frm_regf_r);
    ncpu32k_cell_dff_lr #(1) dff_rs2_dout_valid_r
                    (clk,rst_n, pipebuf_cas, rs2_frm_regf_nxt, rs2_frm_regf_r);
+   ncpu32k_cell_dff_lr #(1) dff_rd_readas_rs2_r
+                   (clk,rst_n, pipebuf_cas, rd_readas_rs2_nxt, rd_readas_rs2_r);
    
    // Request operand(s) from Regfile when needed
-   // Note that op_mu_store is a special case 
+   // Note that op_mu_store and op_wmsr are special cases 
+   assign rd_readas_rs2_nxt = op_mu_store | op_wmsr;
    assign regf_rs1_re = (~insn_non_op) & pipebuf_cas;
    assign regf_rs1_addr = f_rs1[4:0];
-   assign regf_rs2_re = ((~insn_imm & ~insn_non_op) | op_mu_store) & pipebuf_cas;
-   assign regf_rs2_addr = op_mu_store ? f_rd[4:0] : f_rs2[4:0];
+   assign regf_rs2_re = ((~insn_imm & ~insn_non_op) | rd_readas_rs2_nxt) & pipebuf_cas;
+   assign regf_rs2_addr = rd_readas_rs2_nxt ? f_rd[4:0] : f_rs2[4:0];
    
    // Sign-extended 14bit Integer
    wire [`NCPU_DW-1:0] simm14 = {{`NCPU_DW-14{f_imm14[13]}}, f_imm14[13:0]};
@@ -322,7 +327,7 @@ module ncpu32k_idu(
    // Final Operands
    assign ieu_operand_1 = rs1_frm_regf_r ? regf_rs1_dout : imm_oper_r;
    assign ieu_operand_2 = rs2_frm_regf_r ? regf_rs2_dout : imm_oper_r;
-   assign ieu_operand_3 = ((ieu_mu_store | ieu_eu_opc_bus[`NCPU_EU_WMSR]) ? regf_rs2_dout : {`NCPU_DW{1'b0}});
+   assign ieu_operand_3 = (rd_readas_rs2_r ? regf_rs2_dout : {`NCPU_DW{1'b0}});
 
    wire not_flushing = ~specul_flush;
    

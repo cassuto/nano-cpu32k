@@ -177,7 +177,7 @@ module ncpu32k_ie_eu
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if (commit & (ieu_ret|ieu_syscall|au_cc_we|wmsr_psr_we) |
+      if (commit & (ieu_ret|ieu_syscall|au_cc_we|wmsr_psr_we) &
                   ~(ieu_ret^ieu_syscall^au_cc_we^wmsr_psr_we)
        )
          $fatal ("\n ctrls of msr_psr writeback MUX should be mutex\n");
