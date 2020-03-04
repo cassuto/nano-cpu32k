@@ -15,7 +15,11 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_i_mmu(
+module ncpu32k_i_mmu
+#(
+   parameter TLB_NSETS_LOG2 = 7 // 128
+)
+(
    input                   clk,
    input                   rst_n,
    output                  ibus_dout_valid, /* Insn is presented at immu's output */
@@ -33,7 +37,22 @@ module ncpu32k_i_mmu(
    input [`NCPU_IW-1:0]    icache_dout,
    input                   icache_cmd_ready, /* icache is ready to accept cmd */
    output                  icache_cmd_valid, /* cmd is presented at icache's input */
-   output [`NCPU_AW-1:0]   icache_cmd_addr
+   output [`NCPU_AW-1:0]   icache_cmd_addr,
+   output                  exp_tlb_miss,
+   output                  exp_page_fault,
+   // IMMID
+   output [`NCPU_DW-1:0]   msr_immid,
+   // TLBL
+   output [`NCPU_DW-1:0]   msr_tlbl,
+   input [`NCPU_TLB_AW-1:0] msr_tlbl_idx,
+   input [`NCPU_DW-1:0]    msr_tlbl_nxt,
+   input                   msr_tlbl_we,
+   // TLBH
+   output [`NCPU_DW-1:0]   msr_tlbh,
+   input [`NCPU_TLB_AW-1:0] msr_tlbh_idx,
+   input [`NCPU_DW-1:0]    msr_tlbh_nxt,
+   input                   msr_tlbh_we
+   
 );
 
    // MMU FSM
@@ -99,13 +118,36 @@ module ncpu32k_i_mmu(
                    (clk,rst_n, hds_ibus_dout, ibus_out_id_nxt_bypass, ibus_out_id[`NCPU_AW-1:0]);
 
    ////////////////////////////////////////////////////////////////////////////////
-                   
-   // TLB
-   wire [`NCPU_AW-1:0] tlb_addr;
 
+   // MSR.IMMID
+   assign msr_immid = {{32-3{1'b0}}, TLB_NSETS_LOG2[2:0]};
+
+   // TLB
+   wire [`NCPU_DW-1:0] tlb_l_r [(1<<TLB_NSETS_LOG2):0];
+   wire [`NCPU_DW-1:0] tlb_h_r [(1<<TLB_NSETS_LOG2):0];
+   wire [(1<<TLB_NSETS_LOG2)-1:0] tlb_l_load;
+   wire [(1<<TLB_NSETS_LOG2)-1:0] tlb_h_load;
+   wire [`NCPU_AW-1:0] tlb_addr;
+   
    ncpu32k_cell_dff_lr #(`NCPU_AW) dff_tlb
                    (clk,rst_n, tlb_read, ibus_cmd_addr[`NCPU_AW-1:0], tlb_addr[`NCPU_AW-1:0]);
 
+   generate
+      genvar nset;
+      for(nset=0;nset<(1<<TLB_NSETS_LOG2); nset=nset+1) begin : gen_tlbs
+         ncpu32k_cell_dff_lr #(`NCPU_DW) dff_tlb_l
+                   (clk,rst_n, tlb_l_load[nset], msr_tlbl_nxt[`NCPU_DW-1:0], tlb_l_r[nset][`NCPU_DW-1:0]);
+         ncpu32k_cell_dff_lr #(`NCPU_DW) dff_tlb_h
+                   (clk,rst_n, tlb_h_load[nset], msr_tlbh_nxt[`NCPU_DW-1:0], tlb_h_r[nset][`NCPU_DW-1:0]);
+         
+         assign tlb_l_load[nset] = (msr_tlbl_idx == nset) & msr_tlbl_we;
+         assign tlb_h_load[nset] = (msr_tlbh_idx == nset) & msr_tlbh_we;
+      end
+   endgenerate
+   
+   assign msr_tlbl = tlb_l_r[msr_tlbl_idx];
+   assign msr_tlbh = tlb_h_r[msr_tlbh_idx];
+   
    assign icache_cmd_addr = tlb_addr;
    
    // Assertions

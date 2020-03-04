@@ -27,8 +27,54 @@
 // Regfile address Bitwidth
 `define NCPU_REG_AW 5
 
+
+/////////////////////////////////////////////////////////////////////////////
+// MSR
+/////////////////////////////////////////////////////////////////////////////
+
 // PSR register Bitwidth
 `define NCPU_PSR_DW 10
+// TLB register address Bitwidth
+`define NCPU_TLB_AW 7
+
+`define NCPU_MSR_BANK_OFF_AW 9
+`define NCPU_MSR_BANK_AW (14-9) // 14 is imm14 bitwidth
+
+// MSR Banks
+`define NCPU_MSR_BANK_PS	0
+`define NCPU_MSR_BANK_IMM	1
+`define NCPU_MSR_BANK_DMM	2
+`define NCPU_MSR_BANK_ICA	3
+`define NCPU_MSR_BANK_DCA	4
+`define NCPU_MSR_BANK_DBG	5
+`define NCPU_MSR_BANK_IRQC	6
+`define NCPU_MSR_BANK_TSC	7
+
+//
+// PS One-hot encoding
+//
+
+// PS - PSR
+`define NCPU_MSR_PSR	0
+// PS - CPUID
+`define NCPU_MSR_CPUID 1
+// PS - EPSR
+`define NCPU_MSR_EPSR 2
+// PS - EPC
+`define NCPU_MSR_EPC	3
+// PS - ELSA
+`define NCPU_MSR_ELSA 4
+// PS.COREID
+`define NCPU_MSR_COREID 5
+
+//
+// IMM
+//
+
+// IMM (8th bit = TLB sel)
+`define NCPU_MSR_IMM_TLBSEL 8
+// TLB (7th bit = TLBH sel)
+`define NCPU_MSR_IMM_TLBH_SEL 7
 
 /////////////////////////////////////////////////////////////////////////////
 // Exception Vector Table
@@ -68,8 +114,8 @@
 `define NCPU_OP_MBARR 6'h11
 `define NCPU_OP_SYSCALL 6'h12
 `define NCPU_OP_RET 6'h13
-`define NCPU_OP_WSMR 6'h14
-`define NCPU_OP_RSMR 6'h15
+`define NCPU_OP_WMSR 6'h14
+`define NCPU_OP_RMSR 6'h15
 `define NCPU_OP_VENTER 6'h16
 `define NCPU_OP_VLEAVE 6'h17
 `define NCPU_OP_JMP_LNK_I 6'h18
@@ -130,8 +176,8 @@
 `define NCPU_AU_MHI 8
 
 `define NCPU_EU_IOPW 2 // One-hot Insn Opocde Bitwidth
-`define NCPU_EU_WSMR 0
-`define NCPU_EU_RSMR 1
+`define NCPU_EU_WMSR 0
+`define NCPU_EU_RMSR 1
 
 `define NCPU_REGNO_LNK 1 // the only one machine-dependent register
 

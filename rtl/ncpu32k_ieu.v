@@ -35,6 +35,7 @@ module ncpu32k_ieu(
    input                      ieu_au_cmp_eq,
    input                      ieu_au_cmp_signed,
    input [`NCPU_LU_IOPW-1:0]  ieu_lu_opc_bus,
+   input [`NCPU_EU_IOPW-1:0]  ieu_eu_opc_bus,
    input                      ieu_emu_insn,
    input                      ieu_mu_load,
    input                      ieu_mu_store,
@@ -59,8 +60,6 @@ module ncpu32k_ieu(
    output                     msr_syscall_ent,
    input [`NCPU_PSR_DW-1:0]   msr_psr,
    input                      msr_psr_cc,
-   input [`NCPU_DW-1:0]       msr_epc,
-   input [`NCPU_PSR_DW-1:0]   msr_epsr,
    output                     msr_psr_cc_nxt,
    output                     msr_psr_cc_we,
    output                     msr_psr_rm_nxt,
@@ -71,12 +70,26 @@ module ncpu32k_ieu(
    output                     msr_psr_dmme_we,
    output                     msr_psr_ire_nxt,
    output                     msr_psr_ire_we,
-   output [`NCPU_PSR_DW-1:0]  msr_epsr_nxt,
-   output                     msr_epsr_we,
+   input [`NCPU_DW-1:0]       msr_epc,
    output [`NCPU_DW-1:0]      msr_epc_nxt,
    output                     msr_epc_we,
+   input [`NCPU_PSR_DW-1:0]   msr_epsr,
+   output [`NCPU_PSR_DW-1:0]  msr_epsr_nxt,
+   output                     msr_epsr_we,
+   input [`NCPU_DW-1:0]       msr_elsa,
    output [`NCPU_DW-1:0]      msr_elsa_nxt,
    output                     msr_elsa_we,
+   input [`NCPU_DW-1:0]       msr_cpuid,
+   input [`NCPU_DW-1:0]       msr_coreid,
+   input [`NCPU_DW-1:0]       msr_immid,
+   input [`NCPU_DW-1:0]       msr_imm_tlbl,
+   output [`NCPU_TLB_AW-1:0]  msr_imm_tlbl_idx,
+   output [`NCPU_DW-1:0]      msr_imm_tlbl_nxt,
+   output                     msr_imm_tlbl_we,
+   input [`NCPU_DW-1:0]       msr_imm_tlbh,
+   output [`NCPU_TLB_AW-1:0]  msr_imm_tlbh_idx,
+   output [`NCPU_DW-1:0]      msr_imm_tlbh_nxt,
+   output                     msr_imm_tlbh_we,
    output                     specul_flush,
    output [`NCPU_AW-3:0]      ifu_flush_jmp_tgt,
    output                     bpu_wb,
@@ -95,6 +108,8 @@ module ncpu32k_ieu(
    wire [`NCPU_DW-1:0]  au_mul;                 // From au of ncpu32k_ie_au.v
    wire                 au_op_adder;            // From au of ncpu32k_ie_au.v
    wire                 au_op_mhi;              // From au of ncpu32k_ie_au.v
+   wire [`NCPU_DW-1:0]  ieu_eu_dout;            // From eu of ncpu32k_ie_eu.v
+   wire                 ieu_eu_dout_op;         // From eu of ncpu32k_ie_eu.v
    wire                 ieu_mu_in_ready;        // From mu of ncpu32k_ie_mu.v
    wire [`NCPU_DW-1:0]  lu_and;                 // From lu of ncpu32k_ie_lu.v
    wire                 lu_op_shift;            // From lu of ncpu32k_ie_lu.v
@@ -105,7 +120,8 @@ module ncpu32k_ieu(
    wire                 wb_mu_in_valid;         // From mu of ncpu32k_ie_mu.v
    // End of automatics
    wire                 ieu_mu_in_valid;
-
+   wire [`NCPU_DW:0]    linkaddr;
+   
    ncpu32k_ie_au au
       (/*AUTOINST*/
        // Outputs
@@ -169,23 +185,74 @@ module ncpu32k_ieu(
        .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
        .wb_mu_in_ready                  (wb_mu_in_ready));
         
+   ncpu32k_ie_eu eu
+      (/*AUTOINST*/
+       // Outputs
+       .ieu_eu_dout_op                  (ieu_eu_dout_op),
+       .ieu_eu_dout                     (ieu_eu_dout[`NCPU_DW-1:0]),
+       .msr_psr_cc_nxt                  (msr_psr_cc_nxt),
+       .msr_psr_cc_we                   (msr_psr_cc_we),
+       .msr_psr_rm_nxt                  (msr_psr_rm_nxt),
+       .msr_psr_rm_we                   (msr_psr_rm_we),
+       .msr_psr_imme_nxt                (msr_psr_imme_nxt),
+       .msr_psr_imme_we                 (msr_psr_imme_we),
+       .msr_psr_dmme_nxt                (msr_psr_dmme_nxt),
+       .msr_psr_dmme_we                 (msr_psr_dmme_we),
+       .msr_psr_ire_nxt                 (msr_psr_ire_nxt),
+       .msr_psr_ire_we                  (msr_psr_ire_we),
+       .msr_syscall_ent                 (msr_syscall_ent),
+       .msr_epc_nxt                     (msr_epc_nxt[`NCPU_DW-1:0]),
+       .msr_epc_we                      (msr_epc_we),
+       .msr_epsr_nxt                    (msr_epsr_nxt[`NCPU_PSR_DW-1:0]),
+       .msr_epsr_we                     (msr_epsr_we),
+       .msr_elsa_nxt                    (msr_elsa_nxt[`NCPU_DW-1:0]),
+       .msr_elsa_we                     (msr_elsa_we),
+       .msr_imm_tlbl_idx                (msr_imm_tlbl_idx[`NCPU_TLB_AW-1:0]),
+       .msr_imm_tlbl_nxt                (msr_imm_tlbl_nxt[`NCPU_DW-1:0]),
+       .msr_imm_tlbl_we                 (msr_imm_tlbl_we),
+       .msr_imm_tlbh_idx                (msr_imm_tlbh_idx[`NCPU_TLB_AW-1:0]),
+       .msr_imm_tlbh_nxt                (msr_imm_tlbh_nxt[`NCPU_DW-1:0]),
+       .msr_imm_tlbh_we                 (msr_imm_tlbh_we),
+       // Inputs
+       .clk                             (clk),
+       .rst_n                           (rst_n),
+       .ieu_eu_opc_bus                  (ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]),
+       .ieu_operand_1                   (ieu_operand_1[`NCPU_DW-1:0]),
+       .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),
+       .ieu_operand_3                   (ieu_operand_3[`NCPU_DW-1:0]),
+       .commit                          (commit),
+       .au_cc_we                        (au_cc_we),
+       .au_cc_nxt                       (au_cc_nxt),
+       .ieu_ret                         (ieu_ret),
+       .ieu_syscall                     (ieu_syscall),
+       .linkaddr                        (linkaddr[`NCPU_DW:0]),
+       .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
+       .msr_cpuid                       (msr_cpuid[`NCPU_DW-1:0]),
+       .msr_epc                         (msr_epc[`NCPU_DW-1:0]),
+       .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
+       .msr_elsa                        (msr_elsa[`NCPU_PSR_DW-1:0]),
+       .msr_coreid                      (msr_coreid[`NCPU_DW-1:0]),
+       .msr_immid                       (msr_immid[`NCPU_DW-1:0]),
+       .msr_imm_tlbl                    (msr_imm_tlbl[`NCPU_DW-1:0]),
+       .msr_imm_tlbh                    (msr_imm_tlbh[`NCPU_DW-1:0]));
+        
    // Link address (offset(jmp)+1), which indicates the next insn of current jmp insn.
-   wire [`NCPU_DW:0] linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {ieu_insn_pc[`NCPU_AW-3:0]+1'b1, 2'b00}};
+   assign linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {ieu_insn_pc[`NCPU_AW-3:0]+1'b1, 2'b00}};
       
    // WriteBack (commit)
    // Before commit, modules must check this bit.
    // valid signal from upstream makes sense here, as an insn with invalid info
    // should be never committed.
-   wire commit = (ieu_mu_load|ieu_mu_store) ? wb_mu_in_valid : ieu_in_valid;
+   assign commit = (ieu_mu_load|ieu_mu_store) ? wb_mu_in_valid : ieu_in_valid;
 
    //
    // Speculative execution checking point. Flush:
    // case 1: jmprel: specul_bcc mismatched
    // case 2: jmpfar: specul_tgt mismatched
-   // case 3: ret: specul_tgt mismatched
+   // case 3: ret: unconditional flush. (Mainly for pipeline refreshing of IMMU)
    assign specul_flush = (ieu_specul_jmprel & (ieu_specul_bcc != msr_psr_cc))
                | (ieu_specul_jmpfar & (ieu_specul_tgt != ieu_operand_1))
-               | (ieu_ret & (ieu_specul_tgt != msr_epc));
+               | (ieu_ret);
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target
    assign ifu_flush_jmp_tgt =
@@ -206,41 +273,13 @@ module ncpu32k_ieu(
                       ({`NCPU_DW{au_op_adder}} & au_adder[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{au_op_mhi}} & au_mhi[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{ieu_mu_load}} & mu_load[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{ieu_jmplink}} & linkaddr[`NCPU_DW-1:0]);
+                      ({`NCPU_DW{ieu_jmplink}} & linkaddr[`NCPU_DW-1:0]) |
+                      ({`NCPU_DW{ieu_eu_dout_op}} & ieu_eu_dout[`NCPU_DW-1:0]);
    
    assign regf_din_addr = ieu_wb_reg_addr;
 
    assign regf_we = commit & ieu_wb_regf & (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid); /* data is presented at regfile's input */
-   
-   
-   // Unpack EPSR. Be consistend with ncpu32k_psr
-   wire epsr_cc;
-   wire epsr_rm;
-   wire epsr_ire;
-   wire epsr_imme;
-   wire epsr_dmme;
-   wire [9:0] epsr_res;
-   assign {epsr_res[9],epsr_res[8],epsr_dmme,epsr_imme,epsr_ire,epsr_rm,epsr_res[3],epsr_res[2], epsr_res[1],epsr_cc} = msr_epsr;
-   
-   // Write back MSR
-   assign msr_syscall_ent = ieu_syscall;
-   assign msr_psr_cc_nxt = au_cc_we ? au_cc_nxt : epsr_cc;
-   assign msr_psr_cc_we = commit & (au_cc_we | ieu_ret);
-   assign msr_psr_rm_nxt = epsr_rm;
-   assign msr_psr_rm_we = commit & ieu_ret;
-   assign msr_psr_imme_nxt = epsr_imme;
-   assign msr_psr_imme_we = commit & ieu_ret;
-   assign msr_psr_dmme_nxt = epsr_dmme;
-   assign msr_psr_dmme_we = commit & ieu_ret;
-   assign msr_psr_ire_nxt = epsr_ire;
-   assign msr_psr_ire_we = commit & ieu_ret;
-   assign msr_epsr_nxt = msr_psr;
-   assign msr_epsr_we = commit & ieu_syscall;
-   assign msr_epc_nxt = linkaddr;
-   assign msr_epc_we = commit & ieu_syscall;
-   assign msr_elsa_nxt = 32'b0;
-   assign msr_elsa_we = 1'b0;
-   
+
    assign ieu_mu_in_valid = ieu_in_valid;
    
    assign wb_mu_in_ready = 1'b1; /* data is accepted by regfile */
@@ -259,7 +298,8 @@ module ncpu32k_ieu(
                      au_op_adder |
                      au_op_mhi |
                      ieu_mu_load |
-                     ieu_jmplink)
+                     ieu_jmplink |
+                     ieu_eu_dout_op)
                   & ~(ieu_lu_opc_bus[`NCPU_LU_AND] ^
                         ieu_lu_opc_bus[`NCPU_LU_OR] ^
                         ieu_lu_opc_bus[`NCPU_LU_XOR] ^
@@ -267,7 +307,8 @@ module ncpu32k_ieu(
                         au_op_adder ^
                         au_op_mhi ^
                         ieu_mu_load ^
-                        ieu_jmplink)
+                        ieu_jmplink ^
+                        ieu_eu_dout_op)
                   )
          $fatal ("\n ctrls of 'regf_din' MUX should be mutex\n");
    end

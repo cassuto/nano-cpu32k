@@ -15,7 +15,20 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_psr(
+module ncpu32k_psr
+#(
+   parameter CPUID_VER = 1,
+   parameter CPUID_REV = 0,
+   parameter CPUID_FIMM = 1,
+   parameter CPUID_FDMM = 0,
+   parameter CPUID_FICA = 0,
+   parameter CPUID_FDCA = 0,
+   parameter CPUID_FDBG = 0,
+   parameter CPUID_FFPU = 0,
+   parameter CPUID_FIRQC = 0,
+   parameter CPUID_FTSC = 0
+)
+(
    input                   clk,
    input                   rst_n,
    // PSR
@@ -36,6 +49,8 @@ module ncpu32k_psr(
    input                   msr_psr_dmme_nxt,
    output                  msr_psr_dmme,
    input                   msr_psr_dmme_we,
+   // CPUID
+   output [`NCPU_DW-1:0]   msr_cpuid,
    // EPSR
    input [`NCPU_PSR_DW-1:0] msr_epsr_nxt,
    output [`NCPU_PSR_DW-1:0] msr_epsr,
@@ -47,7 +62,9 @@ module ncpu32k_psr(
    // ELSA
    input [`NCPU_DW-1:0]    msr_elsa_nxt,
    output [`NCPU_DW-1:0]   msr_elsa,
-   input                   msr_elsa_we
+   input                   msr_elsa_we,
+   // COREID
+   output [`NCPU_DW-1:0]   msr_coreid
 );
 
    wire msr_psr_cc_r;
@@ -94,5 +111,11 @@ module ncpu32k_psr(
    
    // PSR Pack
    assign msr_psr = {1'b0,1'b0,msr_psr_dmme,msr_psr_imme,msr_psr_ire,msr_psr_rm,1'b0,1'b0,1'b0,msr_psr_cc};
+   
+   // CPUID
+   assign msr_cpuid = {CPUID_FTSC,CPUID_FIRQC,CPUID_FFPU,CPUID_FDBG,CPUID_FDCA,CPUID_FICA,CPUID_FDMM,CPUID_FIMM,CPUID_REV[9:0],CPUID_VER[7:0]};
+   
+   // COREID
+   assign msr_coreid = {`NCPU_DW{1'b0}};
    
 endmodule

@@ -194,8 +194,8 @@ module ncpu32k_idu(
    wire op_modu = (f_opcode == `NCPU_OP_MODU) & enable_modu;
    wire op_mhi = (f_opcode == `NCPU_OP_MHI) & enable_mhi;
    
-   wire op_wsmr = (f_opcode == `NCPU_OP_WSMR);
-   wire op_rsmr = (f_opcode == `NCPU_OP_RSMR);
+   wire op_wmsr = (f_opcode == `NCPU_OP_WMSR);
+   wire op_rmsr = (f_opcode == `NCPU_OP_RMSR);
    
    wire au_cmp_eq;
    wire au_cmp_signed;
@@ -239,8 +239,8 @@ module ncpu32k_idu(
    assign au_cmp_eq = op_cmp & f_attr==`NCPU_ATTR_EQ;
    assign au_cmp_signed = op_cmp & f_attr==`NCPU_ATTR_GT;
    
-   assign eu_opc_bus[`NCPU_EU_WSMR] = (op_wsmr);
-   assign eu_opc_bus[`NCPU_EU_RSMR] = (op_rsmr);
+   assign eu_opc_bus[`NCPU_EU_WMSR] = (op_wmsr);
+   assign eu_opc_bus[`NCPU_EU_RMSR] = (op_rmsr);
 
    wire bu_sel = (idu_op_jmpfar|idu_op_jmprel);
    
@@ -251,16 +251,16 @@ module ncpu32k_idu(
    wire insn_imm14 = (op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |
                      op_add_i |
                      op_mu_load | op_mu_store |
-                     op_wsmr | op_rsmr);
+                     op_wmsr | op_rmsr);
    wire insn_imm18 = op_mhi;
    wire insn_imm = insn_imm14 | insn_imm18;
    // Insn requires Signed imm.
-   wire imm14_signed = (op_xor_i | op_and_i | op_add_i | op_mu_load | op_mu_store);
+   wire imm14_signed = (op_xor_i | op_and_i | op_add_i | op_mu_load | op_mu_store | op_rmsr | op_wmsr);
    // Insn presents no operand.
    wire insn_non_op = (op_mu_barr | idu_op_syscall | idu_op_ret | idu_op_jmprel);
    
    // Insn writeback register file
-   wire wb_regf = ~(idu_op_syscall | idu_op_ret | op_mu_barr | idu_op_jmprel | op_cmp | emu_insn | op_mu_store) | idu_jmprel_link;
+   wire wb_regf = ~(idu_op_syscall | idu_op_ret | op_mu_barr | idu_op_jmprel | op_cmp | emu_insn | op_mu_store | op_wmsr) | idu_jmprel_link;
    wire [`NCPU_REG_AW-1:0] wb_reg_addr = idu_jmprel_link ? `NCPU_REGNO_LNK : f_rd[4:0];
    
    // Register-Indirect jump
@@ -322,7 +322,7 @@ module ncpu32k_idu(
    // Final Operands
    assign ieu_operand_1 = rs1_frm_regf_r ? regf_rs1_dout : imm_oper_r;
    assign ieu_operand_2 = rs2_frm_regf_r ? regf_rs2_dout : imm_oper_r;
-   assign ieu_operand_3 = (ieu_mu_store ? regf_rs2_dout : {`NCPU_DW{1'b0}});
+   assign ieu_operand_3 = ((ieu_mu_store | ieu_eu_opc_bus[`NCPU_EU_WMSR]) ? regf_rs2_dout : {`NCPU_DW{1'b0}});
 
    wire not_flushing = ~specul_flush;
    
