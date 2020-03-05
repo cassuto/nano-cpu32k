@@ -125,6 +125,7 @@ module ncpu32k_core(
    wire                 msr_psr_ire;            // From psr of ncpu32k_psr.v
    wire                 msr_psr_ire_nxt;        // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_ire_we;         // From ieu of ncpu32k_ieu.v
+   wire [`NCPU_PSR_DW-1:0] msr_psr_nold;        // From psr of ncpu32k_psr.v
    wire                 msr_psr_rm;             // From psr of ncpu32k_psr.v
    wire                 msr_psr_rm_nxt;         // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_rm_we;          // From ieu of ncpu32k_ieu.v
@@ -173,6 +174,7 @@ module ncpu32k_core(
       (/*AUTOINST*/
        // Outputs
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
+       .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
        .msr_psr_cc                      (msr_psr_cc),
        .msr_psr_rm                      (msr_psr_rm),
        .msr_psr_ire                     (msr_psr_ire),
@@ -403,6 +405,7 @@ module ncpu32k_core(
        .ieu_specul_jmprel               (ieu_specul_jmprel),
        .ieu_specul_bcc                  (ieu_specul_bcc),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
+       .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
        .msr_psr_cc                      (msr_psr_cc),
        .msr_epc                         (msr_epc[`NCPU_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),

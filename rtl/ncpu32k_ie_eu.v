@@ -33,6 +33,7 @@ module ncpu32k_ie_eu
    input [`NCPU_DW:0]         linkaddr,
    // PSR
    input [`NCPU_PSR_DW-1:0]   msr_psr,
+   input [`NCPU_PSR_DW-1:0]   msr_psr_nold,
    output                     msr_psr_cc_nxt,
    output                     msr_psr_cc_we,
    output                     msr_psr_rm_nxt,
@@ -160,7 +161,7 @@ module ncpu32k_ie_eu
    assign msr_psr_ire_nxt = wmsr_psr_we ? wmsr_psr_ire : epsr_ire;
    assign msr_psr_ire_we = commit & (ieu_ret | wmsr_psr_we);
    // Writeback EPSR
-   assign msr_epsr_nxt = wmsr_epsr_we ? wmsr_operand[`NCPU_PSR_DW-1:0] : msr_psr;
+   assign msr_epsr_nxt = wmsr_epsr_we ? wmsr_operand[`NCPU_PSR_DW-1:0] : msr_psr_nold;
    assign msr_epsr_we = commit & (ieu_syscall | wmsr_epsr_we);
    assign msr_epc_nxt = wmsr_epc_we ? wmsr_operand : linkaddr;
    assign msr_epc_we = commit & (ieu_syscall | wmsr_epc_we);

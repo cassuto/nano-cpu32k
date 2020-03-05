@@ -59,6 +59,7 @@ module ncpu32k_ieu(
    output                     regf_we,
    output                     msr_syscall_ent,
    input [`NCPU_PSR_DW-1:0]   msr_psr,
+   input [`NCPU_PSR_DW-1:0]   msr_psr_nold,
    input                      msr_psr_cc,
    output                     msr_psr_cc_nxt,
    output                     msr_psr_cc_we,
@@ -227,6 +228,7 @@ module ncpu32k_ieu(
        .ieu_syscall                     (ieu_syscall),
        .linkaddr                        (linkaddr[`NCPU_DW:0]),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
+       .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
        .msr_cpuid                       (msr_cpuid[`NCPU_DW-1:0]),
        .msr_epc                         (msr_epc[`NCPU_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
@@ -249,15 +251,18 @@ module ncpu32k_ieu(
    // Speculative execution checking point. Flush:
    // case 1: jmprel: specul_bcc mismatched
    // case 2: jmpfar: specul_tgt mismatched
-   // case 3: ret: unconditional flush. (Mainly for pipeline refreshing of IMMU)
+   // case 3: syscall : unconditional flush. (For pipeline refreshing of IMMU)
+   // case 4: ret: unconditional flush. (Mainly for pipeline refreshing of IMMU)
    assign specul_flush = (ieu_specul_jmprel & (ieu_specul_bcc != msr_psr_cc))
                | (ieu_specul_jmpfar & (ieu_specul_tgt != ieu_operand_1))
-               | (ieu_ret);
+               | ieu_syscall
+               | ieu_ret;
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target
    assign ifu_flush_jmp_tgt =
          ({`NCPU_AW-2{ieu_specul_jmprel}} & ieu_specul_tgt) |
          ({`NCPU_AW-2{ieu_specul_jmpfar}} & ieu_operand_1) |
+         ({`NCPU_AW-2{ieu_syscall}} & ieu_specul_tgt) |
          ({`NCPU_AW-2{ieu_ret}} & msr_epc[`NCPU_AW-1:2]);
    
    assign bpu_wb = ieu_specul_jmprel | ieu_specul_jmpfar;
@@ -312,10 +317,13 @@ module ncpu32k_ieu(
                   )
          $fatal ("\n ctrls of 'regf_din' MUX should be mutex\n");
    end
-   
+`endif
+
+   // Assertions
+`ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if((ieu_specul_jmprel|ieu_specul_jmpfar|ieu_ret) &
-            ~(ieu_specul_jmprel^ieu_specul_jmpfar^ieu_ret)) begin
+      if((ieu_specul_jmprel|ieu_specul_jmpfar|ieu_syscall|ieu_ret) &
+            ~(ieu_specul_jmprel^ieu_specul_jmpfar^ieu_syscall^ieu_ret)) begin
          $fatal ("\n ctrls of 'ifu_flush_jmp_tgt' MUX should be mutex\n");
       end
    end

@@ -107,6 +107,11 @@ module ncpu32k_ifu(
    wire [`NCPU_AW-3:0] flush_jmprel_tgt_org;
    wire [`NCPU_AW-3:0] flush_jmprel_tgt;
    
+   // Exceptions
+   wire exp_taken = op_syscall;
+   wire [7:0] exp_vector = op_syscall ? `NCPU_ESYSCALL_VECTOR : `NCPU_ERST_VECTOR;
+   wire [`NCPU_AW-3:0] flush_exp_vect_tgt = {{`NCPU_AW-2-8{1'b0}}, exp_vector[7:2]};
+   
    // Speculative execution
    assign specul = bpu_jmprel | op_jmpfar_nxt | op_ret;
    assign bpu_rd = specul;
@@ -123,6 +128,9 @@ module ncpu32k_ifu(
             // for jmpfar, this is the predicated target,
             // consistent with BPU result
             flush_jmpfar_tgt
+         : op_syscall ?
+            // for syscall, this is vector address
+            flush_exp_vect_tgt
          : op_ret ?
             // for ret, this is the predicated target,
             // consistent with BPU result
@@ -151,11 +159,6 @@ module ncpu32k_ifu(
    assign flush_jmpfar_tgt = bpu_jmp_tgt;
    assign flush_jmprel_tgt_org = flush_insn_pc + jmprel_offset;
    assign flush_jmprel_tgt = (jmprel_taken ? flush_jmprel_tgt_org : flush_next_tgt);
-   
-   // Exceptions
-   wire exp_taken = op_syscall;
-   wire [7:0] exp_vector = op_syscall ? `NCPU_ESYSCALL_VECTOR : `NCPU_ERST_VECTOR;
-   wire [`NCPU_AW-3:0] flush_exp_vect_tgt = {{`NCPU_AW-2-8{1'b0}}, exp_vector[7:2]};
    
    // Program Counter Register
    // priority MUX

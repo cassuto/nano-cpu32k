@@ -34,6 +34,7 @@ module ncpu32k_psr
    // PSR
    input                   msr_syscall_ent,
    output [`NCPU_PSR_DW-1:0] msr_psr,
+   output [`NCPU_PSR_DW-1:0] msr_psr_nold,
    input                   msr_psr_cc_nxt,
    output                  msr_psr_cc,
    input                   msr_psr_cc_we,
@@ -90,8 +91,8 @@ module ncpu32k_psr
    ncpu32k_cell_dff_lr #(1) dff_msr_psr_cc (clk, rst_n, msr_psr_cc_we, msr_psr_cc_nxt, msr_psr_cc_r);
    ncpu32k_cell_dff_lr #(1, 1'b1) dff_msr_psr_rm (clk, rst_n, msr_psr_rm_we|psr_ld, msr_psr_rm_nxt|psr_rm_set, msr_psr_rm_r);
    ncpu32k_cell_dff_lr #(1, 1'b1) dff_msr_psr_ire (clk, rst_n, msr_psr_ire_we|psr_ld, msr_psr_ire_nxt&psr_ire_msk, msr_psr_ire_r);
-   ncpu32k_cell_dff_lr #(1, 1'b1) dff_msr_psr_imme (clk, rst_n, msr_psr_imme_we|psr_ld, msr_psr_imme_nxt&psr_imme_msk, msr_psr_imme_r);
-   ncpu32k_cell_dff_lr #(1, 1'b1) dff_msr_psr_dmme (clk, rst_n, msr_psr_dmme_we|psr_ld, msr_psr_dmme_nxt&psr_dmme_msk, msr_psr_dmme_r);
+   ncpu32k_cell_dff_lr #(1) dff_msr_psr_imme (clk, rst_n, msr_psr_imme_we|psr_ld, msr_psr_imme_nxt&psr_imme_msk, msr_psr_imme_r);
+   ncpu32k_cell_dff_lr #(1) dff_msr_psr_dmme (clk, rst_n, msr_psr_dmme_we|psr_ld, msr_psr_dmme_nxt&psr_dmme_msk, msr_psr_dmme_r);
    
    ncpu32k_cell_dff_lr #(`NCPU_PSR_DW) dff_msr_epsr (clk, rst_n, msr_epsr_we, msr_epsr_nxt, msr_epsr_r);
    
@@ -101,16 +102,24 @@ module ncpu32k_psr
    
    // MSR Bypass
    assign msr_psr_cc = (msr_psr_cc_we ? msr_psr_cc_nxt : msr_psr_cc_r);
-   assign msr_psr_rm = (msr_psr_rm_we ? msr_psr_rm_nxt : msr_psr_rm_r);
-   assign msr_psr_ire = (msr_psr_ire_we ? msr_psr_ire_nxt : msr_psr_ire_r);
-   assign msr_psr_imme = (msr_psr_imme_we ? msr_psr_imme_nxt : msr_psr_imme_r);
-   assign msr_psr_dmme = (msr_psr_dmme_we ? msr_psr_dmme_nxt : msr_psr_dmme_r);
+   // Not bypass the data loaded by psr_ld
+   wire msr_psr_rm_nold = (msr_psr_rm_we ? msr_psr_rm_nxt : msr_psr_rm_r);
+   wire msr_psr_ire_nold = (msr_psr_ire_we ? msr_psr_ire_nxt : msr_psr_ire_r);
+   wire msr_psr_imme_nold = (msr_psr_imme_we ? msr_psr_imme_nxt : msr_psr_imme_r);
+   wire msr_psr_dmme_nold = (msr_psr_dmme_we ? msr_psr_dmme_nxt : msr_psr_dmme_r);
+   // bypass the data loaded by psr_ld
+   assign msr_psr_rm = (msr_psr_rm_we|psr_ld ? msr_psr_rm_nxt|psr_rm_set : msr_psr_rm_r);
+   assign msr_psr_ire = (msr_psr_ire_we|psr_ld ? msr_psr_ire_nxt&psr_ire_msk : msr_psr_ire_r);
+   assign msr_psr_imme = (msr_psr_imme_we|psr_ld ? msr_psr_imme_nxt&psr_imme_msk : msr_psr_imme_r);
+   assign msr_psr_dmme = (msr_psr_dmme_we|psr_ld ? msr_psr_dmme_nxt&psr_dmme_msk : msr_psr_dmme_r);
+   
    assign msr_epsr = (msr_epsr_we ? msr_epsr_nxt : msr_epsr_r);
    assign msr_epc = (msr_epc_we ? msr_epc_nxt : msr_epc_r);
    assign msr_elsa = (msr_elsa_we ? msr_elsa_nxt : msr_elsa_r);
    
    // PSR Pack
    assign msr_psr = {1'b0,1'b0,msr_psr_dmme,msr_psr_imme,msr_psr_ire,msr_psr_rm,1'b0,1'b0,1'b0,msr_psr_cc};
+   assign msr_psr_nold = {1'b0,1'b0,msr_psr_dmme_nold,msr_psr_imme_nold,msr_psr_ire_nold,msr_psr_rm_nold,1'b0,1'b0,1'b0,msr_psr_cc};
    
    // CPUID
    assign msr_cpuid = {CPUID_FTSC,CPUID_FIRQC,CPUID_FFPU,CPUID_FDBG,CPUID_FDCA,CPUID_FICA,CPUID_FDMM,CPUID_FIMM,CPUID_REV[9:0],CPUID_VER[7:0]};
