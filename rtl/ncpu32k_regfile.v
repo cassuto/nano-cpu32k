@@ -45,10 +45,9 @@ module ncpu32k_regfile(
          (
           // Outputs
           .dout                        (regf_rs1_dout),
-          .dout_valid                  (),
           // Inputs
-          .clk_i                       (clk),
-          .rst_n_i                     (rst_n),
+          .clk                         (clk),
+          .rst_n                       (rst_n),
           .raddr                       (regf_rs1_addr),
           .re                          (regf_rs1_re),
           .waddr                       (regf_din_addr),
@@ -67,10 +66,9 @@ module ncpu32k_regfile(
          (
           // Outputs
           .dout                        (regf_rs2_dout),
-          .dout_valid                  (),
           // Inputs
-          .clk_i                       (clk),
-          .rst_n_i                     (rst_n),
+          .clk                         (clk),
+          .rst_n                       (rst_n),
           .raddr                       (regf_rs2_addr),
           .re                          (regf_rs2_re),
           .waddr                       (regf_din_addr),

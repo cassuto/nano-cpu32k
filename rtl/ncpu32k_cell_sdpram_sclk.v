@@ -55,9 +55,10 @@ module ncpu32k_cell_sdpram_sclk
          assign dout = bypass ? din_r : dout_r;
 
          always @(posedge clk or negedge rst_n)
-            if(~rst_n)
+            if(~rst_n) begin
                din_r <= {DW{1'b0}};
-            else if (re)
+               bypass <= 0;
+            end else if (re)
                din_r <= din;
 
          // Bypass FSM
