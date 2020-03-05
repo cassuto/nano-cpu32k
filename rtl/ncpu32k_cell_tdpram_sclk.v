@@ -1,6 +1,13 @@
 /**@file
  * Cell - True Double-port Sync RAM
- * WRITE strategy (On the same port, dout is valid immediately when dout is written)
+ * Timing info:
+ * 1. WRITE strategy (On the same port, dout is valid immediately when din is
+ *       written and dout is enabled)
+ *
+ * 2. Anything about 're' (ReadEnable) signal:
+ *    dout will go valid in the next clk when re == 1
+ *    dout will keep its value in the next clk when re == 1 and we == 0
+ *    dout will change to its new value in the next clk when re == 1 and we == 1
  */
 
 /***************************************************************************/
@@ -32,11 +39,13 @@ module ncpu32k_cell_tdpram_sclk
    input                         we_a,
    input [DW-1:0]                din_a,
    output [DW-1:0]               dout_a,
+   input                         re_a,
    // Port B
    input [AW-1:0]                addr_b,
    input                         we_b,
    input [DW-1:0]                din_b,
-   output [DW-1:0]               dout_b
+   output [DW-1:0]               dout_b,
+   input                         re_b
 );
    reg [DW-1:0] mem_vector[(1<<AW)-1:0];
    
@@ -46,7 +55,7 @@ module ncpu32k_cell_tdpram_sclk
          integer i;
          initial
             for(i=0; i < (1<<AW); i=i+1)
-               mem_vector[i] = {DW{1'b0}};
+               mem_vector[i] = i;//{DW{1'b0}};
       end
    endgenerate
 
@@ -64,8 +73,6 @@ module ncpu32k_cell_tdpram_sclk
       end
    end
    
-   assign dout_a = dout_a_r;
-
    //
    // Read & Write Port B
    //
@@ -80,6 +87,39 @@ module ncpu32k_cell_tdpram_sclk
       end
    end
    
-   assign dout_b = dout_b_r;
+   always @(posedge clk or negedge rst_n)
+      if(~rst_n) begin
+         dout_a_r <= {DW{1'b0}};
+         dout_b_r <= {DW{1'b0}};
+      end
+   
+   //
+   // Read Enable Control
+   //
+   reg ram_vld_a_r;
+   reg ram_vld_b_r;
+   reg [DW-1:0] last_a_r;
+   reg [DW-1:0] last_b_r;
+   
+   assign dout_a = ram_vld_a_r ? dout_a_r : last_a_r;
+   assign dout_b = ram_vld_b_r ? dout_b_r : last_b_r;
 
+   always @(posedge clk or negedge rst_n)
+      if(~rst_n) begin
+         last_a_r <= {DW{1'b0}};
+         last_b_r <= {DW{1'b0}};
+         ram_vld_a_r <= 1;
+         ram_vld_b_r <= 1;
+      end else begin
+         if (ram_vld_a_r | we_a)
+            last_a_r <= we_a ? din_a : dout_a_r; // Sync last_r with dout_r in writing
+         if (ram_vld_b_r | we_b)
+            last_b_r <= we_b ? din_b : dout_b_r; // Sync last_r with dout_r in writing
+      end
+
+   // Bypass FSM
+   always @(posedge clk) begin
+      ram_vld_a_r <= re_a;
+      ram_vld_b_r <= re_b;
+   end
 endmodule
