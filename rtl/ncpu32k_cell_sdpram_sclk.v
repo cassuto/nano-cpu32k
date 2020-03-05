@@ -1,5 +1,5 @@
 /**@file
- * Cell - Double-port Sync RAM
+ * Cell - Simple Double-port Sync RAM
  */
 
 /***************************************************************************/
@@ -17,77 +17,67 @@
 /*  Lesser General Public License for more details.                        */
 /***************************************************************************/
 
-module ncpu32k_cell_dpram_sclk
+module ncpu32k_cell_sdpram_sclk
 #(
-   parameter ADDR_WIDTH = 32,
-   parameter DATA_WIDTH = 32,
+   parameter AW = 32,
+   parameter DW = 32,
    parameter CLEAR_ON_INIT = 1,
    parameter ENABLE_BYPASS = 1
 )
 (
-   input                           clk_i,
-   input                           rst_n_i,
-   input [ADDR_WIDTH-1:0]          raddr,
-   input                           re,
-   input [ADDR_WIDTH-1:0]          waddr,
-   input                           we,
-   input [DATA_WIDTH-1:0]          din,
-   output [DATA_WIDTH-1:0]         dout,
-   output                          dout_valid
+   input                         clk,
+   input                         rst_n,
+   input [AW-1:0]                raddr,
+   input                         re,
+   input [AW-1:0]                waddr,
+   input                         we,
+   input [DW-1:0]                din,
+   output [DW-1:0]               dout
 );
-
-   reg [DATA_WIDTH-1:0]            mem_vector[(1<<ADDR_WIDTH)-1:0];
-   reg [DATA_WIDTH-1:0]            dout_r;
-   reg                             re_r;
-   wire [DATA_WIDTH-1:0]           dout_w;
-
+   reg [DW-1:0] mem_vector[(1<<AW)-1:0];
+   
    // Initial block. For verification only.
    generate
       if(CLEAR_ON_INIT) begin :clear_on_init
          integer i;
          initial
-            for(i=0; i < (1<<ADDR_WIDTH); i=i+1)
-               mem_vector[i] = {DATA_WIDTH{1'b0}};
+            for(i=0; i < (1<<AW); i=i+1)
+               mem_vector[i] = {DW{1'b0}};
       end
    endgenerate
 
+   reg [DW-1:0] dout_r;
    // Bypass
    reg bypass;
-   reg [DATA_WIDTH-1:0]  din_r;
+   reg [DW-1:0] din_r;
    generate
-      if (ENABLE_BYPASS) begin : bypass_gen
-         assign dout_w = bypass ? din_r : dout_r;
+      if (ENABLE_BYPASS) begin : bypass_on
+         assign dout = bypass ? din_r : dout_r;
 
-         always @(posedge clk_i or negedge rst_n_i)
-            if(~rst_n_i)
-               din_r <= {DATA_WIDTH{1'b0}};
+         always @(posedge clk or negedge rst_n)
+            if(~rst_n)
+               din_r <= {DW{1'b0}};
             else if (re)
                din_r <= din;
 
-         always @(posedge clk_i)
-            if (waddr == raddr && we && re)
+         // Bypass FSM
+         always @(posedge clk)
+            if (waddr == raddr & we & re)
                bypass <= 1;
-            else if (re)
+            else if (re) // Keep bypass valid till the next Read
                bypass <= 0;
-      end else begin
-         assign dout_w = dout_r;
+      end else begin : bypass_off
+         assign dout = dout_r;
       end
    endgenerate
    
-   // Read output
-   assign dout = dout_w;
-   assign dout_valid = re_r;
-   
-   // Sync Read
-   always @(posedge clk_i or negedge rst_n_i)
-      if (~rst_n_i) begin
-         re_r <= 1'b0;
-         dout_r <= {DATA_WIDTH{1'b0}};
-      end else
-         re_r <= re;
+   always @(posedge clk or negedge rst_n)
+      if (~rst_n)
+         dout_r <= {DW{1'b0}};
 
+   // SRAM block
    // Write & Read
-   always @(posedge clk_i) begin
+   always @(posedge clk) begin
       if (we)
          mem_vector[waddr] <= din;
       if (re)
