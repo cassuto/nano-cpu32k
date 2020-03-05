@@ -34,7 +34,7 @@ module ncpu32k_regfile(
 );
    localparam CLEAR_ON_INIT = 1;
    
-   ncpu32k_cell_dpram_sclk
+   ncpu32k_cell_sdpram_sclk
       #(
          .AW                           (`NCPU_REG_AW),
          .DW                           (`NCPU_DW),
@@ -56,7 +56,7 @@ module ncpu32k_regfile(
           .din                         (regf_din)
          ); 
 
-   ncpu32k_cell_dpram_sclk
+   ncpu32k_cell_sdpram_sclk
       #(
          .AW                           (`NCPU_REG_AW),
          .DW                           (`NCPU_DW),
