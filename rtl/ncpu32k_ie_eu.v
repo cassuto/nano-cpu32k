@@ -30,6 +30,11 @@ module ncpu32k_ie_eu
    input                      au_cc_nxt,
    input                      ieu_ret,
    input                      ieu_syscall,
+   input                      ieu_set_elsa,
+   input [`NCPU_DW-1:0]       ieu_lsa,
+   input [`NCPU_AW-3:0]       ieu_insn_pc,
+   input                      ieu_specul_extexp,
+   input                      ieu_let_lsa_pc,
    input [`NCPU_DW:0]         linkaddr,
    // PSR
    input [`NCPU_PSR_DW-1:0]   msr_psr,
@@ -44,7 +49,7 @@ module ncpu32k_ie_eu
    output                     msr_psr_dmme_we,
    output                     msr_psr_ire_nxt,
    output                     msr_psr_ire_we,
-   output                     msr_syscall_ent,
+   output                     msr_exp_ent,
    // CPUID
    input [`NCPU_DW-1:0]       msr_cpuid,
    // EPC
@@ -123,7 +128,7 @@ module ncpu32k_ie_eu
    
    ////////////////////////////////////////////////////////////////////////////////
    
-   // Writeback PSR
+   // Decode MSR address
    wire [`NCPU_DW-1:0] wmsr_operand = ieu_operand_3;
    wire wmsr_psr_we = ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_ps & bank_off[`NCPU_MSR_PSR];
    wire wmsr_epc_we = ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_ps & bank_off[`NCPU_MSR_EPC];
@@ -148,8 +153,8 @@ module ncpu32k_ie_eu
    wire [9:0] wmsr_psr_res;
    assign {wmsr_psr_res[9],wmsr_psr_res[8],wmsr_psr_dmme,wmsr_psr_imme,wmsr_psr_ire,wmsr_psr_rm,wmsr_psr_res[3],wmsr_psr_res[2], wmsr_psr_res[1],wmsr_psr_cc} = wmsr_operand;
 
-   // Write back PSR
-   assign msr_syscall_ent = ieu_syscall;
+   // Write back PSR Assert (03060934)
+   assign msr_exp_ent = commit & (ieu_syscall | ieu_specul_extexp);
    assign msr_psr_cc_nxt = au_cc_we ? au_cc_nxt : wmsr_psr_we ? wmsr_psr_cc : epsr_cc;
    assign msr_psr_cc_we = commit & (ieu_ret | au_cc_we | wmsr_psr_we);
    assign msr_psr_rm_nxt = wmsr_psr_we ? wmsr_psr_rm : epsr_rm;
@@ -162,26 +167,41 @@ module ncpu32k_ie_eu
    assign msr_psr_ire_we = commit & (ieu_ret | wmsr_psr_we);
    // Writeback EPSR
    assign msr_epsr_nxt = wmsr_epsr_we ? wmsr_operand[`NCPU_PSR_DW-1:0] : msr_psr_nold;
-   assign msr_epsr_we = commit & (ieu_syscall | wmsr_epsr_we);
-   assign msr_epc_nxt = wmsr_epc_we ? wmsr_operand : linkaddr;
-   assign msr_epc_we = commit & (ieu_syscall | wmsr_epc_we);
-   // Writeback ELSA
-   assign msr_elsa_nxt = wmsr_operand;
-   assign msr_elsa_we = wmsr_elsa_we;
+   assign msr_epsr_we = commit & (msr_exp_ent | wmsr_epsr_we);
+   // In syscall, EPC is the next insn of syscall, while in general EPC is the insn
+   // that raised the exception.
+   assign msr_epc_nxt = wmsr_epc_we ? wmsr_operand : ieu_specul_extexp ? {ieu_insn_pc,2'b0} : linkaddr;
+   assign msr_epc_we = commit & (ieu_specul_extexp | ieu_syscall | wmsr_epc_we);
+   
+   // Writeback ELSA  Assert (03060933)
+   wire set_elsa = ieu_let_lsa_pc;
+   wire lsa_nxt = {ieu_insn_pc,2'b0};
+   assign msr_elsa_nxt = set_elsa ? lsa_nxt : wmsr_operand;
+   assign msr_elsa_we = commit & (set_elsa | wmsr_elsa_we);
    
    // Writeback IMM
    assign msr_imm_tlbl_nxt = wmsr_operand;
-   assign msr_imm_tlbl_we = ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_imm & msr_imm_tlbl_sel;
+   assign msr_imm_tlbl_we = commit & (ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_imm & msr_imm_tlbl_sel);
    assign msr_imm_tlbh_nxt = wmsr_operand;
-   assign msr_imm_tlbh_we = ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_imm & msr_imm_tlbh_sel;
+   assign msr_imm_tlbh_we = commit & (ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_imm & msr_imm_tlbh_sel);
 
-   // Assertions
+   // Assertions 03060934
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if (commit & (ieu_ret|ieu_syscall|au_cc_we|wmsr_psr_we) &
-                  ~(ieu_ret^ieu_syscall^au_cc_we^wmsr_psr_we)
+      if (commit & (ieu_ret|ieu_syscall|ieu_specul_extexp|au_cc_we|wmsr_psr_we) &
+                  ~(ieu_ret^ieu_syscall^ieu_specul_extexp^au_cc_we^wmsr_psr_we)
        )
          $fatal ("\n ctrls of msr_psr writeback MUX should be mutex\n");
+   end
+`endif
+
+   // Assertions 03060933
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if (commit & (wmsr_elsa_we|set_elsa) &
+                  ~(wmsr_elsa_we^set_elsa)
+       )
+         $fatal ("\n ctrls of 'msr_elsa_nxt' MUX should be mutex\n");
    end
 `endif
 

@@ -17,7 +17,7 @@
 
 module ncpu32k_i_mmu
 #(
-   parameter TLB_NSETS_LOG2 = 2
+   parameter TLB_NSETS_LOG2 = 7 // (2^TLB_NSETS_LOG2) entries
 )
 (
    input                   clk,
@@ -38,8 +38,11 @@ module ncpu32k_i_mmu
    input                   icache_cmd_ready, /* icache is ready to accept cmd */
    output                  icache_cmd_valid, /* cmd is presented at icache's input */
    output [`NCPU_AW-1:0]   icache_cmd_addr,
-   output                  exp_tlb_miss,
-   output                  exp_page_fault,
+   output                  exp_imm_tlb_miss,
+   output                  exp_imm_page_fault,
+   // PSR
+   input                   msr_psr_imme,
+   input                   msr_psr_rm,
    // IMMID
    output [`NCPU_DW-1:0]   msr_immid,
    // TLBL
@@ -54,6 +57,18 @@ module ncpu32k_i_mmu
    input                   msr_imm_tlbh_we
    
 );
+
+   // VPN shift bit
+   localparam VPN_SHIFT = 13;
+   // PPN shift bit
+   localparam PPN_SHIFT = 13;
+   // Bitwidth of Virtual Page Number
+   localparam VPN_DW = `NCPU_DW-VPN_SHIFT;
+   // Bitwidth of Physical Page Number
+   localparam PPN_DW = `NCPU_DW-PPN_SHIFT;
+   
+   localparam CLEAR_ON_INIT = 1;
+
 
    // MMU FSM
    wire hds_ibus_cmd;
@@ -97,6 +112,7 @@ module ncpu32k_i_mmu
    
    // TLB is to be read
    // When flushing there is no need to handshake with command
+   // We assume that such a handshake is always succeeded (03052146)
    wire tlb_read = hds_ibus_cmd | ibus_cmd_flush;
 
    ////////////////////////////////////////////////////////////////////////////////
@@ -123,39 +139,141 @@ module ncpu32k_i_mmu
    assign msr_immid = {{32-3{1'b0}}, TLB_NSETS_LOG2[2:0]};
 
    // TLB
-   wire [`NCPU_DW-1:0] tlb_l_r [(1<<TLB_NSETS_LOG2):0];
-   wire [`NCPU_DW-1:0] tlb_h_r [(1<<TLB_NSETS_LOG2):0];
-   wire [(1<<TLB_NSETS_LOG2)-1:0] tlb_l_load;
-   wire [(1<<TLB_NSETS_LOG2)-1:0] tlb_h_load;
+   wire msr_psr_imme_r;
+   wire msr_psr_rm_r;
+   wire [PPN_SHIFT-1:0] tgt_page_offset_r;
+   wire [VPN_DW-1:0] tgt_vpn_r;
+   wire [`NCPU_DW-1:0] tlb_l_r;
+   wire [`NCPU_DW-1:0] tlb_h_r;
+   wire [`NCPU_AW-1:0] tlb_dummy_addr;
    wire [`NCPU_AW-1:0] tlb_addr;
    
-   ncpu32k_cell_dff_lr #(`NCPU_AW) dff_tlb
-                   (clk,rst_n, tlb_read, ibus_cmd_addr[`NCPU_AW-1:0], tlb_addr[`NCPU_AW-1:0]);
+   wire [PPN_SHIFT-1:0] tgt_page_offset_nxt = ibus_cmd_addr[PPN_SHIFT-1:0];
+   wire [VPN_DW-1:0] tgt_vpn_nxt = ibus_cmd_addr[VPN_DW+VPN_SHIFT-1:VPN_SHIFT];
+   // Assert (03061058)
+   wire [TLB_NSETS_LOG2-1:0] tgt_index_nxt = tgt_vpn_nxt[TLB_NSETS_LOG2-1:0];
 
-   generate
-      genvar nset;
-      for(nset=0;nset<(1<<TLB_NSETS_LOG2); nset=nset+1) begin : gen_tlbs
-         ncpu32k_cell_dff_lr #(`NCPU_DW) dff_tlb_l
-                   (clk,rst_n, tlb_l_load[nset], msr_imm_tlbl_nxt[`NCPU_DW-1:0], tlb_l_r[nset][`NCPU_DW-1:0]);
-         ncpu32k_cell_dff_lr #(`NCPU_DW) dff_tlb_h
-                   (clk,rst_n, tlb_h_load[nset], msr_imm_tlbh_nxt[`NCPU_DW-1:0], tlb_h_r[nset][`NCPU_DW-1:0]);
-         
-         assign tlb_l_load[nset] = (msr_imm_tlbl_idx == nset) & msr_imm_tlbl_we;
-         assign tlb_h_load[nset] = (msr_imm_tlbh_idx == nset) & msr_imm_tlbh_we;
-      end
-   endgenerate
+   ncpu32k_cell_dff_lr #(1) dff_msr_psr_imme_r
+                (clk,rst_n, tlb_read, msr_psr_imme, msr_psr_imme_r);
+   ncpu32k_cell_dff_lr #(1) dff_msr_psr_rm_r
+                (clk,rst_n, tlb_read, msr_psr_rm, msr_psr_rm_r);
+   ncpu32k_cell_dff_lr #(PPN_SHIFT) dff_tgt_page_offset_r
+                (clk,rst_n, tlb_read, tgt_page_offset_nxt[PPN_SHIFT-1:0], tgt_page_offset_r[PPN_SHIFT-1:0]);
+   ncpu32k_cell_dff_lr #(VPN_DW) dff_tgt_vpn_r
+                (clk,rst_n, tlb_read, tgt_vpn_nxt[VPN_DW-1:0], tgt_vpn_r[VPN_DW-1:0]);
+
+   // Dummy TLB (No translation)
+   ncpu32k_cell_dff_lr #(`NCPU_AW) dff_tlb
+                (clk,rst_n, tlb_read, ibus_cmd_addr[`NCPU_AW-1:0], tlb_dummy_addr[`NCPU_AW-1:0]);
+                
+                
+   // Instance of lowpart TLB
+   ncpu32k_cell_tdpram_sclk
+      #(
+         .AW (TLB_NSETS_LOG2),
+         .DW (`NCPU_DW),
+         .CLEAR_ON_INIT (CLEAR_ON_INIT)
+         )
+      tlb_l_sclk
+         (
+          .clk    (clk),
+          .rst_n  (rst_n),
+          // Port A
+          .addr_a (tgt_index_nxt[TLB_NSETS_LOG2-1:0]),
+          .we_a   (1'b0),
+          .din_a  (),
+          .dout_a (tlb_l_r[`NCPU_DW-1:0]),
+          .re_a   (tlb_read),
+          // Port B
+          .addr_b (msr_imm_tlbl_idx[TLB_NSETS_LOG2-1:0]),
+          .we_b   (msr_imm_tlbl_we),
+          .din_b  (msr_imm_tlbl_nxt),
+          .dout_b (msr_imm_tlbl),
+          .re_b   (1'b1)
+         );
+
+   // Instance of highpart TLB
+   ncpu32k_cell_tdpram_sclk
+      #(
+         .AW (TLB_NSETS_LOG2),
+         .DW (`NCPU_DW),
+         .CLEAR_ON_INIT (CLEAR_ON_INIT)
+         )
+      tlb_h_sclk
+         (
+          .clk    (clk),
+          .rst_n  (rst_n),
+          // Port A
+          .addr_a (tgt_index_nxt[TLB_NSETS_LOG2-1:0]),
+          .we_a   (1'b0),
+          .din_a  (),
+          .dout_a (tlb_h_r[`NCPU_DW-1:0]),
+          .re_a   (tlb_read),
+          // Port B
+          .addr_b (msr_imm_tlbh_idx[TLB_NSETS_LOG2-1:0]),
+          .we_b   (msr_imm_tlbh_we),
+          .din_b  (msr_imm_tlbh_nxt),
+          .dout_b (msr_imm_tlbh),
+          .re_b   (1'b1)
+         );
    
-   assign msr_imm_tlbl = tlb_l_r[msr_imm_tlbl_idx];
-   assign msr_imm_tlbh = tlb_h_r[msr_imm_tlbh_idx];
+   wire tlb_v = tlb_l_r[0];
+   wire [VPN_DW-1:0] tlb_vpn = tlb_l_r[`NCPU_DW-1:`NCPU_DW-VPN_DW];
+   wire tlb_p = tlb_h_r[0];
+   wire tlb_ux = tlb_h_r[3];
+   wire tlb_rx = tlb_h_r[4];
+   wire tlb_s = tlb_h_r[8];
+   wire [PPN_DW-1:0] tlb_ppn = tlb_h_r[`NCPU_DW-1:`NCPU_DW-PPN_DW];
    
-   assign icache_cmd_addr = tlb_addr;
+   assign perm_denied = ((msr_psr_rm_r & ~tlb_rx) |
+                         (~msr_psr_rm_r & ~tlb_ux));
    
-   // Assertions
+   // Permission check, Page Fault exception
+   wire exp_imm_page_fault_nxt = perm_denied & msr_psr_imme_r;
+
+   // TLB miss exception
+   wire exp_imm_tlb_miss_nxt = ~(tlb_v & tlb_vpn == tgt_vpn_r) & ~perm_denied & msr_psr_imme_r;
+   
+   ncpu32k_cell_dff_lr #(1) dff_exp_imm_page_fault
+                (clk,rst_n, hds_icache_cmd, exp_imm_page_fault_nxt, exp_imm_page_fault);
+   ncpu32k_cell_dff_lr #(1) dff_exp_imm_tlb_miss
+                (clk,rst_n, hds_icache_cmd, exp_imm_tlb_miss_nxt, exp_imm_tlb_miss);
+   
+   assign tlb_addr = {tlb_ppn[PPN_DW-1:0], tgt_page_offset_r[PPN_SHIFT-1:0]};
+
+   assign icache_cmd_addr =
+      (
+         // IMMU is enabled and TLB hit (speculative exec exception to flush TLB)
+         msr_psr_imme_r ? tlb_addr
+         // IMMU is disabled
+         : tlb_dummy_addr
+      );
+   
+   // Assertion (03052146)
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
       if(ibus_cmd_flush & ~hds_ibus_cmd)
          $fatal (0, "\n ibus cmd port should be handshaked when flushing.\n");
    end
 `endif
+
+   // Assertion (03061058)
+`ifdef NCPU_ENABLE_ASSERT
+   initial begin
+      if (!(TLB_NSETS_LOG2 <= VPN_DW)) begin
+         $fatal (0, "\n TLB_NSETS_LOG2 should <= VPN_DW\n");
+      end
+   end
+`endif
+
+   // Assertions
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if ((exp_imm_tlb_miss|exp_imm_page_fault) &
+           ~(exp_imm_tlb_miss^exp_imm_page_fault))
+         $fatal ("\n EITM and EIPF should be mutex\n");
+   end
+`endif
+
 
 endmodule

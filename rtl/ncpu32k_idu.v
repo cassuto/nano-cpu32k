@@ -31,6 +31,8 @@ module ncpu32k_idu(
    input [`NCPU_AW-3:0]       idu_specul_tgt,
    input                      idu_specul_jmprel,
    input                      idu_specul_bcc,
+   input                      idu_specul_extexp,
+   input                      idu_let_lsa_pc,
    input                      specul_flush,
    output                     regf_rs1_re,
    output [`NCPU_REG_AW-1:0]  regf_rs1_addr,
@@ -66,7 +68,9 @@ module ncpu32k_idu(
    output                     ieu_specul_jmpfar,
    output [`NCPU_AW-3:0]      ieu_specul_tgt,
    output                     ieu_specul_jmprel,
-   output                     ieu_specul_bcc
+   output                     ieu_specul_bcc,
+   output                     ieu_specul_extexp,
+   output                     ieu_let_lsa_pc
 );
 
    wire [5:0] f_opcode = idu_insn[5:0];
@@ -359,7 +363,11 @@ module ncpu32k_idu(
                    (clk,rst_n, pipebuf_cas, idu_specul_tgt[`NCPU_AW-3:0], ieu_specul_tgt[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(1) dff_ieu_specul_bcc
                    (clk,rst_n, pipebuf_cas, idu_specul_bcc, ieu_specul_bcc);
-
+   ncpu32k_cell_dff_lr #(1) dff_ieu_specul_exp
+                   (clk,rst_n, pipebuf_cas, idu_specul_extexp, ieu_specul_extexp);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_let_lsa_pc
+                   (clk,rst_n, pipebuf_cas, idu_let_lsa_pc, ieu_let_lsa_pc);
+                   
    // Control path
    ncpu32k_cell_dff_lr #(1) dff_ieu_emu_insn
                    (clk,rst_n, pipebuf_cas, emu_insn & not_flushing, ieu_emu_insn);

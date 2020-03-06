@@ -28,6 +28,8 @@ module ncpu32k_ifu(
    input [`NCPU_AW-1:0]    ibus_out_id_nxt,
    output                  ibus_cmd_flush,
    input                   ibus_flush_ack,
+   input                   exp_imm_tlb_miss,
+   input                   exp_imm_page_fault,
    input [`NCPU_DW-1:0]    bpu_msr_epc,
    input [`NCPU_AW-3:0]    ifu_flush_jmp_tgt,
    input                   specul_flush,
@@ -44,6 +46,8 @@ module ncpu32k_ifu(
    output [`NCPU_AW-3:0]   idu_specul_tgt,
    output                  idu_specul_jmprel,
    output                  idu_specul_bcc, /* = MSR.PSR.CC in prediction. not taken */
+   output                  idu_specul_extexp,
+   output                  idu_let_lsa_pc,
    output                  bpu_rd,
    output                  bpu_jmprel,
    output [`NCPU_AW-3:0]   bpu_insn_pc,
@@ -62,7 +66,9 @@ module ncpu32k_ifu(
    wire                    op_jmpfar_nxt;
    wire                    op_syscall;
    wire                    op_ret;
-   wire                    specul;
+   wire                    specul_jmp;
+   
+   wire hds_ibus_dout = ibus_dout_valid & ibus_dout_ready;
    
    // Predecoder
    ncpu32k_ipdu predecoder
@@ -71,7 +77,7 @@ module ncpu32k_ifu(
          .rst_n         (rst_n),
          .ipdu_insn     (insn),
          .bpu_taken     (bpu_jmprel_taken),
-         .valid         (ibus_dout_valid & ibus_dout_ready), /* ibus_dout_valid */
+         .valid         (hds_ibus_dout),
          .jmprel_taken  (jmprel_taken),
          .jmprel_offset (jmprel_offset),
          .jmprel_link   (jmprel_link_nxt),
@@ -107,14 +113,24 @@ module ncpu32k_ifu(
    wire [`NCPU_AW-3:0] flush_jmprel_tgt_org;
    wire [`NCPU_AW-3:0] flush_jmprel_tgt;
    
-   // Exceptions
-   wire exp_taken = op_syscall;
-   wire [7:0] exp_vector = op_syscall ? `NCPU_ESYSCALL_VECTOR : `NCPU_ERST_VECTOR;
+   // Extrnal Exceptions
+   wire extexp_taken = (exp_imm_tlb_miss | exp_imm_page_fault) & hds_ibus_dout;
+   // Internal and Extrnal Exceptions
+   wire exp_taken = op_syscall | extexp_taken;
+   // Let ELSA = PC(Virtual Address)
+   wire let_lsa_pc_nxt = (exp_imm_tlb_miss | exp_imm_page_fault);
+   // MUX (03060653)
+   wire [7:0] exp_vector =
+      (
+         ({8{op_syscall}} & `NCPU_ESYSCALL_VECTOR) |
+         ({8{exp_imm_tlb_miss}} & `NCPU_EITM_VECTOR) |
+         ({8{exp_imm_page_fault}} & `NCPU_EIPF_VECTOR)
+      );
    wire [`NCPU_AW-3:0] flush_exp_vect_tgt = {{`NCPU_AW-2-8{1'b0}}, exp_vector[7:2]};
    
    // Speculative execution
-   assign specul = bpu_jmprel | op_jmpfar_nxt | op_ret;
-   assign bpu_rd = specul;
+   assign specul_jmp = bpu_jmprel | op_jmpfar_nxt;
+   assign bpu_rd = specul_jmp;
    assign bpu_jmprel = op_bcc;
    assign bpu_insn_pc = flush_insn_pc;
    
@@ -128,8 +144,8 @@ module ncpu32k_ifu(
             // for jmpfar, this is the predicated target,
             // consistent with BPU result
             flush_jmpfar_tgt
-         : op_syscall ?
-            // for syscall, this is vector address
+         : exp_taken ?
+            // for exception call, this is vector address
             flush_exp_vect_tgt
          : op_ret ?
             // for ret, this is the predicated target,
@@ -162,7 +178,7 @@ module ncpu32k_ifu(
    
    // Program Counter Register
    // priority MUX
-   // Note that nxt and flush are reusing the same port 
+   // Note that _nxt and flush_ are reusing the same port 
    assign pc_addr_nxt = specul_flush ? ifu_flush_jmp_tgt
                            : exp_taken ? flush_exp_vect_tgt
                            : op_ret ? bpu_msr_epc
@@ -175,7 +191,15 @@ module ncpu32k_ifu(
    
    assign insn = ibus_dout;
    
-   wire not_flushing = ~specul_flush;
+   // Not issue insn that not only _writes MSR_ but also _raises exception_
+   // even the insn is in speculative exception, both of these will set
+   // WriteEnable of MSR at _IEU stage_, then make conflict.
+   // To avoid conflict, we don't issue speculative insn that _raised exception_.
+   // This makes no effect on internal exceptions.
+   wire not_flushing = ~(specul_flush | exp_taken);
+   // If extrnal exception raised, then ignore internal exception.
+   // Note 'ret' is a special exception.
+   wire not_flushing_intexp = ~(specul_flush | extexp_taken);
    
    // Data path: no need to flush
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_insn_pc
@@ -184,6 +208,11 @@ module ncpu32k_ifu(
                    (clk,rst_n, pipebuf_cas, specul_tgt_nxt, idu_specul_tgt[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_bcc
                    (clk,rst_n, pipebuf_cas, specul_bcc_nxt, idu_specul_bcc);
+   ncpu32k_cell_dff_lr #(1) dff_idu_specul_exp
+                   (clk,rst_n, pipebuf_cas, extexp_taken, idu_specul_extexp);
+   ncpu32k_cell_dff_lr #(1) dff_idu_set_lsa_pc
+                   (clk,rst_n, pipebuf_cas, let_lsa_pc_nxt, idu_let_lsa_pc);
+                   
    // Control path
    ncpu32k_cell_dff_lr #(`NCPU_IW) dff_idu_insn
                    (clk,rst_n, pipebuf_cas, insn & {`NCPU_IW{not_flushing}}, idu_insn);
@@ -194,19 +223,28 @@ module ncpu32k_ifu(
    ncpu32k_cell_dff_lr #(1) dff_idu_op_jmpfar
                    (clk,rst_n, pipebuf_cas, op_jmpfar_nxt & not_flushing, idu_op_jmpfar);
    ncpu32k_cell_dff_lr #(1) dff_idu_op_ret
-                   (clk,rst_n, pipebuf_cas, op_ret & not_flushing, idu_op_ret);
+                   (clk,rst_n, pipebuf_cas, op_ret & not_flushing_intexp, idu_op_ret);
    ncpu32k_cell_dff_lr #(1) dff_idu_op_syscall
-                   (clk,rst_n, pipebuf_cas, op_syscall & not_flushing, idu_op_syscall);
+                   (clk,rst_n, pipebuf_cas, op_syscall & not_flushing_intexp, idu_op_syscall);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmpfar
-                   (clk,rst_n, pipebuf_cas, specul & op_jmpfar_nxt & not_flushing, idu_specul_jmpfar);
+                   (clk,rst_n, pipebuf_cas, specul_jmp & op_jmpfar_nxt & not_flushing, idu_specul_jmpfar);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmprel
-                   (clk,rst_n, pipebuf_cas, specul & op_jmprel_nxt & not_flushing, idu_specul_jmprel);
+                   (clk,rst_n, pipebuf_cas, specul_jmp & op_jmprel_nxt & not_flushing, idu_specul_jmprel);
 
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
       if(ibus_dout_ready & op_jmpfar_nxt & op_jmprel_nxt)
          $fatal ("\n 'op_jmpfar_nxt' and 'jmprel_taken' should be mutex\n");
+   end
+`endif
+
+   // Assertions 03060653
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if(exp_taken & (op_syscall|exp_imm_tlb_miss|exp_imm_page_fault) &
+                     ~(op_syscall^exp_imm_tlb_miss^exp_imm_page_fault))
+         $fatal ("\n ctrls of 'exp_vector' should be mutex\n");
    end
 `endif
 

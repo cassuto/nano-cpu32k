@@ -28,7 +28,7 @@ module ncpu32k_core(
    output [2:0]            dbus_size_o,
    input                   ibus_cmd_ready, /* ibus is ready to accept cmd */
    output                  ibus_cmd_valid, /* cmd is presented at ibus'input */
-   output [`NCPU_AW-1:0]   ibus_cmd_addr,
+   output [`NCPU_AW-1:0]   ibus_cmd_addr, /* IMPORTANT! changing after cmd handshaked */
    input                   ibus_dout_valid,
    output                  ibus_dout_ready,
    input [`NCPU_IW-1:0]    ibus_dout,
@@ -36,6 +36,10 @@ module ncpu32k_core(
    input [`NCPU_AW-1:0]    ibus_out_id_nxt,
    output                  ibus_cmd_flush,
    input                   ibus_flush_ack,
+   input                   exp_imm_tlb_miss,
+   input                   exp_imm_page_fault,
+   output                  msr_psr_imme,
+   output                  msr_psr_rm,
    input [`NCPU_DW-1:0]       msr_immid,
    input [`NCPU_DW-1:0]       msr_imm_tlbl,
    output [`NCPU_TLB_AW-1:0]  msr_imm_tlbl_idx,
@@ -63,11 +67,13 @@ module ncpu32k_core(
    wire [`NCPU_IW-1:0]  idu_insn;               // From ifu of ncpu32k_ifu.v
    wire [`NCPU_AW-3:0]  idu_insn_pc;            // From ifu of ncpu32k_ifu.v, ...
    wire                 idu_jmprel_link;        // From ifu of ncpu32k_ifu.v
+   wire                 idu_let_lsa_pc;         // From ifu of ncpu32k_ifu.v
    wire                 idu_op_jmpfar;          // From ifu of ncpu32k_ifu.v
    wire                 idu_op_jmprel;          // From ifu of ncpu32k_ifu.v
    wire                 idu_op_ret;             // From ifu of ncpu32k_ifu.v
    wire                 idu_op_syscall;         // From ifu of ncpu32k_ifu.v
    wire                 idu_specul_bcc;         // From ifu of ncpu32k_ifu.v
+   wire                 idu_specul_extexp;      // From ifu of ncpu32k_ifu.v
    wire                 idu_specul_jmpfar;      // From ifu of ncpu32k_ifu.v
    wire                 idu_specul_jmprel;      // From ifu of ncpu32k_ifu.v
    wire [`NCPU_AW-3:0]  idu_specul_tgt;         // From ifu of ncpu32k_ifu.v
@@ -80,6 +86,7 @@ module ncpu32k_core(
    wire                 ieu_in_valid;           // From idu of ncpu32k_idu.v
    wire [`NCPU_AW-3:0]  ieu_insn_pc;            // From idu of ncpu32k_idu.v
    wire                 ieu_jmplink;            // From idu of ncpu32k_idu.v
+   wire                 ieu_let_lsa_pc;         // From idu of ncpu32k_idu.v
    wire [`NCPU_LU_IOPW-1:0] ieu_lu_opc_bus;     // From idu of ncpu32k_idu.v
    wire                 ieu_mu_barr;            // From idu of ncpu32k_idu.v
    wire                 ieu_mu_load;            // From idu of ncpu32k_idu.v
@@ -92,6 +99,7 @@ module ncpu32k_core(
    wire [`NCPU_DW-1:0]  ieu_operand_3;          // From idu of ncpu32k_idu.v
    wire                 ieu_ret;                // From idu of ncpu32k_idu.v
    wire                 ieu_specul_bcc;         // From idu of ncpu32k_idu.v
+   wire                 ieu_specul_extexp;      // From idu of ncpu32k_idu.v
    wire                 ieu_specul_jmpfar;      // From idu of ncpu32k_idu.v
    wire                 ieu_specul_jmprel;      // From idu of ncpu32k_idu.v
    wire [`NCPU_AW-3:0]  ieu_specul_tgt;         // From idu of ncpu32k_idu.v
@@ -112,6 +120,7 @@ module ncpu32k_core(
    wire [`NCPU_PSR_DW-1:0] msr_epsr;            // From psr of ncpu32k_psr.v
    wire [`NCPU_PSR_DW-1:0] msr_epsr_nxt;        // From ieu of ncpu32k_ieu.v
    wire                 msr_epsr_we;            // From ieu of ncpu32k_ieu.v
+   wire                 msr_exp_ent;            // From ieu of ncpu32k_ieu.v
    wire [`NCPU_PSR_DW-1:0] msr_psr;             // From psr of ncpu32k_psr.v
    wire                 msr_psr_cc;             // From psr of ncpu32k_psr.v
    wire                 msr_psr_cc_nxt;         // From ieu of ncpu32k_ieu.v
@@ -119,17 +128,14 @@ module ncpu32k_core(
    wire                 msr_psr_dmme;           // From psr of ncpu32k_psr.v
    wire                 msr_psr_dmme_nxt;       // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_dmme_we;        // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_imme;           // From psr of ncpu32k_psr.v
    wire                 msr_psr_imme_nxt;       // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_imme_we;        // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_ire;            // From psr of ncpu32k_psr.v
    wire                 msr_psr_ire_nxt;        // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_ire_we;         // From ieu of ncpu32k_ieu.v
    wire [`NCPU_PSR_DW-1:0] msr_psr_nold;        // From psr of ncpu32k_psr.v
-   wire                 msr_psr_rm;             // From psr of ncpu32k_psr.v
    wire                 msr_psr_rm_nxt;         // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_rm_we;          // From ieu of ncpu32k_ieu.v
-   wire                 msr_syscall_ent;        // From ieu of ncpu32k_ieu.v
    wire [`NCPU_DW-1:0]  regf_din;               // From ieu of ncpu32k_ieu.v
    wire [`NCPU_REG_AW-1:0] regf_din_addr;       // From ieu of ncpu32k_ieu.v
    wire [`NCPU_REG_AW-1:0] regf_rs1_addr;       // From idu of ncpu32k_idu.v
@@ -188,7 +194,7 @@ module ncpu32k_core(
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .msr_syscall_ent                 (msr_syscall_ent),
+       .msr_exp_ent                     (msr_exp_ent),
        .msr_psr_cc_nxt                  (msr_psr_cc_nxt),
        .msr_psr_cc_we                   (msr_psr_cc_we),
        .msr_psr_rm_nxt                  (msr_psr_rm_nxt),
@@ -229,6 +235,8 @@ module ncpu32k_core(
        .idu_specul_tgt                  (idu_specul_tgt[`NCPU_AW-3:0]),
        .idu_specul_jmprel               (idu_specul_jmprel),
        .idu_specul_bcc                  (idu_specul_bcc),
+       .idu_specul_extexp               (idu_specul_extexp),
+       .idu_let_lsa_pc                  (idu_let_lsa_pc),
        .bpu_rd                          (bpu_rd),
        .bpu_jmprel                      (bpu_jmprel),
        .bpu_insn_pc                     (bpu_insn_pc[`NCPU_AW-3:0]),
@@ -241,6 +249,8 @@ module ncpu32k_core(
        .ibus_out_id                     (ibus_out_id[`NCPU_AW-1:0]),
        .ibus_out_id_nxt                 (ibus_out_id_nxt[`NCPU_AW-1:0]),
        .ibus_flush_ack                  (ibus_flush_ack),
+       .exp_imm_tlb_miss                (exp_imm_tlb_miss),
+       .exp_imm_page_fault              (exp_imm_page_fault),
        .bpu_msr_epc                     (bpu_msr_epc[`NCPU_DW-1:0]),
        .ifu_flush_jmp_tgt               (ifu_flush_jmp_tgt[`NCPU_AW-3:0]),
        .specul_flush                    (specul_flush),
@@ -306,6 +316,8 @@ module ncpu32k_core(
        .ieu_specul_tgt                  (ieu_specul_tgt[`NCPU_AW-3:0]),
        .ieu_specul_jmprel               (ieu_specul_jmprel),
        .ieu_specul_bcc                  (ieu_specul_bcc),
+       .ieu_specul_extexp               (ieu_specul_extexp),
+       .ieu_let_lsa_pc                  (ieu_let_lsa_pc),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
@@ -320,6 +332,8 @@ module ncpu32k_core(
        .idu_specul_tgt                  (idu_specul_tgt[`NCPU_AW-3:0]),
        .idu_specul_jmprel               (idu_specul_jmprel),
        .idu_specul_bcc                  (idu_specul_bcc),
+       .idu_specul_extexp               (idu_specul_extexp),
+       .idu_let_lsa_pc                  (idu_let_lsa_pc),
        .specul_flush                    (specul_flush),
        .regf_rs1_dout                   (regf_rs1_dout[`NCPU_DW-1:0]),
        .regf_rs2_dout                   (regf_rs2_dout[`NCPU_DW-1:0]),
@@ -342,7 +356,7 @@ module ncpu32k_core(
        .regf_din_addr                   (regf_din_addr[`NCPU_REG_AW-1:0]),
        .regf_din                        (regf_din[`NCPU_DW-1:0]),
        .regf_we                         (regf_we),
-       .msr_syscall_ent                 (msr_syscall_ent),
+       .msr_exp_ent                     (msr_exp_ent),
        .msr_psr_cc_nxt                  (msr_psr_cc_nxt),
        .msr_psr_cc_we                   (msr_psr_cc_we),
        .msr_psr_rm_nxt                  (msr_psr_rm_nxt),
@@ -404,6 +418,8 @@ module ncpu32k_core(
        .ieu_specul_tgt                  (ieu_specul_tgt[`NCPU_AW-3:0]),
        .ieu_specul_jmprel               (ieu_specul_jmprel),
        .ieu_specul_bcc                  (ieu_specul_bcc),
+       .ieu_specul_extexp               (ieu_specul_extexp),
+       .ieu_let_lsa_pc                  (ieu_let_lsa_pc),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
        .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
        .msr_psr_cc                      (msr_psr_cc),

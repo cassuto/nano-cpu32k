@@ -32,7 +32,7 @@ module ncpu32k_psr
    input                   clk,
    input                   rst_n,
    // PSR
-   input                   msr_syscall_ent,
+   input                   msr_exp_ent,
    output [`NCPU_PSR_DW-1:0] msr_psr,
    output [`NCPU_PSR_DW-1:0] msr_psr_nold,
    input                   msr_psr_cc_nxt,
@@ -81,16 +81,16 @@ module ncpu32k_psr
    wire psr_dmme_msk;
    wire psr_ire_msk;
    
-   wire psr_ld = msr_syscall_ent;
-   assign psr_rm_set = msr_syscall_ent;
-   assign psr_imme_msk = ~msr_syscall_ent;
-   assign psr_dmme_msk = ~msr_syscall_ent;
-   assign psr_ire_msk = ~msr_syscall_ent;
+   wire psr_ld = msr_exp_ent;
+   assign psr_rm_set = msr_exp_ent;
+   assign psr_imme_msk = ~msr_exp_ent;
+   assign psr_dmme_msk = ~msr_exp_ent;
+   assign psr_ire_msk = ~msr_exp_ent;
    
    // Flip-flops
    ncpu32k_cell_dff_lr #(1) dff_msr_psr_cc (clk, rst_n, msr_psr_cc_we, msr_psr_cc_nxt, msr_psr_cc_r);
    ncpu32k_cell_dff_lr #(1, 1'b1) dff_msr_psr_rm (clk, rst_n, msr_psr_rm_we|psr_ld, msr_psr_rm_nxt|psr_rm_set, msr_psr_rm_r);
-   ncpu32k_cell_dff_lr #(1, 1'b1) dff_msr_psr_ire (clk, rst_n, msr_psr_ire_we|psr_ld, msr_psr_ire_nxt&psr_ire_msk, msr_psr_ire_r);
+   ncpu32k_cell_dff_lr #(1) dff_msr_psr_ire (clk, rst_n, msr_psr_ire_we|psr_ld, msr_psr_ire_nxt&psr_ire_msk, msr_psr_ire_r);
    ncpu32k_cell_dff_lr #(1) dff_msr_psr_imme (clk, rst_n, msr_psr_imme_we|psr_ld, msr_psr_imme_nxt&psr_imme_msk, msr_psr_imme_r);
    ncpu32k_cell_dff_lr #(1) dff_msr_psr_dmme (clk, rst_n, msr_psr_dmme_we|psr_ld, msr_psr_dmme_nxt&psr_dmme_msk, msr_psr_dmme_r);
    

@@ -54,10 +54,12 @@ module ncpu32k_ieu(
    input [`NCPU_AW-3:0]       ieu_specul_tgt,
    input                      ieu_specul_jmprel,
    input                      ieu_specul_bcc,
+   input                      ieu_specul_extexp,
+   input                      ieu_let_lsa_pc,
    output [`NCPU_REG_AW-1:0]  regf_din_addr,
    output [`NCPU_DW-1:0]      regf_din,
    output                     regf_we,
-   output                     msr_syscall_ent,
+   output                     msr_exp_ent,
    input [`NCPU_PSR_DW-1:0]   msr_psr,
    input [`NCPU_PSR_DW-1:0]   msr_psr_nold,
    input                      msr_psr_cc,
@@ -122,6 +124,8 @@ module ncpu32k_ieu(
    // End of automatics
    wire                 ieu_mu_in_valid;
    wire [`NCPU_DW:0]    linkaddr;
+   wire                 ieu_set_lsa;
+   wire [`NCPU_DW:0]    ieu_lsa;
    
    ncpu32k_ie_au au
       (/*AUTOINST*/
@@ -201,7 +205,7 @@ module ncpu32k_ieu(
        .msr_psr_dmme_we                 (msr_psr_dmme_we),
        .msr_psr_ire_nxt                 (msr_psr_ire_nxt),
        .msr_psr_ire_we                  (msr_psr_ire_we),
-       .msr_syscall_ent                 (msr_syscall_ent),
+       .msr_exp_ent                     (msr_exp_ent),
        .msr_epc_nxt                     (msr_epc_nxt[`NCPU_DW-1:0]),
        .msr_epc_we                      (msr_epc_we),
        .msr_epsr_nxt                    (msr_epsr_nxt[`NCPU_PSR_DW-1:0]),
@@ -226,6 +230,11 @@ module ncpu32k_ieu(
        .au_cc_nxt                       (au_cc_nxt),
        .ieu_ret                         (ieu_ret),
        .ieu_syscall                     (ieu_syscall),
+       .ieu_set_elsa                    (ieu_set_elsa),
+       .ieu_lsa                         (ieu_lsa[`NCPU_DW-1:0]),
+       .ieu_insn_pc                     (ieu_insn_pc[`NCPU_AW-3:0]),
+       .ieu_specul_extexp               (ieu_specul_extexp),
+       .ieu_let_lsa_pc                  (ieu_let_lsa_pc),
        .linkaddr                        (linkaddr[`NCPU_DW:0]),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
        .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
@@ -253,24 +262,28 @@ module ncpu32k_ieu(
    // case 2: jmpfar: specul_tgt mismatched
    // case 3: syscall : unconditional flush. (For pipeline refreshing of IMMU)
    // case 4: ret: unconditional flush. (Mainly for pipeline refreshing of IMMU)
+   // case 5: exception: unconditional flush.
    assign specul_flush = (ieu_specul_jmprel & (ieu_specul_bcc != msr_psr_cc))
                | (ieu_specul_jmpfar & (ieu_specul_tgt != ieu_operand_1))
                | ieu_syscall
-               | ieu_ret;
+               | ieu_ret
+               | ieu_specul_extexp;
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target
+   // Assert (03060725)
    assign ifu_flush_jmp_tgt =
          ({`NCPU_AW-2{ieu_specul_jmprel}} & ieu_specul_tgt) |
          ({`NCPU_AW-2{ieu_specul_jmpfar}} & ieu_operand_1) |
          ({`NCPU_AW-2{ieu_syscall}} & ieu_specul_tgt) |
-         ({`NCPU_AW-2{ieu_ret}} & msr_epc[`NCPU_AW-1:2]);
+         ({`NCPU_AW-2{ieu_ret}} & msr_epc[`NCPU_AW-1:2]) |
+         ({`NCPU_AW-2{ieu_specul_extexp}} & ieu_specul_tgt);
    
    assign bpu_wb = ieu_specul_jmprel | ieu_specul_jmpfar;
    assign bpu_wb_jmprel = ieu_specul_jmprel;
    assign bpu_wb_hit = ~specul_flush;
    assign bpu_wb_insn_pc = ieu_insn_pc;
    
-   // Write back regfile
+   // Write back regfile Assert (03060935)
    assign regf_din = ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |
                       ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_XOR]}} & lu_xor[`NCPU_DW-1:0]) |
@@ -293,7 +306,7 @@ module ncpu32k_ieu(
    // ieu_mu_in_ready is ignored
    assign ieu_in_ready = (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid);
    
-   // Assertions
+   // Assertions 03060935
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
       if(regf_we & (ieu_lu_opc_bus[`NCPU_LU_AND] |
@@ -319,11 +332,11 @@ module ncpu32k_ieu(
    end
 `endif
 
-   // Assertions
+   // Assertions 03060725
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if((ieu_specul_jmprel|ieu_specul_jmpfar|ieu_syscall|ieu_ret) &
-            ~(ieu_specul_jmprel^ieu_specul_jmpfar^ieu_syscall^ieu_ret)) begin
+      if((ieu_specul_jmprel|ieu_specul_jmpfar|ieu_syscall|ieu_ret|ieu_specul_extexp) &
+            ~(ieu_specul_jmprel^ieu_specul_jmpfar^ieu_syscall^ieu_ret^ieu_specul_extexp)) begin
          $fatal ("\n ctrls of 'ifu_flush_jmp_tgt' MUX should be mutex\n");
       end
    end

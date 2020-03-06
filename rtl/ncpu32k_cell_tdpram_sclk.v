@@ -55,7 +55,7 @@ module ncpu32k_cell_tdpram_sclk
          integer i;
          initial
             for(i=0; i < (1<<AW); i=i+1)
-               mem_vector[i] = i;//{DW{1'b0}};
+               mem_vector[i] = {DW{1'b0}};
       end
    endgenerate
 
