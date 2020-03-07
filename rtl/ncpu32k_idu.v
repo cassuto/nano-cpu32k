@@ -361,12 +361,6 @@ module ncpu32k_idu(
                    
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_ieu_specul_tgt
                    (clk,rst_n, pipebuf_cas, idu_specul_tgt[`NCPU_AW-3:0], ieu_specul_tgt[`NCPU_AW-3:0]);
-   ncpu32k_cell_dff_lr #(1) dff_ieu_specul_bcc
-                   (clk,rst_n, pipebuf_cas, idu_specul_bcc, ieu_specul_bcc);
-   ncpu32k_cell_dff_lr #(1) dff_ieu_specul_exp
-                   (clk,rst_n, pipebuf_cas, idu_specul_extexp, ieu_specul_extexp);
-   ncpu32k_cell_dff_lr #(1) dff_ieu_let_lsa_pc
-                   (clk,rst_n, pipebuf_cas, idu_let_lsa_pc, ieu_let_lsa_pc);
                    
    // Control path
    ncpu32k_cell_dff_lr #(1) dff_ieu_emu_insn
@@ -398,5 +392,12 @@ module ncpu32k_idu(
                    (clk,rst_n, pipebuf_cas, idu_specul_jmpfar & not_flushing, ieu_specul_jmpfar);
    ncpu32k_cell_dff_lr #(1) dff_ieu_specul_jmprel
                    (clk,rst_n, pipebuf_cas, idu_specul_jmprel & not_flushing, ieu_specul_jmprel);
+
+   ncpu32k_cell_dff_lr #(1) dff_ieu_specul_bcc
+                   (clk,rst_n, pipebuf_cas, idu_specul_bcc & not_flushing, ieu_specul_bcc);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_specul_exp
+                   (clk,rst_n, pipebuf_cas, idu_specul_extexp & not_flushing, ieu_specul_extexp);
+   ncpu32k_cell_dff_lr #(1) dff_ieu_let_lsa_pc
+                   (clk,rst_n, pipebuf_cas, idu_let_lsa_pc & not_flushing, ieu_let_lsa_pc);
 
 endmodule

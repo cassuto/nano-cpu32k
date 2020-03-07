@@ -74,15 +74,22 @@ module ncpu32k_i_mmu
    wire hds_ibus_cmd;
    wire hds_ibus_dout;
    wire hds_icache_cmd;
+   wire hds_icache_dout;
    wire icache_cmd_valid_w;
    
-   // Cancel the current command request to icache
-   // Occurs only if the icache accepts cmd while the output is valid.
+   // flush_strobe will:
+   //    1. If the icache is accepting cmd while its dout is valid,
+   //       then cancel the current command request to icache.
+   //    2. If the icache has accepted previous cmd and we're waiting for its dout,
+   //       then maskout any new command requests until icache goes ready again.
+   //       This ensures that, when flushing, any handshaking with ibus_cmd is
+   //       always succeeded. Assert (03072258)
    // There is no need to cacnel the dout of the cmd that has been handshaked before
    // this clk.
-   ncpu32k_cell_dff_r #(1) dff_flush_ack
-                   (clk,rst_n, ibus_cmd_flush & hds_icache_cmd, ibus_flush_ack);
-   wire flush_strobe = (ibus_cmd_flush&~ibus_flush_ack);
+   wire flush_nstrobe_r;
+   ncpu32k_cell_dff_lr #(1) dff_flush_nstrobe_r
+                   (clk,rst_n, (icache_cmd_valid_w & icache_cmd_ready), ibus_cmd_flush, flush_nstrobe_r);
+   wire flush_strobe = (ibus_cmd_flush&~flush_nstrobe_r);
    
    ncpu32k_cell_pipebuf #(`NCPU_IW) pipebuf_ifu
       (
@@ -100,21 +107,23 @@ module ncpu32k_i_mmu
    assign hds_ibus_dout = ibus_dout_valid & ibus_dout_ready;
       
    assign hds_icache_cmd = icache_cmd_valid & icache_cmd_ready;
+   assign hds_icache_dout = icache_dout_valid & icache_dout_ready;
    
-   // Cacnel the cmd request to icache when flushing.
+   // Cacnel the current cmd handshake with icache when flush_strobe.
    assign icache_cmd_valid = ~flush_strobe & icache_cmd_valid_w;
-
-   assign icache_dout_ready = ibus_dout_ready;
    
    assign ibus_dout_valid = icache_dout_valid;
+   assign icache_dout_ready = ibus_dout_ready;
    
    assign ibus_dout = icache_dout;
    
+   // When cmd handshaked with ibus the flushing could be finished
+   // In flush_strobe we should wait for it
+   assign ibus_flush_ack = hds_ibus_cmd & ~flush_strobe;
+   
    // TLB is to be read
-   // When flushing there is no need to handshake with command
-   // We assume that such a handshake is always succeeded (03052146)
-   wire tlb_read = hds_ibus_cmd | ibus_cmd_flush;
-
+   wire tlb_read = hds_ibus_cmd;
+   
    ////////////////////////////////////////////////////////////////////////////////
    // The following flip-flops are used to maintain the address of the (output-valid) insn
    // dff_id_nxt : Sync address with TLB
@@ -132,7 +141,7 @@ module ncpu32k_i_mmu
    // Transfer when handshaked with downstream module
    ncpu32k_cell_dff_lr #(`NCPU_AW, `NCPU_ERST_VECTOR) dff_id
                    (clk,rst_n, hds_ibus_dout, ibus_out_id_nxt_bypass, ibus_out_id[`NCPU_AW-1:0]);
-
+                   
    ////////////////////////////////////////////////////////////////////////////////
 
    // MSR.IMMID
@@ -248,14 +257,6 @@ module ncpu32k_i_mmu
          // IMMU is disabled
          : tlb_dummy_addr
       );
-   
-   // Assertion (03052146)
-`ifdef NCPU_ENABLE_ASSERT
-   always @(posedge clk) begin
-      if(ibus_cmd_flush & ~hds_ibus_cmd)
-         $fatal (0, "\n ibus cmd port should be handshaked when flushing.\n");
-   end
-`endif
 
    // Assertion (03061058)
 `ifdef NCPU_ENABLE_ASSERT
@@ -272,6 +273,14 @@ module ncpu32k_i_mmu
       if ((exp_imm_tlb_miss|exp_imm_page_fault) &
            ~(exp_imm_tlb_miss^exp_imm_page_fault))
          $fatal ("\n EITM and EIPF should be mutex\n");
+   end
+`endif
+
+   // Assertions (03072258)
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if (ibus_cmd_flush & ~hds_ibus_cmd)
+         $fatal ("\n when flushing downstream module should handshake with ibus cmd\n");
    end
 `endif
 

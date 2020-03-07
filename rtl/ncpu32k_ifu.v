@@ -68,7 +68,9 @@ module ncpu32k_ifu(
    wire                    op_ret;
    wire                    specul_jmp;
    
+   wire extexp_taken;
    wire hds_ibus_dout = ibus_dout_valid & ibus_dout_ready;
+   wire hds_idu = (idu_in_valid & idu_in_ready);
    
    // Predecoder
    ncpu32k_ipdu predecoder
@@ -77,7 +79,7 @@ module ncpu32k_ifu(
          .rst_n         (rst_n),
          .ipdu_insn     (insn),
          .bpu_taken     (bpu_jmprel_taken),
-         .valid         (hds_ibus_dout),
+         .valid         (hds_ibus_dout & ~extexp_taken),
          .jmprel_taken  (jmprel_taken),
          .jmprel_offset (jmprel_offset),
          .jmprel_link   (jmprel_link_nxt),
@@ -89,8 +91,6 @@ module ncpu32k_ifu(
          .op_ret        (op_ret)
        );
    
-   wire fetch_ready;
-   
    // Reset control
    wire[2:0] reset_cnt;
    wire[2:0] reset_cnt_nxt;
@@ -101,8 +101,6 @@ module ncpu32k_ifu(
    assign reset_cnt_ld = ~reset_cnt[1];
    assign reset_cnt_nxt = reset_cnt + 1'b1;
    
-   assign ibus_cmd_valid = reset_cnt[1];
-   assign ibus_dout_ready = fetch_ready & ~ibus_flush_ack & reset_cnt[1];
    
    // The folowing signals are for flush only
    wire [`NCPU_AW-3:0] flush_insn_pc = ibus_out_id[`NCPU_AW-1:2];
@@ -114,8 +112,8 @@ module ncpu32k_ifu(
    wire [`NCPU_AW-3:0] flush_jmprel_tgt;
    
    // Extrnal Exceptions
-   wire extexp_taken = (exp_imm_tlb_miss | exp_imm_page_fault) & hds_ibus_dout;
-   // Internal and Extrnal Exceptions
+   assign extexp_taken = (exp_imm_tlb_miss | exp_imm_page_fault) & hds_ibus_dout;
+   // Internal and Extrnal Exceptions. Assert (03071429)
    wire exp_taken = op_syscall | extexp_taken;
    // Let ELSA = PC(Virtual Address)
    wire let_lsa_pc_nxt = (exp_imm_tlb_miss | exp_imm_page_fault);
@@ -157,20 +155,25 @@ module ncpu32k_ifu(
    wire specul_bcc_nxt = (bpu_jmprel_taken & op_bt | (~bpu_jmprel_taken & op_bcc & ~op_bt));
    
    // Pipeline
-   wire pipebuf_cas;
+   localparam ENABLE_BYPASS = `NCPU_PIPEBUF_BYPASS;
    
-   ncpu32k_cell_pipebuf #(`NCPU_IW) pipebuf_ifu
-      (
-         .clk        (clk),
-         .rst_n      (rst_n),
-         .din        (),
-         .dout       (),
-         .in_valid   (ibus_dout_valid),
-         .in_ready   (fetch_ready),
-         .out_valid  (idu_in_valid),
-         .out_ready  (idu_in_ready),
-         .cas        (pipebuf_cas)
-      );
+   //
+   // Equivalent to 1-slot FIFO
+   //
+   wire valid_nxt = (hds_ibus_dout | ~hds_idu);
+   
+   ncpu32k_cell_dff_lr #(1) dff_out_valid
+                   (clk,rst_n, (hds_ibus_dout | hds_idu), valid_nxt, idu_in_valid);
+   
+   generate
+      if (ENABLE_BYPASS) begin :enable_bypass
+         assign in_ready = ~idu_in_valid | hds_idu;
+      end else begin
+         assign in_ready = ~idu_in_valid;
+      end
+   endgenerate
+   
+   wire pipebuf_cas = hds_ibus_dout;
    
    assign flush_jmpfar_tgt = bpu_jmp_tgt;
    assign flush_jmprel_tgt_org = flush_insn_pc + jmprel_offset;
@@ -180,39 +183,62 @@ module ncpu32k_ifu(
    // priority MUX
    // Note that _nxt and flush_ are reusing the same port 
    assign pc_addr_nxt = specul_flush ? ifu_flush_jmp_tgt
-                           : exp_taken ? flush_exp_vect_tgt
+                           : op_syscall ? flush_exp_vect_tgt
                            : op_ret ? bpu_msr_epc
                            : op_jmpfar_nxt ? flush_jmpfar_tgt
                            : op_jmprel_nxt ? flush_jmprel_tgt
                            : ibus_out_id_nxt[`NCPU_AW-1:2] + 1'b1; /* Non flush */
 
+   assign ibus_cmd_flush = specul_flush | op_syscall | op_ret | op_jmpfar_nxt | op_jmprel_nxt;
+   
+`ifdef NCPU_HANDSHAKE_NOT_ALWAYS_SUCCEED_WHEN_FLUSHING
+   // FMS to maintain ibus_cmd_addr
+   wire fls_status_r;
+   wire fls_status_nxt;
+   ncpu32k_cell_dff_r #(1) dff_fls_status
+                   (clk,rst_n, fls_status_nxt, fls_status_r);
+
+   assign fls_status_nxt = (
+         // in specul_flush there is no need to hold addr
+         (~fls_status_r & ibus_cmd_flush & ~specul_flush) ? 1'b1
+         : (fls_status_r & ibus_flush_ack) ? 1'b0
+         : fls_status_r
+      );
+   // Indicate whether to hold the ibus_cmd_addr
+   wire fls_hld_addr = fls_status_r & ~ibus_flush_ack; // bypass ack
+   
+   wire [`NCPU_AW-1:0] fls_addr_r;
+   wire [`NCPU_AW-1:0] fls_addr_nxt;
+   ncpu32k_cell_dff_lr #(`NCPU_AW) dff_fls_addr_r
+                   (clk,rst_n, ~fls_hld_addr, fls_addr_nxt[`NCPU_AW-1:0], fls_addr_r[`NCPU_AW-1:0]);
+
+   assign fls_addr_nxt = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
+                           
+   assign ibus_cmd_addr = fls_hld_addr ? fls_addr_r : fls_addr_nxt;
+`else
+   wire fls_hld_addr = 1'b0;
    assign ibus_cmd_addr = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
-   assign ibus_cmd_flush = specul_flush | exp_taken | op_ret | op_jmpfar_nxt | op_jmprel_nxt;
+`endif
+   
+   assign ibus_cmd_valid = reset_cnt[1];
+   assign ibus_dout_ready = (~fls_hld_addr) & reset_cnt[1];
    
    assign insn = ibus_dout;
    
-   // Not issue insn that not only _writes MSR_ but also _raises exception_
-   // even the insn is in speculative exception, both of these will set
-   // WriteEnable of MSR at _IEU stage_, then make conflict.
-   // To avoid conflict, we don't issue speculative insn that _raised exception_.
-   // This makes no effect on internal exceptions.
-   wire not_flushing = ~(specul_flush | exp_taken);
-   // If extrnal exception raised, then ignore internal exception.
-   // Note 'ret' is a special exception.
-   wire not_flushing_intexp = ~(specul_flush | extexp_taken);
-   
+   // If extrnal exception raised, then ignore any instruction.
+   // Because if we issued the insn that not only _writes MSR_ but also _raises exception_
+   // even the insn was in speculative exception, both of these aspects would set
+   // WriteEnable signal of MSR at _IEU stage_ and make conflict.
+   // Note that 'ret' is a special exception.
+   wire not_flushing = ~(specul_flush | extexp_taken);
+   wire not_flushing_extexp = ~(specul_flush);
+
    // Data path: no need to flush
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_insn_pc
                    (clk,rst_n, pipebuf_cas, flush_insn_pc[`NCPU_AW-3:0], idu_insn_pc[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_specul_tgt
                    (clk,rst_n, pipebuf_cas, specul_tgt_nxt, idu_specul_tgt[`NCPU_AW-3:0]);
-   ncpu32k_cell_dff_lr #(1) dff_idu_specul_bcc
-                   (clk,rst_n, pipebuf_cas, specul_bcc_nxt, idu_specul_bcc);
-   ncpu32k_cell_dff_lr #(1) dff_idu_specul_exp
-                   (clk,rst_n, pipebuf_cas, extexp_taken, idu_specul_extexp);
-   ncpu32k_cell_dff_lr #(1) dff_idu_set_lsa_pc
-                   (clk,rst_n, pipebuf_cas, let_lsa_pc_nxt, idu_let_lsa_pc);
-                   
+
    // Control path
    ncpu32k_cell_dff_lr #(`NCPU_IW) dff_idu_insn
                    (clk,rst_n, pipebuf_cas, insn & {`NCPU_IW{not_flushing}}, idu_insn);
@@ -223,14 +249,21 @@ module ncpu32k_ifu(
    ncpu32k_cell_dff_lr #(1) dff_idu_op_jmpfar
                    (clk,rst_n, pipebuf_cas, op_jmpfar_nxt & not_flushing, idu_op_jmpfar);
    ncpu32k_cell_dff_lr #(1) dff_idu_op_ret
-                   (clk,rst_n, pipebuf_cas, op_ret & not_flushing_intexp, idu_op_ret);
+                   (clk,rst_n, pipebuf_cas, op_ret & not_flushing, idu_op_ret);
    ncpu32k_cell_dff_lr #(1) dff_idu_op_syscall
-                   (clk,rst_n, pipebuf_cas, op_syscall & not_flushing_intexp, idu_op_syscall);
+                   (clk,rst_n, pipebuf_cas, op_syscall & not_flushing, idu_op_syscall);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmpfar
                    (clk,rst_n, pipebuf_cas, specul_jmp & op_jmpfar_nxt & not_flushing, idu_specul_jmpfar);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmprel
                    (clk,rst_n, pipebuf_cas, specul_jmp & op_jmprel_nxt & not_flushing, idu_specul_jmprel);
-
+   ncpu32k_cell_dff_lr #(1) dff_idu_specul_bcc
+                   (clk,rst_n, pipebuf_cas, specul_bcc_nxt & not_flushing, idu_specul_bcc);
+      // Yes, even external exceptions could be flushed
+   ncpu32k_cell_dff_lr #(1) dff_idu_specul_extexp
+                   (clk,rst_n, pipebuf_cas, extexp_taken & not_flushing_extexp, idu_specul_extexp);
+   ncpu32k_cell_dff_lr #(1) dff_idu_set_lsa_pc
+                   (clk,rst_n, pipebuf_cas, let_lsa_pc_nxt & not_flushing_extexp, idu_let_lsa_pc);
+                   
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
@@ -247,5 +280,16 @@ module ncpu32k_ifu(
          $fatal ("\n ctrls of 'exp_vector' should be mutex\n");
    end
 `endif
+
+   // Assertions 03071429
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if ((op_syscall|extexp_taken) &
+          ~(op_syscall^extexp_taken))
+         $fatal ("\n ctrls of 'exp_taken' should be mutex\n");
+   end
+`endif
+
+
 
 endmodule

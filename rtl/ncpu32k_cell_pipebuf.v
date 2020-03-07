@@ -17,10 +17,12 @@
 /*  Lesser General Public License for more details.                        */
 /***************************************************************************/
 
+`include "ncpu32k_config.h"
+
 module ncpu32k_cell_pipebuf
 # (
    parameter DW = 1, // Data Width in bits
-   parameter ENABLE_BYPASS = 1 // bypass when popping
+   parameter ENABLE_BYPASS = `NCPU_PIPEBUF_BYPASS // bypass when popping
 )
 (
    input                      clk,
