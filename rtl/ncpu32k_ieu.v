@@ -18,14 +18,15 @@
 module ncpu32k_ieu(         
    input                      clk,
    input                      rst_n,
-   output [`NCPU_AW-1:0]      dbus_addr_o,
-   input                      dbus_in_ready, /* dbus is ready to store */
-   output                     dbus_in_valid, /* data is presented at dbus's input */
-   input [`NCPU_DW-1:0]       dbus_i,
-   output                     dbus_out_ready, /* MU is ready to load */
-   input                      dbus_out_valid, /* data is presented at dbus's output */
-   output [`NCPU_DW-1:0]      dbus_o,
-   output [2:0]               dbus_size_o,
+   input                      dbus_cmd_ready, /* dbus is ready to store */
+   output                     dbus_cmd_valid, /* data is presented at dbus's input */
+   output [`NCPU_AW-1:0]      dbus_cmd_addr,
+   output [2:0]               dbus_cmd_size,
+   output                     dbus_cmd_we,
+   output [`NCPU_DW-1:0]      dbus_din,
+   output                     dbus_ready, /* MU is ready to load */
+   input                      dbus_valid, /* data is presented at dbus's output */
+   input [`NCPU_DW-1:0]       dbus_dout,
    output                     ieu_in_ready, /* ops is accepted by ieu */
    input                      ieu_in_valid, /* ops is presented at ieu's input */
    input [`NCPU_DW-1:0]       ieu_operand_1,
@@ -121,9 +122,13 @@ module ncpu32k_ieu(
    wire [`NCPU_DW-1:0]  lu_shift;               // From lu of ncpu32k_ie_lu.v
    wire [`NCPU_DW-1:0]  lu_xor;                 // From lu of ncpu32k_ie_lu.v
    wire [`NCPU_DW-1:0]  mu_load;                // From mu of ncpu32k_ie_mu.v
+   wire                 mu_op_load;             // From mu of ncpu32k_ie_mu.v
+   wire [`NCPU_REG_AW-1:0] mu_wb_reg_addr;      // From mu of ncpu32k_ie_mu.v
+   wire                 mu_wb_regf;             // From mu of ncpu32k_ie_mu.v
    wire                 wb_mu_in_valid;         // From mu of ncpu32k_ie_mu.v
    // End of automatics
    wire                 ieu_mu_in_valid;
+   wire                 mu_op;
    wire [`NCPU_DW:0]    linkaddr;
    wire                 ieu_set_lsa;
    wire [`NCPU_DW:0]    ieu_lsa;
@@ -166,20 +171,25 @@ module ncpu32k_ieu(
    ncpu32k_ie_mu mu
       (/*AUTOINST*/
        // Outputs
-       .dbus_addr_o                     (dbus_addr_o[`NCPU_AW-1:0]),
-       .dbus_in_valid                   (dbus_in_valid),
-       .dbus_i                          (dbus_i[`NCPU_DW-1:0]),
-       .dbus_out_ready                  (dbus_out_ready),
-       .dbus_size_o                     (dbus_size_o[2:0]),
+       .dbus_cmd_valid                  (dbus_cmd_valid),
+       .dbus_cmd_addr                   (dbus_cmd_addr[`NCPU_AW-1:0]),
+       .dbus_cmd_size                   (dbus_cmd_size[2:0]),
+       .dbus_cmd_we                     (dbus_cmd_we),
+       .dbus_din                        (dbus_din[`NCPU_DW-1:0]),
+       .dbus_ready                      (dbus_ready),
        .ieu_mu_in_ready                 (ieu_mu_in_ready),
+       .mu_op                           (mu_op),
+       .mu_op_load                      (mu_op_load),
+       .mu_wb_regf                      (mu_wb_regf),
+       .mu_wb_reg_addr                  (mu_wb_reg_addr[`NCPU_REG_AW-1:0]),
        .mu_load                         (mu_load[`NCPU_DW-1:0]),
        .wb_mu_in_valid                  (wb_mu_in_valid),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .dbus_in_ready                   (dbus_in_ready),
-       .dbus_out_valid                  (dbus_out_valid),
-       .dbus_o                          (dbus_o[`NCPU_DW-1:0]),
+       .dbus_cmd_ready                  (dbus_cmd_ready),
+       .dbus_valid                      (dbus_valid),
+       .dbus_dout                       (dbus_dout[`NCPU_DW-1:0]),
        .ieu_mu_in_valid                 (ieu_mu_in_valid),
        .ieu_operand_1                   (ieu_operand_1[`NCPU_DW-1:0]),
        .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),
@@ -189,6 +199,8 @@ module ncpu32k_ieu(
        .ieu_mu_sign_ext                 (ieu_mu_sign_ext),
        .ieu_mu_store_size               (ieu_mu_store_size[2:0]),
        .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
+       .ieu_wb_regf                     (ieu_wb_regf),
+       .ieu_wb_reg_addr                 (ieu_wb_reg_addr[`NCPU_REG_AW-1:0]),
        .wb_mu_in_ready                  (wb_mu_in_ready));
         
    ncpu32k_ie_eu eu
@@ -249,7 +261,8 @@ module ncpu32k_ieu(
        .msr_imm_tlbh                    (msr_imm_tlbh[`NCPU_DW-1:0]));
         
    wire hds_ieu_in = ieu_in_ready & ieu_in_valid;
-
+   wire hds_wb_mu_in = wb_mu_in_ready & wb_mu_in_valid;
+   
    // Link address (offset(jmp)+1), which indicates the next insn of current jmp insn.
    assign linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {ieu_insn_pc[`NCPU_AW-3:0]+1'b1, 2'b00}};
    
@@ -257,7 +270,8 @@ module ncpu32k_ieu(
    // Before commit, modules must check this bit.
    // valid signal from upstream makes sense here, as an insn with invalid info
    // should be never committed.
-   assign commit = (ieu_mu_load|ieu_mu_store) ? wb_mu_in_valid : hds_ieu_in;
+   assign commit = hds_ieu_in;
+   assign mu_commit = hds_wb_mu_in;
    
    // Flush FSM
    wire fls_status_r;
@@ -309,28 +323,32 @@ module ncpu32k_ieu(
    assign bpu_wb_hit = ~specul_flush;
    assign bpu_wb_insn_pc = ieu_insn_pc;
    
-   // Write back regfile Assert (03060935)
-   assign regf_din = ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_XOR]}} & lu_xor[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{lu_op_shift}} & lu_shift[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{au_op_adder}} & au_adder[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{au_op_mhi}} & au_mhi[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{ieu_mu_load}} & mu_load[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{ieu_jmplink}} & linkaddr[`NCPU_DW-1:0]) |
-                      ({`NCPU_DW{ieu_eu_dout_op}} & ieu_eu_dout[`NCPU_DW-1:0]);
+   // Write back regfile
+   assign regf_din = 
+      ({`NCPU_DW{mu_op_load}} & mu_load[`NCPU_DW-1:0]) |
+      ({`NCPU_DW{~mu_op_load}} & (
+            // Assert (03060935)
+            ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
+            ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |
+            ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_XOR]}} & lu_xor[`NCPU_DW-1:0]) |
+            ({`NCPU_DW{lu_op_shift}} & lu_shift[`NCPU_DW-1:0]) |
+            ({`NCPU_DW{au_op_adder}} & au_adder[`NCPU_DW-1:0]) |
+            ({`NCPU_DW{au_op_mhi}} & au_mhi[`NCPU_DW-1:0]) |
+            ({`NCPU_DW{ieu_jmplink}} & linkaddr[`NCPU_DW-1:0]) |
+            ({`NCPU_DW{ieu_eu_dout_op}} & ieu_eu_dout[`NCPU_DW-1:0])
+         ));
    
-   assign regf_din_addr = ieu_wb_reg_addr;
+   assign regf_din_addr = ({`NCPU_REG_AW{~mu_op}} & ieu_wb_reg_addr) |
+                          ({`NCPU_REG_AW{mu_op}} & mu_wb_reg_addr);
 
-   assign regf_we = commit & ieu_wb_regf & (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid); /* data is presented at regfile's input */
+   assign regf_we = (~mu_op & commit & ieu_wb_regf) |
+                     (mu_op & mu_commit & mu_wb_regf);
 
-   assign ieu_mu_in_valid = ieu_in_valid;
-   
    assign wb_mu_in_ready = /* data is accepted by regfile */ 1'b1;
    
-   // valid-before-ready timing
-   // ieu_mu_in_ready is ignored
-   assign ieu_in_ready = (~hld_fls) & (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid);
+   assign ieu_mu_in_valid = ieu_in_valid;
+   
+   assign ieu_in_ready = (~hld_fls) & ieu_mu_in_ready;
    
    // Assertions 03060935
 `ifdef NCPU_ENABLE_ASSERT
@@ -341,7 +359,6 @@ module ncpu32k_ieu(
                      lu_op_shift |
                      au_op_adder |
                      au_op_mhi |
-                     ieu_mu_load |
                      ieu_jmplink |
                      ieu_eu_dout_op)
                   & ~(ieu_lu_opc_bus[`NCPU_LU_AND] ^
@@ -350,7 +367,6 @@ module ncpu32k_ieu(
                         lu_op_shift ^
                         au_op_adder ^
                         au_op_mhi ^
-                        ieu_mu_load ^
                         ieu_jmplink ^
                         ieu_eu_dout_op)
                   )

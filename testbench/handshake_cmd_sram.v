@@ -13,16 +13,15 @@ module handshake_cmd_sram
 (
    input                      clk,
    input                      rst_n,
-   input                      in_valid,
-   output reg                 in_ready,
    input [DW-1:0]             din,
-   output                     out_valid,
-   input                      out_ready,
+   output                     valid,
+   input                      ready,
    output reg [DW-1:0]        dout,
-   input [2:0]                size,
+   input [2:0]                cmd_size,
    output                     cmd_ready, /* sram is ready to accept cmd */
    input                      cmd_valid, /* cmd is presented at sram'input */
-   input [`NCPU_AW-1:0]       cmd_addr
+   input [`NCPU_AW-1:0]       cmd_addr,
+   input                      cmd_we
 );
    reg[7:0] mem[0:SIZE_BYTES-1];
 
@@ -34,17 +33,17 @@ module handshake_cmd_sram
       if(MEMH_FILE !== "") begin :memh_file_not_emp
          $readmemh (MEMH_FILE, mem);
       end
-      in_ready = 1'b0;
       dout = {DW{1'b0}};
    end
 
    wire [AW-1:0] addr_w;
-   wire [DW-1:0] dout_nxt = (size==3'd3) 
+   wire [2:0]  size_w;
+   wire [DW-1:0] dout_nxt = (size_w==3'd3) 
                         ? {mem[addr_w+3][7:0],
                            mem[addr_w+2][7:0],
                            mem[addr_w+1][7:0],
                            mem[addr_w][7:0]}
-                        : (size==3'd2)
+                        : (size_w==3'd2)
                            ? {8'b0,
                               8'b0,
                               mem[addr_w+1][7:0],
@@ -55,92 +54,187 @@ module handshake_cmd_sram
                               mem[addr_w][7:0]};
 
    reg [AW-1:0] addr_r;
+   reg [DW-1:0] din_r;
+   reg [2:0] size_r;
+   reg we_r;
+   reg [10:0] delay_r;
    generate
-      if(DELAY>=3)  begin : delay_n
+      if(DELAY>=128) begin : delay_random
+         localparam DELAY_MAX = 16;
+         localparam DELAY_MIN = 3;// >=3
          wire push = (cmd_valid & cmd_ready);
-         wire pop = (out_valid & out_ready);
+         wire pop = (valid & ready);
          
-         reg [3:0] valid_nxt;
-         reg [3:0] valid_r = 4'd0;
+         reg [10:0] valid_nxt;
+         reg [10:0] valid_r = 10'd0;
          
          assign addr_w = addr_r;
+         assign size_w = size_r;
          
          always @* begin
-            if(valid_r==4'd0) begin
-               valid_nxt = push ? 4'd1 : 4'd0;
-            end else if(valid_r >= 4'd1 && valid_r < DELAY) begin
-               valid_nxt = valid_r + 4'd1;
-            end else if(valid_r == DELAY) begin
-               valid_nxt = pop & push ? 4'd1 : pop ? 4'd0 : DELAY;
+            if(valid_r==10'd0) begin
+               valid_nxt = push ? 10'd1 : 10'd0;
+            end else if(valid_r >= 10'd1 && valid_r < delay_r) begin
+               valid_nxt = valid_r + 10'd1;
+            end else if(valid_r == delay_r) begin
+               valid_nxt = pop & push ? 10'd1 : pop ? 10'd0 : DELAY;
             end
          end
          always @(posedge clk) begin
             valid_r <= valid_nxt;
             case (valid_nxt)
-            4'd1: begin
+            10'd1: begin
+               if (cmd_we) begin
+                  din_r <= din; // Read din
+               end
+               we_r <= cmd_we;
                addr_r <= cmd_addr; // Read address
+               size_r <= cmd_size;
+               delay_r <= ({$random} % DELAY_MAX) + DELAY_MIN; // Random delay
             end
-            DELAY: begin
-               dout <= dout_nxt; // Output
+            delay_r: begin
+               if (we_r) begin
+                  if(size_r==3'd3) begin
+                     mem[addr_r+3][7:0] <= din_r[31:24];
+                     mem[addr_r+2][7:0] <= din_r[23:16];
+                     mem[addr_r+1][7:0] <= din_r[15:8];
+                     mem[addr_r][7:0] <= din_r[7:0];
+                  end else if(size_r==3'd2) begin
+                     mem[addr_r+1][7:0] <= din_r[15:8];
+                     mem[addr_r][7:0] <= din_r[7:0];
+                  end else if(size_r==3'd1) begin
+                     mem[addr_r][7:0] <= din_r[7:0];
+                  end
+               end else begin
+                  dout <= dout_nxt; // Output
+               end
             end
             endcase
          end
-         assign out_valid = valid_r==DELAY;
+         assign valid = valid_r==delay_r;
          
-         assign cmd_ready = valid_r==4'd0;
+         assign cmd_ready = valid_r==10'd0;
+         
+      end else if(DELAY>=3)  begin : delay_n
+         wire push = (cmd_valid & cmd_ready);
+         wire pop = (valid & ready);
+         
+         reg [10:0] valid_nxt;
+         reg [10:0] valid_r = 10'd0;
+         
+         assign addr_w = addr_r;
+         assign size_w = size_r;
+         
+         always @* begin
+            if(valid_r==10'd0) begin
+               valid_nxt = push ? 10'd1 : 10'd0;
+            end else if(valid_r >= 10'd1 && valid_r < DELAY) begin
+               valid_nxt = valid_r + 10'd1;
+            end else if(valid_r == DELAY) begin
+               valid_nxt = pop & push ? 10'd1 : pop ? 10'd0 : DELAY;
+            end
+         end
+         always @(posedge clk) begin
+            valid_r <= valid_nxt;
+            case (valid_nxt)
+            10'd1: begin
+               if (cmd_we) begin
+                  din_r <= din; // Read din
+               end
+               we_r <= cmd_we;
+               addr_r <= cmd_addr; // Read address
+               size_r <= cmd_size;
+            end
+            DELAY: begin
+               if (we_r) begin
+                  if(size_r==3'd3) begin
+                     mem[addr_r+3][7:0] <= din_r[31:24];
+                     mem[addr_r+2][7:0] <= din_r[23:16];
+                     mem[addr_r+1][7:0] <= din_r[15:8];
+                     mem[addr_r][7:0] <= din_r[7:0];
+                  end else if(size_r==3'd2) begin
+                     mem[addr_r+1][7:0] <= din_r[15:8];
+                     mem[addr_r][7:0] <= din_r[7:0];
+                  end else if(size_r==3'd1) begin
+                     mem[addr_r][7:0] <= din_r[7:0];
+                  end
+               end else begin
+                  dout <= dout_nxt; // Output
+               end
+            end
+            endcase
+         end
+         assign valid = valid_r==DELAY;
+         
+         assign cmd_ready = valid_r==10'd0;
 
       end else if (DELAY==2) begin : delay_2
          assign addr_w = cmd_addr;
+         assign size_w = cmd_size;
          wire push = (cmd_valid & cmd_ready);
-         wire pop = (out_valid & out_ready);
+         wire pop = (valid & ready);
          wire valid_nxt = (push | ~pop);
          ncpu32k_cell_dff_lr #(1) dff_out_valid
-                         (clk,rst_n, (push | pop), valid_nxt, out_valid);
+                         (clk,rst_n, (push | pop), valid_nxt, valid);
                          
-         assign cmd_ready = ~out_valid;
+         assign cmd_ready = ~valid;
          always @(posedge clk) begin
-            if(push) begin
+            if(push & ~cmd_we) begin
                dout <= dout_nxt;
+            end
+         end
+         always @(posedge clk) begin
+            if(push & cmd_we) begin
+               if(cmd_size==3'd3) begin
+                  mem[cmd_addr+3][7:0] <= din[31:24];
+                  mem[cmd_addr+2][7:0] <= din[23:16];
+                  mem[cmd_addr+1][7:0] <= din[15:8];
+                  mem[cmd_addr][7:0] <= din[7:0];
+               end else if(cmd_size==3'd2) begin
+                  mem[cmd_addr+1][7:0] <= din[15:8];
+                  mem[cmd_addr][7:0] <= din[7:0];
+               end else if(cmd_size==3'd1) begin
+                  mem[cmd_addr][7:0] <= din[7:0];
+               end
             end
          end
       end else if(DELAY==1) begin : delay_1
          assign addr_w = cmd_addr;
+         assign size_w = cmd_size;
          wire push = (cmd_valid & cmd_ready);
-         wire pop = (out_valid & out_ready);
+         wire pop = (valid & ready);
          wire valid_nxt = (push | ~pop);
          ncpu32k_cell_dff_lr #(1) dff_out_valid
-                         (clk,rst_n, (push | pop), valid_nxt, out_valid);
+                         (clk,rst_n, (push | pop), valid_nxt, valid);
 
-         assign cmd_ready = ~out_valid | pop;
+         assign cmd_ready = ~valid | pop;
          always @(posedge clk) begin
-            if(push) begin
+            if(push & ~cmd_we) begin
                dout <= dout_nxt;
+            end
+         end
+         always @(posedge clk) begin
+            if(push & cmd_we) begin
+               if(cmd_size==3'd3) begin
+                  mem[cmd_addr+3][7:0] <= din[31:24];
+                  mem[cmd_addr+2][7:0] <= din[23:16];
+                  mem[cmd_addr+1][7:0] <= din[15:8];
+                  mem[cmd_addr][7:0] <= din[7:0];
+               end else if(cmd_size==3'd2) begin
+                  mem[cmd_addr+1][7:0] <= din[15:8];
+                  mem[cmd_addr][7:0] <= din[7:0];
+               end else if(cmd_size==3'd1) begin
+                  mem[cmd_addr][7:0] <= din[7:0];
+               end
             end
          end
       end
    endgenerate
    
-   always @(posedge clk) begin
-      if(in_valid) begin
-         if(size==3'd3) begin
-            mem[cmd_addr+3][7:0] <= din[31:24];
-            mem[cmd_addr+2][7:0] <= din[23:16];
-            mem[cmd_addr+1][7:0] <= din[15:8];
-            mem[cmd_addr][7:0] <= din[7:0];
-         end else if(size==3'd2) begin
-            mem[cmd_addr+1][7:0] <= din[15:8];
-            mem[cmd_addr][7:0] <= din[7:0];
-         end else if(size==3'd1) begin
-            mem[cmd_addr][7:0] <= din[7:0];
-         end
-      end
-      in_ready <= in_valid;
-   end
-   
 CHECK_SIZE:
    assert property (@(posedge clk) 
-                     ( ~(in_valid|out_ready) | (size !== 3'd0) )
+                     ( (cmd_ready&cmd_valid) & cmd_size == 3'd0 )
                   )
-   else $fatal ("\n error: size==0\n");
+   else $fatal ("\n error: cmd_size==0\n");
 
 endmodule

@@ -18,19 +18,20 @@
 module ncpu32k_core(
    input                   clk,
    input                   rst_n,
-   output [`NCPU_AW-1:0]   dbus_addr_o,
-   output                  dbus_in_valid,
-   input                   dbus_in_ready,
-   output [`NCPU_DW-1:0]   dbus_o,
-   input                   dbus_out_valid,
-   output                  dbus_out_ready,
-   input [`NCPU_DW-1:0]    dbus_i,
-   output [2:0]            dbus_size_o,
+   input                   dbus_cmd_ready,
+   output                  dbus_cmd_valid,
+   output [`NCPU_AW-1:0]   dbus_cmd_addr,
+   output [2:0]            dbus_cmd_size,
+   output                  dbus_cmd_we,
+   input [`NCPU_DW-1:0]    dbus_dout,
+   input                   dbus_valid,
+   output                  dbus_ready,
+   output [`NCPU_DW-1:0]   dbus_din,
    input                   ibus_cmd_ready, /* ibus is ready to accept cmd */
    output                  ibus_cmd_valid, /* cmd is presented at ibus'input */
    output [`NCPU_AW-1:0]   ibus_cmd_addr, /* IMPORTANT! changing after cmd handshaked */
-   input                   ibus_dout_valid,
-   output                  ibus_dout_ready,
+   input                   ibus_valid,
+   output                  ibus_ready,
    input [`NCPU_IW-1:0]    ibus_dout,
    input [`NCPU_AW-1:0]    ibus_out_id,
    input [`NCPU_AW-1:0]    ibus_out_id_nxt,
@@ -220,7 +221,7 @@ module ncpu32k_core(
    ncpu32k_ifu ifu
       (/*AUTOINST*/
        // Outputs
-       .ibus_dout_ready                 (ibus_dout_ready),
+       .ibus_ready                      (ibus_ready),
        .ibus_cmd_valid                  (ibus_cmd_valid),
        .ibus_cmd_addr                   (ibus_cmd_addr[`NCPU_AW-1:0]),
        .ibus_flush_req                  (ibus_flush_req),
@@ -245,7 +246,7 @@ module ncpu32k_core(
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .ibus_dout_valid                 (ibus_dout_valid),
+       .ibus_valid                      (ibus_valid),
        .ibus_dout                       (ibus_dout[`NCPU_IW-1:0]),
        .ibus_cmd_ready                  (ibus_cmd_ready),
        .ibus_out_id                     (ibus_out_id[`NCPU_AW-1:0]),
@@ -349,11 +350,12 @@ module ncpu32k_core(
    ncpu32k_ieu ieu
       (/*AUTOINST*/
        // Outputs
-       .dbus_addr_o                     (dbus_addr_o[`NCPU_AW-1:0]),
-       .dbus_in_valid                   (dbus_in_valid),
-       .dbus_out_ready                  (dbus_out_ready),
-       .dbus_o                          (dbus_o[`NCPU_DW-1:0]),
-       .dbus_size_o                     (dbus_size_o[2:0]),
+       .dbus_cmd_valid                  (dbus_cmd_valid),
+       .dbus_cmd_addr                   (dbus_cmd_addr[`NCPU_AW-1:0]),
+       .dbus_cmd_size                   (dbus_cmd_size[2:0]),
+       .dbus_cmd_we                     (dbus_cmd_we),
+       .dbus_din                        (dbus_din[`NCPU_DW-1:0]),
+       .dbus_ready                      (dbus_ready),
        .ieu_in_ready                    (ieu_in_ready),
        .regf_din_addr                   (regf_din_addr[`NCPU_REG_AW-1:0]),
        .regf_din                        (regf_din[`NCPU_DW-1:0]),
@@ -390,9 +392,9 @@ module ncpu32k_core(
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .dbus_in_ready                   (dbus_in_ready),
-       .dbus_i                          (dbus_i[`NCPU_DW-1:0]),
-       .dbus_out_valid                  (dbus_out_valid),
+       .dbus_cmd_ready                  (dbus_cmd_ready),
+       .dbus_valid                      (dbus_valid),
+       .dbus_dout                       (dbus_dout[`NCPU_DW-1:0]),
        .ieu_in_valid                    (ieu_in_valid),
        .ieu_operand_1                   (ieu_operand_1[`NCPU_DW-1:0]),
        .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),

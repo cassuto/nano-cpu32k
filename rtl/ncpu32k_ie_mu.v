@@ -22,14 +22,15 @@ module ncpu32k_ie_mu
 (         
    input                      clk,
    input                      rst_n,
-   output [`NCPU_AW-1:0]      dbus_addr_o,
-   input                      dbus_in_ready, /* dbus is ready to store */
-   output                     dbus_in_valid, /* data is presented at dbus's input */
-   output [`NCPU_DW-1:0]      dbus_i,
-   output                     dbus_out_ready, /* MU is ready to load */
-   input                      dbus_out_valid, /* data is presented at dbus's output */
-   input [`NCPU_DW-1:0]       dbus_o,
-   output [2:0]               dbus_size_o,
+   input                      dbus_cmd_ready, /* dbus is ready to store */
+   output                     dbus_cmd_valid, /* data is presented at dbus's input */
+   output [`NCPU_AW-1:0]      dbus_cmd_addr,
+   output [2:0]               dbus_cmd_size,
+   output                     dbus_cmd_we,
+   output [`NCPU_DW-1:0]      dbus_din,
+   output                     dbus_ready, /* MU is ready to load */
+   input                      dbus_valid, /* data is presented at dbus's output */
+   input [`NCPU_DW-1:0]       dbus_dout,
    output                     ieu_mu_in_ready, /* MU is ready to accept ops */
    input                      ieu_mu_in_valid, /* ops is presented at MU's input */
    input [`NCPU_DW-1:0]       ieu_operand_1,
@@ -40,55 +41,88 @@ module ncpu32k_ie_mu
    input                      ieu_mu_sign_ext,
    input [2:0]                ieu_mu_store_size,
    input [2:0]                ieu_mu_load_size,
+   input                      ieu_wb_regf,
+   input [`NCPU_REG_AW-1:0]   ieu_wb_reg_addr,
+   output                     mu_op,
+   output                     mu_op_load,
+   output                     mu_wb_regf,
+   output [`NCPU_REG_AW-1:0]  mu_wb_reg_addr,
    output [`NCPU_DW-1:0]      mu_load,
    input                      wb_mu_in_ready, /* WB is ready to accept data */
    output                     wb_mu_in_valid /* data is presented at WB'input   */
 );
 
-   assign dbus_addr_o = ieu_operand_1 + ieu_operand_2;
-   // Load from memory
-   assign dbus_rd_o = ieu_mu_load;
-   assign mu_load =
-         ({`NCPU_DW{ieu_mu_load_size==3'd3}} & dbus_o) |
-         ({`NCPU_DW{ieu_mu_load_size==3'd2}} & {{16{ieu_mu_sign_ext & dbus_o[15]}}, dbus_o[15:0]}) |
-         ({`NCPU_DW{ieu_mu_load_size==3'd1}} & {{24{ieu_mu_sign_ext & dbus_o[7]}}, dbus_o[7:0]});
+   wire hds_ieu_in = ieu_mu_in_valid & ieu_mu_in_ready;
+   wire hds_dbus_cmd = dbus_cmd_valid & dbus_cmd_ready;
+   wire hds_wb_in = wb_mu_in_valid & wb_mu_in_ready;
+   
+   assign dbus_cmd_addr = ieu_operand_1 + ieu_operand_2;
 
    // Store to memory
-   assign dbus_we_o = ieu_mu_store;
-   assign dbus_i = ieu_operand_3;
+   assign dbus_cmd_we = ieu_mu_store;
+   assign dbus_din = ieu_operand_3;
 
    // Size
-   assign dbus_size_o = ({3{ieu_mu_load}} & ieu_mu_load_size) |
+   assign dbus_cmd_size = ({3{ieu_mu_load}} & ieu_mu_load_size) |
                         ({3{ieu_mu_store}} & ieu_mu_store_size);
    
-   // handshake FSM
-   localparam HS_IDLE = 2'd0;
-   localparam HS_LOAD = 2'd1;
-   localparam HS_STORE = 2'd2;
-   localparam HS_PENDING = 2'd3;
+   wire mu_op_nxt = ieu_mu_load | ieu_mu_store;
    
-   wire [1:0] hs_status_r;
-   wire [1:0] hs_status_nxt;
+   // Send cmd to dbus if it's a MU operation
+   assign dbus_cmd_valid = mu_op_nxt & ieu_mu_in_valid;
    
-   assign ieu_mu_in_ready = (hs_status_r==HS_IDLE);
-   assign dbus_in_valid = (hs_status_r==HS_STORE);
-   assign dbus_out_ready = (hs_status_r==HS_LOAD);
-   assign wb_mu_in_valid = (hs_status_r==HS_PENDING);
-   assign hs_status_nxt =
-      (
-         // If there is an incoming load/store request, then goto to the corresponding status.
-         // otherwise, keep idle.
-           (hs_status_r==HS_IDLE) ? (ieu_mu_in_valid & ieu_mu_load ? HS_LOAD : ieu_mu_in_valid & ieu_mu_store ? HS_STORE : HS_IDLE)
-         // handshake with dbus output
-         : (hs_status_r==HS_LOAD) ? (dbus_out_valid ? HS_PENDING : HS_LOAD)
-         // handshake with dbus input
-         : (hs_status_r==HS_STORE) ? (dbus_in_ready ? HS_PENDING : HS_STORE)
-         // handshake with downstream
-         : (hs_status_r==HS_PENDING) ? (wb_mu_in_ready ? HS_IDLE : HS_PENDING)
-         : HS_IDLE
-      );
+   wire [2:0] load_size_r;
+   wire sign_ext_r;
    
-   ncpu32k_cell_dff_lr #(2) dff_hs_status_r
-                (clk,rst_n, 1'b1, hs_status_nxt[1:0], hs_status_r[1:0]);
+   ncpu32k_cell_dff_lr #(3) dff_load_size_r
+                   (clk,rst_n, hds_dbus_cmd, ieu_mu_load_size[2:0], load_size_r[2:0]);
+   ncpu32k_cell_dff_lr #(1) dff_sign_ext_r
+                   (clk,rst_n, hds_dbus_cmd, ieu_mu_sign_ext, sign_ext_r);
 
+   // MU FSM
+   wire pending_r;
+   wire pending_nxt;
+   
+   assign pending_nxt =
+      (
+         // If handshaked with dbus_cmd, then MU is pending
+         (~pending_r & hds_dbus_cmd) ? 1'b1 :
+         // If handshaked with downstream module, then MU is idle
+         (pending_r & hds_wb_in) ? 1'b0 : pending_r
+      );
+      
+   ncpu32k_cell_dff_r #(1) dff_pending_r
+                   (clk,rst_n, pending_nxt, pending_r);
+   
+   wire mu_op_r;
+   wire mu_load_op_r;
+   wire mu_wb_regf_r;
+   wire [`NCPU_REG_AW-1:0] mu_wb_reg_addr_r;
+   
+   // MU is ready when both dbus and MU is idle
+   assign ieu_mu_in_ready = dbus_cmd_ready & ~pending_r;
+   
+   ncpu32k_cell_dff_lr #(1) dff_mu_op_r
+                   (clk,rst_n, hds_ieu_in, mu_op_nxt, mu_op_r);
+   ncpu32k_cell_dff_lr #(1) dff_mu_load_op_r
+                   (clk,rst_n, hds_ieu_in, ieu_mu_load, mu_load_op_r);
+   ncpu32k_cell_dff_lr #(1) dff_wb_mu_regf_r
+                   (clk,rst_n, hds_ieu_in, ieu_wb_regf, mu_wb_regf_r); 
+   ncpu32k_cell_dff_lr #(`NCPU_REG_AW) dff_wb_mu_reg_addr_r
+                   (clk,rst_n, hds_ieu_in, ieu_wb_reg_addr[`NCPU_REG_AW-1:0], mu_wb_reg_addr_r[`NCPU_REG_AW-1:0]); 
+
+   assign mu_op = pending_r ? mu_op_r : mu_op_nxt;
+   assign mu_op_load = pending_r ? mu_load_op_r : ieu_mu_load;
+   assign mu_wb_regf = pending_r ? mu_wb_regf_r : ieu_wb_regf;
+   assign mu_wb_reg_addr = pending_r ? mu_wb_reg_addr_r : ieu_wb_reg_addr;
+
+   // Load from memory
+   assign mu_load =
+         ({`NCPU_DW{load_size_r==3'd3}} & dbus_dout) |
+         ({`NCPU_DW{load_size_r==3'd2}} & {{16{sign_ext_r & dbus_dout[15]}}, dbus_dout[15:0]}) |
+         ({`NCPU_DW{load_size_r==3'd1}} & {{24{sign_ext_r & dbus_dout[7]}}, dbus_dout[7:0]});
+
+   assign dbus_ready = wb_mu_in_ready;
+   assign wb_mu_in_valid = dbus_valid;
+   
 endmodule

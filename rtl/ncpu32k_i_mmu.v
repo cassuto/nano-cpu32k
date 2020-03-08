@@ -22,8 +22,8 @@ module ncpu32k_i_mmu
 (
    input                   clk,
    input                   rst_n,
-   output                  ibus_dout_valid, /* Insn is presented at immu's output */
-   input                   ibus_dout_ready, /* ifu is ready to accepted Insn */
+   output                  ibus_valid, /* Insn is presented at immu's output */
+   input                   ibus_ready, /* ifu is ready to accepted Insn */
    output [`NCPU_IW-1:0]   ibus_dout,
    output                  ibus_cmd_ready, /* ibus is ready to accept cmd */
    input                   ibus_cmd_valid, /* cmd is presented at ibus'input */
@@ -32,8 +32,8 @@ module ncpu32k_i_mmu
    output                  ibus_flush_ack,
    output [`NCPU_AW-1:0]   ibus_out_id,
    output [`NCPU_AW-1:0]   ibus_out_id_nxt,
-   input                   icache_dout_valid, /* Insn is presented at ibus */
-   output                  icache_dout_ready, /* ifu is ready to accepted Insn */
+   input                   icache_valid, /* Insn is presented at ibus */
+   output                  icache_ready, /* ifu is ready to accepted Insn */
    input [`NCPU_IW-1:0]    icache_dout,
    input                   icache_cmd_ready, /* icache is ready to accept cmd */
    output                  icache_cmd_valid, /* cmd is presented at icache's input */
@@ -104,16 +104,16 @@ module ncpu32k_i_mmu
          .cas        (hds_ibus_cmd)
       );
       
-   assign hds_ibus_dout = ibus_dout_valid & ibus_dout_ready;
+   assign hds_ibus_dout = ibus_valid & ibus_ready;
       
    assign hds_icache_cmd = icache_cmd_valid & icache_cmd_ready;
-   assign hds_icache_dout = icache_dout_valid & icache_dout_ready;
+   assign hds_icache_dout = icache_valid & icache_ready;
    
    // Cacnel the current cmd handshake with icache when flush_strobe.
    assign icache_cmd_valid = ~flush_strobe & icache_cmd_valid_w;
    
-   assign ibus_dout_valid = icache_dout_valid;
-   assign icache_dout_ready = ibus_dout_ready;
+   assign ibus_valid = icache_valid;
+   assign icache_ready = ibus_ready;
    
    assign ibus_dout = icache_dout;
    
