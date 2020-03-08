@@ -34,7 +34,7 @@ module ncpu32k_core(
    input [`NCPU_IW-1:0]    ibus_dout,
    input [`NCPU_AW-1:0]    ibus_out_id,
    input [`NCPU_AW-1:0]    ibus_out_id_nxt,
-   output                  ibus_cmd_flush,
+   output                  ibus_flush_req,
    input                   ibus_flush_ack,
    input                   exp_imm_tlb_miss,
    input                   exp_imm_page_fault,
@@ -146,6 +146,7 @@ module ncpu32k_core(
    wire                 regf_rs2_re;            // From idu of ncpu32k_idu.v
    wire                 regf_we;                // From ieu of ncpu32k_ieu.v
    wire                 specul_flush;           // From ieu of ncpu32k_ieu.v
+   wire                 specul_flush_ack;       // From ifu of ncpu32k_ifu.v
    // End of automatics
    
    /////////////////////////////////////////////////////////////////////////////
@@ -222,7 +223,8 @@ module ncpu32k_core(
        .ibus_dout_ready                 (ibus_dout_ready),
        .ibus_cmd_valid                  (ibus_cmd_valid),
        .ibus_cmd_addr                   (ibus_cmd_addr[`NCPU_AW-1:0]),
-       .ibus_cmd_flush                  (ibus_cmd_flush),
+       .ibus_flush_req                  (ibus_flush_req),
+       .specul_flush_ack                (specul_flush_ack),
        .idu_in_valid                    (idu_in_valid),
        .idu_insn                        (idu_insn[`NCPU_IW-1:0]),
        .idu_insn_pc                     (idu_insn_pc[`NCPU_AW-3:0]),
@@ -430,7 +432,8 @@ module ncpu32k_core(
        .msr_coreid                      (msr_coreid[`NCPU_DW-1:0]),
        .msr_immid                       (msr_immid[`NCPU_DW-1:0]),
        .msr_imm_tlbl                    (msr_imm_tlbl[`NCPU_DW-1:0]),
-       .msr_imm_tlbh                    (msr_imm_tlbh[`NCPU_DW-1:0]));
+       .msr_imm_tlbh                    (msr_imm_tlbh[`NCPU_DW-1:0]),
+       .specul_flush_ack                (specul_flush_ack));
    
    
 endmodule

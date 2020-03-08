@@ -28,7 +28,7 @@ module ncpu32k_i_mmu
    output                  ibus_cmd_ready, /* ibus is ready to accept cmd */
    input                   ibus_cmd_valid, /* cmd is presented at ibus'input */
    input [`NCPU_AW-1:0]    ibus_cmd_addr,
-   input                   ibus_cmd_flush,
+   input                   ibus_flush_req,
    output                  ibus_flush_ack,
    output [`NCPU_AW-1:0]   ibus_out_id,
    output [`NCPU_AW-1:0]   ibus_out_id_nxt,
@@ -88,8 +88,8 @@ module ncpu32k_i_mmu
    // this clk.
    wire flush_nstrobe_r;
    ncpu32k_cell_dff_lr #(1) dff_flush_nstrobe_r
-                   (clk,rst_n, (icache_cmd_valid_w & icache_cmd_ready), ibus_cmd_flush, flush_nstrobe_r);
-   wire flush_strobe = (ibus_cmd_flush&~flush_nstrobe_r);
+                   (clk,rst_n, (icache_cmd_valid_w & icache_cmd_ready), ibus_flush_req, flush_nstrobe_r);
+   wire flush_strobe = (ibus_flush_req&~flush_nstrobe_r);
    
    ncpu32k_cell_pipebuf #(`NCPU_IW) pipebuf_ifu
       (
@@ -133,7 +133,7 @@ module ncpu32k_i_mmu
    ////////////////////////////////////////////////////////////////////////////////
    
    // Flush current-insn-PC indicator
-   wire [`NCPU_AW-1:0] ibus_out_id_nxt_bypass = ibus_cmd_flush ? ibus_cmd_addr[`NCPU_AW-1:0] : ibus_out_id_nxt[`NCPU_AW-1:0];
+   wire [`NCPU_AW-1:0] ibus_out_id_nxt_bypass = ibus_flush_req ? ibus_cmd_addr[`NCPU_AW-1:0] : ibus_out_id_nxt[`NCPU_AW-1:0];
 
    // Transfer when TLB is to be read
    ncpu32k_cell_dff_lr #(`NCPU_AW, `NCPU_ERST_VECTOR-`NCPU_AW'd4) dff_id_nxt
@@ -279,7 +279,7 @@ module ncpu32k_i_mmu
    // Assertions (03072258)
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if (ibus_cmd_flush & ~hds_ibus_cmd)
+      if (ibus_flush_req & ~hds_ibus_cmd)
          $fatal ("\n when flushing downstream module should handshake with ibus cmd\n");
    end
 `endif

@@ -94,6 +94,7 @@ module ncpu32k_ieu(
    output [`NCPU_DW-1:0]      msr_imm_tlbh_nxt,
    output                     msr_imm_tlbh_we,
    output                     specul_flush,
+   input                      specul_flush_ack,
    output [`NCPU_AW-3:0]      ifu_flush_jmp_tgt,
    output                     bpu_wb,
    output                     bpu_wb_jmprel,
@@ -247,27 +248,52 @@ module ncpu32k_ieu(
        .msr_imm_tlbl                    (msr_imm_tlbl[`NCPU_DW-1:0]),
        .msr_imm_tlbh                    (msr_imm_tlbh[`NCPU_DW-1:0]));
         
+   wire hds_ieu_in = ieu_in_ready & ieu_in_valid;
+
    // Link address (offset(jmp)+1), which indicates the next insn of current jmp insn.
    assign linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {ieu_insn_pc[`NCPU_AW-3:0]+1'b1, 2'b00}};
-      
+   
    // WriteBack (commit)
    // Before commit, modules must check this bit.
    // valid signal from upstream makes sense here, as an insn with invalid info
    // should be never committed.
-   assign commit = (ieu_mu_load|ieu_mu_store) ? wb_mu_in_valid : ieu_in_valid;
+   assign commit = (ieu_mu_load|ieu_mu_store) ? wb_mu_in_valid : hds_ieu_in;
+   
+   // Flush FSM
+   wire fls_status_r;
+   wire fls_status_nxt;
+   wire specul_flush_r;
+   wire specul_flush_nxt;
+   
+   assign fls_status_nxt = (~fls_status_r & hds_ieu_in & specul_flush_nxt) ? 1'b1 :
+                           (fls_status_r & specul_flush_ack) ? 1'b0 : fls_status_r;
+   
+   ncpu32k_cell_dff_r #(1) dff_fls_status_r
+                   (clk,rst_n, fls_status_nxt, fls_status_r);
 
+   ncpu32k_cell_dff_lr #(1) dff_specul_flush_r
+                   (clk,rst_n, ~fls_status_r, specul_flush_nxt, specul_flush_r);
+   
+   wire hld_fls = fls_status_r & ~specul_flush_ack; // bypass flush_ack
+   
+   assign specul_flush = hld_fls ? specul_flush_r : specul_flush_nxt;
+   
    //
    // Speculative execution checking point. Flush:
-   // case 1: jmprel: specul_bcc mismatched
-   // case 2: jmpfar: specul_tgt mismatched
-   // case 3: syscall : unconditional flush. (For pipeline refreshing of IMMU)
-   // case 4: ret: unconditional flush. (Mainly for pipeline refreshing of IMMU)
-   // case 5: exception: unconditional flush.
-   assign specul_flush = (ieu_specul_jmprel & (ieu_specul_bcc != msr_psr_cc))
-               | (ieu_specul_jmpfar & (ieu_specul_tgt != ieu_operand_1))
-               | ieu_syscall
-               | ieu_ret
-               | ieu_specul_extexp;
+   //    case 1: jmprel: specul_bcc mismatched
+   //    case 2: jmpfar: specul_tgt mismatched
+   //    case 3: syscall : unconditional flush. (For pipeline refreshing of IMMU)
+   //    case 4: ret: unconditional flush. (Mainly for pipeline refreshing of IMMU)
+   //    case 5: exception: unconditional flush.
+   // This should not be controlled by commit, instead flush_ack
+   assign specul_flush_nxt = commit &
+      (
+         (ieu_specul_jmprel & (ieu_specul_bcc != msr_psr_cc))
+         | (ieu_specul_jmpfar & (ieu_specul_tgt != ieu_operand_1))
+         | ieu_syscall
+         | ieu_ret
+         | ieu_specul_extexp
+      );
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target
    // Assert (03060725)
@@ -278,7 +304,7 @@ module ncpu32k_ieu(
          ({`NCPU_AW-2{ieu_ret}} & msr_epc[`NCPU_AW-1:2]) |
          ({`NCPU_AW-2{ieu_specul_extexp}} & ieu_specul_tgt);
    
-   assign bpu_wb = ieu_specul_jmprel | ieu_specul_jmpfar;
+   assign bpu_wb = commit & (ieu_specul_jmprel | ieu_specul_jmpfar);
    assign bpu_wb_jmprel = ieu_specul_jmprel;
    assign bpu_wb_hit = ~specul_flush;
    assign bpu_wb_insn_pc = ieu_insn_pc;
@@ -300,11 +326,11 @@ module ncpu32k_ieu(
 
    assign ieu_mu_in_valid = ieu_in_valid;
    
-   assign wb_mu_in_ready = 1'b1; /* data is accepted by regfile */
+   assign wb_mu_in_ready = /* data is accepted by regfile */ 1'b1;
    
    // valid-before-ready timing
    // ieu_mu_in_ready is ignored
-   assign ieu_in_ready = (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid);
+   assign ieu_in_ready = (~hld_fls) & (~(ieu_mu_load|ieu_mu_store) | wb_mu_in_valid);
    
    // Assertions 03060935
 `ifdef NCPU_ENABLE_ASSERT

@@ -26,13 +26,14 @@ module ncpu32k_ifu(
    output [`NCPU_AW-1:0]   ibus_cmd_addr,
    input [`NCPU_AW-1:0]    ibus_out_id, /* address of data preseted at ibus_dout */
    input [`NCPU_AW-1:0]    ibus_out_id_nxt,
-   output                  ibus_cmd_flush,
+   output                  ibus_flush_req,
    input                   ibus_flush_ack,
    input                   exp_imm_tlb_miss,
    input                   exp_imm_page_fault,
    input [`NCPU_DW-1:0]    bpu_msr_epc,
    input [`NCPU_AW-3:0]    ifu_flush_jmp_tgt,
    input                   specul_flush,
+   output                  specul_flush_ack,
    input                   idu_in_ready, /* idu is ready to accepted Insn */
    output                  idu_in_valid, /* Insn is prestented at idu's input */
    output [`NCPU_IW-1:0]   idu_insn,
@@ -189,7 +190,9 @@ module ncpu32k_ifu(
                            : op_jmprel_nxt ? flush_jmprel_tgt
                            : ibus_out_id_nxt[`NCPU_AW-1:2] + 1'b1; /* Non flush */
 
-   assign ibus_cmd_flush = specul_flush | op_syscall | op_ret | op_jmpfar_nxt | op_jmprel_nxt;
+   assign ibus_flush_req = specul_flush | op_syscall | op_ret | op_jmpfar_nxt | op_jmprel_nxt;
+   
+   assign specul_flush_ack = ibus_flush_ack;
    
 `ifdef NCPU_HANDSHAKE_NOT_ALWAYS_SUCCEED_WHEN_FLUSHING
    // FMS to maintain ibus_cmd_addr
@@ -200,7 +203,7 @@ module ncpu32k_ifu(
 
    assign fls_status_nxt = (
          // in specul_flush there is no need to hold addr
-         (~fls_status_r & ibus_cmd_flush & ~specul_flush) ? 1'b1
+         (~fls_status_r & ibus_flush_req & ~specul_flush) ? 1'b1
          : (fls_status_r & ibus_flush_ack) ? 1'b0
          : fls_status_r
       );
