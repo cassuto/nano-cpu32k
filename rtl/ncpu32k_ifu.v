@@ -18,8 +18,8 @@
 module ncpu32k_ifu(         
    input                   clk,
    input                   rst_n,
-   input                   ibus_dout_valid, /* Insn is presented at immu's output */
-   output                  ibus_dout_ready, /* ifu is ready to accepted Insn */
+   input                   ibus_valid, /* Insn is presented at immu's output */
+   output                  ibus_ready, /* ifu is ready to accepted Insn */
    input [`NCPU_IW-1:0]    ibus_dout,
    input                   ibus_cmd_ready, /* ibus is ready to accept cmd */
    output                  ibus_cmd_valid, /* cmd is presented at ibus'input */
@@ -70,7 +70,7 @@ module ncpu32k_ifu(
    wire                    specul_jmp;
    
    wire extexp_taken;
-   wire hds_ibus_dout = ibus_dout_valid & ibus_dout_ready;
+   wire hds_ibus_dout = ibus_valid & ibus_ready;
    wire hds_idu = (idu_in_valid & idu_in_ready);
    
    // Predecoder
@@ -157,6 +157,7 @@ module ncpu32k_ifu(
    
    // Pipeline
    localparam ENABLE_BYPASS = `NCPU_PIPEBUF_BYPASS;
+   wire fetch_ready;
    
    //
    // Equivalent to 1-slot FIFO
@@ -168,9 +169,9 @@ module ncpu32k_ifu(
    
    generate
       if (ENABLE_BYPASS) begin :enable_bypass
-         assign in_ready = ~idu_in_valid | hds_idu;
+         assign fetch_ready = ~idu_in_valid | hds_idu;
       end else begin
-         assign in_ready = ~idu_in_valid;
+         assign fetch_ready = ~idu_in_valid;
       end
    endgenerate
    
@@ -224,7 +225,7 @@ module ncpu32k_ifu(
 `endif
    
    assign ibus_cmd_valid = reset_cnt[1];
-   assign ibus_dout_ready = (~fls_hld_addr) & reset_cnt[1];
+   assign ibus_ready = (~fls_hld_addr) & fetch_ready & reset_cnt[1];
    
    assign insn = ibus_dout;
    
@@ -270,7 +271,7 @@ module ncpu32k_ifu(
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if(ibus_dout_ready & op_jmpfar_nxt & op_jmprel_nxt)
+      if(ibus_ready & op_jmpfar_nxt & op_jmprel_nxt)
          $fatal ("\n 'op_jmpfar_nxt' and 'jmprel_taken' should be mutex\n");
    end
 `endif
