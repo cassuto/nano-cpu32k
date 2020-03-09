@@ -43,12 +43,6 @@ module ncpu32k_ie_mu
    input                      ieu_mu_sign_ext,
    input [2:0]                ieu_mu_store_size,
    input [2:0]                ieu_mu_load_size,
-   input                      ieu_wb_regf,
-   input [`NCPU_REG_AW-1:0]   ieu_wb_reg_addr,
-   output                     mu_op,
-   output                     mu_op_load,
-   output                     mu_wb_regf,
-   output [`NCPU_REG_AW-1:0]  mu_wb_reg_addr,
    output [`NCPU_DW-1:0]      mu_load,
    output                     mu_exp_taken,
    output [`NCPU_AW-3:0]      mu_exp_tgt,
@@ -75,16 +69,8 @@ module ncpu32k_ie_mu
    
    wire mu_op_nxt = ieu_mu_load | ieu_mu_store;
    
-   // Send cmd to dbus if it's a MU operation
+   // Send cmd to dbus if it's a valid MU operation
    assign dbus_cmd_valid = mu_op_nxt & ieu_mu_in_valid;
-   
-   wire [2:0] load_size_r;
-   wire sign_ext_r;
-   
-   ncpu32k_cell_dff_lr #(3) dff_load_size_r
-                   (clk,rst_n, hds_dbus_cmd, ieu_mu_load_size[2:0], load_size_r[2:0]);
-   ncpu32k_cell_dff_lr #(1) dff_sign_ext_r
-                   (clk,rst_n, hds_dbus_cmd, ieu_mu_sign_ext, sign_ext_r);
 
    // MMU Exceptions
    assign mu_exp_taken = exp_dmm_tlb_miss | exp_dmm_page_fault;
@@ -98,48 +84,15 @@ module ncpu32k_ie_mu
                      
    assign mu_exp_tgt = {{`NCPU_AW-2-`NCPU_VECT_DW{1'b0}}, exp_vector[`NCPU_VECT_DW-1:2]};
    
-   // MU FSM
-   wire pending_r;
-   wire pending_nxt;
+   // MU is ready when handshaked with dbus dout (or Exception raised) if it was a MU operation
+   // This ensures that operations will not change before MU ready.
+   assign ieu_mu_in_ready = ~(ieu_mu_load|ieu_mu_store) | (hds_wb_in | mu_exp_taken);
    
-   assign pending_nxt =
-      (
-         // If handshaked with dbus_cmd, then MU is pending
-         (~pending_r & hds_dbus_cmd) ? 1'b1 :
-         // If handshaked with downstream module (or exception), then MU is idle
-         (pending_r & (hds_wb_in | mu_exp_taken)) ? 1'b0 : pending_r
-      );
-      
-   ncpu32k_cell_dff_r #(1) dff_pending_r
-                   (clk,rst_n, pending_nxt, pending_r);
-   
-   wire mu_op_r;
-   wire mu_load_op_r;
-   wire mu_wb_regf_r;
-   wire [`NCPU_REG_AW-1:0] mu_wb_reg_addr_r;
-   
-   // MU is ready when both dbus and MU is idle
-   assign ieu_mu_in_ready = dbus_cmd_ready & ~pending_r;
-   
-   ncpu32k_cell_dff_lr #(1) dff_mu_op_r
-                   (clk,rst_n, hds_ieu_in, mu_op_nxt, mu_op_r);
-   ncpu32k_cell_dff_lr #(1) dff_mu_load_op_r
-                   (clk,rst_n, hds_ieu_in, ieu_mu_load, mu_load_op_r);
-   ncpu32k_cell_dff_lr #(1) dff_wb_mu_regf_r
-                   (clk,rst_n, hds_ieu_in, ieu_wb_regf, mu_wb_regf_r); 
-   ncpu32k_cell_dff_lr #(`NCPU_REG_AW) dff_wb_mu_reg_addr_r
-                   (clk,rst_n, hds_ieu_in, ieu_wb_reg_addr[`NCPU_REG_AW-1:0], mu_wb_reg_addr_r[`NCPU_REG_AW-1:0]); 
-
-   assign mu_op = pending_r ? mu_op_r : mu_op_nxt;
-   assign mu_op_load = pending_r ? mu_load_op_r : ieu_mu_load;
-   assign mu_wb_regf = pending_r ? mu_wb_regf_r : ieu_wb_regf;
-   assign mu_wb_reg_addr = pending_r ? mu_wb_reg_addr_r : ieu_wb_reg_addr;
-
    // Load from memory
    assign mu_load =
-         ({`NCPU_DW{load_size_r==3'd3}} & dbus_dout) |
-         ({`NCPU_DW{load_size_r==3'd2}} & {{16{sign_ext_r & dbus_dout[15]}}, dbus_dout[15:0]}) |
-         ({`NCPU_DW{load_size_r==3'd1}} & {{24{sign_ext_r & dbus_dout[7]}}, dbus_dout[7:0]});
+         ({`NCPU_DW{ieu_mu_load_size==3'd3}} & dbus_dout) |
+         ({`NCPU_DW{ieu_mu_load_size==3'd2}} & {{16{ieu_mu_sign_ext & dbus_dout[15]}}, dbus_dout[15:0]}) |
+         ({`NCPU_DW{ieu_mu_load_size==3'd1}} & {{24{ieu_mu_sign_ext & dbus_dout[7]}}, dbus_dout[7:0]});
 
    assign dbus_ready = wb_mu_in_ready;
    assign wb_mu_in_valid = dbus_valid;

@@ -227,21 +227,13 @@ module ncpu32k_d_mmu
        );
    
    // TLB miss exception
-   wire exp_dmm_tlb_miss_nxt = ~(tlb_v & tlb_vpn == tgt_vpn_r) & msr_psr_dmme_r;
+   assign exp_dmm_tlb_miss = ~(tlb_v & tlb_vpn == tgt_vpn_r) & msr_psr_dmme_r;
    
    // Permission check, Page Fault exception
-   wire exp_dmm_page_fault_nxt = perm_denied & ~exp_dmm_tlb_miss_nxt & msr_psr_dmme_r;
+   assign exp_dmm_page_fault = perm_denied & ~exp_dmm_tlb_miss & msr_psr_dmme_r;
    
    // Cancel handshake with dcache when exception raised.
-   assign flush_strobe = exp_dmm_page_fault_nxt | exp_dmm_tlb_miss_nxt;
-   
-   // load status if handshaked with cmd of dcache (or Exception raised)
-   wire ld_exp = hds_dcache_cmd | flush_strobe;
-   
-   ncpu32k_cell_dff_lr #(1) dff_exp_dmm_page_fault
-                (clk,rst_n, ld_exp, exp_dmm_page_fault_nxt, exp_dmm_page_fault);
-   ncpu32k_cell_dff_lr #(1) dff_exp_dmm_tlb_miss
-                (clk,rst_n, ld_exp, exp_dmm_tlb_miss_nxt, exp_dmm_tlb_miss);
+   assign flush_strobe = exp_dmm_page_fault | exp_dmm_tlb_miss;
    
    assign tlb_addr = {tlb_ppn[PPN_DW-1:0], tgt_page_offset_r[PPN_SHIFT-1:0]};
 

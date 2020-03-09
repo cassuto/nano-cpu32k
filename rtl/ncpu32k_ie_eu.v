@@ -34,6 +34,7 @@ module ncpu32k_ie_eu
    input [`NCPU_AW-3:0]       ieu_insn_pc,
    input                      ieu_specul_extexp,
    input                      ieu_let_lsa_pc,
+   input                      mu_exp_taken,
    input [`NCPU_DW:0]         linkaddr,
    // PSR
    input [`NCPU_PSR_DW-1:0]   msr_psr,
@@ -178,7 +179,7 @@ module ncpu32k_ie_eu
    assign {wmsr_psr_res[9],wmsr_psr_res[8],wmsr_psr_dmme,wmsr_psr_imme,wmsr_psr_ire,wmsr_psr_rm,wmsr_psr_res[3],wmsr_psr_res[2], wmsr_psr_res[1],wmsr_psr_cc} = wmsr_operand;
 
    // Write back PSR Assert (03060934)
-   assign msr_exp_ent = commit & (ieu_syscall | ieu_specul_extexp);
+   assign msr_exp_ent = commit & (ieu_syscall | ieu_specul_extexp | mu_exp_taken );
    assign msr_psr_cc_nxt = au_cc_we ? au_cc_nxt : wmsr_psr_we ? wmsr_psr_cc : epsr_cc;
    assign msr_psr_cc_we = commit & (ieu_ret | au_cc_we | wmsr_psr_we);
    assign msr_psr_rm_nxt = wmsr_psr_we ? wmsr_psr_rm : epsr_rm;
@@ -219,8 +220,8 @@ module ncpu32k_ie_eu
    // Assertions 03060934
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if (commit & (ieu_ret|ieu_syscall|ieu_specul_extexp|au_cc_we|wmsr_psr_we) &
-                  ~(ieu_ret^ieu_syscall^ieu_specul_extexp^au_cc_we^wmsr_psr_we)
+      if (commit & (ieu_ret|ieu_syscall|ieu_specul_extexp|mu_exp_taken|au_cc_we|wmsr_psr_we) &
+                  ~(ieu_ret^ieu_syscall^ieu_specul_extexp^mu_exp_taken^au_cc_we^wmsr_psr_we)
        )
          $fatal ("\n ctrls of msr_psr writeback MUX should be mutex\n");
    end
