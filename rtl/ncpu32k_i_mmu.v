@@ -237,11 +237,11 @@ module ncpu32k_i_mmu
    assign perm_denied = ((msr_psr_rm_r & ~tlb_rx) |
                          (~msr_psr_rm_r & ~tlb_ux));
    
-   // Permission check, Page Fault exception
-   wire exp_imm_page_fault_nxt = perm_denied & msr_psr_imme_r;
-
    // TLB miss exception
-   wire exp_imm_tlb_miss_nxt = ~(tlb_v & tlb_vpn == tgt_vpn_r) & ~perm_denied & msr_psr_imme_r;
+   wire exp_imm_tlb_miss_nxt = ~(tlb_v & tlb_vpn == tgt_vpn_r) & msr_psr_imme_r;
+   
+   // Permission check, Page Fault exception
+   wire exp_imm_page_fault_nxt = perm_denied & ~exp_imm_tlb_miss_nxt & msr_psr_imme_r;
    
    ncpu32k_cell_dff_lr #(1) dff_exp_imm_page_fault
                 (clk,rst_n, hds_icache_cmd, exp_imm_page_fault_nxt, exp_imm_page_fault);
