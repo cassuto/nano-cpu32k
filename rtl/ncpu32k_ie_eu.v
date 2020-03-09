@@ -179,7 +179,8 @@ module ncpu32k_ie_eu
    assign {wmsr_psr_res[9],wmsr_psr_res[8],wmsr_psr_dmme,wmsr_psr_imme,wmsr_psr_ire,wmsr_psr_rm,wmsr_psr_res[3],wmsr_psr_res[2], wmsr_psr_res[1],wmsr_psr_cc} = wmsr_operand;
 
    // Write back PSR Assert (03060934)
-   assign msr_exp_ent = commit & (ieu_syscall | ieu_specul_extexp | mu_exp_taken );
+   wire extexp_taken = ieu_specul_extexp | mu_exp_taken;
+   assign msr_exp_ent = commit & (ieu_syscall | extexp_taken);
    assign msr_psr_cc_nxt = au_cc_we ? au_cc_nxt : wmsr_psr_we ? wmsr_psr_cc : epsr_cc;
    assign msr_psr_cc_we = commit & (ieu_ret | au_cc_we | wmsr_psr_we);
    assign msr_psr_rm_nxt = wmsr_psr_we ? wmsr_psr_rm : epsr_rm;
@@ -195,8 +196,8 @@ module ncpu32k_ie_eu
    assign msr_epsr_we = commit & (msr_exp_ent | wmsr_epsr_we);
    // In syscall, EPC is the next insn of syscall, while in general EPC is the insn
    // that raised the exception.
-   assign msr_epc_nxt = wmsr_epc_we ? wmsr_operand : ieu_specul_extexp ? {ieu_insn_pc,2'b0} : linkaddr;
-   assign msr_epc_we = commit & (ieu_specul_extexp | ieu_syscall | wmsr_epc_we);
+   assign msr_epc_nxt = wmsr_epc_we ? wmsr_operand : extexp_taken ? {ieu_insn_pc,2'b0} : linkaddr;
+   assign msr_epc_we = commit & (extexp_taken | ieu_syscall | wmsr_epc_we);
    
    // Writeback ELSA  Assert (03060933)
    wire set_elsa = ieu_let_lsa_pc;
