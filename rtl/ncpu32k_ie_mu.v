@@ -46,6 +46,7 @@ module ncpu32k_ie_mu
    output [`NCPU_DW-1:0]      mu_load,
    output                     mu_exp_taken,
    output [`NCPU_AW-3:0]      mu_exp_tgt,
+   output [`NCPU_DW-1:0]      mu_lsa,
    input                      wb_mu_in_ready, /* WB is ready to accept data */
    output                     wb_mu_in_valid /* data is presented at WB'input   */
 );
@@ -57,7 +58,9 @@ module ncpu32k_ie_mu
    // wb_in can handshake successfully if downstream module accepted dout.
    wire hds_wb_in = wb_mu_in_valid & wb_mu_in_ready;
    
-   assign dbus_cmd_addr = ieu_operand_1 + ieu_operand_2;
+   assign mu_lsa = ieu_operand_1 + ieu_operand_2;
+   
+   assign dbus_cmd_addr = mu_lsa;
 
    // Store to memory
    assign dbus_cmd_we = ieu_mu_store;

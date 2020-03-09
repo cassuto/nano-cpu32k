@@ -30,11 +30,11 @@ module ncpu32k_ie_eu
    input                      au_cc_nxt,
    input                      ieu_ret,
    input                      ieu_syscall,
-   input [`NCPU_DW-1:0]       ieu_lsa,
    input [`NCPU_AW-3:0]       ieu_insn_pc,
    input                      ieu_specul_extexp,
    input                      ieu_let_lsa_pc,
    input                      mu_exp_taken,
+   input [`NCPU_DW-1:0]       mu_lsa,
    input [`NCPU_DW:0]         linkaddr,
    // PSR
    input [`NCPU_PSR_DW-1:0]   msr_psr,
@@ -199,9 +199,14 @@ module ncpu32k_ie_eu
    assign msr_epc_nxt = wmsr_epc_we ? wmsr_operand : extexp_taken ? {ieu_insn_pc,2'b0} : linkaddr;
    assign msr_epc_we = commit & (extexp_taken | ieu_syscall | wmsr_epc_we);
    
-   // Writeback ELSA  Assert (03060933)
-   wire set_elsa = ieu_let_lsa_pc;
-   wire [`NCPU_DW-1:0] lsa_nxt = {ieu_insn_pc,2'b0};
+   // Writeback ELSA  Assert (03100705)
+   wire set_elsa = ieu_let_lsa_pc | mu_exp_taken;
+   wire [`NCPU_DW-1:0] lsa_nxt =
+      (
+         ({`NCPU_DW{ieu_let_lsa_pc}} & {ieu_insn_pc,2'b0}) |
+         ({`NCPU_DW{mu_exp_taken}} & mu_lsa)
+      );
+   // Assert (03060933)
    assign msr_elsa_nxt = set_elsa ? lsa_nxt : wmsr_operand;
    assign msr_elsa_we = commit & (set_elsa | wmsr_elsa_we);
    
@@ -235,6 +240,16 @@ module ncpu32k_ie_eu
                   ~(wmsr_elsa_we^set_elsa)
        )
          $fatal ("\n ctrls of 'msr_elsa_nxt' MUX should be mutex\n");
+   end
+`endif
+
+   // Assertions 03100705
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if (commit & (ieu_let_lsa_pc|mu_exp_taken) &
+                  ~(ieu_let_lsa_pc^mu_exp_taken)
+       )
+         $fatal ("\n ctrls of 'set_elsa' should be mutex\n");
    end
 `endif
 

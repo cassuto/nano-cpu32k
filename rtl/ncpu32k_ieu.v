@@ -135,13 +135,11 @@ module ncpu32k_ieu(
    wire                 mu_exp_taken;           // From mu of ncpu32k_ie_mu.v
    wire [`NCPU_AW-3:0]  mu_exp_tgt;             // From mu of ncpu32k_ie_mu.v
    wire [`NCPU_DW-1:0]  mu_load;                // From mu of ncpu32k_ie_mu.v
+   wire [`NCPU_DW-1:0]  mu_lsa;                 // From mu of ncpu32k_ie_mu.v
    wire                 wb_mu_in_valid;         // From mu of ncpu32k_ie_mu.v
    // End of automatics
    wire                 ieu_mu_in_valid;
    wire [`NCPU_DW:0]    linkaddr;
-   wire                 ieu_set_lsa;
-   wire [`NCPU_DW:0]    ieu_lsa;
-   wire                 ieu_mu_extexp;
    
    ncpu32k_ie_au au
       (/*AUTOINST*/
@@ -191,6 +189,7 @@ module ncpu32k_ieu(
        .mu_load                         (mu_load[`NCPU_DW-1:0]),
        .mu_exp_taken                    (mu_exp_taken),
        .mu_exp_tgt                      (mu_exp_tgt[`NCPU_AW-3:0]),
+       .mu_lsa                          (mu_lsa[`NCPU_DW-1:0]),
        .wb_mu_in_valid                  (wb_mu_in_valid),
        // Inputs
        .clk                             (clk),
@@ -257,11 +256,11 @@ module ncpu32k_ieu(
        .au_cc_nxt                       (au_cc_nxt),
        .ieu_ret                         (ieu_ret),
        .ieu_syscall                     (ieu_syscall),
-       .ieu_lsa                         (ieu_lsa[`NCPU_DW-1:0]),
        .ieu_insn_pc                     (ieu_insn_pc[`NCPU_AW-3:0]),
        .ieu_specul_extexp               (ieu_specul_extexp),
        .ieu_let_lsa_pc                  (ieu_let_lsa_pc),
        .mu_exp_taken                    (mu_exp_taken),
+       .mu_lsa                          (mu_lsa[`NCPU_DW-1:0]),
        .linkaddr                        (linkaddr[`NCPU_DW:0]),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
        .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
