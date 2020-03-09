@@ -277,6 +277,8 @@ module ncpu32k_ieu(
    wire fls_status_nxt;
    wire specul_flush_r;
    wire specul_flush_nxt;
+   wire [`NCPU_AW-3:0] flush_jmp_tgt_r;
+   wire [`NCPU_AW-3:0] flush_jmp_tgt_nxt;
    
    assign fls_status_nxt =
       (
@@ -289,12 +291,18 @@ module ncpu32k_ieu(
    ncpu32k_cell_dff_r #(1) dff_fls_status_r
                    (clk,rst_n, fls_status_nxt, fls_status_r);
 
+   wire ld_fls = ~fls_status_r;
+                   
    ncpu32k_cell_dff_lr #(1) dff_specul_flush_r
-                   (clk,rst_n, ~fls_status_r, specul_flush_nxt, specul_flush_r);
+                   (clk,rst_n, ld_fls, specul_flush_nxt, specul_flush_r);
+   
+   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_flush_jmp_tgt_r
+                   (clk,rst_n, ld_fls, flush_jmp_tgt_nxt[`NCPU_AW-3:0], flush_jmp_tgt_r[`NCPU_AW-3:0]);
    
    wire hld_fls = fls_status_r & ~specul_flush_ack; // bypass flush_ack
    
    assign specul_flush = hld_fls ? specul_flush_r : specul_flush_nxt;
+   assign ifu_flush_jmp_tgt = hld_fls ? flush_jmp_tgt_r : flush_jmp_tgt_nxt;
    
    //
    // Speculative execution checking point. Flush:
@@ -315,7 +323,7 @@ module ncpu32k_ieu(
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target
    // Assert (03060725)
-   assign ifu_flush_jmp_tgt =
+   assign flush_jmp_tgt_nxt =
          ({`NCPU_AW-2{ieu_specul_jmprel}} & ieu_specul_tgt) |
          ({`NCPU_AW-2{ieu_specul_jmpfar}} & ieu_operand_1[`NCPU_AW-1:2]) | // No algin check
          ({`NCPU_AW-2{ieu_syscall}} & ieu_specul_tgt) |
