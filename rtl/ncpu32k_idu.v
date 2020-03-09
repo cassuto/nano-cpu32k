@@ -336,6 +336,8 @@ module ncpu32k_idu(
    wire not_flushing = ~specul_flush;
    
    // Data path: no need to flush
+   // Note: LU/AU/EU (single-clk-op) insns wouldn't be commited when flushing
+   // although we not flush the opc_bus, as we flush wb_regf.
    ncpu32k_cell_dff_lr #(`NCPU_LU_IOPW) dff_ieu_lu_opc_bus
                    (clk,rst_n, pipebuf_cas, lu_opc_bus[`NCPU_LU_IOPW-1:0], ieu_lu_opc_bus[`NCPU_LU_IOPW-1:0]);
    ncpu32k_cell_dff_lr #(`NCPU_AU_IOPW) dff_ieu_au_opc_bus

@@ -91,7 +91,12 @@ module ncpu32k_i_mmu
                    (clk,rst_n, (icache_cmd_valid_w & icache_cmd_ready), ibus_flush_req, flush_nstrobe_r);
    wire flush_strobe = (ibus_flush_req&~flush_nstrobe_r);
    
-   ncpu32k_cell_pipebuf #(`NCPU_IW) pipebuf_ifu
+   ncpu32k_cell_pipebuf
+      #(
+         .DW (`NCPU_IW),
+         .ENABLE_BYPASS (1) // force bypassing. for Assert (03072258)
+      )
+   pipebuf_ifu
       (
          .clk        (clk),
          .rst_n      (rst_n),

@@ -208,8 +208,7 @@
 // bypass handshake signal of Pipeline buffer
 // 1 = Enabled
 // 0 = Disabled : This will insert a register between the long ready-valid chain,
-//                which is helpful for timing optimization. However, you should
-//                double the clk frequency to maintain the same IPC as before.
+//                which is helpful for timing optimization.
 `define NCPU_PIPEBUF_BYPASS 1
 
 `endif // _NCPU32K_CONFIG_H
