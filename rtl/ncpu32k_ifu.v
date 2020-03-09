@@ -149,7 +149,7 @@ module ncpu32k_ifu(
          : op_ret ?
             // for ret, this is the predicated target,
             // consistent with BPU result
-            bpu_msr_epc
+            bpu_msr_epc[`NCPU_AW-1:2]
          : {`NCPU_AW-2{1'b0}}
       );
    // calc out predicted CC flag
@@ -186,7 +186,7 @@ module ncpu32k_ifu(
    // Note that _nxt and flush_ are reusing the same port 
    assign pc_addr_nxt = specul_flush ? ifu_flush_jmp_tgt
                            : op_syscall ? flush_exp_vect_tgt
-                           : op_ret ? bpu_msr_epc
+                           : op_ret ? bpu_msr_epc[`NCPU_AW-1:2]
                            : op_jmpfar_nxt ? flush_jmpfar_tgt
                            : op_jmprel_nxt ? flush_jmprel_tgt
                            : ibus_out_id_nxt[`NCPU_AW-1:2] + 1'b1; /* Non flush */
