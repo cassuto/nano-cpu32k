@@ -27,6 +27,8 @@ module ncpu32k_core(
    input                   dbus_valid,
    output                  dbus_ready,
    output [`NCPU_DW-1:0]   dbus_din,
+   input                   exp_dmm_tlb_miss,
+   input                   exp_dmm_page_fault,
    input                   ibus_cmd_ready, /* ibus is ready to accept cmd */
    output                  ibus_cmd_valid, /* cmd is presented at ibus'input */
    output [`NCPU_AW-1:0]   ibus_cmd_addr, /* IMPORTANT! changing after cmd handshaked */
@@ -40,16 +42,26 @@ module ncpu32k_core(
    input                   exp_imm_tlb_miss,
    input                   exp_imm_page_fault,
    output                  msr_psr_imme,
+   output                  msr_psr_dmme,
    output                  msr_psr_rm,
-   input [`NCPU_DW-1:0]       msr_immid,
-   input [`NCPU_DW-1:0]       msr_imm_tlbl,
+   input [`NCPU_DW-1:0]    msr_immid,
+   input [`NCPU_DW-1:0]    msr_imm_tlbl,
    output [`NCPU_TLB_AW-1:0]  msr_imm_tlbl_idx,
-   output [`NCPU_DW-1:0]      msr_imm_tlbl_nxt,
-   output                     msr_imm_tlbl_we,
-   input [`NCPU_DW-1:0]       msr_imm_tlbh,
+   output [`NCPU_DW-1:0]   msr_imm_tlbl_nxt,
+   output                  msr_imm_tlbl_we,
+   input [`NCPU_DW-1:0]    msr_imm_tlbh,
    output [`NCPU_TLB_AW-1:0]  msr_imm_tlbh_idx,
-   output [`NCPU_DW-1:0]      msr_imm_tlbh_nxt,
-   output                     msr_imm_tlbh_we
+   output [`NCPU_DW-1:0]   msr_imm_tlbh_nxt,
+   output                  msr_imm_tlbh_we,
+   input [`NCPU_DW-1:0]    msr_dmmid,
+   input [`NCPU_DW-1:0]    msr_dmm_tlbl,
+   output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbl_idx,
+   output [`NCPU_DW-1:0]   msr_dmm_tlbl_nxt,
+   output                  msr_dmm_tlbl_we,
+   input [`NCPU_DW-1:0]    msr_dmm_tlbh,
+   output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbh_idx,
+   output [`NCPU_DW-1:0]   msr_dmm_tlbh_nxt,
+   output                  msr_dmm_tlbh_we
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -126,7 +138,6 @@ module ncpu32k_core(
    wire                 msr_psr_cc;             // From psr of ncpu32k_psr.v
    wire                 msr_psr_cc_nxt;         // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_cc_we;          // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_dmme;           // From psr of ncpu32k_psr.v
    wire                 msr_psr_dmme_nxt;       // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_dmme_we;        // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_imme_nxt;       // From ieu of ncpu32k_ieu.v
@@ -383,6 +394,12 @@ module ncpu32k_core(
        .msr_imm_tlbh_idx                (msr_imm_tlbh_idx[`NCPU_TLB_AW-1:0]),
        .msr_imm_tlbh_nxt                (msr_imm_tlbh_nxt[`NCPU_DW-1:0]),
        .msr_imm_tlbh_we                 (msr_imm_tlbh_we),
+       .msr_dmm_tlbl_idx                (msr_dmm_tlbl_idx[`NCPU_TLB_AW-1:0]),
+       .msr_dmm_tlbl_nxt                (msr_dmm_tlbl_nxt[`NCPU_DW-1:0]),
+       .msr_dmm_tlbl_we                 (msr_dmm_tlbl_we),
+       .msr_dmm_tlbh_idx                (msr_dmm_tlbh_idx[`NCPU_TLB_AW-1:0]),
+       .msr_dmm_tlbh_nxt                (msr_dmm_tlbh_nxt[`NCPU_DW-1:0]),
+       .msr_dmm_tlbh_we                 (msr_dmm_tlbh_we),
        .specul_flush                    (specul_flush),
        .ifu_flush_jmp_tgt               (ifu_flush_jmp_tgt[`NCPU_AW-3:0]),
        .bpu_wb                          (bpu_wb),
@@ -395,6 +412,8 @@ module ncpu32k_core(
        .dbus_cmd_ready                  (dbus_cmd_ready),
        .dbus_valid                      (dbus_valid),
        .dbus_dout                       (dbus_dout[`NCPU_DW-1:0]),
+       .exp_dmm_tlb_miss                (exp_dmm_tlb_miss),
+       .exp_dmm_page_fault              (exp_dmm_page_fault),
        .ieu_in_valid                    (ieu_in_valid),
        .ieu_operand_1                   (ieu_operand_1[`NCPU_DW-1:0]),
        .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),
@@ -435,6 +454,9 @@ module ncpu32k_core(
        .msr_immid                       (msr_immid[`NCPU_DW-1:0]),
        .msr_imm_tlbl                    (msr_imm_tlbl[`NCPU_DW-1:0]),
        .msr_imm_tlbh                    (msr_imm_tlbh[`NCPU_DW-1:0]),
+       .msr_dmmid                       (msr_dmmid[`NCPU_DW-1:0]),
+       .msr_dmm_tlbl                    (msr_dmm_tlbl[`NCPU_DW-1:0]),
+       .msr_dmm_tlbh                    (msr_dmm_tlbh[`NCPU_DW-1:0]),
        .specul_flush_ack                (specul_flush_ack));
    
    

@@ -27,6 +27,8 @@ module ncpu32k_ieu(
    output                     dbus_ready, /* MU is ready to load */
    input                      dbus_valid, /* data is presented at dbus's output */
    input [`NCPU_DW-1:0]       dbus_dout,
+   input                      exp_dmm_tlb_miss,
+   input                      exp_dmm_page_fault,
    output                     ieu_in_ready, /* ops is accepted by ieu */
    input                      ieu_in_valid, /* ops is presented at ieu's input */
    input [`NCPU_DW-1:0]       ieu_operand_1,
@@ -94,6 +96,15 @@ module ncpu32k_ieu(
    output [`NCPU_TLB_AW-1:0]  msr_imm_tlbh_idx,
    output [`NCPU_DW-1:0]      msr_imm_tlbh_nxt,
    output                     msr_imm_tlbh_we,
+   input [`NCPU_DW-1:0]       msr_dmmid,
+   input [`NCPU_DW-1:0]       msr_dmm_tlbl,
+   output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbl_idx,
+   output [`NCPU_DW-1:0]      msr_dmm_tlbl_nxt,
+   output                     msr_dmm_tlbl_we,
+   input [`NCPU_DW-1:0]       msr_dmm_tlbh,
+   output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbh_idx,
+   output [`NCPU_DW-1:0]      msr_dmm_tlbh_nxt,
+   output                     msr_dmm_tlbh_we,
    output                     specul_flush,
    input                      specul_flush_ack,
    output [`NCPU_AW-3:0]      ifu_flush_jmp_tgt,
@@ -121,6 +132,8 @@ module ncpu32k_ieu(
    wire [`NCPU_DW-1:0]  lu_or;                  // From lu of ncpu32k_ie_lu.v
    wire [`NCPU_DW-1:0]  lu_shift;               // From lu of ncpu32k_ie_lu.v
    wire [`NCPU_DW-1:0]  lu_xor;                 // From lu of ncpu32k_ie_lu.v
+   wire                 mu_exp_taken;           // From mu of ncpu32k_ie_mu.v
+   wire [`NCPU_AW-3:0]  mu_exp_tgt;             // From mu of ncpu32k_ie_mu.v
    wire [`NCPU_DW-1:0]  mu_load;                // From mu of ncpu32k_ie_mu.v
    wire                 mu_op_load;             // From mu of ncpu32k_ie_mu.v
    wire [`NCPU_REG_AW-1:0] mu_wb_reg_addr;      // From mu of ncpu32k_ie_mu.v
@@ -183,6 +196,8 @@ module ncpu32k_ieu(
        .mu_wb_regf                      (mu_wb_regf),
        .mu_wb_reg_addr                  (mu_wb_reg_addr[`NCPU_REG_AW-1:0]),
        .mu_load                         (mu_load[`NCPU_DW-1:0]),
+       .mu_exp_taken                    (mu_exp_taken),
+       .mu_exp_tgt                      (mu_exp_tgt[`NCPU_AW-3:0]),
        .wb_mu_in_valid                  (wb_mu_in_valid),
        // Inputs
        .clk                             (clk),
@@ -190,6 +205,8 @@ module ncpu32k_ieu(
        .dbus_cmd_ready                  (dbus_cmd_ready),
        .dbus_valid                      (dbus_valid),
        .dbus_dout                       (dbus_dout[`NCPU_DW-1:0]),
+       .exp_dmm_tlb_miss                (exp_dmm_tlb_miss),
+       .exp_dmm_page_fault              (exp_dmm_page_fault),
        .ieu_mu_in_valid                 (ieu_mu_in_valid),
        .ieu_operand_1                   (ieu_operand_1[`NCPU_DW-1:0]),
        .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),
@@ -231,6 +248,12 @@ module ncpu32k_ieu(
        .msr_imm_tlbh_idx                (msr_imm_tlbh_idx[`NCPU_TLB_AW-1:0]),
        .msr_imm_tlbh_nxt                (msr_imm_tlbh_nxt[`NCPU_DW-1:0]),
        .msr_imm_tlbh_we                 (msr_imm_tlbh_we),
+       .msr_dmm_tlbl_idx                (msr_dmm_tlbl_idx[`NCPU_TLB_AW-1:0]),
+       .msr_dmm_tlbl_nxt                (msr_dmm_tlbl_nxt[`NCPU_DW-1:0]),
+       .msr_dmm_tlbl_we                 (msr_dmm_tlbl_we),
+       .msr_dmm_tlbh_idx                (msr_dmm_tlbh_idx[`NCPU_TLB_AW-1:0]),
+       .msr_dmm_tlbh_nxt                (msr_dmm_tlbh_nxt[`NCPU_DW-1:0]),
+       .msr_dmm_tlbh_we                 (msr_dmm_tlbh_we),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
@@ -257,7 +280,10 @@ module ncpu32k_ieu(
        .msr_coreid                      (msr_coreid[`NCPU_DW-1:0]),
        .msr_immid                       (msr_immid[`NCPU_DW-1:0]),
        .msr_imm_tlbl                    (msr_imm_tlbl[`NCPU_DW-1:0]),
-       .msr_imm_tlbh                    (msr_imm_tlbh[`NCPU_DW-1:0]));
+       .msr_imm_tlbh                    (msr_imm_tlbh[`NCPU_DW-1:0]),
+       .msr_dmmid                       (msr_dmmid[`NCPU_DW-1:0]),
+       .msr_dmm_tlbl                    (msr_dmm_tlbl[`NCPU_DW-1:0]),
+       .msr_dmm_tlbh                    (msr_dmm_tlbh[`NCPU_DW-1:0]));
         
    wire hds_ieu_in = ieu_in_ready & ieu_in_valid;
    wire hds_wb_mu_in = wb_mu_in_ready & wb_mu_in_valid;
@@ -271,6 +297,8 @@ module ncpu32k_ieu(
    // should be never committed.
    assign commit = hds_ieu_in;
    assign mu_commit = hds_wb_mu_in;
+   
+   wire [`NCPU_AW-3:0] jmpfar_tgt = ieu_operand_1[`NCPU_AW-1:2]; // No algin check
    
    // Flush FSM
    wire fls_status_r;
@@ -315,20 +343,22 @@ module ncpu32k_ieu(
    assign specul_flush_nxt = commit &
       (
          (ieu_specul_jmprel & (ieu_specul_bcc != msr_psr_cc))
-         | (ieu_specul_jmpfar & (ieu_specul_tgt != ieu_operand_1))
+         | (ieu_specul_jmpfar & (ieu_specul_tgt != jmpfar_tgt))
          | ieu_syscall
          | ieu_ret
          | ieu_specul_extexp
+         | mu_exp_taken
       );
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target
    // Assert (03060725)
    assign flush_jmp_tgt_nxt =
          ({`NCPU_AW-2{ieu_specul_jmprel}} & ieu_specul_tgt) |
-         ({`NCPU_AW-2{ieu_specul_jmpfar}} & ieu_operand_1[`NCPU_AW-1:2]) | // No algin check
+         ({`NCPU_AW-2{ieu_specul_jmpfar}} & jmpfar_tgt) |
          ({`NCPU_AW-2{ieu_syscall}} & ieu_specul_tgt) |
          ({`NCPU_AW-2{ieu_ret}} & msr_epc[`NCPU_AW-1:2]) | // No algin check
-         ({`NCPU_AW-2{ieu_specul_extexp}} & ieu_specul_tgt);
+         ({`NCPU_AW-2{ieu_specul_extexp}} & ieu_specul_tgt) |
+         ({`NCPU_AW-2{mu_exp_taken}} & mu_exp_tgt);
    
    assign bpu_wb = commit & (ieu_specul_jmprel | ieu_specul_jmpfar);
    assign bpu_wb_jmprel = ieu_specul_jmprel;
@@ -390,8 +420,8 @@ module ncpu32k_ieu(
    // Assertions 03060725
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if((ieu_specul_jmprel|ieu_specul_jmpfar|ieu_syscall|ieu_ret|ieu_specul_extexp) &
-            ~(ieu_specul_jmprel^ieu_specul_jmpfar^ieu_syscall^ieu_ret^ieu_specul_extexp)) begin
+      if((ieu_specul_jmprel|ieu_specul_jmpfar|ieu_syscall|ieu_ret|ieu_specul_extexp|mu_exp_taken) &
+            ~(ieu_specul_jmprel^ieu_specul_jmpfar^ieu_syscall^ieu_ret^ieu_specul_extexp^mu_exp_taken)) begin
          $fatal ("\n ctrls of 'ifu_flush_jmp_tgt' MUX should be mutex\n");
       end
    end

@@ -31,6 +31,8 @@ module ncpu32k_ie_mu
    output                     dbus_ready, /* MU is ready to load */
    input                      dbus_valid, /* data is presented at dbus's output */
    input [`NCPU_DW-1:0]       dbus_dout,
+   input                      exp_dmm_tlb_miss,
+   input                      exp_dmm_page_fault,
    output                     ieu_mu_in_ready, /* MU is ready to accept ops */
    input                      ieu_mu_in_valid, /* ops is presented at MU's input */
    input [`NCPU_DW-1:0]       ieu_operand_1,
@@ -48,6 +50,8 @@ module ncpu32k_ie_mu
    output                     mu_wb_regf,
    output [`NCPU_REG_AW-1:0]  mu_wb_reg_addr,
    output [`NCPU_DW-1:0]      mu_load,
+   output                     mu_exp_taken,
+   output [`NCPU_AW-3:0]      mu_exp_tgt,
    input                      wb_mu_in_ready, /* WB is ready to accept data */
    output                     wb_mu_in_valid /* data is presented at WB'input   */
 );
@@ -82,6 +86,18 @@ module ncpu32k_ie_mu
    ncpu32k_cell_dff_lr #(1) dff_sign_ext_r
                    (clk,rst_n, hds_dbus_cmd, ieu_mu_sign_ext, sign_ext_r);
 
+   // MMU Exceptions
+   assign mu_exp_taken = exp_dmm_tlb_miss | exp_dmm_page_fault;
+
+   // Assert (03092009)
+   wire [`NCPU_VECT_DW-1:0] exp_vector =
+      (
+         ({`NCPU_VECT_DW{exp_dmm_tlb_miss}} & `NCPU_EDTM_VECTOR) |
+         ({`NCPU_VECT_DW{exp_dmm_page_fault}} & `NCPU_EDPF_VECTOR)
+      );
+                     
+   assign mu_exp_tgt = {{`NCPU_AW-2-`NCPU_VECT_DW{1'b0}}, exp_vector[`NCPU_VECT_DW-1:2]};
+   
    // MU FSM
    wire pending_r;
    wire pending_nxt;
@@ -90,8 +106,8 @@ module ncpu32k_ie_mu
       (
          // If handshaked with dbus_cmd, then MU is pending
          (~pending_r & hds_dbus_cmd) ? 1'b1 :
-         // If handshaked with downstream module, then MU is idle
-         (pending_r & hds_wb_in) ? 1'b0 : pending_r
+         // If handshaked with downstream module (or exception), then MU is idle
+         (pending_r & (hds_wb_in | mu_exp_taken)) ? 1'b0 : pending_r
       );
       
    ncpu32k_cell_dff_r #(1) dff_pending_r
@@ -127,5 +143,16 @@ module ncpu32k_ie_mu
 
    assign dbus_ready = wb_mu_in_ready;
    assign wb_mu_in_valid = dbus_valid;
+   
+
+   // Assertions 03092009
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if((exp_dmm_tlb_miss|exp_dmm_page_fault) &
+            ~(exp_dmm_tlb_miss^exp_dmm_page_fault)) begin
+         $fatal ("\n ctrls of 'exp_vector' MUX should be mutex\n");
+      end
+   end
+`endif
    
 endmodule

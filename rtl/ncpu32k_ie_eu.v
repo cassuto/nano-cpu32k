@@ -76,7 +76,19 @@ module ncpu32k_ie_eu
    input [`NCPU_DW-1:0]       msr_imm_tlbh,
    output [`NCPU_TLB_AW-1:0]  msr_imm_tlbh_idx,
    output [`NCPU_DW-1:0]      msr_imm_tlbh_nxt,
-   output                     msr_imm_tlbh_we
+   output                     msr_imm_tlbh_we,
+   // DMMID
+   input [`NCPU_DW-1:0]       msr_dmmid,
+   // DTLBL
+   input [`NCPU_DW-1:0]       msr_dmm_tlbl,
+   output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbl_idx,
+   output [`NCPU_DW-1:0]      msr_dmm_tlbl_nxt,
+   output                     msr_dmm_tlbl_we,
+   // DTLBH
+   input [`NCPU_DW-1:0]       msr_dmm_tlbh,
+   output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbh_idx,
+   output [`NCPU_DW-1:0]      msr_dmm_tlbh_nxt,
+   output                     msr_dmm_tlbh_we
 );
 
    wire [`NCPU_DW-1:0] msr_addr = ieu_operand_1 + ieu_operand_2;
@@ -118,11 +130,24 @@ module ncpu32k_ie_eu
    assign msr_imm_tlbl_idx = bank_off[`NCPU_TLB_AW-1:0];
    assign msr_imm_tlbh_idx = bank_off[`NCPU_TLB_AW-1:0];
    
+   // Readout DMM
+   wire msr_dmm_tlbl_sel = bank_off[`NCPU_MSR_DMM_TLBSEL] & ~bank_off[`NCPU_MSR_DMM_TLBH_SEL];
+   wire msr_dmm_tlbh_sel = bank_off[`NCPU_MSR_DMM_TLBSEL] & bank_off[`NCPU_MSR_DMM_TLBH_SEL];
+   wire [`NCPU_DW-1:0] dout_dmm =
+      (
+         ({`NCPU_DW{~bank_off[`NCPU_MSR_DMM_TLBSEL]}} & msr_dmmid) |
+         ({`NCPU_DW{msr_dmm_tlbl_sel}} & msr_dmm_tlbl) |
+         ({`NCPU_DW{msr_dmm_tlbh_sel}} & msr_dmm_tlbh)
+      );
+   assign msr_dmm_tlbl_idx = bank_off[`NCPU_TLB_AW-1:0];
+   assign msr_dmm_tlbh_idx = bank_off[`NCPU_TLB_AW-1:0];
+   
    // Result MUX
    assign ieu_eu_dout =
       (
          ({`NCPU_DW{bank_ps}} & dout_ps) |
-         ({`NCPU_DW{bank_imm}} & dout_imm)
+         ({`NCPU_DW{bank_imm}} & dout_imm) |
+         ({`NCPU_DW{bank_dmm}} & dout_dmm)
       );
    
    ////////////////////////////////////////////////////////////////////////////////
@@ -184,6 +209,13 @@ module ncpu32k_ie_eu
    assign msr_imm_tlbh_nxt = wmsr_operand;
    assign msr_imm_tlbh_we = commit & (ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_imm & msr_imm_tlbh_sel);
 
+   // Writeback DMM
+   assign msr_dmm_tlbl_nxt = wmsr_operand;
+   assign msr_dmm_tlbl_we = commit & (ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_dmm & msr_dmm_tlbl_sel);
+   assign msr_dmm_tlbh_nxt = wmsr_operand;
+   assign msr_dmm_tlbh_we = commit & (ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_dmm & msr_dmm_tlbh_sel);
+
+   
    // Assertions 03060934
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin

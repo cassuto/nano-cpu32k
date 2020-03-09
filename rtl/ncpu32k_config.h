@@ -71,10 +71,14 @@
 // IMM
 //
 
-// IMM (8th bit = TLB sel)
+// IMM TLB (8th bit = TLB sel)
 `define NCPU_MSR_IMM_TLBSEL 8
-// TLB (7th bit = TLBH sel)
+// TLBH (7th bit = TLBH sel)
 `define NCPU_MSR_IMM_TLBH_SEL 7
+// DMM TLB (8th bit = TLB sel)
+`define NCPU_MSR_DMM_TLBSEL 8
+// TLBH (7th bit = TLBH sel)
+`define NCPU_MSR_DMM_TLBH_SEL 7
 
 /////////////////////////////////////////////////////////////////////////////
 // Exception Vector Table
@@ -90,6 +94,8 @@
 `define NCPU_EDTM_VECTOR 8'h20
 `define NCPU_EALGIN_VECTOR 8'h24
 `define NCPU_EINT_VECTOR 8'h28
+
+`define NCPU_VECT_DW 8
 
 /////////////////////////////////////////////////////////////////////////////
 // ISA GROUP - BASE

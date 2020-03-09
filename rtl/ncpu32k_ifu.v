@@ -119,13 +119,13 @@ module ncpu32k_ifu(
    // Let ELSA = PC(Virtual Address)
    wire let_lsa_pc_nxt = (exp_imm_tlb_miss | exp_imm_page_fault);
    // MUX (03060653)
-   wire [7:0] exp_vector =
+   wire [`NCPU_VECT_DW-1:0] exp_vector =
       (
-         ({8{op_syscall}} & `NCPU_ESYSCALL_VECTOR) |
-         ({8{exp_imm_tlb_miss}} & `NCPU_EITM_VECTOR) |
-         ({8{exp_imm_page_fault}} & `NCPU_EIPF_VECTOR)
+         ({`NCPU_VECT_DW{op_syscall}} & `NCPU_ESYSCALL_VECTOR) |
+         ({`NCPU_VECT_DW{exp_imm_tlb_miss}} & `NCPU_EITM_VECTOR) |
+         ({`NCPU_VECT_DW{exp_imm_page_fault}} & `NCPU_EIPF_VECTOR)
       );
-   wire [`NCPU_AW-3:0] flush_exp_vect_tgt = {{`NCPU_AW-2-8{1'b0}}, exp_vector[7:2]};
+   wire [`NCPU_AW-3:0] flush_exp_vect_tgt = {{`NCPU_AW-2-`NCPU_VECT_DW{1'b0}}, exp_vector[`NCPU_VECT_DW-1:2]};
    
    // Speculative execution
    assign specul_jmp = bpu_jmprel | op_jmpfar_nxt;
