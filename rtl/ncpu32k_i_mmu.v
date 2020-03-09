@@ -257,7 +257,7 @@ module ncpu32k_i_mmu
 
    assign icache_cmd_addr =
       (
-         // IMMU is enabled and TLB hit (speculative exec exception to flush TLB)
+         // IMMU is enabled (if TLB not hit, then speculative exec exception to flush TLB)
          msr_psr_imme_r ? tlb_addr
          // IMMU is disabled
          : tlb_dummy_addr
