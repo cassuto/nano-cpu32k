@@ -243,7 +243,6 @@ module ncpu32k_ieu(
        .au_cc_nxt                       (au_cc_nxt),
        .ieu_ret                         (ieu_ret),
        .ieu_syscall                     (ieu_syscall),
-       .ieu_set_elsa                    (ieu_set_elsa),
        .ieu_lsa                         (ieu_lsa[`NCPU_DW-1:0]),
        .ieu_insn_pc                     (ieu_insn_pc[`NCPU_AW-3:0]),
        .ieu_specul_extexp               (ieu_specul_extexp),
@@ -254,7 +253,7 @@ module ncpu32k_ieu(
        .msr_cpuid                       (msr_cpuid[`NCPU_DW-1:0]),
        .msr_epc                         (msr_epc[`NCPU_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
-       .msr_elsa                        (msr_elsa[`NCPU_PSR_DW-1:0]),
+       .msr_elsa                        (msr_elsa[`NCPU_DW-1:0]),
        .msr_coreid                      (msr_coreid[`NCPU_DW-1:0]),
        .msr_immid                       (msr_immid[`NCPU_DW-1:0]),
        .msr_imm_tlbl                    (msr_imm_tlbl[`NCPU_DW-1:0]),
@@ -279,8 +278,13 @@ module ncpu32k_ieu(
    wire specul_flush_r;
    wire specul_flush_nxt;
    
-   assign fls_status_nxt = (~fls_status_r & hds_ieu_in & specul_flush_nxt) ? 1'b1 :
-                           (fls_status_r & specul_flush_ack) ? 1'b0 : fls_status_r;
+   assign fls_status_nxt =
+      (
+         // If speculative execution taken, then request flushing.
+         (~fls_status_r & hds_ieu_in & specul_flush_nxt) ? 1'b1 :
+         // If request is acked, then exit flushing.
+         (fls_status_r & specul_flush_ack) ? 1'b0 : fls_status_r
+      );
    
    ncpu32k_cell_dff_r #(1) dff_fls_status_r
                    (clk,rst_n, fls_status_nxt, fls_status_r);
@@ -348,6 +352,7 @@ module ncpu32k_ieu(
    
    assign ieu_mu_in_valid = ieu_in_valid;
    
+   // IEU is ready when there is no flushing and MU is ready
    assign ieu_in_ready = (~hld_fls) & ieu_mu_in_ready;
    
    // Assertions 03060935

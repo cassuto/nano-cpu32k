@@ -30,7 +30,6 @@ module ncpu32k_ie_eu
    input                      au_cc_nxt,
    input                      ieu_ret,
    input                      ieu_syscall,
-   input                      ieu_set_elsa,
    input [`NCPU_DW-1:0]       ieu_lsa,
    input [`NCPU_AW-3:0]       ieu_insn_pc,
    input                      ieu_specul_extexp,
@@ -61,7 +60,7 @@ module ncpu32k_ie_eu
    output [`NCPU_PSR_DW-1:0]  msr_epsr_nxt,
    output                     msr_epsr_we,
    // ELSA
-   input [`NCPU_PSR_DW-1:0]   msr_elsa,
+   input [`NCPU_DW-1:0]       msr_elsa,
    output [`NCPU_DW-1:0]      msr_elsa_nxt,
    output                     msr_elsa_we,
    // COREID
@@ -175,7 +174,7 @@ module ncpu32k_ie_eu
    
    // Writeback ELSA  Assert (03060933)
    wire set_elsa = ieu_let_lsa_pc;
-   wire lsa_nxt = {ieu_insn_pc,2'b0};
+   wire [`NCPU_DW-1:0] lsa_nxt = {ieu_insn_pc,2'b0};
    assign msr_elsa_nxt = set_elsa ? lsa_nxt : wmsr_operand;
    assign msr_elsa_we = commit & (set_elsa | wmsr_elsa_we);
    

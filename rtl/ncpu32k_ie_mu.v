@@ -52,8 +52,11 @@ module ncpu32k_ie_mu
    output                     wb_mu_in_valid /* data is presented at WB'input   */
 );
 
+   // ieu_in can handshake successfully if there is a valid operation
    wire hds_ieu_in = ieu_mu_in_valid & ieu_mu_in_ready;
+   // dbus_cmd can handshake successfully only if it's a MU operation
    wire hds_dbus_cmd = dbus_cmd_valid & dbus_cmd_ready;
+   // wb_in can handshake successfully if downstream module accepted dout.
    wire hds_wb_in = wb_mu_in_valid & wb_mu_in_ready;
    
    assign dbus_cmd_addr = ieu_operand_1 + ieu_operand_2;

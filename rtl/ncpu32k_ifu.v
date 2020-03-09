@@ -242,7 +242,7 @@ module ncpu32k_ifu(
                    (clk,rst_n, pipebuf_cas, flush_insn_pc[`NCPU_AW-3:0], idu_insn_pc[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_specul_tgt
                    (clk,rst_n, pipebuf_cas, specul_tgt_nxt, idu_specul_tgt[`NCPU_AW-3:0]);
-
+  
    // Control path
    ncpu32k_cell_dff_lr #(`NCPU_IW) dff_idu_insn
                    (clk,rst_n, pipebuf_cas, insn & {`NCPU_IW{not_flushing}}, idu_insn);
@@ -294,6 +294,7 @@ module ncpu32k_ifu(
    end
 `endif
 
-
+   // For Debugging only
+   wire [`NCPU_AW-1:0] idu_insn_pc_w = {idu_insn_pc[`NCPU_AW-3:0],2'b0};
 
 endmodule
