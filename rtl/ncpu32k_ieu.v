@@ -317,9 +317,9 @@ module ncpu32k_ieu(
    // Assert (03060725)
    assign ifu_flush_jmp_tgt =
          ({`NCPU_AW-2{ieu_specul_jmprel}} & ieu_specul_tgt) |
-         ({`NCPU_AW-2{ieu_specul_jmpfar}} & ieu_operand_1) |
+         ({`NCPU_AW-2{ieu_specul_jmpfar}} & ieu_operand_1[`NCPU_AW-1:2]) | // No algin check
          ({`NCPU_AW-2{ieu_syscall}} & ieu_specul_tgt) |
-         ({`NCPU_AW-2{ieu_ret}} & msr_epc[`NCPU_AW-1:2]) |
+         ({`NCPU_AW-2{ieu_ret}} & msr_epc[`NCPU_AW-1:2]) | // No algin check
          ({`NCPU_AW-2{ieu_specul_extexp}} & ieu_specul_tgt);
    
    assign bpu_wb = commit & (ieu_specul_jmprel | ieu_specul_jmpfar);
