@@ -67,7 +67,7 @@ module ncpu32k_tsc(
    // Clear IRQ when clear P
    wire irq_clr = msr_tsc_tcr_we & ~tcr_p;
 
-   ncpu32k_cell_dff_lr #(`NCPU_NIRQ) dff_tsc_irq
+   ncpu32k_cell_dff_lr #(1) dff_tsc_irq
                    (clk,rst_n, irq_set|irq_clr, (irq_set & ~irq_clr), tsc_irq);
 
 endmodule
