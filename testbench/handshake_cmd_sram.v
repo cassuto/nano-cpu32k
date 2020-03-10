@@ -57,7 +57,7 @@ module handshake_cmd_sram
    reg [DW-1:0] din_r;
    reg [2:0] size_r;
    reg we_r;
-   reg [10:0] delay_r;
+   reg [10:0] delay_r=4;
    generate
       if(DELAY>=128) begin : delay_random
          localparam DELAY_MAX = 16;
@@ -77,7 +77,7 @@ module handshake_cmd_sram
             end else if(valid_r >= 10'd1 && valid_r < delay_r) begin
                valid_nxt = valid_r + 10'd1;
             end else if(valid_r == delay_r) begin
-               valid_nxt = pop & push ? 10'd1 : pop ? 10'd0 : DELAY;
+               valid_nxt = pop & push ? 10'd1 : pop ? 10'd0 : delay_r;
             end
          end
          always @(posedge clk) begin
