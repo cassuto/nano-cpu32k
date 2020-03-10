@@ -105,6 +105,16 @@ module ncpu32k_ieu(
    output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbh_idx,
    output [`NCPU_DW-1:0]      msr_dmm_tlbh_nxt,
    output                     msr_dmm_tlbh_we,
+   input [`NCPU_DW-1:0]       msr_irqc_imr,
+   output [`NCPU_DW-1:0]      msr_irqc_imr_nxt,
+   output                     msr_irqc_imr_we,
+   input [`NCPU_DW-1:0]       msr_irqc_irr,
+   input [`NCPU_DW-1:0]       msr_tsc_tsr,
+   output [`NCPU_DW-1:0]      msr_tsc_tsr_nxt,
+   output                     msr_tsc_tsr_we,
+   input [`NCPU_DW-1:0]       msr_tsc_tcr,
+   output [`NCPU_DW-1:0]      msr_tsc_tcr_nxt,
+   output                     msr_tsc_tcr_we,
    output                     specul_flush,
    input                      specul_flush_ack,
    output [`NCPU_AW-3:0]      ifu_flush_jmp_tgt,
@@ -245,6 +255,12 @@ module ncpu32k_ieu(
        .msr_dmm_tlbh_idx                (msr_dmm_tlbh_idx[`NCPU_TLB_AW-1:0]),
        .msr_dmm_tlbh_nxt                (msr_dmm_tlbh_nxt[`NCPU_DW-1:0]),
        .msr_dmm_tlbh_we                 (msr_dmm_tlbh_we),
+       .msr_irqc_imr_nxt                (msr_irqc_imr_nxt[`NCPU_DW-1:0]),
+       .msr_irqc_imr_we                 (msr_irqc_imr_we),
+       .msr_tsc_tsr_nxt                 (msr_tsc_tsr_nxt[`NCPU_DW-1:0]),
+       .msr_tsc_tsr_we                  (msr_tsc_tsr_we),
+       .msr_tsc_tcr_nxt                 (msr_tsc_tcr_nxt[`NCPU_DW-1:0]),
+       .msr_tsc_tcr_we                  (msr_tsc_tcr_we),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
@@ -276,7 +292,11 @@ module ncpu32k_ieu(
        .msr_imm_tlbh                    (msr_imm_tlbh[`NCPU_DW-1:0]),
        .msr_dmmid                       (msr_dmmid[`NCPU_DW-1:0]),
        .msr_dmm_tlbl                    (msr_dmm_tlbl[`NCPU_DW-1:0]),
-       .msr_dmm_tlbh                    (msr_dmm_tlbh[`NCPU_DW-1:0]));
+       .msr_dmm_tlbh                    (msr_dmm_tlbh[`NCPU_DW-1:0]),
+       .msr_irqc_imr                    (msr_irqc_imr[`NCPU_DW-1:0]),
+       .msr_irqc_irr                    (msr_irqc_irr[`NCPU_DW-1:0]),
+       .msr_tsc_tsr                     (msr_tsc_tsr[`NCPU_DW-1:0]),
+       .msr_tsc_tcr                     (msr_tsc_tcr[`NCPU_DW-1:0]));
         
    wire hds_ieu_in = ieu_in_ready & ieu_in_valid;
    wire hds_wb_mu_in = wb_mu_in_ready & wb_mu_in_valid;

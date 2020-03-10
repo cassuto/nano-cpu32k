@@ -51,7 +51,7 @@
 `define NCPU_MSR_BANK_TSC	7
 
 //
-// PS One-hot encoding
+// PS (One-hot encoding)
 //
 
 // PS - PSR
@@ -75,10 +75,32 @@
 `define NCPU_MSR_IMM_TLBSEL 8
 // TLBH (7th bit = TLBH sel)
 `define NCPU_MSR_IMM_TLBH_SEL 7
+
+//
+// DMM
+//
+
 // DMM TLB (8th bit = TLB sel)
 `define NCPU_MSR_DMM_TLBSEL 8
 // TLBH (7th bit = TLBH sel)
 `define NCPU_MSR_DMM_TLBH_SEL 7
+
+//
+// IRQC (One-hot encoding)
+//
+`define NCPU_MSR_IRQC_IMR 0
+`define NCPU_MSR_IRQC_IRR 1
+
+//
+// TSC
+//
+`define NCPU_MSR_TSC_TSR 0
+`define NCPU_MSR_TSC_TCR 1
+
+`define NCPU_TSC_CNT_DW 28
+`define NCPU_MSR_TSC_TCR_EN 28
+`define NCPU_MSR_TSC_TCR_I 29
+`define NCPU_MSR_TSC_TCR_P 30
 
 /////////////////////////////////////////////////////////////////////////////
 // Exception Vector Table
@@ -216,5 +238,7 @@
 // 0 = Disabled : This will insert a register between the long ready-valid chain,
 //                which is helpful for timing optimization.
 `define NCPU_PIPEBUF_BYPASS 1
+
+`define NCPU_NIRQ 32
 
 `endif // _NCPU32K_CONFIG_H

@@ -41,9 +41,11 @@ module ncpu32k_core(
    input                   ibus_flush_ack,
    input                   exp_imm_tlb_miss,
    input                   exp_imm_page_fault,
+   input                   irqc_intr_sync,
    output                  msr_psr_imme,
    output                  msr_psr_dmme,
    output                  msr_psr_rm,
+   output                  msr_psr_ire,
    input [`NCPU_DW-1:0]    msr_immid,
    input [`NCPU_DW-1:0]    msr_imm_tlbl,
    output [`NCPU_TLB_AW-1:0]  msr_imm_tlbl_idx,
@@ -61,7 +63,17 @@ module ncpu32k_core(
    input [`NCPU_DW-1:0]    msr_dmm_tlbh,
    output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbh_idx,
    output [`NCPU_DW-1:0]   msr_dmm_tlbh_nxt,
-   output                  msr_dmm_tlbh_we
+   output                  msr_dmm_tlbh_we,
+   input [`NCPU_DW-1:0]    msr_irqc_imr,
+   output [`NCPU_DW-1:0]   msr_irqc_imr_nxt,
+   output                  msr_irqc_imr_we,
+   input [`NCPU_DW-1:0]    msr_irqc_irr,
+   input [`NCPU_DW-1:0]    msr_tsc_tsr,
+   output [`NCPU_DW-1:0]   msr_tsc_tsr_nxt,
+   output                  msr_tsc_tsr_we,
+   input [`NCPU_DW-1:0]    msr_tsc_tcr,
+   output [`NCPU_DW-1:0]   msr_tsc_tcr_nxt,
+   output                  msr_tsc_tcr_we
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -142,7 +154,6 @@ module ncpu32k_core(
    wire                 msr_psr_dmme_we;        // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_imme_nxt;       // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_imme_we;        // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_ire;            // From psr of ncpu32k_psr.v
    wire                 msr_psr_ire_nxt;        // From ieu of ncpu32k_ieu.v
    wire                 msr_psr_ire_we;         // From ieu of ncpu32k_ieu.v
    wire [`NCPU_PSR_DW-1:0] msr_psr_nold;        // From psr of ncpu32k_psr.v
@@ -265,6 +276,7 @@ module ncpu32k_core(
        .ibus_flush_ack                  (ibus_flush_ack),
        .exp_imm_tlb_miss                (exp_imm_tlb_miss),
        .exp_imm_page_fault              (exp_imm_page_fault),
+       .irqc_intr_sync                  (irqc_intr_sync),
        .bpu_msr_epc                     (bpu_msr_epc[`NCPU_DW-1:0]),
        .ifu_flush_jmp_tgt               (ifu_flush_jmp_tgt[`NCPU_AW-3:0]),
        .specul_flush                    (specul_flush),
@@ -400,6 +412,12 @@ module ncpu32k_core(
        .msr_dmm_tlbh_idx                (msr_dmm_tlbh_idx[`NCPU_TLB_AW-1:0]),
        .msr_dmm_tlbh_nxt                (msr_dmm_tlbh_nxt[`NCPU_DW-1:0]),
        .msr_dmm_tlbh_we                 (msr_dmm_tlbh_we),
+       .msr_irqc_imr_nxt                (msr_irqc_imr_nxt[`NCPU_DW-1:0]),
+       .msr_irqc_imr_we                 (msr_irqc_imr_we),
+       .msr_tsc_tsr_nxt                 (msr_tsc_tsr_nxt[`NCPU_DW-1:0]),
+       .msr_tsc_tsr_we                  (msr_tsc_tsr_we),
+       .msr_tsc_tcr_nxt                 (msr_tsc_tcr_nxt[`NCPU_DW-1:0]),
+       .msr_tsc_tcr_we                  (msr_tsc_tcr_we),
        .specul_flush                    (specul_flush),
        .ifu_flush_jmp_tgt               (ifu_flush_jmp_tgt[`NCPU_AW-3:0]),
        .bpu_wb                          (bpu_wb),
@@ -457,6 +475,10 @@ module ncpu32k_core(
        .msr_dmmid                       (msr_dmmid[`NCPU_DW-1:0]),
        .msr_dmm_tlbl                    (msr_dmm_tlbl[`NCPU_DW-1:0]),
        .msr_dmm_tlbh                    (msr_dmm_tlbh[`NCPU_DW-1:0]),
+       .msr_irqc_imr                    (msr_irqc_imr[`NCPU_DW-1:0]),
+       .msr_irqc_irr                    (msr_irqc_irr[`NCPU_DW-1:0]),
+       .msr_tsc_tsr                     (msr_tsc_tsr[`NCPU_DW-1:0]),
+       .msr_tsc_tcr                     (msr_tsc_tcr[`NCPU_DW-1:0]),
        .specul_flush_ack                (specul_flush_ack));
    
    

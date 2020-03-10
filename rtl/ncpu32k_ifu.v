@@ -30,6 +30,7 @@ module ncpu32k_ifu(
    input                   ibus_flush_ack,
    input                   exp_imm_tlb_miss,
    input                   exp_imm_page_fault,
+   input                   irqc_intr_sync,
    input [`NCPU_DW-1:0]    bpu_msr_epc,
    input [`NCPU_AW-3:0]    ifu_flush_jmp_tgt,
    input                   specul_flush,
@@ -113,7 +114,7 @@ module ncpu32k_ifu(
    wire [`NCPU_AW-3:0] flush_jmprel_tgt;
    
    // Extrnal Exceptions
-   assign extexp_taken = (exp_imm_tlb_miss | exp_imm_page_fault) & hds_ibus_dout;
+   assign extexp_taken = (exp_imm_tlb_miss | exp_imm_page_fault | irqc_intr_sync) & hds_ibus_dout;
    // Internal and Extrnal Exceptions. Assert (03071429)
    wire exp_taken = op_syscall | extexp_taken;
    // Let ELSA = PC(Virtual Address)
@@ -122,8 +123,14 @@ module ncpu32k_ifu(
    wire [`NCPU_VECT_DW-1:0] exp_vector =
       (
          ({`NCPU_VECT_DW{op_syscall}} & `NCPU_ESYSCALL_VECTOR) |
-         ({`NCPU_VECT_DW{exp_imm_tlb_miss}} & `NCPU_EITM_VECTOR) |
-         ({`NCPU_VECT_DW{exp_imm_page_fault}} & `NCPU_EIPF_VECTOR)
+         (
+            // IRQ takes precedence over TLB
+            irqc_intr_sync ? `NCPU_EIRQ_VECTOR :
+            (
+               ({`NCPU_VECT_DW{exp_imm_tlb_miss}} & `NCPU_EITM_VECTOR) |
+               ({`NCPU_VECT_DW{exp_imm_page_fault}} & `NCPU_EIPF_VECTOR)
+            )
+         )
       );
    wire [`NCPU_AW-3:0] flush_exp_vect_tgt = {{`NCPU_AW-2-`NCPU_VECT_DW{1'b0}}, exp_vector[`NCPU_VECT_DW-1:2]};
    

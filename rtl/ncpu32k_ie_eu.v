@@ -90,7 +90,21 @@ module ncpu32k_ie_eu
    input [`NCPU_DW-1:0]       msr_dmm_tlbh,
    output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbh_idx,
    output [`NCPU_DW-1:0]      msr_dmm_tlbh_nxt,
-   output                     msr_dmm_tlbh_we
+   output                     msr_dmm_tlbh_we,
+   // IMR
+   input [`NCPU_DW-1:0]       msr_irqc_imr,
+   output [`NCPU_DW-1:0]      msr_irqc_imr_nxt,
+   output                     msr_irqc_imr_we,
+   // IRR
+   input [`NCPU_DW-1:0]       msr_irqc_irr,
+   // TSR
+   input [`NCPU_DW-1:0]       msr_tsc_tsr,
+   output [`NCPU_DW-1:0]      msr_tsc_tsr_nxt,
+   output                     msr_tsc_tsr_we,
+   // TCR
+   input [`NCPU_DW-1:0]       msr_tsc_tcr,
+   output [`NCPU_DW-1:0]      msr_tsc_tcr_nxt,
+   output                     msr_tsc_tcr_we
 );
 
    wire [`NCPU_DW-1:0] msr_addr = ieu_operand_1 + ieu_operand_2;
@@ -144,12 +158,32 @@ module ncpu32k_ie_eu
    assign msr_dmm_tlbl_idx = bank_off[`NCPU_TLB_AW-1:0];
    assign msr_dmm_tlbh_idx = bank_off[`NCPU_TLB_AW-1:0];
    
+   // Readout IRQC
+   wire msr_irqc_imr_sel = bank_off[`NCPU_MSR_IRQC_IMR];
+   wire msr_irqc_irr_sel = bank_off[`NCPU_MSR_IRQC_IRR];
+   wire [`NCPU_DW-1:0] dout_irqc =
+      (
+         ({`NCPU_DW{msr_irqc_imr_sel}} & msr_irqc_imr) |
+         ({`NCPU_DW{msr_irqc_irr_sel}} & msr_irqc_irr)
+      );
+   
+   // Readout TSC
+   wire msr_tsc_tsr_sel = bank_off[`NCPU_MSR_TSC_TSR];
+   wire msr_tsc_tcr_sel = bank_off[`NCPU_MSR_TSC_TCR];
+   wire [`NCPU_DW-1:0] dout_tsc =
+      (
+         ({`NCPU_DW{msr_tsc_tsr_sel}} & msr_tsc_tsr) |
+         ({`NCPU_DW{msr_tsc_tcr_sel}} & msr_tsc_tcr)
+      );
+   
    // Result MUX
    assign ieu_eu_dout =
       (
          ({`NCPU_DW{bank_ps}} & dout_ps) |
          ({`NCPU_DW{bank_imm}} & dout_imm) |
-         ({`NCPU_DW{bank_dmm}} & dout_dmm)
+         ({`NCPU_DW{bank_dmm}} & dout_dmm) |
+         ({`NCPU_DW{bank_irqc}} & dout_irqc) |
+         ({`NCPU_DW{bank_tsc}} & dout_tsc)
       );
    
    ////////////////////////////////////////////////////////////////////////////////
@@ -211,18 +245,29 @@ module ncpu32k_ie_eu
    assign msr_elsa_nxt = set_elsa ? lsa_nxt : wmsr_operand;
    assign msr_elsa_we = commit & (set_elsa | wmsr_elsa_we);
    
+   wire wmsr_commit_we = commit & ieu_eu_opc_bus[`NCPU_EU_WMSR];
+   
    // Writeback IMM
    assign msr_imm_tlbl_nxt = wmsr_operand;
-   assign msr_imm_tlbl_we = commit & (ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_imm & msr_imm_tlbl_sel);
+   assign msr_imm_tlbl_we = wmsr_commit_we & bank_imm & msr_imm_tlbl_sel;
    assign msr_imm_tlbh_nxt = wmsr_operand;
-   assign msr_imm_tlbh_we = commit & (ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_imm & msr_imm_tlbh_sel);
+   assign msr_imm_tlbh_we = wmsr_commit_we & bank_imm & msr_imm_tlbh_sel;
 
    // Writeback DMM
    assign msr_dmm_tlbl_nxt = wmsr_operand;
-   assign msr_dmm_tlbl_we = commit & (ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_dmm & msr_dmm_tlbl_sel);
+   assign msr_dmm_tlbl_we = wmsr_commit_we & bank_dmm & msr_dmm_tlbl_sel;
    assign msr_dmm_tlbh_nxt = wmsr_operand;
-   assign msr_dmm_tlbh_we = commit & (ieu_eu_opc_bus[`NCPU_EU_WMSR] & bank_dmm & msr_dmm_tlbh_sel);
+   assign msr_dmm_tlbh_we = wmsr_commit_we & bank_dmm & msr_dmm_tlbh_sel;
 
+   // Writeback IRQC
+   assign msr_irqc_imr_we = wmsr_commit_we & bank_irqc & msr_irqc_imr_sel;
+   assign msr_irqc_imr_nxt = wmsr_operand;
+   
+   // Writeback TSC
+   assign msr_tsc_tsr_we = wmsr_commit_we & bank_tsc & msr_tsc_tsr_sel;
+   assign msr_tsc_tsr_nxt = wmsr_operand;
+   assign msr_tsc_tcr_we = wmsr_commit_we & bank_tsc & msr_tsc_tcr_sel;
+   assign msr_tsc_tcr_nxt = wmsr_operand;
    
    // Assertions 03060934
 `ifdef NCPU_ENABLE_ASSERT
