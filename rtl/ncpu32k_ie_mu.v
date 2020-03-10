@@ -86,14 +86,17 @@ module ncpu32k_ie_mu
    ncpu32k_cell_dff_r #(1) dff_pending_r
                    (clk,rst_n, pending_nxt, pending_r);
    
-   // Can accept cmd
-   wire accept_cmd = ~pending_r | mu_exp_flush_ack; // bypass flush_ack
+   wire pending = pending_r & ~mu_exp_flush_ack; // bypass flush_ack
    
+   // Can send cmd
+   wire send_cmd = ~pending;
+
    // Send cmd to dbus if it's a valid MU operation
-   assign dbus_cmd_valid = mu_op_nxt & ieu_mu_in_valid & accept_cmd;
+   assign dbus_cmd_valid = mu_op_nxt & ieu_mu_in_valid & send_cmd;
 
    // MMU Exceptions
-   assign mu_exp_taken = exp_dmm_tlb_miss | exp_dmm_page_fault;
+   // When pending exception can be delivered
+   assign mu_exp_taken = pending & (exp_dmm_tlb_miss | exp_dmm_page_fault);
 
    // Assert (03092009)
    wire [`NCPU_VECT_DW-1:0] exp_vector =

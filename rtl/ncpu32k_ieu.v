@@ -318,6 +318,7 @@ module ncpu32k_ieu(
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_flush_jmp_tgt_r
                    (clk,rst_n, ld_fls, flush_jmp_tgt_nxt[`NCPU_AW-3:0], flush_jmp_tgt_r[`NCPU_AW-3:0]);
    
+   // Flush is pending
    wire hld_fls = fls_status_r & ~specul_flush_ack; // bypass flush_ack
    
    assign specul_flush = hld_fls ? specul_flush_r : specul_flush_nxt;
@@ -341,7 +342,7 @@ module ncpu32k_ieu(
          | ieu_syscall
          | ieu_ret
          | ieu_specul_extexp
-         | (ieu_mu_load|ieu_mu_store) & mu_exp_taken
+         | mu_exp_taken
       );
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target
