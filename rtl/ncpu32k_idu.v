@@ -246,10 +246,17 @@ module ncpu32k_idu(
    assign eu_opc_bus[`NCPU_EU_WMSR] = (op_wmsr);
    assign eu_opc_bus[`NCPU_EU_RMSR] = (op_rmsr);
 
-   wire bu_sel = (idu_op_jmpfar|idu_op_jmprel);
-   
    // Insn is to be emulated
-   wire emu_insn = ~((|lu_opc_bus) | (|au_opc_bus) | bu_sel | (|eu_opc_bus) | op_mu_load | op_mu_store | op_mu_barr);
+   // This must covers all known insns
+   wire emu_insn = ~(
+                     // OPC Bus opcodes
+                     (|lu_opc_bus) | (|au_opc_bus) | (|eu_opc_bus) |
+                     // Branch insns
+                     idu_op_jmpfar|idu_op_jmprel |
+                     // MU insns
+                     op_mu_load | op_mu_store | op_mu_barr |
+                     // Exception insns
+                     idu_op_syscall | idu_op_ret);
    
    // Insn presents rs1 and imm as operand.
    wire insn_imm14 = (op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |

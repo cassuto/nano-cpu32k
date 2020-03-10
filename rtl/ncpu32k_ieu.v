@@ -258,6 +258,7 @@ module ncpu32k_ieu(
        .ieu_ret                         (ieu_ret),
        .ieu_syscall                     (ieu_syscall),
        .ieu_insn_pc                     (ieu_insn_pc[`NCPU_AW-3:0]),
+       .ieu_emu_insn                    (ieu_emu_insn),
        .ieu_specul_extexp               (ieu_specul_extexp),
        .ieu_let_lsa_pc                  (ieu_let_lsa_pc),
        .mu_exp_taken                    (mu_exp_taken),
@@ -289,7 +290,12 @@ module ncpu32k_ieu(
    // should be never committed.
    assign commit = hds_ieu_in;
 
+   // jmp target address
    wire [`NCPU_AW-3:0] jmpfar_tgt = ieu_operand_1[`NCPU_AW-1:2]; // No algin check
+   
+   // EINSN vector target
+   wire [`NCPU_VECT_DW-1:0] emu_exp_vect = `NCPU_EINSN_VECTOR;
+   wire [`NCPU_AW-3:0] emu_exp_tgt = {{`NCPU_AW-2-`NCPU_VECT_DW{1'b0}}, emu_exp_vect[`NCPU_VECT_DW-1:2]};
    
    // Flush FSM
    wire fls_status_r;
@@ -314,7 +320,7 @@ module ncpu32k_ieu(
                    
    ncpu32k_cell_dff_lr #(1) dff_specul_flush_r
                    (clk,rst_n, ld_fls, specul_flush_nxt, specul_flush_r);
-   
+
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_flush_jmp_tgt_r
                    (clk,rst_n, ld_fls, flush_jmp_tgt_nxt[`NCPU_AW-3:0], flush_jmp_tgt_r[`NCPU_AW-3:0]);
    
@@ -334,6 +340,7 @@ module ncpu32k_ieu(
    //    case 4: ret: unconditional flush. (Mainly for pipeline refreshing of IMMU)
    //    case 5: exception: unconditional flush.
    //    case 6: load/store: flush when exception raised.
+   //    case 7: Insn is to be emulated
    // This should not be controlled by commit, instead flush_ack
    assign specul_flush_nxt = commit &
       (
@@ -343,6 +350,7 @@ module ncpu32k_ieu(
          | ieu_ret
          | ieu_specul_extexp
          | mu_exp_taken
+         | ieu_emu_insn
       );
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target
@@ -353,7 +361,8 @@ module ncpu32k_ieu(
          ({`NCPU_AW-2{ieu_syscall}} & ieu_specul_tgt) |
          ({`NCPU_AW-2{ieu_ret}} & msr_epc[`NCPU_AW-1:2]) | // No algin check
          ({`NCPU_AW-2{ieu_specul_extexp}} & ieu_specul_tgt) |
-         ({`NCPU_AW-2{mu_exp_taken}} & mu_exp_tgt);
+         ({`NCPU_AW-2{mu_exp_taken}} & mu_exp_tgt) |
+         ({`NCPU_AW-2{ieu_emu_insn}} & emu_exp_tgt);
    
    assign bpu_wb = commit & (ieu_specul_jmprel | ieu_specul_jmpfar);
    assign bpu_wb_jmprel = ieu_specul_jmprel;
@@ -377,9 +386,13 @@ module ncpu32k_ieu(
    
    assign regf_din_addr = ieu_wb_reg_addr;
 
-   assign regf_we = commit & ieu_wb_regf &
-                     // MU store: check if exception raised
-                     (~ieu_mu_load|~mu_exp_taken);
+   assign regf_we = commit &
+      (
+         // Writeback-enable signal from IDU
+         ieu_wb_regf &
+         // MU load: not writeback if exception raised
+         (~ieu_mu_load|~mu_exp_taken)
+      );
 
    assign wb_mu_in_ready = /* data is accepted by regfile */ 1'b1;
    
@@ -417,8 +430,8 @@ module ncpu32k_ieu(
    // Assertions 03060725
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if((ieu_specul_jmprel|ieu_specul_jmpfar|ieu_syscall|ieu_ret|ieu_specul_extexp|mu_exp_taken) &
-            ~(ieu_specul_jmprel^ieu_specul_jmpfar^ieu_syscall^ieu_ret^ieu_specul_extexp^mu_exp_taken)) begin
+      if((ieu_specul_jmprel|ieu_specul_jmpfar|ieu_syscall|ieu_ret|ieu_specul_extexp|mu_exp_taken|ieu_emu_insn) &
+            ~(ieu_specul_jmprel^ieu_specul_jmpfar^ieu_syscall^ieu_ret^ieu_specul_extexp^mu_exp_taken^ieu_emu_insn)) begin
          $fatal ("\n ctrls of 'ifu_flush_jmp_tgt' MUX should be mutex\n");
       end
    end
