@@ -77,9 +77,9 @@ module ncpu32k_d_mmu
    wire hds_dcache_cmd;
    wire hds_dcache_dout;
    wire dcache_cmd_valid_w;
-   
+
    wire flush_strobe;
-   
+
    ncpu32k_cell_pipebuf
       #(
          .DW (`NCPU_IW),

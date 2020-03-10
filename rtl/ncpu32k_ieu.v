@@ -208,6 +208,7 @@ module ncpu32k_ieu(
        .ieu_mu_sign_ext                 (ieu_mu_sign_ext),
        .ieu_mu_store_size               (ieu_mu_store_size[2:0]),
        .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
+       .mu_exp_flush_ack                (mu_exp_flush_ack),
        .wb_mu_in_ready                  (wb_mu_in_ready));
         
    ncpu32k_ie_eu eu
@@ -322,6 +323,8 @@ module ncpu32k_ieu(
    assign specul_flush = hld_fls ? specul_flush_r : specul_flush_nxt;
    assign ifu_flush_jmp_tgt = hld_fls ? flush_jmp_tgt_r : flush_jmp_tgt_nxt;
    
+   assign mu_exp_flush_ack = specul_flush_ack;
+   
    //
    // Speculative execution checking point. Flush:
    //    case 1: jmprel: specul_bcc mismatched
@@ -329,6 +332,7 @@ module ncpu32k_ieu(
    //    case 3: syscall : unconditional flush. (For pipeline refreshing of IMMU)
    //    case 4: ret: unconditional flush. (Mainly for pipeline refreshing of IMMU)
    //    case 5: exception: unconditional flush.
+   //    case 6: load/store: flush when exception raised.
    // This should not be controlled by commit, instead flush_ack
    assign specul_flush_nxt = commit &
       (
@@ -337,7 +341,7 @@ module ncpu32k_ieu(
          | ieu_syscall
          | ieu_ret
          | ieu_specul_extexp
-         | mu_exp_taken
+         | (ieu_mu_load|ieu_mu_store) & mu_exp_taken
       );
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target

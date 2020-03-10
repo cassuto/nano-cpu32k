@@ -43,6 +43,7 @@ module ncpu32k_ie_mu
    input                      ieu_mu_sign_ext,
    input [2:0]                ieu_mu_store_size,
    input [2:0]                ieu_mu_load_size,
+   input                      mu_exp_flush_ack,
    output [`NCPU_DW-1:0]      mu_load,
    output                     mu_exp_taken,
    output [`NCPU_AW-3:0]      mu_exp_tgt,
@@ -72,8 +73,24 @@ module ncpu32k_ie_mu
    
    wire mu_op_nxt = ieu_mu_load | ieu_mu_store;
    
+   // MU FSM
+   wire pending_r;
+   wire pending_nxt =
+    (
+       // If handshaked with dbus_cmd, then MU is pending
+       (~pending_r & hds_dbus_cmd) ? 1'b1 :
+       // If handshaked with downstream module (or exception), then MU is idle
+       (pending_r & (hds_wb_in |mu_exp_flush_ack)) ? 1'b0 : pending_r
+    );
+
+   ncpu32k_cell_dff_r #(1) dff_pending_r
+                   (clk,rst_n, pending_nxt, pending_r);
+   
+   // Can accept cmd
+   wire accept_cmd = ~pending_r | mu_exp_flush_ack; // bypass flush_ack
+   
    // Send cmd to dbus if it's a valid MU operation
-   assign dbus_cmd_valid = mu_op_nxt & ieu_mu_in_valid;
+   assign dbus_cmd_valid = mu_op_nxt & ieu_mu_in_valid & accept_cmd;
 
    // MMU Exceptions
    assign mu_exp_taken = exp_dmm_tlb_miss | exp_dmm_page_fault;
@@ -99,7 +116,7 @@ module ncpu32k_ie_mu
 
    assign dbus_ready = wb_mu_in_ready;
    assign wb_mu_in_valid = dbus_valid;
-   
+
 
    // Assertions 03092009
 `ifdef NCPU_ENABLE_ASSERT
