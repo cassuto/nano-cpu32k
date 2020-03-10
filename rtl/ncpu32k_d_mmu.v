@@ -143,6 +143,8 @@ module ncpu32k_d_mmu
                 (clk,rst_n, tlb_read, msr_psr_rm, msr_psr_rm_r);
    ncpu32k_cell_dff_lr #(3) dff_dbus_cmd_size_r
                 (clk,rst_n, tlb_read, dbus_cmd_size[2:0], dbus_cmd_size_r[2:0]);
+   ncpu32k_cell_dff_lr #(1) dff_dbus_cmd_we_r
+                (clk,rst_n, tlb_read, dbus_cmd_we, dbus_cmd_we_r);
    ncpu32k_cell_dff_lr #(`NCPU_DW) dff_dbus_din_r
                 (clk,rst_n, tlb_read, dbus_din[`NCPU_DW-1:0], dbus_din_r[`NCPU_DW-1:0]);
    ncpu32k_cell_dff_lr #(PPN_SHIFT) dff_tgt_page_offset_r
