@@ -73,6 +73,11 @@ module ncpu32k_ie_mu
    
    wire mu_op_nxt = ieu_mu_load | ieu_mu_store;
    
+   // Internal, Don't deliver it out
+   wire exp_raised_w = (exp_dmm_tlb_miss | exp_dmm_page_fault);
+   // Handshaked with flush when exception raised
+   wire hds_exp = (exp_raised_w & mu_exp_flush_ack);
+   
    // MU FSM
    wire pending_r;
    wire pending_nxt =
@@ -80,23 +85,23 @@ module ncpu32k_ie_mu
        // If handshaked with dbus_cmd, then MU is pending
        (~pending_r & hds_dbus_cmd) ? 1'b1 :
        // If handshaked with downstream module (or exception), then MU is idle
-       (pending_r & (hds_wb_in |mu_exp_flush_ack)) ? 1'b0 : pending_r
+       (pending_r & (hds_wb_in | hds_exp)) ? 1'b0 : pending_r
     );
 
    ncpu32k_cell_dff_r #(1) dff_pending_r
                    (clk,rst_n, pending_nxt, pending_r);
    
-   wire pending = pending_r & ~mu_exp_flush_ack; // bypass flush_ack
+   wire pending = pending_r & ~hds_exp; // bypass flush_ack
    
-   // Can send cmd
+   // MMU Exceptions
+   // Just when pending exception can be delivered
+   assign mu_exp_taken = pending & exp_raised_w;
+   
+   // Just when pending we can send cmd
    wire send_cmd = ~pending;
 
    // Send cmd to dbus if it's a valid MU operation
    assign dbus_cmd_valid = mu_op_nxt & ieu_mu_in_valid & send_cmd;
-
-   // MMU Exceptions
-   // When pending exception can be delivered
-   assign mu_exp_taken = pending & (exp_dmm_tlb_miss | exp_dmm_page_fault);
 
    // Assert (03092009)
    wire [`NCPU_VECT_DW-1:0] exp_vector =
