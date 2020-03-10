@@ -376,7 +376,9 @@ module ncpu32k_ieu(
    
    assign regf_din_addr = ieu_wb_reg_addr;
 
-   assign regf_we = commit & ieu_wb_regf;
+   assign regf_we = commit & ieu_wb_regf &
+                     // MU store: check if exception raised
+                     (~ieu_mu_load|~mu_exp_taken);
 
    assign wb_mu_in_ready = /* data is accepted by regfile */ 1'b1;
    
