@@ -6,7 +6,11 @@
 # EITM
 .org 0x0000001c
 	jmp r0, boot_itlb_miss_handler
-
+	
+# EDTM
+.org 0x20
+	jmp r0, d_tlb_miss
+	
 .org 0x100
 boot_itlb_miss_handler:
 	stw	   0x1000(r0),r3
@@ -66,6 +70,14 @@ i_page_fault:
 	add r2,r2,2
 	jmp lnk, i_page_fault
 	
+d_tlb_miss:
+	stw	   0x1000(r0),r1
+	rmsr r1, (1<<2)(r0)
+	xor r1, r1, (1<<7) #DMM
+	wmsr (1<<2)(r0), r1
+	ldw	   r1, 0x1000(r0)
+	ret
+
 .org 0x1000
 	.space 128
 	
@@ -78,13 +90,22 @@ i_page_fault:
 	jmp lnk,_1
 
 _reset:
+	add r2,r2,123
+	stw 0xc(r0), r2
+	xor r2,r2,r2
+	
 	rmsr r1,1(r0)
 	or r1,r1,(1<<6)
-	# xor r1,r1,(1<<4)
+	# xor r1,r1,(1<<4) # test checks in user mode
+	or r1,r1,(1<<7) # DMM
 	wmsr 1(r0), r1
 	
 	mhi r1, hi(0x00c02000)
 	or r1,r1,lo(0x00c02000)
+	
+	# IRAM delay = 3
+	ldwu r2,0xc(r0) # test DTM in ITM
+	
 	jmp lnk, r1
 	add r7,r7,1
 	add r8,r8,2
