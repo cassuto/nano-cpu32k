@@ -79,6 +79,7 @@ module ncpu32k_ie_mu
    wire hds_exp = (exp_raised_w & mu_exp_flush_ack);
    
    // MU FSM
+   // Assert 03112133
    wire pending_r;
    wire pending_nxt =
     (
@@ -135,6 +136,15 @@ module ncpu32k_ie_mu
       if((exp_dmm_tlb_miss|exp_dmm_page_fault) &
             ~(exp_dmm_tlb_miss^exp_dmm_page_fault)) begin
          $fatal ("\n ctrls of 'exp_vector' MUX should be mutex\n");
+      end
+   end
+`endif
+
+   // Assertions 03112133
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if(hds_dbus_cmd & (hds_wb_in | hds_exp)) begin
+         $fatal ("\n MU FMS can't accept cmd while handshaking with wb_in\n");
       end
    end
 `endif
