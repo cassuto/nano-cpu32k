@@ -1,7 +1,7 @@
 
 `include "ncpu32k_config.h"
 
-module tb_ncpu32k_sram();
+module tb_ncpu32k_sep_sram();
 
    //
    // Driving source
@@ -40,63 +40,41 @@ module tb_ncpu32k_sram();
    wire                    fb_dbus_cmd_we;
    wire [`NCPU_NIRQ-1:0]   fb_irqs;
    
-   wire                    fb_mbus_valid;
-   wire                    fb_mbus_ready;
-   wire [`NCPU_IW-1:0]     fb_mbus_dout;
-   wire [`NCPU_DW-1:0]     fb_mbus_din;
-   wire                    fb_mbus_cmd_ready;
-   wire                    fb_mbus_cmd_valid;
-   wire [`NCPU_AW-1:0]     fb_mbus_cmd_addr;
-   wire [2:0]              fb_mbus_cmd_size;
-   wire                    fb_mbus_cmd_we;
-   
    handshake_cmd_sram #(
       .MEMH_FILE("insn.mem"),
       .DELAY   (128)
-   ) ram
+   ) d_ram
    (
       .clk     (clk),
       .rst_n   (rst_n),
-      .din        (fb_mbus_din),
-      .valid      (fb_mbus_valid),
-      .ready      (fb_mbus_ready),
-      .dout       (fb_mbus_dout),
-      .cmd_ready  (fb_mbus_cmd_ready),
-      .cmd_valid  (fb_mbus_cmd_valid),
-      .cmd_addr   (fb_mbus_cmd_addr),
-      .cmd_we     (fb_mbus_cmd_we),
-      .cmd_size   (fb_mbus_cmd_size)
+      .din        (fb_dbus_din),
+      .valid      (fb_dbus_valid),
+      .ready      (fb_dbus_ready),
+      .dout       (fb_dbus_dout),
+      .cmd_ready  (fb_dbus_cmd_ready),
+      .cmd_valid  (fb_dbus_cmd_valid),
+      .cmd_addr   (fb_dbus_cmd_addr),
+      .cmd_we     (fb_dbus_cmd_we),
+      .cmd_size   (fb_dbus_cmd_size)
    );
    
-   pb_fb_arbiter fb_arbi
+   
+   handshake_cmd_sram #(
+      .MEMH_FILE("insn.mem"),
+      .DELAY (3)
+   ) i_ram
    (
-      .clk        (clk),
-      .rst_n      (rst_n),
-      .fb_ibus_valid       (fb_ibus_valid),
-      .fb_ibus_ready       (fb_ibus_ready),
-      .fb_ibus_dout        (fb_ibus_dout),
-      .fb_ibus_cmd_ready   (fb_ibus_cmd_ready),
-      .fb_ibus_cmd_valid   (fb_ibus_cmd_valid),
-      .fb_ibus_cmd_addr    (fb_ibus_cmd_addr),
-      .fb_dbus_valid       (fb_dbus_valid),
-      .fb_dbus_ready       (fb_dbus_ready),
-      .fb_dbus_dout        (fb_dbus_dout),
-      .fb_dbus_din         (fb_dbus_din),
-      .fb_dbus_cmd_ready   (fb_dbus_cmd_ready),
-      .fb_dbus_cmd_valid   (fb_dbus_cmd_valid),
-      .fb_dbus_cmd_addr    (fb_dbus_cmd_addr),
-      .fb_dbus_cmd_size    (fb_dbus_cmd_size),
-      .fb_dbus_cmd_we      (fb_dbus_cmd_we),
-      
-      .fb_mbus_valid       (fb_mbus_valid),
-      .fb_mbus_ready       (fb_mbus_ready),
-      .fb_mbus_dout        (fb_mbus_dout),
-      .fb_mbus_din         (fb_mbus_din),
-      .fb_mbus_cmd_ready   (fb_mbus_cmd_ready),
-      .fb_mbus_cmd_valid   (fb_mbus_cmd_valid),
-      .fb_mbus_cmd_addr    (fb_mbus_cmd_addr),
-      .fb_mbus_cmd_size    (fb_mbus_cmd_size),
-      .fb_mbus_cmd_we      (fb_mbus_cmd_we)
+      .clk     (clk),
+      .rst_n   (rst_n),
+      .din        (),
+      .valid   (fb_ibus_valid),
+      .ready   (fb_ibus_ready),
+      .dout    (fb_ibus_dout),
+      .cmd_ready  (fb_ibus_cmd_ready),
+      .cmd_valid  (fb_ibus_cmd_valid),
+      .cmd_addr   (fb_ibus_cmd_addr),
+      .cmd_we     (1'b0),
+      .cmd_size   (3'd3)
    );
    
    assign fb_irqs = {`NCPU_NIRQ{1'b0}};
