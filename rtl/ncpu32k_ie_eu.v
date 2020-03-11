@@ -269,6 +269,19 @@ module ncpu32k_ie_eu
    assign msr_tsc_tcr_we = wmsr_commit_we & bank_tsc & msr_tsc_tcr_sel;
    assign msr_tsc_tcr_nxt = wmsr_operand;
    
+	 // synthesis translate_off
+`ifndef SYNTHESIS
+   wire dbg_numport_sel = bank_off[0];
+   wire dbg_msgport_sel = bank_off[1];
+   always @(posedge clk) begin
+      if (wmsr_commit_we & bank_dbg & dbg_numport_sel)
+         $display("Num port = %d", wmsr_operand);
+      if (wmsr_commit_we & bank_dbg & dbg_msgport_sel)
+         $write("%c", wmsr_operand);
+   end
+`endif
+   // synthesis translate_on
+   
    // Assertions 03060934
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
