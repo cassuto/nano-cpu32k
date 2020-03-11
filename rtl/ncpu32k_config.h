@@ -16,6 +16,56 @@
 `ifndef _NCPU32K_CONFIG_H
 `define _NCPU32K_CONFIG_H
 
+/////////////////////////////////////////////////////////////////////////////
+// Configure VIRT Instructions
+/////////////////////////////////////////////////////////////////////////////
+
+//`define ENABLE_ASR
+`define ENABLE_ADD
+`define ENABLE_SUB
+//`define ENABLE_MUL
+//`define ENABLE_DIV
+//`define ENABLE_DIVU
+//`define ENABLE_MOD
+//`define ENABLE_MODU
+`define ENABLE_LDB
+`define ENABLE_LDBU
+`define ENABLE_LDH
+`define ENABLE_LDHU
+`define ENABLE_STB
+`define ENABLE_STH
+`define ENABLE_MHI
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Configure I/D Cache
+/////////////////////////////////////////////////////////////////////////////
+
+//`define NCPU_ENABLE_ICACHE
+//`define NCPU_ENABLE_DCACHE
+
+/////////////////////////////////////////////////////////////////////////////
+// Configure Asertions
+/////////////////////////////////////////////////////////////////////////////
+
+`define NCPU_ENABLE_ASSERT
+
+/////////////////////////////////////////////////////////////////////////////
+// Configure Pipeline
+/////////////////////////////////////////////////////////////////////////////
+
+// bypass handshake signal of Pipeline buffer
+// 1 = Enabled
+// 0 = Disabled : This will insert a register between the long ready-valid chain,
+//                which is helpful for timing optimization.
+`define NCPU_PIPEBUF_BYPASS 1
+
+
+/////////////////////////////////////////////////////////////////////////////
+// Design Constants
+/////////////////////////////////////////////////////////////////////////////
+
+
 // Data Operand Bitwidth
 `define NCPU_DW 32
 // Address Bus Bitwidth (<= DW)
@@ -26,6 +76,9 @@
 
 // Regfile address Bitwidth
 `define NCPU_REG_AW 5
+
+// Number of IRQ lines
+`define NCPU_NIRQ 32
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -210,36 +263,5 @@
 
 `define NCPU_REGNO_LNK 1 // the only one machine-dependent register
 
-
-/////////////////////////////////////////////////////////////////////////////
-// VIRT Instruction Config
-/////////////////////////////////////////////////////////////////////////////
-
-//`define ENABLE_ASR
-`define ENABLE_ADD
-`define ENABLE_SUB
-//`define ENABLE_MUL
-//`define ENABLE_DIV
-//`define ENABLE_DIVU
-//`define ENABLE_MOD
-//`define ENABLE_MODU
-`define ENABLE_LDB
-`define ENABLE_LDBU
-`define ENABLE_LDH
-`define ENABLE_LDHU
-`define ENABLE_STB
-`define ENABLE_STH
-`define ENABLE_MHI
-
-// Asserts
-`define NCPU_ENABLE_ASSERT
-
-// bypass handshake signal of Pipeline buffer
-// 1 = Enabled
-// 0 = Disabled : This will insert a register between the long ready-valid chain,
-//                which is helpful for timing optimization.
-`define NCPU_PIPEBUF_BYPASS 1
-
-`define NCPU_NIRQ 32
 
 `endif // _NCPU32K_CONFIG_H
