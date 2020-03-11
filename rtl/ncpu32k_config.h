@@ -101,6 +101,7 @@
 `define NCPU_MSR_TSC_TCR_EN 28
 `define NCPU_MSR_TSC_TCR_I 29
 `define NCPU_MSR_TSC_TCR_P 30
+`define NCPU_MSR_TSC_TCR_RB1 31
 
 /////////////////////////////////////////////////////////////////////////////
 // Exception Vector Table

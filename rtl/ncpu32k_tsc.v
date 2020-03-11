@@ -33,7 +33,7 @@ module ncpu32k_tsc(
    wire [`NCPU_DW-1:0] msr_tsc_tcr_r;
    
    // TCR
-   ncpu32k_cell_dff_lr #(`NCPU_NIRQ) dff_tcr_r
+   ncpu32k_cell_dff_lr #(`NCPU_DW) dff_tcr_r
                    (clk,rst_n, msr_tsc_tcr_we, msr_tsc_tcr_nxt[`NCPU_DW-1:0], tcr_r[`NCPU_DW-1:0]);
 
    // Pack TCR
@@ -41,6 +41,7 @@ module ncpu32k_tsc(
    assign msr_tsc_tcr_r[`NCPU_MSR_TSC_TCR_EN] = tcr_r[`NCPU_MSR_TSC_TCR_EN];
    assign msr_tsc_tcr_r[`NCPU_MSR_TSC_TCR_I] = tcr_r[`NCPU_MSR_TSC_TCR_I];
    assign msr_tsc_tcr_r[`NCPU_MSR_TSC_TCR_P] = tsc_irq;
+   assign msr_tsc_tcr_r[`NCPU_MSR_TSC_TCR_RB1] = tcr_r[`NCPU_MSR_TSC_TCR_RB1];
    
    // Bypass TCR wite
    assign msr_tsc_tcr = msr_tsc_tcr_we ? msr_tsc_tcr_nxt : msr_tsc_tcr_r;
