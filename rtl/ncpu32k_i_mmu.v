@@ -145,7 +145,7 @@ module ncpu32k_i_mmu
                    (clk,rst_n, tlb_read, ibus_cmd_addr[`NCPU_AW-1:0], ibus_out_id_nxt[`NCPU_AW-1:0]);
    // Transfer when handshaked with downstream module
    ncpu32k_cell_dff_lr #(`NCPU_AW, `NCPU_ERST_VECTOR) dff_id
-                   (clk,rst_n, hds_ibus_dout, ibus_out_id_nxt_bypass, ibus_out_id[`NCPU_AW-1:0]);
+                   (clk,rst_n, hds_ibus_dout|ibus_flush_req, ibus_out_id_nxt_bypass, ibus_out_id[`NCPU_AW-1:0]);
                    
    ////////////////////////////////////////////////////////////////////////////////
 
