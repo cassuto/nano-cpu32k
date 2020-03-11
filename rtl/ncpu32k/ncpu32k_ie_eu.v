@@ -282,6 +282,9 @@ module ncpu32k_ie_eu
 `endif
    // synthesis translate_on
    
+   // synthesis translate_off
+`ifndef SYNTHESIS
+
    // Assertions 03060934
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
@@ -311,5 +314,8 @@ module ncpu32k_ie_eu
          $fatal ("\n ctrls of 'set_elsa' should be mutex\n");
    end
 `endif
+
+`endif
+   // synthesis translate_on
 
 endmodule

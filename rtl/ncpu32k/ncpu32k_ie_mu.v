@@ -126,6 +126,9 @@ module ncpu32k_ie_mu
    assign wb_mu_in_valid = dbus_valid;
 
 
+   // synthesis translate_off
+`ifndef SYNTHESIS
+
    // Assertions 03092009
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
@@ -135,5 +138,8 @@ module ncpu32k_ie_mu
       end
    end
 `endif
+
+`endif
+   // synthesis translate_on
    
 endmodule

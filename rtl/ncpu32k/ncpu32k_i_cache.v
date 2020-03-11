@@ -37,7 +37,7 @@ module ncpu32k_i_cache
 
 `ifdef NCPU_ENABLE_ICACHE
    // TODO
-`elif
+`else
    assign icache_valid = fb_ibus_valid;
    assign fb_ibus_ready = icache_ready;
    assign icache_dout = fb_ibus_dout;

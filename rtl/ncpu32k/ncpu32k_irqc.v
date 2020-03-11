@@ -47,6 +47,9 @@ module ncpu32k_irqc(
    ncpu32k_cell_dff_r #(1) dff_irqc_intr_sync
                    (clk,rst_n, irq_raised, irqc_intr_sync);
 
+   // synthesis translate_off
+`ifndef SYNTHESIS
+   
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    initial begin
@@ -54,5 +57,8 @@ module ncpu32k_irqc(
          $fatal ("\n invalid value of `NCPU_NIRQ\n");
    end
 `endif
+
+`endif
+   // synthesis translate_on
 
 endmodule

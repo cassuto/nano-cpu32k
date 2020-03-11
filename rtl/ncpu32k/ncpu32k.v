@@ -44,14 +44,14 @@ module ncpu32k
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [`NCPU_AW-1:0]  dbus_cmd_addr;          // From ncpu32k_inst of ncpu32k_core.v
+   wire [`NCPU_AW-1:0]  dbus_cmd_addr;          // From core of ncpu32k_core.v
    wire                 dbus_cmd_ready;         // From d_mmu of ncpu32k_d_mmu.v
-   wire [2:0]           dbus_cmd_size;          // From ncpu32k_inst of ncpu32k_core.v
-   wire                 dbus_cmd_valid;         // From ncpu32k_inst of ncpu32k_core.v
-   wire                 dbus_cmd_we;            // From ncpu32k_inst of ncpu32k_core.v
-   wire [`NCPU_DW-1:0]  dbus_din;               // From ncpu32k_inst of ncpu32k_core.v
+   wire [2:0]           dbus_cmd_size;          // From core of ncpu32k_core.v
+   wire                 dbus_cmd_valid;         // From core of ncpu32k_core.v
+   wire                 dbus_cmd_we;            // From core of ncpu32k_core.v
+   wire [`NCPU_DW-1:0]  dbus_din;               // From core of ncpu32k_core.v
    wire [`NCPU_IW-1:0]  dbus_dout;              // From d_mmu of ncpu32k_d_mmu.v
-   wire                 dbus_ready;             // From ncpu32k_inst of ncpu32k_core.v
+   wire                 dbus_ready;             // From core of ncpu32k_core.v
    wire                 dbus_valid;             // From d_mmu of ncpu32k_d_mmu.v
    wire [`NCPU_AW-1:0]  dcache_cmd_addr;        // From d_mmu of ncpu32k_d_mmu.v
    wire                 dcache_cmd_ready;       // From d_cache of ncpu32k_d_cache.v
@@ -66,15 +66,15 @@ module ncpu32k
    wire                 exp_dmm_tlb_miss;       // From d_mmu of ncpu32k_d_mmu.v
    wire                 exp_imm_page_fault;     // From i_mmu of ncpu32k_i_mmu.v
    wire                 exp_imm_tlb_miss;       // From i_mmu of ncpu32k_i_mmu.v
-   wire [`NCPU_AW-1:0]  ibus_cmd_addr;          // From ncpu32k_inst of ncpu32k_core.v
+   wire [`NCPU_AW-1:0]  ibus_cmd_addr;          // From core of ncpu32k_core.v
    wire                 ibus_cmd_ready;         // From i_mmu of ncpu32k_i_mmu.v
-   wire                 ibus_cmd_valid;         // From ncpu32k_inst of ncpu32k_core.v
+   wire                 ibus_cmd_valid;         // From core of ncpu32k_core.v
    wire [`NCPU_IW-1:0]  ibus_dout;              // From i_mmu of ncpu32k_i_mmu.v
    wire                 ibus_flush_ack;         // From i_mmu of ncpu32k_i_mmu.v
-   wire                 ibus_flush_req;         // From ncpu32k_inst of ncpu32k_core.v
+   wire                 ibus_flush_req;         // From core of ncpu32k_core.v
    wire [`NCPU_AW-1:0]  ibus_out_id;            // From i_mmu of ncpu32k_i_mmu.v
    wire [`NCPU_AW-1:0]  ibus_out_id_nxt;        // From i_mmu of ncpu32k_i_mmu.v
-   wire                 ibus_ready;             // From ncpu32k_inst of ncpu32k_core.v
+   wire                 ibus_ready;             // From core of ncpu32k_core.v
    wire                 ibus_valid;             // From i_mmu of ncpu32k_i_mmu.v
    wire [`NCPU_AW-1:0]  icache_cmd_addr;        // From i_mmu of ncpu32k_i_mmu.v
    wire                 icache_cmd_ready;       // From i_cache of ncpu32k_i_cache.v
@@ -84,39 +84,40 @@ module ncpu32k
    wire                 icache_valid;           // From i_cache of ncpu32k_i_cache.v
    wire                 irqc_intr_sync;         // From irqc of ncpu32k_irqc.v
    wire [`NCPU_DW-1:0]  msr_dmm_tlbh;           // From d_mmu of ncpu32k_d_mmu.v
-   wire [`NCPU_TLB_AW-1:0] msr_dmm_tlbh_idx;    // From ncpu32k_inst of ncpu32k_core.v
-   wire [`NCPU_DW-1:0]  msr_dmm_tlbh_nxt;       // From ncpu32k_inst of ncpu32k_core.v
-   wire                 msr_dmm_tlbh_we;        // From ncpu32k_inst of ncpu32k_core.v
+   wire [`NCPU_TLB_AW-1:0] msr_dmm_tlbh_idx;    // From core of ncpu32k_core.v
+   wire [`NCPU_DW-1:0]  msr_dmm_tlbh_nxt;       // From core of ncpu32k_core.v
+   wire                 msr_dmm_tlbh_we;        // From core of ncpu32k_core.v
    wire [`NCPU_DW-1:0]  msr_dmm_tlbl;           // From d_mmu of ncpu32k_d_mmu.v
-   wire [`NCPU_TLB_AW-1:0] msr_dmm_tlbl_idx;    // From ncpu32k_inst of ncpu32k_core.v
-   wire [`NCPU_DW-1:0]  msr_dmm_tlbl_nxt;       // From ncpu32k_inst of ncpu32k_core.v
-   wire                 msr_dmm_tlbl_we;        // From ncpu32k_inst of ncpu32k_core.v
+   wire [`NCPU_TLB_AW-1:0] msr_dmm_tlbl_idx;    // From core of ncpu32k_core.v
+   wire [`NCPU_DW-1:0]  msr_dmm_tlbl_nxt;       // From core of ncpu32k_core.v
+   wire                 msr_dmm_tlbl_we;        // From core of ncpu32k_core.v
    wire [`NCPU_DW-1:0]  msr_dmmid;              // From d_mmu of ncpu32k_d_mmu.v
    wire [`NCPU_DW-1:0]  msr_imm_tlbh;           // From i_mmu of ncpu32k_i_mmu.v
-   wire [`NCPU_TLB_AW-1:0] msr_imm_tlbh_idx;    // From ncpu32k_inst of ncpu32k_core.v
-   wire [`NCPU_DW-1:0]  msr_imm_tlbh_nxt;       // From ncpu32k_inst of ncpu32k_core.v
-   wire                 msr_imm_tlbh_we;        // From ncpu32k_inst of ncpu32k_core.v
+   wire [`NCPU_TLB_AW-1:0] msr_imm_tlbh_idx;    // From core of ncpu32k_core.v
+   wire [`NCPU_DW-1:0]  msr_imm_tlbh_nxt;       // From core of ncpu32k_core.v
+   wire                 msr_imm_tlbh_we;        // From core of ncpu32k_core.v
    wire [`NCPU_DW-1:0]  msr_imm_tlbl;           // From i_mmu of ncpu32k_i_mmu.v
-   wire [`NCPU_TLB_AW-1:0] msr_imm_tlbl_idx;    // From ncpu32k_inst of ncpu32k_core.v
-   wire [`NCPU_DW-1:0]  msr_imm_tlbl_nxt;       // From ncpu32k_inst of ncpu32k_core.v
-   wire                 msr_imm_tlbl_we;        // From ncpu32k_inst of ncpu32k_core.v
+   wire [`NCPU_TLB_AW-1:0] msr_imm_tlbl_idx;    // From core of ncpu32k_core.v
+   wire [`NCPU_DW-1:0]  msr_imm_tlbl_nxt;       // From core of ncpu32k_core.v
+   wire                 msr_imm_tlbl_we;        // From core of ncpu32k_core.v
    wire [`NCPU_DW-1:0]  msr_immid;              // From i_mmu of ncpu32k_i_mmu.v
    wire [`NCPU_DW-1:0]  msr_irqc_imr;           // From irqc of ncpu32k_irqc.v
-   wire [`NCPU_DW-1:0]  msr_irqc_imr_nxt;       // From ncpu32k_inst of ncpu32k_core.v
-   wire                 msr_irqc_imr_we;        // From ncpu32k_inst of ncpu32k_core.v
+   wire [`NCPU_DW-1:0]  msr_irqc_imr_nxt;       // From core of ncpu32k_core.v
+   wire                 msr_irqc_imr_we;        // From core of ncpu32k_core.v
    wire [`NCPU_DW-1:0]  msr_irqc_irr;           // From irqc of ncpu32k_irqc.v
-   wire                 msr_psr_dmme;           // From ncpu32k_inst of ncpu32k_core.v
-   wire                 msr_psr_imme;           // From ncpu32k_inst of ncpu32k_core.v
-   wire                 msr_psr_ire;            // From ncpu32k_inst of ncpu32k_core.v
-   wire                 msr_psr_rm;             // From ncpu32k_inst of ncpu32k_core.v
+   wire                 msr_psr_dmme;           // From core of ncpu32k_core.v
+   wire                 msr_psr_imme;           // From core of ncpu32k_core.v
+   wire                 msr_psr_ire;            // From core of ncpu32k_core.v
+   wire                 msr_psr_rm;             // From core of ncpu32k_core.v
    wire [`NCPU_DW-1:0]  msr_tsc_tcr;            // From tsc of ncpu32k_tsc.v
-   wire [`NCPU_DW-1:0]  msr_tsc_tcr_nxt;        // From ncpu32k_inst of ncpu32k_core.v
-   wire                 msr_tsc_tcr_we;         // From ncpu32k_inst of ncpu32k_core.v
+   wire [`NCPU_DW-1:0]  msr_tsc_tcr_nxt;        // From core of ncpu32k_core.v
+   wire                 msr_tsc_tcr_we;         // From core of ncpu32k_core.v
    wire [`NCPU_DW-1:0]  msr_tsc_tsr;            // From tsc of ncpu32k_tsc.v
-   wire [`NCPU_DW-1:0]  msr_tsc_tsr_nxt;        // From ncpu32k_inst of ncpu32k_core.v
-   wire                 msr_tsc_tsr_we;         // From ncpu32k_inst of ncpu32k_core.v
+   wire [`NCPU_DW-1:0]  msr_tsc_tsr_nxt;        // From core of ncpu32k_core.v
+   wire                 msr_tsc_tsr_we;         // From core of ncpu32k_core.v
    wire                 tsc_irq;                // From tsc of ncpu32k_tsc.v
    // End of automatics
+   wire [`NCPU_NIRQ-1:0] irqs_lvl_i;
    
    /************************************************************
     * I-MMU
@@ -299,7 +300,7 @@ module ncpu32k
     * CPU Core
     ************************************************************/
    
-   ncpu32k_core ncpu32k_inst
+   ncpu32k_core core
       (/*AUTOINST*/
        // Outputs
        .dbus_cmd_valid                  (dbus_cmd_valid),

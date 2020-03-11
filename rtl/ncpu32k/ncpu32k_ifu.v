@@ -274,7 +274,10 @@ module ncpu32k_ifu(
                    (clk,rst_n, pipebuf_cas, extexp_taken & not_flushing_extexp, idu_specul_extexp);
    ncpu32k_cell_dff_lr #(1) dff_idu_set_lsa_pc
                    (clk,rst_n, pipebuf_cas, let_lsa_pc_nxt & not_flushing_extexp, idu_let_lsa_pc);
-                   
+
+   // synthesis translate_off
+`ifndef SYNTHESIS                   
+                 
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
@@ -304,4 +307,7 @@ module ncpu32k_ifu(
    // For Debugging only
    wire [`NCPU_AW-1:0] idu_insn_pc_w = {idu_insn_pc[`NCPU_AW-3:0],2'b0};
 
+`endif
+   // synthesis translate_on
+   
 endmodule

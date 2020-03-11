@@ -421,6 +421,9 @@ module ncpu32k_ieu(
    // IEU is ready when there is no flushing and MU is ready
    assign ieu_in_ready = (~hld_fls) & ieu_mu_in_ready;
    
+   // synthesis translate_off
+`ifndef SYNTHESIS
+   
    // Assertions 03060935
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
@@ -456,5 +459,8 @@ module ncpu32k_ieu(
       end
    end
 `endif
+
+`endif
+   // synthesis translate_on
 
 endmodule

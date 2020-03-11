@@ -263,6 +263,9 @@ module ncpu32k_i_mmu
          : tlb_dummy_addr
       );
 
+   // synthesis translate_off
+`ifndef SYNTHESIS
+      
    // Assertion (03061058)
 `ifdef NCPU_ENABLE_ASSERT
    initial begin
@@ -289,5 +292,7 @@ module ncpu32k_i_mmu
    end
 `endif
 
+`endif
+   // synthesis translate_on
 
 endmodule

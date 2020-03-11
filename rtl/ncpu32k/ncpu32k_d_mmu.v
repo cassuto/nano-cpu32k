@@ -253,6 +253,9 @@ module ncpu32k_d_mmu
    
    assign dcache_din = dbus_din_r;
       
+   // synthesis translate_off
+`ifndef SYNTHESIS
+
    // Assertion (03061058)
 `ifdef NCPU_ENABLE_ASSERT
    initial begin
@@ -280,4 +283,7 @@ module ncpu32k_d_mmu
    end
 `endif
 
+`endif
+   // synthesis translate_on
+   
 endmodule

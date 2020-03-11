@@ -38,12 +38,12 @@ module ncpu32k_d_cache
    output [2:0]            fb_dbus_cmd_size,
    output                  fb_dbus_cmd_we,
    // PSR
-   input                   msr_psr_dcae,
+   input                   msr_psr_dcae
 );
 
 `ifdef NCPU_ENABLE_DCACHE
    // TODO
-`elif
+`else
    assign dcache_valid = fb_dbus_valid;
    assign fb_dbus_ready = dcache_ready;
    assign dcache_dout = fb_dbus_dout;
