@@ -25,8 +25,8 @@ module ncpu32k_psr
    parameter CPUID_FDCA = 0,
    parameter CPUID_FDBG = 0,
    parameter CPUID_FFPU = 0,
-   parameter CPUID_FIRQC = 0,
-   parameter CPUID_FTSC = 0
+   parameter CPUID_FIRQC = 1,
+   parameter CPUID_FTSC = 1
 )
 (
    input                   clk,
