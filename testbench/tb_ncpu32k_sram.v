@@ -22,6 +22,8 @@ module tb_ncpu32k_sram();
       //#450 $stop;
    end
    
+   localparam IRQN_TSC = 0;
+   
    wire                 dbus_cmd_valid;
    wire                 dbus_cmd_ready;
    wire [`NCPU_AW-1:0]  dbus_cmd_addr;
@@ -34,16 +36,25 @@ module tb_ncpu32k_sram();
    wire                 ibus_valid;
    wire                 ibus_ready;
    wire [`NCPU_AW-1:0]  ibus_out_id;
-   wire                 ibus_flush_req;
+   wire [`NCPU_AW-1:0]  ibus_out_id_nxt;
    wire [`NCPU_AW-1:0]  ibus_cmd_addr;
    wire                 ibus_cmd_ready;
    wire                 ibus_cmd_valid;
    wire                 ibus_flush_ack;
+   wire                 ibus_flush_req;
    wire [`NCPU_DW-1:0]  ibus_dout;
+   wire                 dcache_valid;
+   wire                 dcache_ready;
+   wire                 dcache_cmd_ready;
+   wire                 dcache_cmd_valid;
+   wire [`NCPU_AW-1:0]  dcache_cmd_addr;
+   wire [2:0]           dcache_cmd_size;
+   wire                 dcache_cmd_we;
+   wire [`NCPU_DW-1:0]  dcache_dout;
+   wire [`NCPU_DW-1:0]  dcache_din;
    wire                 icache_valid;
    wire                 icache_ready;
    wire [`NCPU_AW-1:0]  icache_out_id;
-   wire [`NCPU_AW-1:0]  ibus_out_id_nxt;
    wire                 icache_cmd_ready;
    wire                 icache_cmd_valid;
    wire [`NCPU_AW-1:0]  icache_cmd_addr;
@@ -61,6 +72,34 @@ module tb_ncpu32k_sram();
    wire                     msr_imm_tlbh_we;
    wire                  exp_imm_tlb_miss;
    wire                  exp_imm_page_fault;
+   wire                 msr_psr_dmme;
+   wire [`NCPU_DW-1:0]      msr_dmmid;
+   wire [`NCPU_DW-1:0]      msr_dmm_tlbl;
+   wire [`NCPU_TLB_AW-1:0]  msr_dmm_tlbl_idx;
+   wire [`NCPU_DW-1:0]      msr_dmm_tlbl_nxt;
+   wire                     msr_dmm_tlbl_we;
+   wire [`NCPU_DW-1:0]      msr_dmm_tlbh;
+   wire [`NCPU_TLB_AW-1:0]  msr_dmm_tlbh_idx;
+   wire [`NCPU_DW-1:0]      msr_dmm_tlbh_nxt;
+   wire                     msr_dmm_tlbh_we;
+   wire                  exp_dmm_tlb_miss;
+   wire                  exp_dmm_page_fault;
+   
+   wire [`NCPU_NIRQ-1:0]    irqs_lvl_i;
+   wire                     irqc_intr_sync;
+   wire                     msr_psr_ire;
+   wire [`NCPU_DW-1:0]      msr_irqc_imr;
+   wire [`NCPU_DW-1:0]      msr_irqc_imr_nxt;
+   wire                     msr_irqc_imr_we;
+   wire [`NCPU_DW-1:0]      msr_irqc_irr;
+   
+   wire                     tsc_irq;
+   wire [`NCPU_DW-1:0]      msr_tsc_tsr;
+   wire [`NCPU_DW-1:0]      msr_tsc_tsr_nxt;
+   wire                     msr_tsc_tsr_we;
+   wire [`NCPU_DW-1:0]      msr_tsc_tcr;
+   wire [`NCPU_DW-1:0]      msr_tsc_tcr_nxt;
+   wire                     msr_tsc_tcr_we;
    
    handshake_cmd_sram #(
       .DELAY   (128)
@@ -68,21 +107,21 @@ module tb_ncpu32k_sram();
    (
       .clk     (clk),
       .rst_n   (rst_n),
-      .din        (dbus_din),
-      .valid      (dbus_valid),
-      .ready      (dbus_ready),
-      .dout       (dbus_dout),
-      .cmd_ready  (dbus_cmd_ready),
-      .cmd_valid  (dbus_cmd_valid),
-      .cmd_addr   (dbus_cmd_addr),
-      .cmd_we     (dbus_cmd_we),
-      .cmd_size   (dbus_cmd_size)
+      .din        (dcache_din),
+      .valid      (dcache_valid),
+      .ready      (dcache_ready),
+      .dout       (dcache_dout),
+      .cmd_ready  (dcache_cmd_ready),
+      .cmd_valid  (dcache_cmd_valid),
+      .cmd_addr   (dcache_cmd_addr),
+      .cmd_we     (dcache_cmd_we),
+      .cmd_size   (dcache_cmd_size)
    );
    
    
    handshake_cmd_sram #(
       .MEMH_FILE("insn.mem"),
-      .DELAY (128)
+      .DELAY (3)
    ) i_ram
    (
       .clk     (clk),
@@ -133,6 +172,70 @@ module tb_ncpu32k_sram();
       .exp_imm_page_fault   (exp_imm_page_fault)
    );
    
+   ncpu32k_d_mmu d_mmu
+   (
+      .clk              (clk),
+      .rst_n            (rst_n),
+      .dbus_valid       (dbus_valid),
+      .dbus_ready       (dbus_ready),
+      .dbus_cmd_addr    (dbus_cmd_addr),
+      .dbus_cmd_ready   (dbus_cmd_ready),
+      .dbus_cmd_valid   (dbus_cmd_valid),
+      .dbus_cmd_size    (dbus_cmd_size),
+      .dbus_cmd_we      (dbus_cmd_we),
+      .dbus_dout        (dbus_dout),
+      .dbus_din         (dbus_din),
+      .dcache_valid     (dcache_valid),
+      .dcache_ready     (dcache_ready),
+      .dcache_cmd_ready (dcache_cmd_ready),
+      .dcache_cmd_valid (dcache_cmd_valid),
+      .dcache_cmd_addr  (dcache_cmd_addr),
+      .dcache_cmd_size  (dcache_cmd_size),
+      .dcache_cmd_we    (dcache_cmd_we),
+      .dcache_dout      (dcache_dout),
+      .dcache_din       (dcache_din),
+      .msr_psr_dmme     (msr_psr_dmme),
+      .msr_psr_rm       (msr_psr_rm),
+      .msr_dmmid        (msr_dmmid),
+      .msr_dmm_tlbl     (msr_dmm_tlbl),
+      .msr_dmm_tlbl_idx (msr_dmm_tlbl_idx),
+      .msr_dmm_tlbl_nxt (msr_dmm_tlbl_nxt),
+      .msr_dmm_tlbl_we  (msr_dmm_tlbl_we),
+      .msr_dmm_tlbh     (msr_dmm_tlbh),
+      .msr_dmm_tlbh_idx (msr_dmm_tlbh_idx),
+      .msr_dmm_tlbh_nxt (msr_dmm_tlbh_nxt),
+      .msr_dmm_tlbh_we  (msr_dmm_tlbh_we),
+      .exp_dmm_tlb_miss     (exp_dmm_tlb_miss),
+      .exp_dmm_page_fault   (exp_dmm_page_fault)
+   );
+   
+   ncpu32k_irqc irqc(         
+      .clk              (clk),
+      .rst_n            (rst_n),
+      .irqs_lvl_i       (irqs_lvl_i),
+      .irqc_intr_sync   (irqc_intr_sync),
+      .msr_psr_ire      (msr_psr_ire),
+      .msr_irqc_imr     (msr_irqc_imr),
+      .msr_irqc_imr_nxt (msr_irqc_imr_nxt),
+      .msr_irqc_imr_we  (msr_irqc_imr_we),
+      .msr_irqc_irr     (msr_irqc_irr)
+   );
+   
+   ncpu32k_tsc tsc(
+      .clk              (clk),
+      .rst_n            (rst_n),
+      .tsc_irq          (tsc_irq),
+      .msr_tsc_tsr      (msr_tsc_tsr),
+      .msr_tsc_tsr_nxt  (msr_tsc_tsr_nxt),
+      .msr_tsc_tsr_we   (msr_tsc_tsr_we),
+      .msr_tsc_tcr      (msr_tsc_tcr),
+      .msr_tsc_tcr_nxt  (msr_tsc_tcr_nxt),
+      .msr_tsc_tcr_we   (msr_tsc_tcr_we)
+   );
+
+   assign irqs_lvl_i[IRQN_TSC] = tsc_irq;
+   assign irqs_lvl_i[`NCPU_NIRQ-1:1] = 31'b0;
+   
    ncpu32k_core ncpu32k_inst(
       .clk           (clk),
       .rst_n         (rst_n),
@@ -167,7 +270,33 @@ module tb_ncpu32k_sram();
       .msr_imm_tlbh_nxt (msr_imm_tlbh_nxt),
       .msr_imm_tlbh_we  (msr_imm_tlbh_we),
       .exp_imm_tlb_miss     (exp_imm_tlb_miss),
-      .exp_imm_page_fault   (exp_imm_page_fault)
+      .exp_imm_page_fault   (exp_imm_page_fault),
+      .msr_psr_dmme     (msr_psr_dmme),
+      .msr_dmmid        (msr_dmmid),
+      .msr_dmm_tlbl     (msr_dmm_tlbl),
+      .msr_dmm_tlbl_idx (msr_dmm_tlbl_idx),
+      .msr_dmm_tlbl_nxt (msr_dmm_tlbl_nxt),
+      .msr_dmm_tlbl_we  (msr_dmm_tlbl_we),
+      .msr_dmm_tlbh     (msr_dmm_tlbh),
+      .msr_dmm_tlbh_idx (msr_dmm_tlbh_idx),
+      .msr_dmm_tlbh_nxt (msr_dmm_tlbh_nxt),
+      .msr_dmm_tlbh_we  (msr_dmm_tlbh_we),
+      .exp_dmm_tlb_miss     (exp_dmm_tlb_miss),
+      .exp_dmm_page_fault   (exp_dmm_page_fault),
+      
+      .irqc_intr_sync   (irqc_intr_sync),
+      .msr_psr_ire      (msr_psr_ire),
+      .msr_irqc_imr     (msr_irqc_imr),
+      .msr_irqc_imr_nxt (msr_irqc_imr_nxt),
+      .msr_irqc_imr_we  (msr_irqc_imr_we),
+      .msr_irqc_irr     (msr_irqc_irr),
+      
+      .msr_tsc_tsr      (msr_tsc_tsr),
+      .msr_tsc_tsr_nxt  (msr_tsc_tsr_nxt),
+      .msr_tsc_tsr_we   (msr_tsc_tsr_we),
+      .msr_tsc_tcr      (msr_tsc_tcr),
+      .msr_tsc_tcr_nxt  (msr_tsc_tcr_nxt),
+      .msr_tsc_tcr_we   (msr_tsc_tcr_we)
    );
 
 endmodule
