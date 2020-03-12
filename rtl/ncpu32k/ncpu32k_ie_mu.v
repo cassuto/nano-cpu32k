@@ -79,18 +79,16 @@ module ncpu32k_ie_mu
    wire hds_exp = (exp_raised_w & mu_exp_flush_ack);
    
    // MU FSM
-   // Assert 03112133
    wire pending_r;
-   wire pending_nxt =
-    (
-       // If handshaked with dbus_cmd, then MU is pending
-       (~pending_r & hds_dbus_cmd) ? 1'b1 :
-       // If handshaked with downstream module (or exception), then MU is idle
-       (pending_r & (hds_wb_in | hds_exp)) ? 1'b0 : pending_r
-    );
+   // If handshaked with dbus_cmd, then MU is pending
+   wire pending_push = hds_dbus_cmd;
+   // If handshaked with downstream module (or exception), then MU is idle
+   wire pending_pop = hds_wb_in | hds_exp;
+   
+   wire pending_nxt = (pending_push | ~pending_pop);
 
-   ncpu32k_cell_dff_r #(1) dff_pending_r
-                   (clk,rst_n, pending_nxt, pending_r);
+   ncpu32k_cell_dff_lr #(1) dff_pending_r
+                   (clk,rst_n, (pending_push|pending_pop), pending_nxt, pending_r);
    
    wire pending = pending_r & ~hds_exp; // bypass flush_ack
    
@@ -136,15 +134,6 @@ module ncpu32k_ie_mu
       if((exp_dmm_tlb_miss|exp_dmm_page_fault) &
             ~(exp_dmm_tlb_miss^exp_dmm_page_fault)) begin
          $fatal ("\n ctrls of 'exp_vector' MUX should be mutex\n");
-      end
-   end
-`endif
-
-   // Assertions 03112133
-`ifdef NCPU_ENABLE_ASSERT
-   always @(posedge clk) begin
-      if(hds_dbus_cmd & (hds_wb_in | hds_exp)) begin
-         $fatal ("\n MU FMS can't accept cmd while handshaking with wb_in\n");
       end
    end
 `endif
