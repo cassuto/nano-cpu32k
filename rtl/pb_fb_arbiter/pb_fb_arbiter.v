@@ -114,7 +114,7 @@ module pb_fb_arbiter
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if (fb_dbus_cmd_valid & ibus_dout_sel)
+      if (fb_dbus_cmd_valid & (ibus_dout_sel&ibus_dout_sel_nxt))
          $fatal ("\n TODO bus retry\n");
    end
 `endif
