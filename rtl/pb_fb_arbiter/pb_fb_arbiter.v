@@ -51,7 +51,7 @@ module pb_fb_arbiter
    // Priority scheme
    // Assert (03112048)
    wire dbus_cmd_sel = fb_dbus_cmd_valid;
-   wire ibus_cmd_sel = ~fb_dbus_cmd_valid;
+   wire ibus_cmd_sel = ~dbus_cmd_sel;
    
    // Bus cycle FSM
    // Assert (03112057)
@@ -72,7 +72,7 @@ module pb_fb_arbiter
                    (clk,rst_n, (hds_dbus_cmd | hds_dbus_dout), dbus_dout_sel_nxt, dbus_dout_sel);
    ncpu32k_cell_dff_lr #(1) dff_ibus_dout_sel
                    (clk,rst_n, (hds_ibus_cmd | hds_ibus_dout), ibus_dout_sel_nxt, ibus_dout_sel);
-   
+
    // Send cmd
    assign fb_dbus_cmd_ready = dbus_cmd_sel & fb_mbus_cmd_ready;
    assign fb_ibus_cmd_ready = ibus_cmd_sel & fb_mbus_cmd_ready;
@@ -108,6 +108,14 @@ module pb_fb_arbiter
    always @(posedge clk) begin
       if ((dbus_dout_sel|ibus_dout_sel) & ~(dbus_dout_sel^ibus_dout_sel))
          $fatal ("\n conflicting bus cycle\n");
+   end
+`endif
+
+   // Assertions
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if (fb_dbus_cmd_valid & ibus_dout_sel)
+         $fatal ("\n TODO bus retry\n");
    end
 `endif
 
