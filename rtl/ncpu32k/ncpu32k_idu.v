@@ -266,7 +266,7 @@ module ncpu32k_idu(
    wire insn_imm18 = op_mhi;
    wire insn_imm = insn_imm14 | insn_imm18;
    // Insn requires Signed imm.
-   wire imm14_signed = (op_xor_i | op_and_i | op_add_i | op_mu_load | op_mu_store);
+   wire imm14_signed = (op_xor_i | op_add_i | op_mu_load | op_mu_store);
    // Insn presents no operand.
    wire insn_non_op = (op_mu_barr | idu_op_syscall | idu_op_ret | idu_op_jmprel);
    
