@@ -460,6 +460,22 @@ module ncpu32k_ieu(
    end
 `endif
 
+   // For Debugging only
+   wire [`NCPU_AW-1:0] mnt_ieu_insn_pc_w = {ieu_insn_pc[`NCPU_AW-3:0],2'b0};
+
+   // Breakpoint monitor
+   localparam breakpoint = 0;
+generate
+   if (breakpoint != 0) begin : brk_pt
+      always @* begin
+         if(mnt_ieu_insn_pc_w == breakpoint) begin
+            $display("breakpoint");
+            $finish();
+         end
+      end
+   end
+endgenerate
+
 `endif
    // synthesis translate_on
 
