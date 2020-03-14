@@ -16,9 +16,9 @@
 module pb_fb_DRAM_ctrl
 #(
    // SDRAM bus parameters
-   parameter COL_BW = 8,  // Column bits
-   parameter ROW_BW = 12, // Row bits
-   parameter BK_BW = 2,  // Bank bits
+   parameter COL_BW = 9,  // Column bits
+   parameter ROW_BW = 13, // Row bits
+   parameter BA_BW = 2,  // Bank bits
    parameter DW = 16, // Word bits
    parameter DRAM_AW = 13, // Address bus bits
    parameter N_BW = 1, // = floor(log2(DW/8))
@@ -29,7 +29,7 @@ module pb_fb_DRAM_ctrl
    parameter tRCD = 3,
    parameter tRC = 9,
    parameter tREF = 64, // ms
-   parameter pREF = 11, // = floor(log2(Fclk*tREF/(2^ROW_BW)))
+   parameter pREF = 6, // = floor(log2(Fclk*tREF/(2^ROW_BW)))
    parameter nCAS_Latency = 3, // CAS latency
    
    // Brust Length
@@ -40,8 +40,9 @@ module pb_fb_DRAM_ctrl
    input                   clk,
    input                   rst_n,
    // SDRAM interface
+   output                  DRAM_CKE,
    output reg [3:0]        DRAM_CS_WE_RAS_CAS_L, // SDRAM #CS, #WE, #RAS, #CAS
-   output reg [BK_BW-1:0]  DRAM_BA, // SDRAM bank address
+   output reg [BA_BW-1:0]  DRAM_BA, // SDRAM bank address
    output reg [DRAM_AW-1:0] DRAM_ADDR, // SDRAM address
    inout      [DW-1:0]     DRAM_DATA, // SDRAM data
    output reg [1:0]        DRAM_DQM, // SDRAM DQM
@@ -51,11 +52,11 @@ module pb_fb_DRAM_ctrl
    output reg              cmd_bst_we_ack,
    input                   cmd_bst_rd_req,
    output reg              cmd_bst_rd_ack,
-   input [ROW_BW+BK_BW+COL_BW-N_BW-1:0] cmd_addr, // Algin at 2^N_BW words boundary
+   input [ROW_BW+BA_BW+COL_BW-N_BW-1:0] cmd_addr, // Algin at 2^N_BW words boundary
    input [DW-1:0]          din,
    output reg [DW-1:0]     dout,
-   output reg              r_vld,   // data valid out
-   output reg              w_vld   // data valid in
+   output reg              r_vld,   // dout valid
+   output reg              w_rdy   // write ready
 );
 
    // I/O flip flops
@@ -66,7 +67,7 @@ module pb_fb_DRAM_ctrl
       if(~rst_n) begin
          dout_vld_r <= 0;
       end else begin
-         dout_vld_r <= {dout_vld_r[1:0], w_vld};
+         dout_vld_r <= {dout_vld_r[1:0], w_rdy};
          din_r <= din;
          dout <= DRAM_DATA;
       end
@@ -74,14 +75,16 @@ module pb_fb_DRAM_ctrl
    
    assign DRAM_DATA = dout_vld_r[2] ? din_r : 16'hzzzz;
 
+   assign DRAM_CKE = 1'b1;
+   
    // Address ffs
    reg [COL_BW-N_BW-1:0] col_adr_r;
-   reg [BK_BW-1:0] bank_adr_r;
+   reg [BA_BW-1:0] bank_adr_r;
    reg [ROW_BW-1:0] line_adr_r;
 
    // Book active
    reg [ROW_BW-1:0] line_prech_r[3:0];
-   reg [(1<<BK_BW)-1:0] bank_act_r;
+   reg [(1<<BA_BW)-1:0] bank_act_r;
    
    // Main FSM
    localparam S_IDLE = 0;
@@ -107,17 +110,17 @@ module pb_fb_DRAM_ctrl
          status_r <= S_IDLE;
          bank_act_r <= 0;
          r_vld <= 1'b0;
-         w_vld <= 1'b0;
+         w_rdy <= 1'b0;
          cmd_bst_we_ack <= 1'b0;
          cmd_bst_rd_ack <= 1'b0;
          DRAM_DQM <= 2'b11;
-         DRAM_CS_WE_RAS_CAS_L <= 4'b1111;
+         DRAM_CS_WE_RAS_CAS_L <= 4'b1111; // NOP
       end else begin
          rf_cnt_r <= rf_cnt_r + 1;
          status_delay_r <= status_delay_r - 1;
          
          // Default values
-         DRAM_CS_WE_RAS_CAS_L <= 4'b1xxx; // NOP
+         DRAM_CS_WE_RAS_CAS_L <= 4'b1111; // NOP
          status_r <= S_NOP;
          
          case(status_r)
@@ -147,7 +150,7 @@ module pb_fb_DRAM_ctrl
             // NOP for status_delay_r clocks
             S_NOP: begin
                if(status_delay_r == 2)
-                  w_vld <= 1'b0;
+                  w_rdy <= 1'b0;
                if(status_delay_r == 0)
                   status_r <= status_ret_r; // return to status_ret_r state
              end
@@ -217,7 +220,8 @@ module pb_fb_DRAM_ctrl
                         status_delay_r <= nCAS_Latency - 1;
                      end else begin
                         status_delay_r <= 1;
-                        w_vld <= 1'b1;
+                        // Begin brust writing
+                        w_rdy <= 1'b1;
                      end
                   end else begin
                      // bank precharge
