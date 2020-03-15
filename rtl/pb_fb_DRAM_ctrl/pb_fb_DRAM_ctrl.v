@@ -29,7 +29,7 @@ module pb_fb_DRAM_ctrl
    parameter tRCD = 3,
    parameter tRC = 9,
    parameter tREF = 64, // ms
-   parameter pREF = 6, // = floor(log2(Fclk*tREF/(2^ROW_BW)))
+   parameter pREF = 9, // = floor(log2(Fclk*tREF/(2^ROW_BW)))
    parameter nCAS_Latency = 3, // CAS latency
    
    // Brust Length
