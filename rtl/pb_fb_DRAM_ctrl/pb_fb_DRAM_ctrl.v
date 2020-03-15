@@ -32,7 +32,7 @@ module pb_fb_DRAM_ctrl
    parameter pREF = 9, // = floor(log2(Fclk*tREF/(2^ROW_BW)))
    parameter nCAS_Latency = 3, // CAS latency
    
-   // Brust Length
+   // Burst Length
    parameter BRUST_RD_LENGTH = 7'h20, // 32 x DW bits
    parameter BRUST_WE_LENGTH = 7'h20  // 32 x DW bits
 )
@@ -48,15 +48,15 @@ module pb_fb_DRAM_ctrl
    output reg [1:0]        DRAM_DQM, // SDRAM DQM
    
    // Cmd/Resp interface
-   input                   cmd_bst_we_req,
-   output reg              cmd_bst_we_ack,
-   input                   cmd_bst_rd_req,
-   output reg              cmd_bst_rd_ack,
-   input [ROW_BW+BA_BW+COL_BW-N_BW-1:0] cmd_addr, // Algin at 2^N_BW words boundary
-   input [DW-1:0]          din,
-   output reg [DW-1:0]     dout,
-   output reg              r_vld,   // dout valid
-   output reg              w_rdy   // write ready
+   input                   sdr_cmd_bst_we_req,
+   output reg              sdr_cmd_bst_we_ack,
+   input                   sdr_cmd_bst_rd_req,
+   output reg              sdr_cmd_bst_rd_ack,
+   input [ROW_BW+BA_BW+COL_BW-N_BW-1:0] sdr_cmd_addr, // Algin at 2^N_BW words boundary
+   input [DW-1:0]          sdr_din,
+   output reg [DW-1:0]     sdr_dout,
+   output reg              sdr_r_vld,   // sdr_dout valid
+   output reg              sdr_w_rdy   // write ready
 );
 
    // I/O flip flops
@@ -67,9 +67,9 @@ module pb_fb_DRAM_ctrl
       if(~rst_n) begin
          dout_vld_r <= 0;
       end else begin
-         dout_vld_r <= {dout_vld_r[1:0], w_rdy};
-         din_r <= din;
-         dout <= DRAM_DATA;
+         dout_vld_r <= {dout_vld_r[1:0], sdr_w_rdy};
+         din_r <= sdr_din;
+         sdr_dout <= DRAM_DATA;
       end
    end
    
@@ -109,10 +109,10 @@ module pb_fb_DRAM_ctrl
          rf_pending_r <= 1;
          status_r <= S_IDLE;
          bank_act_r <= 0;
-         r_vld <= 1'b0;
-         w_rdy <= 1'b0;
-         cmd_bst_we_ack <= 1'b0;
-         cmd_bst_rd_ack <= 1'b0;
+         sdr_r_vld <= 1'b0;
+         sdr_w_rdy <= 1'b0;
+         sdr_cmd_bst_we_ack <= 1'b0;
+         sdr_cmd_bst_rd_ack <= 1'b0;
          DRAM_DQM <= 2'b11;
          DRAM_CS_WE_RAS_CAS_L <= 4'b1111; // NOP
       end else begin
@@ -125,7 +125,7 @@ module pb_fb_DRAM_ctrl
          
          case(status_r)
             S_IDLE: begin
-               r_vld <= 1'b0;
+               sdr_r_vld <= 1'b0;
                if(DRAM_DQM[0])
                   // Init sequence, wait >200uS
                   status_r <= rf_cnt_r[15] ? S_PRECHARGE : S_IDLE;
@@ -134,11 +134,11 @@ module pb_fb_DRAM_ctrl
                      // Refreshing
                      rf_pending_r <= rf_cnt_r[pREF];
                      status_r <= S_PRECHARGE;
-                  end else if(cmd_bst_rd_req | cmd_bst_we_req) begin
+                  end else if(sdr_cmd_bst_rd_req | sdr_cmd_bst_we_req) begin
                      // Accept command. Assert (03141951)
-                     cmd_bst_rd_ack <= cmd_bst_rd_req;
-                     cmd_bst_we_ack <= cmd_bst_we_req;
-                     {line_adr_r, bank_adr_r, col_adr_r} <= cmd_addr;
+                     sdr_cmd_bst_rd_ack <= sdr_cmd_bst_rd_req;
+                     sdr_cmd_bst_we_ack <= sdr_cmd_bst_we_req;
+                     {line_adr_r, bank_adr_r, col_adr_r} <= sdr_cmd_addr;
                      status_r <= S_WRITE_READ;
                   end else begin
                      // Wait for command
@@ -150,7 +150,7 @@ module pb_fb_DRAM_ctrl
             // NOP for status_delay_r clocks
             S_NOP: begin
                if(status_delay_r == 2)
-                  w_rdy <= 1'b0;
+                  sdr_w_rdy <= 1'b0;
                if(status_delay_r == 0)
                   status_r <= status_ret_r; // return to status_ret_r state
              end
@@ -177,15 +177,15 @@ module pb_fb_DRAM_ctrl
                // Bitmap of Mode Register
                // +==========+===+=====+============+===+===========+
                // | 12 11 10 | 9 | 8 7 | 6 5 4      | 3 |  2 1 0    |
-               // | Reserved | WB| OpM | CAS Latency| BT| Brust Len |
+               // | Reserved | WB| OpM | CAS Latency| BT| Burst Len |
                // +==========+===+=====+============+===+===========+
                //
                // Current config:
-               //    WB = programmed brust len;
+               //    WB = programmed burst len;
                //    OpM = standard operation;
                //    CAS Latency = nCAS_Latency;
                //    BT = sequential;
-               //    Brust Len = full page burst.
+               //    Burst Len = full page burst.
                //
                DRAM_ADDR <= 13'b000_0_00_000_0_111 + (nCAS_Latency<<4);
                DRAM_BA <= 2'b00;
@@ -215,13 +215,13 @@ module pb_fb_DRAM_ctrl
                      DRAM_ADDR[10] <= 1'b0; // no auto precharge
                      DRAM_ADDR[COL_BW-1:0] <= {col_adr_r, {N_BW{1'b0}}};
                      status_ret_r <= S_INIT_WRITE_READ;
-                     if(cmd_bst_rd_ack) begin
+                     if(sdr_cmd_bst_rd_ack) begin
                         DRAM_CS_WE_RAS_CAS_L <= 4'b0110; // READ
                         status_delay_r <= nCAS_Latency - 1;
                      end else begin
                         status_delay_r <= 1;
-                        // Begin brust writing
-                        w_rdy <= 1'b1;
+                        // Begin burst writing
+                        sdr_w_rdy <= 1'b1;
                      end
                   end else begin
                      // bank precharge
@@ -243,22 +243,22 @@ module pb_fb_DRAM_ctrl
 
             // End read/write phase
             S_END_WRITE_READ: begin
-               cmd_bst_rd_ack <= 1'b0;
-               cmd_bst_we_ack <= 1'b0;
+               sdr_cmd_bst_rd_ack <= 1'b0;
+               sdr_cmd_bst_we_ack <= 1'b0;
                DRAM_CS_WE_RAS_CAS_L <= 4'b0011;  // BURST TERMINATE
-               status_r <= cmd_bst_rd_ack ? S_NOP : S_IDLE; // read write
+               status_r <= sdr_cmd_bst_rd_ack ? S_NOP : S_IDLE; // read write
                status_ret_r <= S_IDLE;
                status_delay_r <= 2;
             end
 
             // Init read/write phase
             S_INIT_WRITE_READ: begin
-               if(cmd_bst_rd_ack)
-                  r_vld <= 1'b1;
+               if(sdr_cmd_bst_rd_ack)
+                  sdr_r_vld <= 1'b1;
                else
                   DRAM_CS_WE_RAS_CAS_L <= 4'b0010; // WRITE
                status_ret_r <= S_END_WRITE_READ;
-               status_delay_r <= cmd_bst_rd_ack ? BRUST_RD_LENGTH - 6 : BRUST_WE_LENGTH - 2;
+               status_delay_r <= sdr_cmd_bst_rd_ack ? BRUST_RD_LENGTH - 6 : BRUST_WE_LENGTH - 2;
             end
 
          endcase
@@ -272,7 +272,7 @@ module pb_fb_DRAM_ctrl
    // Assertions (03141951)
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if((cmd_bst_rd_req | cmd_bst_we_req) & ~(cmd_bst_rd_req^cmd_bst_we_req))
+      if((sdr_cmd_bst_rd_req | sdr_cmd_bst_we_req) & ~(sdr_cmd_bst_rd_req^sdr_cmd_bst_we_req))
          $fatal ("\n conflicting rd and we req.");
    end
 `endif
