@@ -162,6 +162,7 @@ module ncpu32k_d_mmu
       #(
          .AW (TLB_NSETS_LOG2),
          .DW (`NCPU_DW),
+         .ENABLE_READ_ENABLE (1),
          .CLEAR_ON_INIT (CLEAR_ON_INIT)
          )
       tlb_l_sclk
@@ -187,6 +188,7 @@ module ncpu32k_d_mmu
       #(
          .AW (TLB_NSETS_LOG2),
          .DW (`NCPU_DW),
+         .ENABLE_READ_ENABLE (1),
          .CLEAR_ON_INIT (CLEAR_ON_INIT)
          )
       tlb_h_sclk

@@ -19,10 +19,10 @@
 
 module ncpu32k_cell_sdpram_sclk
 #(
-   parameter AW = 32,
-   parameter DW = 32,
-   parameter CLEAR_ON_INIT = 1,
-   parameter ENABLE_BYPASS = 1
+   parameter AW,
+   parameter DW,
+   parameter ENABLE_BYPASS,
+   parameter CLEAR_ON_INIT = 1
 )
 (
    input                         clk,

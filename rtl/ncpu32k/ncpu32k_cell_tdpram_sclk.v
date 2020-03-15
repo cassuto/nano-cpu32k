@@ -27,8 +27,9 @@
 
 module ncpu32k_cell_tdpram_sclk
 #(
-   parameter AW = 32,
-   parameter DW = 32,
+   parameter AW,
+   parameter DW,
+   parameter ENABLE_READ_ENABLE,
    parameter CLEAR_ON_INIT = 1
 )
 (
@@ -93,33 +94,42 @@ module ncpu32k_cell_tdpram_sclk
          dout_b_r <= {DW{1'b0}};
       end
    
-   //
-   // Read Enable Control
-   //
-   reg ram_vld_a_r;
-   reg ram_vld_b_r;
-   reg [DW-1:0] last_a_r;
-   reg [DW-1:0] last_b_r;
-   
-   assign dout_a = ram_vld_a_r ? dout_a_r : last_a_r;
-   assign dout_b = ram_vld_b_r ? dout_b_r : last_b_r;
+generate
+   if(ENABLE_READ_ENABLE) begin : enable_read_enable
+      //
+      // Read Enable Control
+      //
+      reg ram_vld_a_r;
+      reg ram_vld_b_r;
+      reg [DW-1:0] last_a_r;
+      reg [DW-1:0] last_b_r;
+      
+      assign dout_a = ram_vld_a_r ? dout_a_r : last_a_r;
+      assign dout_b = ram_vld_b_r ? dout_b_r : last_b_r;
 
-   always @(posedge clk or negedge rst_n)
-      if(~rst_n) begin
-         last_a_r <= {DW{1'b0}};
-         last_b_r <= {DW{1'b0}};
-         ram_vld_a_r <= 1;
-         ram_vld_b_r <= 1;
-      end else begin
-         if (ram_vld_a_r | we_a)
-            last_a_r <= we_a ? din_a : dout_a_r; // Sync last_r with dout_r in writing
-         if (ram_vld_b_r | we_b)
-            last_b_r <= we_b ? din_b : dout_b_r; // Sync last_r with dout_r in writing
+      always @(posedge clk or negedge rst_n)
+         if(~rst_n) begin
+            last_a_r <= {DW{1'b0}};
+            last_b_r <= {DW{1'b0}};
+            ram_vld_a_r <= 1;
+            ram_vld_b_r <= 1;
+         end else begin
+            if (ram_vld_a_r | we_a)
+               last_a_r <= we_a ? din_a : dout_a_r; // Sync last_r with dout_r in writing
+            if (ram_vld_b_r | we_b)
+               last_b_r <= we_b ? din_b : dout_b_r; // Sync last_r with dout_r in writing
+         end
+
+      // Bypass FSM
+      always @(posedge clk) begin
+         ram_vld_a_r <= re_a;
+         ram_vld_b_r <= re_b;
       end
-
-   // Bypass FSM
-   always @(posedge clk) begin
-      ram_vld_a_r <= re_a;
-      ram_vld_b_r <= re_b;
+   end else begin
+      // No ReadEnable Control
+      assign dout_a = dout_a_r;
+      assign dout_b = dout_b_r;
    end
+endgenerate
+
 endmodule
