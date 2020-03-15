@@ -20,7 +20,7 @@
 // Configure VIRT Instructions
 /////////////////////////////////////////////////////////////////////////////
 
-//`define ENABLE_ASR
+`define ENABLE_ASR
 `define ENABLE_ADD
 `define ENABLE_SUB
 //`define ENABLE_MUL
