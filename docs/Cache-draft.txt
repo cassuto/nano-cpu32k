@@ -1,0 +1,22 @@
+L1 Cache
+	I-Cache
+	D-Cache
+
+L2 Cache
+	* Multiway Group Association
+	* Write-back strategy
+	* Hardware flushing
+
+	Way count: 1~4
+	Set count: 1~128
+	Line bytes: 16~64 B
+	
+Address map:
+	BS = bits of Set index = log2(Set count)
+	BL = bits of Line offset = log2(Line Bytes)
+	
+    +=========+===============+=============+=======+
+    | 31-BS-BL|  BS           | BL          | (bit) |
+	+---------+---------------+-------------+-------+
+    |   VPN   |  Set index    | Line offset | (Desc)|
+	+=========+===============+=============+=======+
