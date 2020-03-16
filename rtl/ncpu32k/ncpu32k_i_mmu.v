@@ -66,9 +66,6 @@ module ncpu32k_i_mmu
    localparam VPN_DW = `NCPU_DW-VPN_SHIFT;
    // Bitwidth of Physical Page Number
    localparam PPN_DW = `NCPU_DW-PPN_SHIFT;
-   
-   localparam CLEAR_ON_INIT = 1;
-
 
    // MMU FSM
    wire hds_ibus_cmd;
@@ -186,8 +183,7 @@ module ncpu32k_i_mmu
       #(
          .AW (TLB_NSETS_LOG2),
          .DW (`NCPU_DW),
-         .ENABLE_READ_ENABLE (1),
-         .CLEAR_ON_INIT (CLEAR_ON_INIT)
+         .ENABLE_READ_ENABLE (1)
          )
       tlb_l_sclk
          (
@@ -212,8 +208,7 @@ module ncpu32k_i_mmu
       #(
          .AW (TLB_NSETS_LOG2),
          .DW (`NCPU_DW),
-         .ENABLE_READ_ENABLE (1),
-         .CLEAR_ON_INIT (CLEAR_ON_INIT)
+         .ENABLE_READ_ENABLE (1)
          )
       tlb_h_sclk
          (
