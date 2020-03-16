@@ -24,7 +24,7 @@ module pb_fb_L2_cache
 (
    input                   clk,
    input                   rst_n,
-   // L2 cache in interface
+   // L2 cache interface
    input [AW-1:0]          l2_ch_addr,
    output [DW-1:0]         l2_ch_dout,
    input [DW-1:0]          l2_ch_din,
