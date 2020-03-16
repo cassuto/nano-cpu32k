@@ -1,7 +1,7 @@
 /**@file
  * Cell - True Double-port Sync RAM
  * Timing info:
- * 1. WRITE strategy (On the same port, dout is valid immediately when din is
+ * 1. WRITE first strategy (On the same port, dout is valid immediately when din is
  *       written and dout is enabled)
  *
  * 2. Anything about 're' (ReadEnable) signal:

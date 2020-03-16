@@ -32,13 +32,10 @@ module ncpu32k_regfile(
    output [`NCPU_DW-1:0]         regf_rs1_dout,      // Output value of operand #1
    output [`NCPU_DW-1:0]         regf_rs2_dout       // Output value of operand #2
 );
-   localparam CLEAR_ON_INIT = 1;
-   
    ncpu32k_cell_sdpram_sclk
       #(
          .AW                           (`NCPU_REG_AW),
          .DW                           (`NCPU_DW),
-         .CLEAR_ON_INIT                (CLEAR_ON_INIT),
          .ENABLE_BYPASS                (1) // Bypass is necessary to get the right operand
          )
       dpram_sclk0
@@ -59,7 +56,6 @@ module ncpu32k_regfile(
       #(
          .AW                           (`NCPU_REG_AW),
          .DW                           (`NCPU_DW),
-         .CLEAR_ON_INIT                (CLEAR_ON_INIT),
          .ENABLE_BYPASS                (1) // Bypass is necessary to get the right operand
          )
       dpram_sclk1
