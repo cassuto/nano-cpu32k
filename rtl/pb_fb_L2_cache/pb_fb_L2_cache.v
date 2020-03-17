@@ -16,7 +16,7 @@
 module pb_fb_L2_cache
 #(
    parameter P_WAYS = 2, // 2^ways
-   parameter P_SETS	= 6, // 2^sets
+   parameter P_SETS	= 2/*6*/, // 2^sets
    parameter P_LINE	= 6, // 2^P_LINE bytes per line (= busrt length of DRAM)
    parameter AW = 25,
    parameter DW = 32,
@@ -62,7 +62,6 @@ module pb_fb_L2_cache
 	reg [AW-1:0] addr_r;
 	reg [DW-1:0] din_r;
 	reg [3:0] size_msk_r;
-   reg [3:0] r_size_msk_r;
 	reg mreq_r;
 
    // Handshake FSM
@@ -181,7 +180,7 @@ generate
          always @(posedge clk or negedge rst_n) begin
             if (~rst_n) begin
                cache_v[i][j] <= 0;
-               cache_lru[i][j] <= 0;
+               cache_lru[i][j] <= i;
                cache_addr[i][j] <= 0;
             end
          end
@@ -206,11 +205,11 @@ endgenerate
    
    wire ch_mem_en_a = l2_ch_w_rdy | l2_ch_r_vld;
    wire [DW/8-1:0] ch_mem_we_a = {4{l2_ch_w_rdy}} & line_adr_cnt_msk;
-   wire [CH_AW-1:0] ch_mem_addr_a = {match_set, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], line_adr_cnt[P_LINE-2:1]};
+   wire [CH_AW-1:0] ch_mem_addr_a = {match_set, /*~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], */entry_idx[P_SETS-1:0], line_adr_cnt[P_LINE-2:1]};
    wire [DW-1:0] ch_mem_din_a = {nl_dout[DW/2-1:0], nl_dout[DW/2-1:0]};
    wire ch_mem_en_b = mmreq & hit & ch_idle;
    wire [DW/8-1:0] ch_mem_we_b = mwmask;
-   wire [CH_AW-1:0] ch_mem_addr_b = {match_set, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], maddr[P_LINE-1:2]};
+   wire [CH_AW-1:0] ch_mem_addr_b = {match_set, /*~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0],*/ entry_idx[P_SETS-1:0], maddr[P_LINE-1:2]};
    wire [DW-1:0] ch_mem_din_b = mdin;
    wire [DW-1:0] ch_mem_dout_b;
    
