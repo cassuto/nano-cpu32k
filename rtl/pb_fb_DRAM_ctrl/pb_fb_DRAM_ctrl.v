@@ -21,7 +21,7 @@ module pb_fb_DRAM_ctrl
    parameter BA_BW = 2,  // Bank bits
    parameter DW = 16, // Word bits
    parameter DRAM_AW = 13, // Address bus bits
-   parameter N_BW = 1, // = floor(log2(DW/8))
+   parameter N_BW = 1, // = floor(log2(L2_CH_DW/DW))
    
    // SDRAM timing parameters
    parameter tRP = 3,
