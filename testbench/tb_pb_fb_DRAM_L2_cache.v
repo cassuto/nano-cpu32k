@@ -63,13 +63,16 @@ module tb_pb_fb_DRAM_L2_cache();
    wire sdr_r_vld;
    wire sdr_w_rdy;
    
-   wire [AW-1:0]          l2_ch_addr;
-   wire [L2_DW-1:0]       l2_ch_dout;
-   wire [L2_DW-1:0]       l2_ch_din;
-   reg                    l2_ch_req;
-   wire [3:0]             l2_ch_size_msk;
-   wire                   l2_ch_ready;
-   reg                    l2_ch_flush = 0;
+   wire                  l2_ch_valid;
+   reg                   l2_ch_ready;
+   wire [2:0]            l2_ch_cmd_size;
+   wire                  l2_ch_cmd_ready; /* sram is ready to accept cmd */
+   reg                   l2_ch_cmd_valid; /* cmd is presented at sram'input */
+   reg [AW-1:0]          l2_ch_cmd_addr;
+   wire                  l2_ch_cmd_we;
+   wire [L2_DW-1:0]      l2_ch_dout;
+   wire [L2_DW-1:0]      l2_ch_din;
+   reg                   l2_ch_flush = 0;
    
    pb_fb_DRAM_ctrl fb_DRAM_ctrl
    (
@@ -92,16 +95,23 @@ module tb_pb_fb_DRAM_L2_cache();
       .sdr_w_rdy (sdr_w_rdy)
    );
    
-   pb_fb_L2_cache L2_cache
+   pb_fb_L2_cache
+   #(
+      .ENABLE_BYPASS(0)
+   )
+   L2_cache
    (
       .clk           (clk),
       .rst_n         (rst_n),
-      .l2_ch_addr    (l2_ch_addr),
+      .l2_ch_ready      (l2_ch_ready),
+      .l2_ch_valid      (l2_ch_valid),
+      .l2_ch_cmd_size   (l2_ch_cmd_size),
+      .l2_ch_cmd_ready  (l2_ch_cmd_ready),
+      .l2_ch_cmd_valid  (l2_ch_cmd_valid),
+      .l2_ch_cmd_addr   (l2_ch_cmd_addr),
+      .l2_ch_cmd_we     (l2_ch_cmd_we),
       .l2_ch_dout    (l2_ch_dout),
       .l2_ch_din     (l2_ch_din),
-      .l2_ch_req     (l2_ch_req),
-      .l2_ch_size_msk (l2_ch_size_msk),
-      .l2_ch_ready   (l2_ch_ready),
       .l2_ch_flush   (l2_ch_flush),
       
       .sdr_clk       (sdr_clk),
@@ -114,17 +124,32 @@ module tb_pb_fb_DRAM_L2_cache();
       .sdr_r_vld  (sdr_r_vld)
    );
    
-   assign l2_ch_addr = 25'h234123;
    assign l2_ch_din = 32'h34567890;
-   assign l2_ch_size_msk = 4'b1111;
+   assign l2_ch_cmd_size = 4'd3;
+   assign l2_ch_cmd_we = 1'b0;
    
    initial begin
-      #0 l2_ch_req = 1;
+      #0 l2_ch_cmd_valid = 1;
+      #0 l2_ch_ready = 1;
+      #0 l2_ch_cmd_addr = 25'h234123;
+      
+      #334781.25 l2_ch_ready = 0;
+   end
+   initial begin
+      #334832.25 l2_ch_ready = 1;
    end
    
+   wire hds_cmd = l2_ch_cmd_ready & l2_ch_cmd_valid;
+   wire hds_dout = l2_ch_ready & l2_ch_valid;
+   
    always @(posedge clk) begin
-      if(l2_ch_ready)
-         l2_ch_req <= 0;
+      if(hds_cmd)
+         l2_ch_cmd_addr <= l2_ch_cmd_addr + 4;
+   end
+   always @(posedge clk) begin
+      if(hds_dout) begin
+         l2_ch_cmd_valid <= 1;
+      end
    end
    
 endmodule
