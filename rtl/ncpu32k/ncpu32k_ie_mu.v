@@ -115,11 +115,18 @@ module ncpu32k_ie_mu
    // This ensures that operations will not change before MU ready.
    assign ieu_mu_in_ready = ~(ieu_mu_load|ieu_mu_store) | (hds_wb_in | mu_exp_taken);
    
-   // Load from memory
+   // B/HW align
+   wire [7:0] dout_8b = ({8{dbus_cmd_addr[1:0]==2'b00}} & dbus_dout[7:0]) |
+                          ({8{dbus_cmd_addr[1:0]==2'b01}} & dbus_dout[15:8]) |
+                          ({8{dbus_cmd_addr[1:0]==2'b10}} & dbus_dout[23:16]) |
+                          ({8{dbus_cmd_addr[1:0]==2'b11}} & dbus_dout[31:24]);
+   wire [15:0] dout_16b = dbus_cmd_addr[0] ? dbus_dout[15:0] : dbus_dout[31:16];
+   
+   // Data bits mask, sign extend
    assign mu_load =
          ({`NCPU_DW{ieu_mu_load_size==3'd3}} & dbus_dout) |
-         ({`NCPU_DW{ieu_mu_load_size==3'd2}} & {{16{ieu_mu_sign_ext & dbus_dout[15]}}, dbus_dout[15:0]}) |
-         ({`NCPU_DW{ieu_mu_load_size==3'd1}} & {{24{ieu_mu_sign_ext & dbus_dout[7]}}, dbus_dout[7:0]});
+         ({`NCPU_DW{ieu_mu_load_size==3'd2}} & {{16{ieu_mu_sign_ext & dout_16b[15]}}, dout_16b[15:0]}) |
+         ({`NCPU_DW{ieu_mu_load_size==3'd1}} & {{24{ieu_mu_sign_ext & dout_8b[7]}}, dout_8b[7:0]});
 
    assign dbus_ready = wb_mu_in_ready;
    assign wb_mu_in_valid = dbus_valid;
