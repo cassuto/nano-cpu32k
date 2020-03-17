@@ -19,18 +19,22 @@ module pb_fb_L2_cache
    parameter P_SETS	= 6, // 2^sets
    parameter P_LINE	= 6, // 2^P_LINE bytes per line (= busrt length of DRAM)
    parameter AW = 25,
-   parameter DW = 32
+   parameter DW = 32,
+   parameter ENABLE_BYPASS
 )
 (
    input                   clk,
    input                   rst_n,
    // L2 cache interface
-   input [AW-1:0]          l2_ch_addr,
+   output                  l2_ch_valid,
+   input                   l2_ch_ready,
+   input [2:0]             l2_ch_cmd_size,
+   output                  l2_ch_cmd_ready, /* sram is ready to accept cmd */
+   input                   l2_ch_cmd_valid, /* cmd is presented at sram'input */
+   input [AW-1:0]          l2_ch_cmd_addr,
+   input                   l2_ch_cmd_we,
    output [DW-1:0]         l2_ch_dout,
    input [DW-1:0]          l2_ch_din,
-   input                   l2_ch_req,
-   input [3:0]             l2_ch_size_msk,
-   output                  l2_ch_ready,
    input                   l2_ch_flush,
    
    // 2:1 SDRAM interface
@@ -50,18 +54,51 @@ module pb_fb_L2_cache
    reg nl_we_r; // Write to next level cache/memory
    reg [AW-P_LINE-1:0] nl_baddr_r;
    
-   // Handshake FSM
-   reg l2_ch_ready_r = 1'b1;
+   wire [3:0] l2_ch_size_msk = {4{l2_ch_cmd_we}} & (l2_ch_cmd_size==4'd1 ? 4'b0001 :
+                              l2_ch_cmd_size==4'd2 ? 4'b0011 :
+                              l2_ch_cmd_size==4'd3 ? 4'b1111 : 4'b0000);
+
+   reg l2_ch_valid_r = 1'b0;
 	reg [AW-1:0] addr_r;
 	reg [DW-1:0] din_r;
 	reg [3:0] size_msk_r;
 	reg mreq_r;
-	wire [AW-1:0] maddr = l2_ch_ready_r ? l2_ch_addr : addr_r;
-	wire [DW-1:0] mdin = l2_ch_ready_r ? l2_ch_din : din_r;
-	wire [3:0] mwmask = l2_ch_ready_r ? l2_ch_size_msk : size_msk_r;
-	wire mmreq = l2_ch_ready_r ? l2_ch_req : mreq_r;
+
+   // Handshake FSM
+   wire push = (l2_ch_cmd_valid & l2_ch_cmd_ready);
+   wire pop = (l2_ch_valid & l2_ch_ready);
+
+   reg pending_r;
+   always @(posedge clk or negedge rst_n) begin
+      if(~rst_n)
+         pending_r <= 1'b0;
+      else if(push|pop)
+         pending_r <= (push | ~pop);
+   end
    
-   assign l2_ch_ready = l2_ch_ready_r;
+   generate
+      if (ENABLE_BYPASS) begin :enable_bypass
+         assign l2_ch_cmd_ready = (~pending_r | pop);
+      end else begin
+         assign l2_ch_cmd_ready = (~pending_r);
+      end
+   endgenerate
+   
+   always @(posedge clk) begin
+		if (~pending_r) begin
+			addr_r <= l2_ch_cmd_addr;
+			din_r <= l2_ch_din;
+			size_msk_r <= l2_ch_size_msk;
+			mreq_r <= push;
+		end
+   end
+   
+   wire [AW-1:0] maddr = pending_r ? addr_r : l2_ch_cmd_addr;
+	wire [DW-1:0] mdin = pending_r ? din_r : l2_ch_din;
+	wire [3:0] mwmask = pending_r ? size_msk_r : l2_ch_size_msk;
+	wire mmreq = pending_r ? mreq_r : push;
+   
+   assign l2_ch_valid = pending_r & l2_ch_valid_r;
    
    // Flushing FSM
 	reg fls_req = 1'b0;
@@ -129,26 +166,26 @@ generate
 endgenerate
 
    // Reset control
-   generate
-      genvar j;
-      for(i=0;i<(1<<P_SETS);i=i+1) begin
+generate
+   genvar j;
+   for(i=0;i<(1<<P_SETS);i=i+1) begin
+      always @(posedge clk or negedge rst_n) begin
+         if (~rst_n) begin
+            cache_dirty[i] <= 0;
+         end
+      end
+   end
+   for(i=0;i<(1<<P_WAYS);i=i+1) begin
+      for(j=0;j<(1<<P_SETS);j=j+1) begin
          always @(posedge clk or negedge rst_n) begin
             if (~rst_n) begin
-               cache_dirty[i] <= 0;
+               cache_lru[i][j] <= 0;
+               cache_addr[i][j] <= 0;
             end
          end
       end
-      for(i=0;i<(1<<P_WAYS);i=i+1) begin
-         for(j=0;j<(1<<P_SETS);j=j+1) begin
-            always @(posedge clk or negedge rst_n) begin
-               if (~rst_n) begin
-                  cache_lru[i][j] <= 0;
-                  cache_addr[i][j] <= 0;
-               end
-            end
-         end
-      end
-   endgenerate
+   end
+endgenerate
 
 	always begin
       // When burst transmission for cache line filling or writing back
@@ -175,6 +212,7 @@ endgenerate
    wire [DW/8-1:0] ch_mem_we_b = mwmask;
    wire [CH_AW-1:0] ch_mem_addr_b = {match_set, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], maddr[P_LINE-1:2]};
    wire [DW-1:0] ch_mem_din_b = mdin;
+   wire [DW-1:0] ch_mem_dout_b;
    
    ncpu32k_cell_tdpram_aclkd_sclk
       #(
@@ -193,9 +231,13 @@ endgenerate
          .addr_b  (ch_mem_addr_b[CH_AW-1:0]),
          .we_b    (ch_mem_we_b[DW/8-1:0]),
          .din_b   (ch_mem_din_b[DW-1:0]),
-         .dout_b  (l2_ch_dout[DW-1:0]),
+         .dout_b  (ch_mem_dout_b[DW-1:0]),
          .en_b    (ch_mem_en_b)
       );
+      
+   assign l2_ch_dout = (l2_ch_cmd_size==3'd1 ? {24'b0, ch_mem_dout_b[7:0]} :
+                              l2_ch_cmd_size==3'd2 ? {16'b0, ch_mem_dout_b[15:8],ch_mem_dout_b[7:0]} :
+                              l2_ch_cmd_size==3'd3 ? ch_mem_dout_b : 4'b0000);
 
 generate
 	for(i=0; i<(1<<P_WAYS); i=i+1)
@@ -219,13 +261,6 @@ endgenerate
 	always @(posedge clk) begin
 		line_adr_cnt_msb <= line_adr_cnt[P_LINE-2];
 		fls_req <= ~fls_cnt[P_WAYS+P_SETS] & (fls_req | l2_ch_flush);
-      
-		if (l2_ch_ready_r) begin
-			addr_r <= l2_ch_addr;
-			din_r <= l2_ch_din;
-			size_msk_r <= l2_ch_size_msk;
-			mreq_r <= l2_ch_req;
-		end
 		
 		case(status_r)
 			S_IDLE: begin
@@ -240,13 +275,13 @@ endgenerate
 					nl_rd_r <= ~dirty & ~fls_pending;
 					nl_we_r <= dirty;
 					status_r <= dirty ? S_WRITE_PENDING : S_READ_PENDING_1;
-					l2_ch_ready_r <= 1'b0;
+               l2_ch_valid_r <= 1'b0;
 				end else begin
                // Accept flush request
 					fls_cnt[P_WAYS+P_SETS] <= fls_cnt[P_WAYS+P_SETS] | fls_req;
                // Accept accessing cmd
-					l2_ch_ready_r <= 1'b1;
-				end
+               l2_ch_valid_r <= 1'b1;
+            end
 			end
          // Pending for writing
 			S_WRITE_PENDING: begin
