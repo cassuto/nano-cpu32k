@@ -9,5 +9,5 @@ if len(sys.argv) < 2:
 with open(sys.argv[2], 'w') as fp, open(sys.argv[1], 'rb') as fs:
     bytes = fs.read()
     for b in bytes:
-        fp.write(hex(ord(b)).replace('0x', ''))
+        fp.write('%02x' % ord(b))
         fp.write('\n')
