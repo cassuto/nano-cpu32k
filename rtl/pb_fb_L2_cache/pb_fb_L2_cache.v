@@ -120,21 +120,21 @@ module pb_fb_L2_cache
 	reg line_adr_cnt_msb = 0;
    
    wire [DW-1:0]ch_mem_dout;
-   
 
    // Cache entries
-	reg [(1<<P_WAYS)-1:0]cache_dirty[0:(1<<P_SETS)-1];
-	reg [P_WAYS-1:0]cache_lru[0:(1<<P_WAYS)-1][0:(1<<P_SETS)-1];
-	reg [AW-P_SETS-P_LINE-1:0]cache_addr[0:(1<<P_WAYS)-1][0:(1<<P_SETS)-1];
+   reg cache_v[0:(1<<P_WAYS)-1][0:(1<<P_SETS)-1];
+	reg [(1<<P_WAYS)-1:0] cache_dirty[0:(1<<P_SETS)-1];
+	reg [P_WAYS-1:0] cache_lru[0:(1<<P_WAYS)-1][0:(1<<P_SETS)-1];
+	reg [AW-P_SETS-P_LINE-1:0] cache_addr[0:(1<<P_WAYS)-1][0:(1<<P_SETS)-1];
 	
-   wire [(1<<P_WAYS)-1:0]match;
-	wire [(1<<P_WAYS)-1:0]free;
-   wire [P_WAYS-1:0]lru[(1<<P_WAYS)-1:0];
+   wire [(1<<P_WAYS)-1:0] match;
+	wire [(1<<P_WAYS)-1:0] free;
+   wire [P_WAYS-1:0] lru[(1<<P_WAYS)-1:0];
 
 generate
 	genvar i;
 	for(i=0; i<(1<<P_WAYS); i=i+1) begin
-		assign match[i] = ~fls_pending && (cache_addr[i][entry_idx] == maddr[AW-1:P_LINE+P_SETS]);
+		assign match[i] = ~fls_pending & cache_v[i][entry_idx] & (cache_addr[i][entry_idx] == maddr[AW-1:P_LINE+P_SETS]);
 		assign free[i] = fls_pending ? (fls_cnt[P_WAYS+P_SETS-1:P_SETS] == i) : ~|cache_lru[i][entry_idx];
 		assign lru[i] = {P_WAYS{match[i]}} & cache_lru[i][entry_idx];
 	end
@@ -179,6 +179,7 @@ generate
       for(j=0;j<(1<<P_SETS);j=j+1) begin
          always @(posedge clk or negedge rst_n) begin
             if (~rst_n) begin
+               cache_v[i][j] <= 0;
                cache_lru[i][j] <= 0;
                cache_addr[i][j] <= 0;
             end
@@ -270,8 +271,10 @@ endgenerate
                // Fill a free entry.
                // If the target entry is dirty, firstly sync with the
                // next level cache/memory, then refill it.
-					if(~fls_pending)
+					if(~fls_pending) begin
+                  cache_v[free_set_idx][entry_idx] <= 1'b1;
                   cache_addr[free_set_idx][entry_idx] <= maddr[AW-1:P_LINE+P_SETS];
+               end
 					nl_rd_r <= ~dirty & ~fls_pending;
 					nl_we_r <= dirty;
 					status_r <= dirty ? S_WRITE_PENDING : S_READ_PENDING_1;
