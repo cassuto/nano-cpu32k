@@ -62,7 +62,7 @@ generate
    for(i=0;i<DW/8;i=i+1) begin
       always @(posedge clk_a)
          if(en_a & we_a[i])
-            mem_vector[addr_a][i*8-1:(i-1)*8] <= din_a[(i+1)*8-1:i*8];
+            mem_vector[addr_a][(i+1)*8-1:i*8] <= din_a[(i+1)*8-1:i*8];
    end
 endgenerate
    always @(posedge clk_a)
@@ -78,7 +78,7 @@ generate
    for(i=0;i<DW/8;i=i+1) begin
       always @(posedge clk_b)
          if(en_b & we_b[i])
-            mem_vector[addr_b][i*8-1:(i-1)*8] <= din_b[(i+1)*8-1:i*8];
+            mem_vector[addr_b][(i+1)*8-1:i*8] <= din_b[(i+1)*8-1:i*8];
    end
 endgenerate
    always @(posedge clk_b)
