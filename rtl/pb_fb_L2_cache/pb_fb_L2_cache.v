@@ -39,8 +39,8 @@ module pb_fb_L2_cache
    
    // 2:1 SDRAM interface
    input                   sdr_clk,
-   input [DW/2-1:0]        sdr_din,
-   output reg[DW/2-1:0]    sdr_dout,
+   input [DW/2-1:0]        sdr_dout,
+   output reg[DW/2-1:0]    sdr_din,
    output reg              sdr_cmd_bst_rd_req,
    output reg              sdr_cmd_bst_we_req,
    output [AW-3:0]         sdr_cmd_addr,
@@ -49,19 +49,20 @@ module pb_fb_L2_cache
 );
    wire l2_ch_w_rdy; // Cache line write ready
    wire l2_ch_r_vld; // Cache line read valid
-   
    reg nl_rd_r; // Read from next level cache/memory
    reg nl_we_r; // Write to next level cache/memory
    reg [AW-P_LINE-1:0] nl_baddr_r;
+   wire [DW/2-1:0] nl_dout;
    
-   wire [3:0] l2_ch_size_msk = {4{l2_ch_cmd_we}} & (l2_ch_cmd_size==4'd1 ? 4'b0001 :
-                              l2_ch_cmd_size==4'd2 ? 4'b0011 :
-                              l2_ch_cmd_size==4'd3 ? 4'b1111 : 4'b0000);
+   wire [3:0] l2_ch_size_msk = (l2_ch_cmd_size==3'd1 ? 4'b0001 :
+                              l2_ch_cmd_size==3'd2 ? 4'b0011 :
+                              l2_ch_cmd_size==3'd3 ? 4'b1111 : 4'b0000) & {4{l2_ch_cmd_we}};
 
    reg l2_ch_valid_r = 1'b0;
 	reg [AW-1:0] addr_r;
 	reg [DW-1:0] din_r;
 	reg [3:0] size_msk_r;
+   reg [3:0] r_size_msk_r;
 	reg mreq_r;
 
    // Handshake FSM
@@ -188,17 +189,15 @@ generate
    end
 endgenerate
 
-	always begin
-      // When burst transmission for cache line filling or writing back
-      // maintain the line addr counter
-      @(posedge sdr_clk)
-         if(l2_ch_w_rdy | l2_ch_r_vld)
-            line_adr_cnt <= line_adr_cnt + 1'b1;
+   // When burst transmission for cache line filling or writing back
+   // maintain the line addr counter
+   always @(posedge sdr_clk)
+      if(l2_ch_w_rdy | l2_ch_r_vld)
+         line_adr_cnt <= line_adr_cnt + 1'b1;
 
-      // Mask HI/LO 16bit. Assert (03161421)
-      @(posedge sdr_clk)
-         sdr_dout <= line_adr_cnt[0] ? ch_mem_dout[15:0] : ch_mem_dout[31:16];
-	end
+   // Mask HI/LO 16bit. Assert (03161421)
+   always @(posedge sdr_clk)
+      sdr_din <= line_adr_cnt[0] ? ch_mem_dout[15:0] : ch_mem_dout[31:16];
 
    localparam CH_AW = P_WAYS+P_SETS+P_LINE-1;
    
@@ -208,7 +207,7 @@ endgenerate
    wire ch_mem_en_a = l2_ch_w_rdy | l2_ch_r_vld;
    wire [DW/8-1:0] ch_mem_we_a = {4{l2_ch_w_rdy}} & line_adr_cnt_msk;
    wire [CH_AW-1:0] ch_mem_addr_a = {match_set, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], line_adr_cnt[P_LINE-2:1]};
-   wire [DW-1:0] ch_mem_din_a = {sdr_din, sdr_din};
+   wire [DW-1:0] ch_mem_din_a = {nl_dout[DW/2-1:0], nl_dout[DW/2-1:0]};
    wire ch_mem_en_b = mmreq & hit & ch_idle;
    wire [DW/8-1:0] ch_mem_we_b = mwmask;
    wire [CH_AW-1:0] ch_mem_addr_b = {match_set, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], maddr[P_LINE-1:2]};
@@ -235,10 +234,8 @@ endgenerate
          .dout_b  (ch_mem_dout_b[DW-1:0]),
          .en_b    (ch_mem_en_b)
       );
-      
-   assign l2_ch_dout = (l2_ch_cmd_size==3'd1 ? {24'b0, ch_mem_dout_b[7:0]} :
-                              l2_ch_cmd_size==3'd2 ? {16'b0, ch_mem_dout_b[15:8],ch_mem_dout_b[7:0]} :
-                              l2_ch_cmd_size==3'd3 ? ch_mem_dout_b : 4'b0000);
+
+   assign l2_ch_dout = ch_mem_dout_b;
 
 generate
 	for(i=0; i<(1<<P_WAYS); i=i+1)
@@ -351,6 +348,8 @@ endgenerate
    end
    
    assign sdr_cmd_addr = sdr_cmd_addr_r;
+   
+   assign nl_dout = sdr_dout;
    
    assign l2_ch_w_rdy = sdr_r_vld;
    assign l2_ch_r_vld = sdr_w_rdy;
