@@ -17,6 +17,8 @@
 /*  Lesser General Public License for more details.                        */
 /***************************************************************************/
 
+`include "ncpu32k_config.h"
+
 module ncpu32k_cell_dff_lr # (
    parameter DW = 1, // Data Width in bits
    parameter RST_VECTOR = {DW{1'b0}}
