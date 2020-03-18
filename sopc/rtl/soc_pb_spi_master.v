@@ -29,7 +29,7 @@ module soc_pb_spi_master
    input [4:0]                pb_spi_cmd_we_msk,
    input [31:0]               pb_spi_din,
    output [31:0]              pb_spi_dout,
-   output                     pb_spi_valid,
+   output reg                 pb_spi_valid,
    input                      pb_spi_ready,
    // SPI Interface
    output reg                 SPI_SCK,
@@ -39,6 +39,7 @@ module soc_pb_spi_master
 );
 
    wire hds_cmd = pb_spi_cmd_valid & pb_spi_cmd_ready;
+   wire hds_dout = pb_spi_valid & pb_spi_ready;
 
    wire we_CR = pb_spi_cmd_we_msk==4'b0011;
    wire we_DR = pb_spi_cmd_we_msk==4'b0001;
@@ -70,6 +71,13 @@ module soc_pb_spi_master
    end
    
    assign pb_spi_dout = {24'b0, sh_reg[7:0]};
-   assign pb_spi_valid = 1'b1;
+   
+   always @(posedge clk or negedge rst_n)
+      if(~rst_n)
+         pb_spi_valid <= 1'b0;
+      else if (hds_cmd | hds_dout)
+         pb_spi_valid <= (hds_cmd | ~hds_dout);
 
+   assign pb_spi_cmd_ready = ~pb_spi_valid;
+         
 endmodule
