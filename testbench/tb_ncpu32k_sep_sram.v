@@ -36,13 +36,12 @@ module tb_ncpu32k_sep_sram();
    wire                    fb_dbus_cmd_ready;
    wire                    fb_dbus_cmd_valid;
    wire [`NCPU_AW-1:0]     fb_dbus_cmd_addr;
-   wire [2:0]              fb_dbus_cmd_size;
-   wire                    fb_dbus_cmd_we;
+   wire [`NCPU_DW/8-1:0]   fb_dbus_cmd_we_msk;
    wire [`NCPU_NIRQ-1:0]   fb_irqs;
    
    handshake_cmd_sram #(
       .MEMH_FILE("insn.mem"),
-      .DELAY   (128)
+      .DELAY   (1)
    ) d_ram
    (
       .clk     (clk),
@@ -54,14 +53,13 @@ module tb_ncpu32k_sep_sram();
       .cmd_ready  (fb_dbus_cmd_ready),
       .cmd_valid  (fb_dbus_cmd_valid),
       .cmd_addr   (fb_dbus_cmd_addr),
-      .cmd_we     (fb_dbus_cmd_we),
-      .cmd_size   (fb_dbus_cmd_size)
+      .cmd_we_msk (fb_dbus_cmd_we_msk)
    );
    
    
    handshake_cmd_sram #(
       .MEMH_FILE("insn.mem"),
-      .DELAY (3)
+      .DELAY (1)
    ) i_ram
    (
       .clk     (clk),
@@ -73,8 +71,7 @@ module tb_ncpu32k_sep_sram();
       .cmd_ready  (fb_ibus_cmd_ready),
       .cmd_valid  (fb_ibus_cmd_valid),
       .cmd_addr   (fb_ibus_cmd_addr),
-      .cmd_we     (1'b0),
-      .cmd_size   (3'd3)
+      .cmd_we_msk (4'b0)
    );
    
    assign fb_irqs = {`NCPU_NIRQ{1'b0}};
@@ -96,8 +93,7 @@ module tb_ncpu32k_sep_sram();
       .fb_dbus_cmd_ready   (fb_dbus_cmd_ready),
       .fb_dbus_cmd_valid   (fb_dbus_cmd_valid),
       .fb_dbus_cmd_addr    (fb_dbus_cmd_addr),
-      .fb_dbus_cmd_size    (fb_dbus_cmd_size),
-      .fb_dbus_cmd_we      (fb_dbus_cmd_we),
+      .fb_dbus_cmd_we_msk  (fb_dbus_cmd_we_msk),
       .fb_irqs             (fb_irqs)
    );
    

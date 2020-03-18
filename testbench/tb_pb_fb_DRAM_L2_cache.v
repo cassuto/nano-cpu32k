@@ -65,11 +65,10 @@ module tb_pb_fb_DRAM_L2_cache();
    
    wire                  l2_ch_valid;
    reg                   l2_ch_ready;
-   wire [2:0]            l2_ch_cmd_size;
+   wire [L2_DW/8-1:0]    l2_ch_cmd_we_msk;
    wire                  l2_ch_cmd_ready; /* sram is ready to accept cmd */
    reg                   l2_ch_cmd_valid; /* cmd is presented at sram'input */
    reg [AW-1:0]          l2_ch_cmd_addr;
-   wire                  l2_ch_cmd_we;
    wire [L2_DW-1:0]      l2_ch_dout;
    wire [L2_DW-1:0]      l2_ch_din;
    reg                   l2_ch_flush = 0;
@@ -105,11 +104,10 @@ module tb_pb_fb_DRAM_L2_cache();
       .rst_n         (rst_n),
       .l2_ch_ready      (l2_ch_ready),
       .l2_ch_valid      (l2_ch_valid),
-      .l2_ch_cmd_size   (l2_ch_cmd_size),
+      .l2_ch_cmd_we_msk   (l2_ch_cmd_we_msk),
       .l2_ch_cmd_ready  (l2_ch_cmd_ready),
       .l2_ch_cmd_valid  (l2_ch_cmd_valid),
       .l2_ch_cmd_addr   (l2_ch_cmd_addr),
-      .l2_ch_cmd_we     (l2_ch_cmd_we),
       .l2_ch_dout    (l2_ch_dout),
       .l2_ch_din     (l2_ch_din),
       .l2_ch_flush   (l2_ch_flush),
@@ -125,8 +123,7 @@ module tb_pb_fb_DRAM_L2_cache();
    );
    
    assign l2_ch_din = 32'h34567890;
-   assign l2_ch_cmd_size = 4'd3;
-   assign l2_ch_cmd_we = 1'b0;
+   assign l2_ch_cmd_we_msk = 4'b1111;
    
    initial begin
       #0 l2_ch_cmd_valid = 1;

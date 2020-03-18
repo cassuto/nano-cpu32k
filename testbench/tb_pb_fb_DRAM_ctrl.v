@@ -46,15 +46,15 @@ module tb_pb_fb_DRAM_ctrl();
    localparam CMD_ADDR_WIDTH = 23;
    localparam DW = 16;
    
-   reg cmd_bst_we_req = 0;
-   wire cmd_bst_we_ack;
-   reg cmd_bst_rd_req = 0;
-   wire cmd_bst_rd_ack;
-   reg [CMD_ADDR_WIDTH-1:0] cmd_addr;
-   reg [DW-1:0] din;
-   wire [DW-1:0] dout;
-   wire r_vld;
-   wire w_rdy;
+   reg sdr_cmd_bst_we_req = 0;
+   wire sdr_cmd_bst_we_ack;
+   reg sdr_cmd_bst_rd_req = 0;
+   wire sdr_cmd_bst_rd_ack;
+   reg [CMD_ADDR_WIDTH-1:0] sdr_cmd_addr;
+   reg [DW-1:0] sdr_din;
+   wire [DW-1:0] sdr_dout;
+   wire sdr_r_vld;
+   wire sdr_w_rdy;
    
    pb_fb_DRAM_ctrl fb_DRAM_ctrl
    (
@@ -66,26 +66,26 @@ module tb_pb_fb_DRAM_ctrl();
       .DRAM_ADDR (DRAM_ADDR), // SDRAM address
       .DRAM_DATA (DRAM_DATA), // SDRAM data
       .DRAM_DQM (DRAM_DQM), // SDRAM DQM
-      .cmd_bst_we_req (cmd_bst_we_req),
-      .cmd_bst_we_ack (cmd_bst_we_ack),
-      .cmd_bst_rd_req (cmd_bst_rd_req),
-      .cmd_bst_rd_ack (cmd_bst_rd_ack),
-      .cmd_addr (cmd_addr),
-      .din (din),
-      .dout (dout),
-      .r_vld (r_vld),
-      .w_rdy (w_rdy)
+      .sdr_cmd_bst_we_req (sdr_cmd_bst_we_req),
+      .sdr_cmd_bst_we_ack (sdr_cmd_bst_we_ack),
+      .sdr_cmd_bst_rd_req (sdr_cmd_bst_rd_req),
+      .sdr_cmd_bst_rd_ack (sdr_cmd_bst_rd_ack),
+      .sdr_cmd_addr (sdr_cmd_addr),
+      .sdr_din (sdr_din),
+      .sdr_dout (sdr_dout),
+      .sdr_r_vld (sdr_r_vld),
+      .sdr_w_rdy (sdr_w_rdy)
    );
    
    // test Write
    initial begin
-      #30 cmd_addr = 23'd16;
-      #30 din = 16'h1234;
-      #30 cmd_bst_we_req <= 1'b1;
+      #30 sdr_cmd_addr = 23'd32;
+      #30 sdr_din = 16'h1234;
+      #30 sdr_cmd_bst_we_req <= 1'b1;
    end
    
    always @(posedge clk)
-      if(cmd_bst_we_ack)
-         cmd_bst_we_req <= 1'b0;
+      if(sdr_cmd_bst_we_ack)
+         sdr_cmd_bst_we_req <= 1'b0;
    
 endmodule
