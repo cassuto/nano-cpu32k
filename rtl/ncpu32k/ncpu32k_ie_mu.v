@@ -61,7 +61,12 @@ module ncpu32k_ie_mu
    assign mu_lsa = ieu_operand_1 + ieu_operand_2;
    
    assign dbus_cmd_addr = mu_lsa;
-
+   
+   // Address alignment check
+   wire [2:0] mu_size = ieu_mu_load ? ieu_mu_load_size : ieu_mu_store_size;
+   wire exp_misalign = (mu_size==3'd3 & |dbus_cmd_addr[1:0]) |
+                       (mu_size==3'd2 & dbus_cmd_addr[0]);
+   
    // B/HW align
    wire [`NCPU_DW/8-1:0] we_msk_8b = (dbus_cmd_addr[1:0]==2'b00 ? 4'b0001 :
                               dbus_cmd_addr[1:0]==2'b01 ? 4'b0010 :
@@ -86,30 +91,31 @@ module ncpu32k_ie_mu
    wire mu_op_nxt = ieu_mu_load | ieu_mu_store;
    
    // Internal, Don't deliver it out
-   wire exp_raised_w = (exp_dmm_tlb_miss | exp_dmm_page_fault);
+   wire dmm_exp_raised_w = (exp_dmm_tlb_miss | exp_dmm_page_fault);
    // Handshaked with flush when exception raised
-   wire hds_exp = (exp_raised_w & mu_exp_flush_ack);
+   wire hds_dmm_exp = (dmm_exp_raised_w & mu_exp_flush_ack);
    
    // MU FSM
    wire pending_r;
    // If handshaked with dbus_cmd, then MU is pending
    wire pending_push = hds_dbus_cmd;
    // If handshaked with downstream module (or exception), then MU is idle
-   wire pending_pop = hds_wb_in | hds_exp;
+   wire pending_pop = hds_wb_in | hds_dmm_exp;
    
    wire pending_nxt = (pending_push | ~pending_pop);
 
    ncpu32k_cell_dff_lr #(1) dff_pending_r
                    (clk,rst_n, (pending_push|pending_pop), pending_nxt, pending_r);
    
-   wire pending = pending_r & ~hds_exp; // bypass flush_ack
+   wire pending = pending_r & ~hds_dmm_exp; // bypass flush_ack
    
-   // MMU Exceptions
-   // Just when pending exception can be delivered
-   assign mu_exp_taken = pending & exp_raised_w;
+   // Exceptions
+   // Just when pending, MMU exception can be delivered
+   // Misalignment exception could be delivered immediately as it blocked cmd request.
+   assign mu_exp_taken = (pending & dmm_exp_raised_w) | exp_misalign;
    
-   // Just when pending we can send cmd
-   wire send_cmd = ~pending;
+   // Just when not pending and no error we can send cmd
+   wire send_cmd = ~pending & ~exp_misalign;
 
    // Send cmd to dbus if it's a valid MU operation
    assign dbus_cmd_valid = mu_op_nxt & ieu_mu_in_valid & send_cmd;
@@ -118,7 +124,8 @@ module ncpu32k_ie_mu
    wire [`NCPU_VECT_DW-1:0] exp_vector =
       (
          ({`NCPU_VECT_DW{exp_dmm_tlb_miss}} & `NCPU_EDTM_VECTOR) |
-         ({`NCPU_VECT_DW{exp_dmm_page_fault}} & `NCPU_EDPF_VECTOR)
+         ({`NCPU_VECT_DW{exp_dmm_page_fault}} & `NCPU_EDPF_VECTOR) |
+         ({`NCPU_VECT_DW{exp_misalign}} & `NCPU_EALIGN_VECTOR)
       );
                      
    assign mu_exp_tgt = {{`NCPU_AW-2-`NCPU_VECT_DW{1'b0}}, exp_vector[`NCPU_VECT_DW-1:2]};
