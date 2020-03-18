@@ -6,7 +6,7 @@ module handshake_cmd_sram
 #(
    parameter DW = 32, //`NCPU_DW,
    parameter AW = `NCPU_AW,
-   parameter SIZE_BYTES = 32*1024,
+   parameter SIZE_BYTES = 32*1024*1024,
    parameter MEMH_FILE = "",
    parameter DELAY=3
 )
@@ -17,13 +17,12 @@ module handshake_cmd_sram
    output                     valid,
    input                      ready,
    output reg [DW-1:0]        dout,
-   input [2:0]                cmd_size,
+   input [DW/8-1:0]           cmd_we_msk,
    output                     cmd_ready, /* sram is ready to accept cmd */
    input                      cmd_valid, /* cmd is presented at sram'input */
-   input [`NCPU_AW-1:0]       cmd_addr,
-   input                      cmd_we
+   input [`NCPU_AW-1:0]       cmd_addr
 );
-   reg[7:0] mem[0:SIZE_BYTES-1];
+   reg[DW-1:0] mem[0:SIZE_BYTES-1];
 
    initial begin
       integer i;
@@ -37,26 +36,11 @@ module handshake_cmd_sram
    end
 
    wire [AW-1:0] addr_w;
-   wire [2:0]  size_w;
-   wire [DW-1:0] dout_nxt = (size_w==3'd3) 
-                        ? {mem[addr_w+3][7:0],
-                           mem[addr_w+2][7:0],
-                           mem[addr_w+1][7:0],
-                           mem[addr_w][7:0]}
-                        : (size_w==3'd2)
-                           ? {8'b0,
-                              8'b0,
-                              mem[addr_w+1][7:0],
-                              mem[addr_w][7:0]}
-                           : {8'b0,
-                              8'b0,
-                              8'b0,
-                              mem[addr_w][7:0]};
+   wire [DW-1:0] dout_nxt = mem[addr_w];
 
    reg [AW-1:0] addr_r;
    reg [DW-1:0] din_r;
-   reg [2:0] size_r;
-   reg we_r;
+   reg [DW/8-1:0] we_msk_r;
    reg [10:0] delay_r=4;
    generate
       if(DELAY>=128) begin : delay_random
@@ -69,7 +53,6 @@ module handshake_cmd_sram
          reg [10:0] valid_r = 10'd0;
          
          assign addr_w = addr_r;
-         assign size_w = size_r;
          
          always @* begin
             if(valid_r==10'd0) begin
@@ -84,27 +67,23 @@ module handshake_cmd_sram
             valid_r <= valid_nxt;
             case (valid_nxt)
             10'd1: begin
-               if (cmd_we) begin
+               if (|cmd_we_msk) begin
                   din_r <= din; // Read din
                end
-               we_r <= cmd_we;
                addr_r <= cmd_addr; // Read address
-               size_r <= cmd_size;
+               we_msk_r <= cmd_we_msk;
                delay_r <= ({$random} % DELAY_MAX) + DELAY_MIN; // Random delay
             end
             delay_r: begin
-               if (we_r) begin
-                  if(size_r==3'd3) begin
-                     mem[addr_r+3][7:0] <= din_r[31:24];
-                     mem[addr_r+2][7:0] <= din_r[23:16];
-                     mem[addr_r+1][7:0] <= din_r[15:8];
-                     mem[addr_r][7:0] <= din_r[7:0];
-                  end else if(size_r==3'd2) begin
-                     mem[addr_r+1][7:0] <= din_r[15:8];
-                     mem[addr_r][7:0] <= din_r[7:0];
-                  end else if(size_r==3'd1) begin
-                     mem[addr_r][7:0] <= din_r[7:0];
-                  end
+               if (|we_msk_r) begin
+                  if(we_msk_r[3])
+                     mem[addr_r+3][31:24] <= din[31:24];
+                  if(we_msk_r[2])
+                     mem[addr_r+2][23:16] <= din[23:16];
+                  if(we_msk_r[1])
+                     mem[addr_r+1][15:8] <= din[15:8];
+                  if(we_msk_r[0])
+                     mem[addr_r][7:0] <= din[7:0];
                end else begin
                   dout <= dout_nxt; // Output
                end
@@ -123,7 +102,6 @@ module handshake_cmd_sram
          reg [10:0] valid_r = 10'd0;
          
          assign addr_w = addr_r;
-         assign size_w = size_r;
          
          always @* begin
             if(valid_r==10'd0) begin
@@ -138,26 +116,22 @@ module handshake_cmd_sram
             valid_r <= valid_nxt;
             case (valid_nxt)
             10'd1: begin
-               if (cmd_we) begin
+               if (|cmd_we_msk) begin
                   din_r <= din; // Read din
                end
-               we_r <= cmd_we;
                addr_r <= cmd_addr; // Read address
-               size_r <= cmd_size;
+               we_msk_r <= cmd_we_msk;
             end
             DELAY: begin
-               if (we_r) begin
-                  if(size_r==3'd3) begin
-                     mem[addr_r+3][7:0] <= din_r[31:24];
-                     mem[addr_r+2][7:0] <= din_r[23:16];
-                     mem[addr_r+1][7:0] <= din_r[15:8];
-                     mem[addr_r][7:0] <= din_r[7:0];
-                  end else if(size_r==3'd2) begin
-                     mem[addr_r+1][7:0] <= din_r[15:8];
-                     mem[addr_r][7:0] <= din_r[7:0];
-                  end else if(size_r==3'd1) begin
-                     mem[addr_r][7:0] <= din_r[7:0];
-                  end
+               if (|we_msk_r) begin
+                  if(we_msk_r[3])
+                     mem[addr_r+3][31:24] <= din[31:24];
+                  if(we_msk_r[2])
+                     mem[addr_r+2][23:16] <= din[23:16];
+                  if(we_msk_r[1])
+                     mem[addr_r+1][15:8] <= din[15:8];
+                  if(we_msk_r[0])
+                     mem[addr_r][7:0] <= din[7:0];
                end else begin
                   dout <= dout_nxt; // Output
                end
@@ -170,7 +144,6 @@ module handshake_cmd_sram
 
       end else if (DELAY==2) begin : delay_2
          assign addr_w = cmd_addr;
-         assign size_w = cmd_size;
          wire push = (cmd_valid & cmd_ready);
          wire pop = (valid & ready);
          wire valid_nxt = (push | ~pop);
@@ -179,28 +152,24 @@ module handshake_cmd_sram
                          
          assign cmd_ready = ~valid;
          always @(posedge clk) begin
-            if(push & ~cmd_we) begin
+            if(push & ~|cmd_we_msk) begin
                dout <= dout_nxt;
             end
          end
          always @(posedge clk) begin
-            if(push & cmd_we) begin
-               if(cmd_size==3'd3) begin
-                  mem[cmd_addr+3][7:0] <= din[31:24];
-                  mem[cmd_addr+2][7:0] <= din[23:16];
-                  mem[cmd_addr+1][7:0] <= din[15:8];
+            if(push) begin
+               if(cmd_we_msk[3])
+                  mem[cmd_addr+3][31:24] <= din[31:24];
+               if(cmd_we_msk[2])
+                  mem[cmd_addr+2][23:16] <= din[23:16];
+               if(cmd_we_msk[1])
+                  mem[cmd_addr+1][15:8] <= din[15:8];
+               if(cmd_we_msk[0])
                   mem[cmd_addr][7:0] <= din[7:0];
-               end else if(cmd_size==3'd2) begin
-                  mem[cmd_addr+1][7:0] <= din[15:8];
-                  mem[cmd_addr][7:0] <= din[7:0];
-               end else if(cmd_size==3'd1) begin
-                  mem[cmd_addr][7:0] <= din[7:0];
-               end
             end
          end
       end else if(DELAY==1) begin : delay_1
          assign addr_w = cmd_addr;
-         assign size_w = cmd_size;
          wire push = (cmd_valid & cmd_ready);
          wire pop = (valid & ready);
          wire valid_nxt = (push | ~pop);
@@ -209,32 +178,23 @@ module handshake_cmd_sram
 
          assign cmd_ready = ~valid | pop;
          always @(posedge clk) begin
-            if(push & ~cmd_we) begin
+            if(push & ~|cmd_we_msk) begin
                dout <= dout_nxt;
             end
          end
          always @(posedge clk) begin
-            if(push & cmd_we) begin
-               if(cmd_size==3'd3) begin
-                  mem[cmd_addr+3][7:0] <= din[31:24];
-                  mem[cmd_addr+2][7:0] <= din[23:16];
-                  mem[cmd_addr+1][7:0] <= din[15:8];
+            if(push) begin
+               if(cmd_we_msk[3])
+                  mem[cmd_addr+3][31:24] <= din[31:24];
+               if(cmd_we_msk[2])
+                  mem[cmd_addr+2][23:16] <= din[23:16];
+               if(cmd_we_msk[1])
+                  mem[cmd_addr+1][15:8] <= din[15:8];
+               if(cmd_we_msk[0])
                   mem[cmd_addr][7:0] <= din[7:0];
-               end else if(cmd_size==3'd2) begin
-                  mem[cmd_addr+1][7:0] <= din[15:8];
-                  mem[cmd_addr][7:0] <= din[7:0];
-               end else if(cmd_size==3'd1) begin
-                  mem[cmd_addr][7:0] <= din[7:0];
-               end
             end
          end
       end
    endgenerate
    
-CHECK_SIZE:
-   assert property (@(posedge clk) 
-                     ( (cmd_ready&cmd_valid) & cmd_size == 3'd0 )
-                  )
-   else $fatal ("\n error: cmd_size==0\n");
-
 endmodule
