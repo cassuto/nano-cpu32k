@@ -20,7 +20,7 @@ module ncpu32k_psr
    parameter CPUID_VER = 1,
    parameter CPUID_REV = 0,
    parameter CPUID_FIMM = 1,
-   parameter CPUID_FDMM = 0,
+   parameter CPUID_FDMM = 1,
    parameter CPUID_FICA = 0,
    parameter CPUID_FDCA = 0,
    parameter CPUID_FDBG = 0,

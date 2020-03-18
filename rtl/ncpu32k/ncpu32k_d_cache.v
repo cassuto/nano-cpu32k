@@ -26,8 +26,7 @@ module ncpu32k_d_cache
    output                  dcache_cmd_ready, /* dcache is ready to accept cmd */
    input                   dcache_cmd_valid, /* cmd is presented at dcache's input */
    input [`NCPU_AW-1:0]    dcache_cmd_addr,
-   input [2:0]             dcache_cmd_size,
-   input                   dcache_cmd_we,
+   input [`NCPU_DW/8-1:0]  dcache_cmd_we_msk,
    input                   fb_dbus_valid, /* Insn is presented at dbus */
    output                  fb_dbus_ready, /* dcache is ready to accepted Insn */
    input [`NCPU_IW-1:0]    fb_dbus_dout,
@@ -35,8 +34,7 @@ module ncpu32k_d_cache
    input                   fb_dbus_cmd_ready, /* dbus is ready to accept cmd */
    output                  fb_dbus_cmd_valid, /* cmd is presented at dbus's input */
    output [`NCPU_AW-1:0]   fb_dbus_cmd_addr,
-   output [2:0]            fb_dbus_cmd_size,
-   output                  fb_dbus_cmd_we,
+   output [`NCPU_DW/8-1:0] fb_dbus_cmd_we_msk,
    // PSR
    input                   msr_psr_dcae
 );
@@ -51,8 +49,7 @@ module ncpu32k_d_cache
    assign dcache_cmd_ready = fb_dbus_cmd_ready;
    assign fb_dbus_cmd_valid = dcache_cmd_valid;
    assign fb_dbus_cmd_addr = dcache_cmd_addr;
-   assign fb_dbus_cmd_size = dcache_cmd_size;
-   assign fb_dbus_cmd_we = dcache_cmd_we;
+   assign fb_dbus_cmd_we_msk = dcache_cmd_we_msk;
 `endif
 
 endmodule

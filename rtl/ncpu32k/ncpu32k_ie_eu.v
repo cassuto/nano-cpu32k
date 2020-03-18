@@ -277,7 +277,7 @@ module ncpu32k_ie_eu
       if (wmsr_commit_we & bank_dbg & dbg_numport_sel)
          $display("Num port = %d", wmsr_operand);
       if (wmsr_commit_we & bank_dbg & dbg_msgport_sel)
-         $write("%c", wmsr_operand);
+         $write("%c", wmsr_operand[7:0]);
    end
 `endif
    // synthesis translate_on

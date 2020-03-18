@@ -29,8 +29,7 @@ module ncpu32k_d_mmu
    output                  dbus_cmd_ready, /* ibus is ready to accept cmd */
    input                   dbus_cmd_valid, /* cmd is presented at ibus'input */
    input [`NCPU_AW-1:0]    dbus_cmd_addr,
-   input [2:0]             dbus_cmd_size,
-   input                   dbus_cmd_we,
+   input [`NCPU_DW/8-1:0]  dbus_cmd_we_msk,
    input                   dcache_valid, /* Insn is presented at ibus */
    output                  dcache_ready, /* ifu is ready to accepted Insn */
    input [`NCPU_IW-1:0]    dcache_dout,
@@ -38,8 +37,7 @@ module ncpu32k_d_mmu
    input                   dcache_cmd_ready, /* icache is ready to accept cmd */
    output                  dcache_cmd_valid, /* cmd is presented at icache's input */
    output [`NCPU_AW-1:0]   dcache_cmd_addr,
-   output [2:0]            dcache_cmd_size,
-   output                  dcache_cmd_we,
+   output [`NCPU_DW/8-1:0] dcache_cmd_we_msk,
    output                  exp_dmm_tlb_miss,
    output                  exp_dmm_page_fault,
    // PSR
@@ -120,7 +118,7 @@ module ncpu32k_d_mmu
    wire msr_psr_dmme_r;
    wire msr_psr_rm_r;
    wire dbus_cmd_we_r;
-   wire [2:0] dbus_cmd_size_r;
+   wire [`NCPU_DW/8-1:0] dbus_cmd_we_msk_r;
    wire [`NCPU_DW-1:0] dbus_din_r;
    wire [PPN_SHIFT-1:0] tgt_page_offset_r;
    wire [VPN_DW-1:0] tgt_vpn_r;
@@ -138,10 +136,10 @@ module ncpu32k_d_mmu
                 (clk,rst_n, tlb_read, msr_psr_dmme, msr_psr_dmme_r);
    ncpu32k_cell_dff_lr #(1) dff_msr_psr_rm_r
                 (clk,rst_n, tlb_read, msr_psr_rm, msr_psr_rm_r);
-   ncpu32k_cell_dff_lr #(3) dff_dbus_cmd_size_r
-                (clk,rst_n, tlb_read, dbus_cmd_size[2:0], dbus_cmd_size_r[2:0]);
+   ncpu32k_cell_dff_lr #(`NCPU_DW/8) dff_dbus_cmd_we_msk_r
+                (clk,rst_n, tlb_read, dbus_cmd_we_msk[`NCPU_DW/8-1:0], dbus_cmd_we_msk_r[`NCPU_DW/8-1:0]);
    ncpu32k_cell_dff_lr #(1) dff_dbus_cmd_we_r
-                (clk,rst_n, tlb_read, dbus_cmd_we, dbus_cmd_we_r);
+                (clk,rst_n, tlb_read, |dbus_cmd_we_msk, dbus_cmd_we_r);
    ncpu32k_cell_dff_lr #(`NCPU_DW) dff_dbus_din_r
                 (clk,rst_n, tlb_read, dbus_din[`NCPU_DW-1:0], dbus_din_r[`NCPU_DW-1:0]);
    ncpu32k_cell_dff_lr #(PPN_SHIFT) dff_tgt_page_offset_r
@@ -244,9 +242,7 @@ module ncpu32k_d_mmu
          : tlb_dummy_addr
       );
 
-   assign dcache_cmd_size = dbus_cmd_size_r;
-   
-   assign dcache_cmd_we = dbus_cmd_we_r;
+   assign dcache_cmd_we_msk = dbus_cmd_we_msk_r;
    
    assign dcache_din = dbus_din_r;
       

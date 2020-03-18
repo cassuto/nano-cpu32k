@@ -37,8 +37,7 @@ module ncpu32k
    input                   fb_dbus_cmd_ready,
    output                  fb_dbus_cmd_valid,
    output [`NCPU_AW-1:0]   fb_dbus_cmd_addr,
-   output [2:0]            fb_dbus_cmd_size,
-   output                  fb_dbus_cmd_we,
+   output [`NCPU_DW/8-1:0] fb_dbus_cmd_we_msk,
    // IRQs
    input [`NCPU_NIRQ-1:0]  fb_irqs
 );
@@ -46,18 +45,16 @@ module ncpu32k
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [`NCPU_AW-1:0]  dbus_cmd_addr;          // From core of ncpu32k_core.v
    wire                 dbus_cmd_ready;         // From d_mmu of ncpu32k_d_mmu.v
-   wire [2:0]           dbus_cmd_size;          // From core of ncpu32k_core.v
    wire                 dbus_cmd_valid;         // From core of ncpu32k_core.v
-   wire                 dbus_cmd_we;            // From core of ncpu32k_core.v
+   wire [`NCPU_DW/8-1:0] dbus_cmd_we_msk;       // From core of ncpu32k_core.v
    wire [`NCPU_DW-1:0]  dbus_din;               // From core of ncpu32k_core.v
    wire [`NCPU_IW-1:0]  dbus_dout;              // From d_mmu of ncpu32k_d_mmu.v
    wire                 dbus_ready;             // From core of ncpu32k_core.v
    wire                 dbus_valid;             // From d_mmu of ncpu32k_d_mmu.v
    wire [`NCPU_AW-1:0]  dcache_cmd_addr;        // From d_mmu of ncpu32k_d_mmu.v
    wire                 dcache_cmd_ready;       // From d_cache of ncpu32k_d_cache.v
-   wire [2:0]           dcache_cmd_size;        // From d_mmu of ncpu32k_d_mmu.v
    wire                 dcache_cmd_valid;       // From d_mmu of ncpu32k_d_mmu.v
-   wire                 dcache_cmd_we;          // From d_mmu of ncpu32k_d_mmu.v
+   wire [`NCPU_DW/8-1:0] dcache_cmd_we_msk;     // From d_mmu of ncpu32k_d_mmu.v
    wire [`NCPU_DW-1:0]  dcache_din;             // From d_mmu of ncpu32k_d_mmu.v
    wire [`NCPU_IW-1:0]  dcache_dout;            // From d_cache of ncpu32k_d_cache.v
    wire                 dcache_ready;           // From d_mmu of ncpu32k_d_mmu.v
@@ -173,8 +170,7 @@ module ncpu32k
        .dcache_din                      (dcache_din[`NCPU_DW-1:0]),
        .dcache_cmd_valid                (dcache_cmd_valid),
        .dcache_cmd_addr                 (dcache_cmd_addr[`NCPU_AW-1:0]),
-       .dcache_cmd_size                 (dcache_cmd_size[2:0]),
-       .dcache_cmd_we                   (dcache_cmd_we),
+       .dcache_cmd_we_msk               (dcache_cmd_we_msk[`NCPU_DW/8-1:0]),
        .exp_dmm_tlb_miss                (exp_dmm_tlb_miss),
        .exp_dmm_page_fault              (exp_dmm_page_fault),
        .msr_dmmid                       (msr_dmmid[`NCPU_DW-1:0]),
@@ -187,8 +183,7 @@ module ncpu32k
        .dbus_din                        (dbus_din[`NCPU_IW-1:0]),
        .dbus_cmd_valid                  (dbus_cmd_valid),
        .dbus_cmd_addr                   (dbus_cmd_addr[`NCPU_AW-1:0]),
-       .dbus_cmd_size                   (dbus_cmd_size[2:0]),
-       .dbus_cmd_we                     (dbus_cmd_we),
+       .dbus_cmd_we_msk                 (dbus_cmd_we_msk[`NCPU_DW/8-1:0]),
        .dcache_valid                    (dcache_valid),
        .dcache_dout                     (dcache_dout[`NCPU_IW-1:0]),
        .dcache_cmd_ready                (dcache_cmd_ready),
@@ -240,8 +235,7 @@ module ncpu32k
        .fb_dbus_din                     (fb_dbus_din[`NCPU_DW-1:0]),
        .fb_dbus_cmd_valid               (fb_dbus_cmd_valid),
        .fb_dbus_cmd_addr                (fb_dbus_cmd_addr[`NCPU_AW-1:0]),
-       .fb_dbus_cmd_size                (fb_dbus_cmd_size[2:0]),
-       .fb_dbus_cmd_we                  (fb_dbus_cmd_we),
+       .fb_dbus_cmd_we_msk              (fb_dbus_cmd_we_msk[`NCPU_DW/8-1:0]),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
@@ -249,8 +243,7 @@ module ncpu32k
        .dcache_din                      (dcache_din[`NCPU_DW-1:0]),
        .dcache_cmd_valid                (dcache_cmd_valid),
        .dcache_cmd_addr                 (dcache_cmd_addr[`NCPU_AW-1:0]),
-       .dcache_cmd_size                 (dcache_cmd_size[2:0]),
-       .dcache_cmd_we                   (dcache_cmd_we),
+       .dcache_cmd_we_msk               (dcache_cmd_we_msk[`NCPU_DW/8-1:0]),
        .fb_dbus_valid                   (fb_dbus_valid),
        .fb_dbus_dout                    (fb_dbus_dout[`NCPU_IW-1:0]),
        .fb_dbus_cmd_ready               (fb_dbus_cmd_ready),
@@ -305,8 +298,7 @@ module ncpu32k
        // Outputs
        .dbus_cmd_valid                  (dbus_cmd_valid),
        .dbus_cmd_addr                   (dbus_cmd_addr[`NCPU_AW-1:0]),
-       .dbus_cmd_size                   (dbus_cmd_size[2:0]),
-       .dbus_cmd_we                     (dbus_cmd_we),
+       .dbus_cmd_we_msk                 (dbus_cmd_we_msk[`NCPU_DW/8-1:0]),
        .dbus_ready                      (dbus_ready),
        .dbus_din                        (dbus_din[`NCPU_DW-1:0]),
        .ibus_cmd_valid                  (ibus_cmd_valid),

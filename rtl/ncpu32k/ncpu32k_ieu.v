@@ -21,8 +21,7 @@ module ncpu32k_ieu(
    input                      dbus_cmd_ready, /* dbus is ready to store */
    output                     dbus_cmd_valid, /* data is presented at dbus's input */
    output [`NCPU_AW-1:0]      dbus_cmd_addr,
-   output [2:0]               dbus_cmd_size,
-   output                     dbus_cmd_we,
+   output [`NCPU_DW/8-1:0]    dbus_cmd_we_msk,
    output [`NCPU_DW-1:0]      dbus_din,
    output                     dbus_ready, /* MU is ready to load */
    input                      dbus_valid, /* data is presented at dbus's output */
@@ -191,8 +190,7 @@ module ncpu32k_ieu(
        // Outputs
        .dbus_cmd_valid                  (dbus_cmd_valid),
        .dbus_cmd_addr                   (dbus_cmd_addr[`NCPU_AW-1:0]),
-       .dbus_cmd_size                   (dbus_cmd_size[2:0]),
-       .dbus_cmd_we                     (dbus_cmd_we),
+       .dbus_cmd_we_msk                 (dbus_cmd_we_msk[`NCPU_DW/8-1:0]),
        .dbus_din                        (dbus_din[`NCPU_DW-1:0]),
        .dbus_ready                      (dbus_ready),
        .ieu_mu_in_ready                 (ieu_mu_in_ready),

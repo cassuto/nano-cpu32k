@@ -25,8 +25,7 @@ module ncpu32k_ie_mu
    input                      dbus_cmd_ready, /* dbus is ready to store */
    output                     dbus_cmd_valid, /* data is presented at dbus's input */
    output [`NCPU_AW-1:0]      dbus_cmd_addr,
-   output [2:0]               dbus_cmd_size,
-   output                     dbus_cmd_we,
+   output [`NCPU_DW/8-1:0]    dbus_cmd_we_msk,
    output [`NCPU_DW-1:0]      dbus_din,
    output                     dbus_ready, /* MU is ready to load */
    input                      dbus_valid, /* data is presented at dbus's output */
@@ -63,14 +62,27 @@ module ncpu32k_ie_mu
    
    assign dbus_cmd_addr = mu_lsa;
 
-   // Store to memory
-   assign dbus_cmd_we = ieu_mu_store;
-   assign dbus_din = ieu_operand_3;
-
-   // Size
-   assign dbus_cmd_size = ({3{ieu_mu_load}} & ieu_mu_load_size) |
-                        ({3{ieu_mu_store}} & ieu_mu_store_size);
+   // B/HW align
+   wire [`NCPU_DW/8-1:0] we_msk_8b = (dbus_cmd_addr[1:0]==2'b00 ? 4'b0001 :
+                              dbus_cmd_addr[1:0]==2'b01 ? 4'b0010 :
+                              dbus_cmd_addr[1:0]==2'b10 ? 4'b0100 :
+                              dbus_cmd_addr[1:0]==2'b11 ? 4'b1000 : 4'b0000);
+   wire [31:0] din_8b = {ieu_operand_3[7:0], ieu_operand_3[7:0], ieu_operand_3[7:0], ieu_operand_3[7:0]};
+                         
+   wire [`NCPU_DW/8-1:0] we_msk_16b = dbus_cmd_addr[0] ? 4'b0011 : 4'b1100;
+   wire [31:0] din_16b = {ieu_operand_3[15:0], ieu_operand_3[15:0]};
    
+   // Size
+   assign dbus_cmd_we_msk = {`NCPU_DW/8{ieu_mu_store}} & (
+                            ({`NCPU_DW/8{ieu_mu_store_size==3'd3}} & 4'b1111) |
+                            ({`NCPU_DW/8{ieu_mu_store_size==3'd2}} & we_msk_16b) |
+                            ({`NCPU_DW/8{ieu_mu_store_size==3'd1}} & we_msk_8b) );
+
+   // Store to memory
+   assign dbus_din = ({`NCPU_DW{ieu_mu_store_size==3'd3}} & ieu_operand_3) |
+                     ({`NCPU_DW{ieu_mu_store_size==3'd2}} & din_16b) |
+                     ({`NCPU_DW{ieu_mu_store_size==3'd1}} & din_8b);
+
    wire mu_op_nxt = ieu_mu_load | ieu_mu_store;
    
    // Internal, Don't deliver it out
