@@ -34,8 +34,7 @@ module pb_fb_arbiter
    output                  fb_dbus_cmd_ready,
    input                   fb_dbus_cmd_valid,
    input [`NCPU_AW-1:0]    fb_dbus_cmd_addr,
-   input [2:0]             fb_dbus_cmd_size,
-   input                   fb_dbus_cmd_we,
+   input [`NCPU_DW/8-1:0]  fb_dbus_cmd_we_msk,
    // Frontend M-Bus
    input                   fb_mbus_valid,
    output                  fb_mbus_ready,
@@ -44,8 +43,7 @@ module pb_fb_arbiter
    input                   fb_mbus_cmd_ready,
    output                  fb_mbus_cmd_valid,
    output [`NCPU_AW-1:0]   fb_mbus_cmd_addr,
-   output [2:0]            fb_mbus_cmd_size,
-   output                  fb_mbus_cmd_we
+   output [`NCPU_DW/8-1:0] fb_mbus_cmd_we_msk
 );
   
    // Priority scheme
@@ -78,8 +76,7 @@ module pb_fb_arbiter
    assign fb_ibus_cmd_ready = ibus_cmd_sel & fb_mbus_cmd_ready;
    assign fb_mbus_cmd_valid = dbus_cmd_sel ? fb_dbus_cmd_valid : fb_ibus_cmd_valid;
    assign fb_mbus_cmd_addr = dbus_cmd_sel ? fb_dbus_cmd_addr : fb_ibus_cmd_addr;
-   assign fb_mbus_cmd_size = dbus_cmd_sel ? fb_dbus_cmd_size : 3'd3 /* insn len */;
-   assign fb_mbus_cmd_we = dbus_cmd_sel ? fb_dbus_cmd_we : 1'b0;
+   assign fb_mbus_cmd_we_msk = dbus_cmd_sel ? fb_dbus_cmd_we_msk : {`NCPU_DW/8{1'b0}};
    assign fb_mbus_din = fb_dbus_din;
    
    // Transmit dout
@@ -114,7 +111,7 @@ module pb_fb_arbiter
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if (fb_dbus_cmd_valid & (ibus_dout_sel&ibus_dout_sel_nxt))
+      if (fb_dbus_cmd_valid & (ibus_dout_sel&ibus_dout_sel_nxt) & ~fb_ibus_ready)
          $fatal ("\n TODO bus retry\n");
    end
 `endif

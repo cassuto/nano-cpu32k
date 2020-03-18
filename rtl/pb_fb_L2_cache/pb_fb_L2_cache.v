@@ -28,11 +28,10 @@ module pb_fb_L2_cache
    // L2 cache interface
    output                  l2_ch_valid,
    input                   l2_ch_ready,
-   input [2:0]             l2_ch_cmd_size,
    output                  l2_ch_cmd_ready, /* sram is ready to accept cmd */
    input                   l2_ch_cmd_valid, /* cmd is presented at sram'input */
    input [AW-1:0]          l2_ch_cmd_addr,
-   input                   l2_ch_cmd_we,
+   input [DW/8-1:0]        l2_ch_cmd_we_msk,
    output [DW-1:0]         l2_ch_dout,
    input [DW-1:0]          l2_ch_din,
    input                   l2_ch_flush,
@@ -54,10 +53,6 @@ module pb_fb_L2_cache
    reg [AW-P_LINE-1:0] nl_baddr_r;
    wire [DW/2-1:0] nl_dout;
    
-   wire [3:0] l2_ch_size_msk = (l2_ch_cmd_size==3'd1 ? 4'b0001 :
-                              l2_ch_cmd_size==3'd2 ? 4'b0011 :
-                              l2_ch_cmd_size==3'd3 ? 4'b1111 : 4'b0000) & {4{l2_ch_cmd_we}};
-
    reg l2_ch_valid_r = 1'b0;
 	reg [AW-1:0] addr_r;
 	reg [DW-1:0] din_r;
@@ -88,14 +83,14 @@ module pb_fb_L2_cache
 		if (~pending_r) begin
 			addr_r <= l2_ch_cmd_addr;
 			din_r <= l2_ch_din;
-			size_msk_r <= l2_ch_size_msk;
+			size_msk_r <= l2_ch_cmd_we_msk;
 			mreq_r <= push;
 		end
    end
    
    wire [AW-1:0] maddr = pending_r ? addr_r : l2_ch_cmd_addr;
 	wire [DW-1:0] mdin = pending_r ? din_r : l2_ch_din;
-	wire [3:0] mwmask = pending_r ? size_msk_r : l2_ch_size_msk;
+	wire [3:0] mwmask = pending_r ? size_msk_r : l2_ch_cmd_we_msk;
 	wire mmreq = pending_r ? mreq_r : push;
    
    assign l2_ch_valid = pending_r & l2_ch_valid_r;
