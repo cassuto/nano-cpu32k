@@ -16,10 +16,10 @@
 module pb_fb_L2_cache
 #(
    parameter P_WAYS = 2, // 2^ways
-   parameter P_SETS	= 2/*6*/, // 2^sets
+   parameter P_SETS	= 6, // 2^sets
    parameter P_LINE	= 6, // 2^P_LINE bytes per line (= busrt length of DRAM)
-   parameter AW = 25,
-   parameter DW = 32,
+   parameter L2_CH_AW = 25,
+   parameter L2_CH_DW = 32,
    parameter ENABLE_BYPASS
 )
 (
@@ -30,19 +30,19 @@ module pb_fb_L2_cache
    input                   l2_ch_ready,
    output                  l2_ch_cmd_ready, /* sram is ready to accept cmd */
    input                   l2_ch_cmd_valid, /* cmd is presented at sram'input */
-   input [AW-1:0]          l2_ch_cmd_addr,
-   input [DW/8-1:0]        l2_ch_cmd_we_msk,
-   output [DW-1:0]         l2_ch_dout,
-   input [DW-1:0]          l2_ch_din,
+   input [L2_CH_AW-1:0]    l2_ch_cmd_addr,
+   input [L2_CH_DW/8-1:0]  l2_ch_cmd_we_msk,
+   output [L2_CH_DW-1:0]   l2_ch_dout,
+   input [L2_CH_DW-1:0]    l2_ch_din,
    input                   l2_ch_flush,
    
    // 2:1 SDRAM interface
    input                   sdr_clk,
-   input [DW/2-1:0]        sdr_dout,
-   output reg[DW/2-1:0]    sdr_din,
+   input [L2_CH_DW/2-1:0]  sdr_dout,
+   output reg[L2_CH_DW/2-1:0] sdr_din,
    output reg              sdr_cmd_bst_rd_req,
    output reg              sdr_cmd_bst_we_req,
-   output [AW-3:0]         sdr_cmd_addr,
+   output [L2_CH_AW-3:0]   sdr_cmd_addr,
    input                   sdr_r_vld,
    input                   sdr_w_rdy
 );
@@ -50,12 +50,12 @@ module pb_fb_L2_cache
    wire l2_ch_r_vld; // Cache line read valid
    reg nl_rd_r; // Read from next level cache/memory
    reg nl_we_r; // Write to next level cache/memory
-   reg [AW-P_LINE-1:0] nl_baddr_r;
-   wire [DW/2-1:0] nl_dout;
+   reg [L2_CH_AW-P_LINE-1:0] nl_baddr_r;
+   wire [L2_CH_DW/2-1:0] nl_dout;
    
    reg l2_ch_valid_r = 1'b0;
-	reg [AW-1:0] addr_r;
-	reg [DW-1:0] din_r;
+	reg [L2_CH_AW-1:0] addr_r;
+	reg [L2_CH_DW-1:0] din_r;
 	reg [3:0] size_msk_r;
 	reg mreq_r;
 
@@ -88,8 +88,8 @@ module pb_fb_L2_cache
 		end
    end
    
-   wire [AW-1:0] maddr = pending_r ? addr_r : l2_ch_cmd_addr;
-	wire [DW-1:0] mdin = pending_r ? din_r : l2_ch_din;
+   wire [L2_CH_AW-1:0] maddr = pending_r ? addr_r : l2_ch_cmd_addr;
+	wire [L2_CH_DW-1:0] mdin = pending_r ? din_r : l2_ch_din;
 	wire [3:0] mwmask = pending_r ? size_msk_r : l2_ch_cmd_we_msk;
 	wire mmreq = pending_r ? mreq_r : push;
    
@@ -114,13 +114,13 @@ module pb_fb_L2_cache
 	reg [P_LINE-2:0]line_adr_cnt = 0; // unit: word (2 B)
 	reg line_adr_cnt_msb = 0;
    
-   wire [DW-1:0]ch_mem_dout;
+   wire [L2_CH_DW-1:0]ch_mem_dout;
 
    // Cache entries
    reg cache_v[0:(1<<P_WAYS)-1][0:(1<<P_SETS)-1];
 	reg [(1<<P_WAYS)-1:0] cache_dirty[0:(1<<P_SETS)-1];
 	reg [P_WAYS-1:0] cache_lru[0:(1<<P_WAYS)-1][0:(1<<P_SETS)-1];
-	reg [AW-P_SETS-P_LINE-1:0] cache_addr[0:(1<<P_WAYS)-1][0:(1<<P_SETS)-1];
+	reg [L2_CH_AW-P_SETS-P_LINE-1:0] cache_addr[0:(1<<P_WAYS)-1][0:(1<<P_SETS)-1];
 	
    wire [(1<<P_WAYS)-1:0] match;
 	wire [(1<<P_WAYS)-1:0] free;
@@ -129,7 +129,7 @@ module pb_fb_L2_cache
 generate
 	genvar i;
 	for(i=0; i<(1<<P_WAYS); i=i+1) begin
-		assign match[i] = ~fls_pending & cache_v[i][entry_idx] & (cache_addr[i][entry_idx] == maddr[AW-1:P_LINE+P_SETS]);
+		assign match[i] = ~fls_pending & cache_v[i][entry_idx] & (cache_addr[i][entry_idx] == maddr[L2_CH_AW-1:P_LINE+P_SETS]);
 		assign free[i] = fls_pending ? (fls_cnt[P_WAYS+P_SETS-1:P_SETS] == i) : ~|cache_lru[i][entry_idx];
 		assign lru[i] = {P_WAYS{match[i]}} & cache_lru[i][entry_idx];
 	end
@@ -199,33 +199,33 @@ endgenerate
    wire [3:0] line_adr_cnt_msk = {line_adr_cnt[0], line_adr_cnt[0], ~line_adr_cnt[0], ~line_adr_cnt[0]};
    
    wire ch_mem_en_a = l2_ch_w_rdy | l2_ch_r_vld;
-   wire [DW/8-1:0] ch_mem_we_a = {4{l2_ch_w_rdy}} & line_adr_cnt_msk;
-   wire [CH_AW-1:0] ch_mem_addr_a = {match_set, /*~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], */entry_idx[P_SETS-1:0], line_adr_cnt[P_LINE-2:1]};
-   wire [DW-1:0] ch_mem_din_a = {nl_dout[DW/2-1:0], nl_dout[DW/2-1:0]};
+   wire [L2_CH_DW/8-1:0] ch_mem_we_a = {4{l2_ch_w_rdy}} & line_adr_cnt_msk;
+   wire [CH_AW-1:0] ch_mem_addr_a = {match_set, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], line_adr_cnt[P_LINE-2:1]};
+   wire [L2_CH_DW-1:0] ch_mem_din_a = {nl_dout[L2_CH_DW/2-1:0], nl_dout[L2_CH_DW/2-1:0]};
    wire ch_mem_en_b = mmreq & hit & ch_idle;
-   wire [DW/8-1:0] ch_mem_we_b = mwmask;
-   wire [CH_AW-1:0] ch_mem_addr_b = {match_set, /*~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0],*/ entry_idx[P_SETS-1:0], maddr[P_LINE-1:2]};
-   wire [DW-1:0] ch_mem_din_b = mdin;
-   wire [DW-1:0] ch_mem_dout_b;
+   wire [L2_CH_DW/8-1:0] ch_mem_we_b = mwmask;
+   wire [CH_AW-1:0] ch_mem_addr_b = {match_set, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], maddr[P_LINE-1:2]};
+   wire [L2_CH_DW-1:0] ch_mem_din_b = mdin;
+   wire [L2_CH_DW-1:0] ch_mem_dout_b;
    
    ncpu32k_cell_tdpram_aclkd_sclk
       #(
-         .AW(CH_AW),
-         .DW(DW)
+         .L2_CH_AW(CH_AW),
+         .L2_CH_DW(L2_CH_DW)
       )
    cache_mem
       (
          .clk_a   (sdr_clk),
          .addr_a  (ch_mem_addr_a[CH_AW-1:0]),
-         .we_a    (ch_mem_we_a[DW/8-1:0]),
-         .din_a   (ch_mem_din_a[DW-1:0]),
-         .dout_a  (ch_mem_dout[DW-1:0]),
+         .we_a    (ch_mem_we_a[L2_CH_DW/8-1:0]),
+         .din_a   (ch_mem_din_a[L2_CH_DW-1:0]),
+         .dout_a  (ch_mem_dout[L2_CH_DW-1:0]),
          .en_a    (ch_mem_en_a),
          .clk_b   (clk),
          .addr_b  (ch_mem_addr_b[CH_AW-1:0]),
-         .we_b    (ch_mem_we_b[DW/8-1:0]),
-         .din_b   (ch_mem_din_b[DW-1:0]),
-         .dout_b  (ch_mem_dout_b[DW-1:0]),
+         .we_b    (ch_mem_we_b[L2_CH_DW/8-1:0]),
+         .din_b   (ch_mem_din_b[L2_CH_DW-1:0]),
+         .dout_b  (ch_mem_dout_b[L2_CH_DW-1:0]),
          .en_b    (ch_mem_en_b)
       );
 
@@ -256,7 +256,7 @@ endgenerate
 		
 		case(status_r)
 			S_IDLE: begin
-				nl_baddr_r <= dirty ? {cache_addr[free_set_idx][entry_idx], entry_idx} : maddr[AW-1:P_LINE]; 
+				nl_baddr_r <= dirty ? {cache_addr[free_set_idx][entry_idx], entry_idx} : maddr[L2_CH_AW-1:P_LINE]; 
 				if(mmreq && ~hit) begin
                // Cache missed
                // Fill a free entry.
@@ -264,7 +264,7 @@ endgenerate
                // next level cache/memory, then refill it.
 					if(~fls_pending) begin
                   cache_v[free_set_idx][entry_idx] <= 1'b1;
-                  cache_addr[free_set_idx][entry_idx] <= maddr[AW-1:P_LINE+P_SETS];
+                  cache_addr[free_set_idx][entry_idx] <= maddr[L2_CH_AW-1:P_LINE+P_SETS];
                end
 					nl_rd_r <= ~dirty & ~fls_pending;
 					nl_we_r <= dirty;
@@ -288,7 +288,7 @@ endgenerate
          // Read-after-write
          // Note writing is not really finished.
 			S_RAW: begin
-				nl_baddr_r <= maddr[AW-1:P_LINE];
+				nl_baddr_r <= maddr[L2_CH_AW-1:P_LINE];
 				if(~line_adr_cnt_msb)
                status_r <= S_READ_PENDING_1;
 			end
@@ -315,7 +315,7 @@ endgenerate
    // 2 Flip flops for crossing clock domains
    reg [1:0]sdr_rd_r;
 	reg [1:0]sdr_we_r;
-   reg [AW-3:0] sdr_cmd_addr_r;
+   reg [L2_CH_AW-3:0] sdr_cmd_addr_r;
    
    // Sample requests at SDRAM clock rise
    always @ (posedge sdr_clk or negedge rst_n) begin
@@ -327,7 +327,7 @@ endgenerate
       end else begin
          sdr_rd_r <= {sdr_rd_r[0], nl_rd_r};
          sdr_we_r <= {sdr_we_r[0], nl_we_r};
-         sdr_cmd_addr_r <= {nl_baddr_r[AW-P_LINE-1:0], {P_LINE-2{1'b0}}};
+         sdr_cmd_addr_r <= {nl_baddr_r[L2_CH_AW-P_LINE-1:0], {P_LINE-2{1'b0}}};
          
          // Priority arbiter
          if(sdr_we_r[1])
@@ -354,7 +354,7 @@ endgenerate
    // Assertions (03161421)
 `ifdef NCPU_ENABLE_ASSERT
    initial begin
-      if(DW!=32)
+      if(L2_CH_DW!=32)
          $fatal ("\n non 32bit L2 cache unsupported.");
    end
 `endif
