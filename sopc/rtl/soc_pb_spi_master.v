@@ -26,6 +26,7 @@ module soc_pb_spi_master
    input                      rst_n,
    input                      pb_spi_cmd_valid,
    output                     pb_spi_cmd_ready,
+   input [`NCPU_AW-1:0]       pb_spi_cmd_addr,
    input [4:0]                pb_spi_cmd_we_msk,
    input [31:0]               pb_spi_din,
    output [31:0]              pb_spi_dout,
