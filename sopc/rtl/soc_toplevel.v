@@ -49,7 +49,6 @@ module soc_toplevel
    input                            RST_L,
    
    // SDRAM Interface
-   output                           DRAM_CLK,
    output                           DRAM_CKE,   // Synchronous Clock Enable
    output [SDR_ADDR_BITS - 1 : 0]   DRAM_ADDR,  // SDRAM Address
    output   [SDR_BA_BITS - 1 : 0]   DRAM_BA,    // Bank Address
@@ -74,6 +73,7 @@ module soc_toplevel
    localparam L2_CH_DW = `NCPU_DW;
    localparam L2_CH_AW = SDR_ROW_BITS+SDR_BA_BITS+SDR_COL_BITS-N_BW+2;
    localparam NBUS = 4;
+   localparam CPU_RSET_VECTOR = 32'h80000000; // Start from bootrom
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -122,6 +122,8 @@ module soc_toplevel
    // End of automatics
    wire                 clk;
    wire                 rst_n;
+   wire                 sdr_clk;
+   wire                 sdr_rst_n;
    wire [`NCPU_NIRQ-1:0] fb_irqs;
    wire [NBUS-1:0]      fb_bus_sel;
    wire [NBUS-1:0]      fb_bus_valid;
@@ -154,6 +156,10 @@ module soc_toplevel
    /************************************************************
     * SDRAM Controller
     ************************************************************/
+   /* pb_fb_DRAM_ctrl AUTO_TEMPLATE (
+         .clk           (sdr_clk),        // SDRAM clk domain
+         .rst_n         (sdr_rst_n),
+      );*/
    pb_fb_DRAM_ctrl
      #(
        .SDR_COL_BITS    (SDR_COL_BITS),
@@ -186,8 +192,8 @@ module soc_toplevel
       // Inouts
       .DRAM_DATA                        (DRAM_DATA[SDR_DATA_BITS-1:0]),
       // Inputs
-      .clk                              (clk),
-      .rst_n                            (rst_n),
+      .clk                              (SDR_CLK),               // Templated
+      .rst_n                            (sdr_rst_n),             // Templated
       .sdr_cmd_bst_we_req               (sdr_cmd_bst_we_req),
       .sdr_cmd_bst_rd_req               (sdr_cmd_bst_rd_req),
       .sdr_cmd_addr                     (sdr_cmd_addr[SDR_ROW_BITS+SDR_BA_BITS+SDR_COL_BITS-N_BW-1:0]),
@@ -411,7 +417,11 @@ module soc_toplevel
    /************************************************************
     * CPU Core (L1 Caches/MMUs/IRQC/TSC/...)
     ************************************************************/
-   ncpu32k ncpu32k
+   ncpu32k
+     #(
+      .CPU_RSET_VECTOR (CPU_RSET_VECTOR)
+     )
+   ncpu32k
      (/*AUTOINST*/
       // Outputs
       .fb_ibus_ready                    (fb_ibus_ready),
@@ -443,8 +453,7 @@ module soc_toplevel
     * Clock and Reset
     ************************************************************/
    assign clk = CPU_CLK;
-   assign DRAM_CLK = SDR_CLK;
-   
+
    // Reset system flip flops
    reg [1:0] rst_r;
    always @(posedge CPU_CLK or RST_L) begin
@@ -455,6 +464,19 @@ module soc_toplevel
       end
    end
    assign rst_n = rst_r[1];
+   
+   assign sdr_clk = SDR_CLK;
+   
+   // Reset SDR controller flip flops
+   reg [1:0] sdr_rst_r;
+   always @(posedge SDR_CLK or RST_L) begin
+      if(~RST_L) begin
+         sdr_rst_r <= 0;
+      end else begin
+         sdr_rst_r <= {sdr_rst_r[0],1'b1};
+      end
+   end
+   assign sdr_rst_n = sdr_rst_r[1];
    
 endmodule
 
