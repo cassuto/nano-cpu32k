@@ -110,4 +110,26 @@ generate
    end
 endgenerate
 
+   // synthesis translate_off
+`ifndef SYNTHESIS
+   
+   // Assertions (03181514)
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if ((|bus_dout_sel) & ~(^bus_dout_sel))
+         $fatal ("\n conflicting bus cycle\n");
+   end
+`endif
+
+   // Assertions
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if ((|fb_bus_sel) & ~(^fb_bus_sel))
+         $fatal ("\n conflicting cmd scheme\n");
+   end
+`endif
+
+`endif
+   // synthesis translate_on
+
 endmodule
