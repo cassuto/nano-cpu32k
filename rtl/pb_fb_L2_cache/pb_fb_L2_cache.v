@@ -210,8 +210,8 @@ endgenerate
    
    ncpu32k_cell_tdpram_aclkd_sclk
       #(
-         .L2_CH_AW(CH_AW),
-         .L2_CH_DW(L2_CH_DW)
+         .AW(CH_AW),
+         .DW(L2_CH_DW)
       )
    cache_mem
       (
