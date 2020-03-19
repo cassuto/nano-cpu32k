@@ -1,11 +1,14 @@
 
+TEXT_SECTION_ADDR = 0x80000000
+RODATA_SECTION_ADDR = 0x100
+
 AS = ../../out/bin/ncpu32k-unknown-elf-as
 LD = ../../out/bin/ncpu32k-unknown-elf-ld
 OBJCOPY = ../../out/bin/ncpu32k-unknown-elf-objcopy
 OBJDUMP = ../../out/bin/ncpu32k-unknown-elf-objdump
 MAKE = make
 GCC =../../out/bin/ncpu32k-unknown-elf-gcc
-CFLAGS :=
+CFLAGS := -O2
 LDFLAGS = -L/home/ain/nano-cpu32k/out/lib/gcc/ncpu32k-unknown-elf/5.4.0/ -lgcc
 
 TARGETS = bootstrap.o entry.o log.o spi_flash_w25qxx.o
@@ -19,9 +22,9 @@ dis: bootrom.bin
 	$(OBJDUMP) -D -b binary -m ncpu32k bootrom.bin
 
 bootrom: $(TARGETS)
-	$(LD) $^ -o bootrom $(LDFLAGS) -Ttext 0x0 -Trodata 0x100
+	$(LD) $^ -o bootrom $(LDFLAGS) -Ttext $(TEXT_SECTION_ADDR) -Trodata $(RODATA_SECTION_ADDR)
 bootrom.bin: $(TARGETS)
-	$(LD) $^ -o $@ $(LDFLAGS) -Ttext 0x0 -Trodata 0x100 --oformat binary
+	$(LD) $^ -s -o $@ $(LDFLAGS) -Ttext $(TEXT_SECTION_ADDR) -Trodata $(RODATA_SECTION_ADDR) --oformat binary
 
 %.o: %.S
 	$(AS) $< -o $@
@@ -32,5 +35,5 @@ bootrom.bin: $(TARGETS)
 %.c: $(HEADERS)
 
 clean:
-	-rm ./rom.S ./bootrom.bin ./*.o
+	-rm ./bootrom ./bootrom.bin ./*.o
 

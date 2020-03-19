@@ -9,13 +9,15 @@
 .type	_start, @function
 _start:
 	/* Set up stack */
-	or sp, r0, lo(0x020000)
-	mhi sp, hi(0x020000)
+	/* Bootorm size = 512 Bytes */
+	mhi sp, hi(0x80000200)
+	or sp, sp, lo(0x80000200)
 	
 	/* Return address of entry */
 	mhi lnk, hi(hlt)
 	or lnk, lnk, lo(hlt)
-
+	
+	/* Relative jmp */
 	jmp r0, bootstrap_entry
 
 .size	_start, .-_start
