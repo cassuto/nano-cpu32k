@@ -17,7 +17,8 @@
 
 module ncpu32k_i_mmu
 #(
-   parameter TLB_NSETS_LOG2 = 7 // (2^TLB_NSETS_LOG2) entries
+   parameter TLB_NSETS_LOG2 = 7, // (2^TLB_NSETS_LOG2) entries
+   parameter CPU_RESET_VECTOR
 )
 (
    input                   clk,
@@ -138,10 +139,10 @@ module ncpu32k_i_mmu
    wire [`NCPU_AW-1:0] ibus_out_id_nxt_bypass = ibus_flush_req ? ibus_cmd_addr[`NCPU_AW-1:0] : ibus_out_id_nxt[`NCPU_AW-1:0];
 
    // Transfer when TLB is to be read
-   ncpu32k_cell_dff_lr #(`NCPU_AW, `NCPU_ERST_VECTOR-`NCPU_AW'd4) dff_id_nxt
+   ncpu32k_cell_dff_lr #(`NCPU_AW, CPU_RESET_VECTOR-`NCPU_AW'd4) dff_id_nxt
                    (clk,rst_n, tlb_read, ibus_cmd_addr[`NCPU_AW-1:0], ibus_out_id_nxt[`NCPU_AW-1:0]);
    // Transfer when handshaked with downstream module
-   ncpu32k_cell_dff_lr #(`NCPU_AW, `NCPU_ERST_VECTOR) dff_id
+   ncpu32k_cell_dff_lr #(`NCPU_AW, CPU_RESET_VECTOR) dff_id
                    (clk,rst_n, hds_ibus_dout|ibus_flush_req, ibus_out_id_nxt_bypass, ibus_out_id[`NCPU_AW-1:0]);
                    
    ////////////////////////////////////////////////////////////////////////////////

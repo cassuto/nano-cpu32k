@@ -17,6 +17,7 @@
 
 module ncpu32k
 #(
+   parameter CPU_RESET_VECTOR = `NCPU_ERST_VECTOR,
    parameter IRQ_N_TSC = 0 /* IRQ Line No of TSC*/
 )
 (
@@ -120,7 +121,11 @@ module ncpu32k
     * I-MMU
     ************************************************************/
 
-    ncpu32k_i_mmu i_mmu
+    ncpu32k_i_mmu
+      #(
+         .CPU_RESET_VECTOR (CPU_RESET_VECTOR)
+      )
+    i_mmu
       (/*AUTOINST*/
        // Outputs
        .ibus_valid                      (ibus_valid),
