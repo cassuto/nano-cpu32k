@@ -41,7 +41,7 @@ module soc_toplevel
    
    // Bootrom parameters
    parameter BOOTM_SIZE_BYTES = 512,
-   parameter BOOTM_MEMH_FILE = ""
+   parameter BOOTM_MEMH_FILE = "bootstrap.mem"
 )
 (
    input                            CPU_CLK,
@@ -73,7 +73,7 @@ module soc_toplevel
    localparam L2_CH_DW = `NCPU_DW;
    localparam L2_CH_AW = SDR_ROW_BITS+SDR_BA_BITS+SDR_COL_BITS-N_BW+2;
    localparam NBUS = 4;
-   localparam CPU_RSET_VECTOR = 32'h80000000; // Start from bootrom
+   localparam CPU_RESET_VECTOR = 32'h80000000; // Start from bootrom
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -132,6 +132,7 @@ module soc_toplevel
    wire [`NCPU_AW-1:0]  l2_ch_cmd_addr;
    wire [`NCPU_DW/8-1:0] l2_ch_cmd_we_msk;
    wire [`NCPU_DW-1:0]  l2_ch_din;
+   wire                 l2_ch_flush;
    wire                 pb_bootm_cmd_ready;
    wire                 pb_bootm_cmd_valid;
    wire [`NCPU_AW-1:0]  pb_bootm_cmd_addr;
@@ -199,6 +200,14 @@ module soc_toplevel
       .sdr_cmd_addr                     (sdr_cmd_addr[SDR_ROW_BITS+SDR_BA_BITS+SDR_COL_BITS-N_BW-1:0]),
       .sdr_din                          (sdr_din[SDR_DATA_BITS-1:0]));
    
+   assign
+      {
+         DRAM_CS_L,
+         DRAM_WE_L,
+         DRAM_RAS_L,
+         DRAM_CAS_L
+      } = DRAM_CS_WE_RAS_CAS_L;
+   
    /************************************************************
     * L2 Cache
     ************************************************************/
@@ -229,6 +238,8 @@ module soc_toplevel
       .sdr_dout                         (sdr_dout[L2_CH_DW/2-1:0]),
       .sdr_r_vld                        (sdr_r_vld),
       .sdr_w_rdy                        (sdr_w_rdy));
+   
+   assign l2_ch_flush = 1'b0;
    
    /************************************************************
     * Frontend bus arbiter
@@ -299,11 +310,11 @@ module soc_toplevel
    // System memory
    assign fb_bus_sel[0] = bank_sys_mem;
    // Bootrom
-   assign fb_bus_sel[1] = bank_mmio & fb_mbus_cmd_addr[`NCPU_AW-1:24]==8'h1;
+   assign fb_bus_sel[1] = bank_mmio & fb_mbus_cmd_addr[`NCPU_AW-1:24]==8'h80;
    // SPI Master
-   assign fb_bus_sel[2] = bank_mmio & fb_mbus_cmd_addr[`NCPU_AW-1:24]==8'h2;
+   assign fb_bus_sel[2] = bank_mmio & fb_mbus_cmd_addr[`NCPU_AW-1:24]==8'h81;
    // UART
-   assign fb_bus_sel[3] = bank_mmio & fb_mbus_cmd_addr[`NCPU_AW-1:24]==8'h3;
+   assign fb_bus_sel[3] = bank_mmio & fb_mbus_cmd_addr[`NCPU_AW-1:24]==8'h82;
    
    assign
       {
@@ -419,7 +430,7 @@ module soc_toplevel
     ************************************************************/
    ncpu32k
      #(
-      .CPU_RSET_VECTOR (CPU_RSET_VECTOR)
+      .CPU_RESET_VECTOR (CPU_RESET_VECTOR)
      )
    ncpu32k
      (/*AUTOINST*/
