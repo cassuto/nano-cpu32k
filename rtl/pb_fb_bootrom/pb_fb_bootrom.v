@@ -34,12 +34,16 @@ module pb_fb_bootrom
    output reg [`NCPU_DW-1:0]  dout,
    input [`NCPU_DW-1:0]       din
 );
-   reg[`NCPU_DW-1:0] mem[0:SIZE_BYTES-1];
+   localparam WORD_BYTES = `NCPU_DW/8;
+   localparam SIZE_WORDS = SIZE_BYTES/WORD_BYTES;
+   localparam ADDR_BITS = $clog2(SIZE_WORDS);
+   
+   reg[`NCPU_DW-1:0] mem[0:SIZE_WORDS-1];
 
    initial begin : initial_blk
       integer i;
-      for(i=0;i<SIZE_BYTES;i=i+1) begin : for_size_bytes
-         mem[i] = 8'b0;
+      for(i=0;i<SIZE_WORDS;i=i+1) begin : for_size_bytes
+         mem[i] = {`NCPU_DW{1'b0}};
       end
       if(MEMH_FILE !== "") begin :memh_file_not_emp
          $readmemh (MEMH_FILE, mem);
@@ -59,7 +63,9 @@ generate
       assign cmd_ready = ~valid;
 endgenerate
 
-   wire [$clog2(SIZE_BYTES)-1:0] mem_addr = cmd_addr[$clog2(SIZE_BYTES)-1:0];
+   localparam N_BW = $clog2(WORD_BYTES);
+
+   wire [ADDR_BITS-1:0] mem_addr = cmd_addr[ADDR_BITS+N_BW-1:N_BW];
 
    always @(posedge clk or negedge rst_n) begin
       if(~rst_n)
