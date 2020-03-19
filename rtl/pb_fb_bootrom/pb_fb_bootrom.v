@@ -68,11 +68,11 @@ endgenerate
    always @(posedge clk) begin
       if(push) begin
          if(cmd_we_msk[3])
-            mem[cmd_addr+3][31:24] <= din[31:24];
+            mem[cmd_addr][31:24] <= din[31:24];
          if(cmd_we_msk[2])
-            mem[cmd_addr+2][23:16] <= din[23:16];
+            mem[cmd_addr][23:16] <= din[23:16];
          if(cmd_we_msk[1])
-            mem[cmd_addr+1][15:8] <= din[15:8];
+            mem[cmd_addr][15:8] <= din[15:8];
          if(cmd_we_msk[0])
             mem[cmd_addr][7:0] <= din[7:0];
       end
