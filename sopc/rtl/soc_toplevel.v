@@ -193,7 +193,7 @@ module soc_toplevel
       // Inouts
       .DRAM_DATA                        (DRAM_DATA[SDR_DATA_BITS-1:0]),
       // Inputs
-      .clk                              (SDR_CLK),               // Templated
+      .clk                              (sdr_clk),               // Templated
       .rst_n                            (sdr_rst_n),             // Templated
       .sdr_cmd_bst_we_req               (sdr_cmd_bst_we_req),
       .sdr_cmd_bst_rd_req               (sdr_cmd_bst_rd_req),
@@ -420,7 +420,7 @@ module soc_toplevel
       .rst_n                            (rst_n),
       .pb_spi_cmd_valid                 (pb_spi_cmd_valid),
       .pb_spi_cmd_addr                  (pb_spi_cmd_addr[`NCPU_AW-1:0]),
-      .pb_spi_cmd_we_msk                (pb_spi_cmd_we_msk[4:0]),
+      .pb_spi_cmd_we_msk                (pb_spi_cmd_we_msk[3:0]),
       .pb_spi_din                       (pb_spi_din[31:0]),
       .pb_spi_ready                     (pb_spi_ready),
       .SPI_MISO                         (SPI_MISO));
