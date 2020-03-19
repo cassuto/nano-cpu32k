@@ -50,12 +50,36 @@ module pb_fb_router
    
    genvar i;
 
+   wire [NBUS-1:0] bus_pending;
+   wire [NBUS-1:0] bus_pending_nxt;
+   wire [NBUS-1:0] hds_bus_cmd;
+   wire [NBUS-1:0] hds_bus_dout;
+
+   // Bus cycle FSM
+   // Assert (03181514)
+generate
+   for(i=0;i<NBUS;i=i+1) begin
+      assign hds_bus_cmd[i] = fb_bus_cmd_ready[i] & fb_bus_cmd_valid[i];
+      assign hds_bus_dout[i] = fb_bus_ready[i] & fb_bus_valid[i];
+      
+      assign bus_pending_nxt[i] = hds_bus_cmd[i] | ~hds_bus_dout[i];
+
+      ncpu32k_cell_dff_lr #(1) dff_bus_dout_sel
+                      (clk,rst_n, (hds_bus_cmd[i] | hds_bus_dout[i]), bus_pending_nxt[i], bus_pending[i]);
+   end
+endgenerate
+   
    // Cmd Routing
    wire [NBUS-1:0] cmd_ready;
 generate
    for(i=0;i<NBUS;i=i+1) begin
-      assign cmd_ready[i] = fb_bus_sel[i] & fb_bus_cmd_ready[i];
-      assign fb_bus_cmd_valid[i] = fb_bus_sel[i] & fb_mbus_cmd_valid;
+      // Exclusive bus channel
+      // If there is not any bus taking the time slice,
+      // or this is the bus being occupied, we can accept new cmd.
+      wire accept_cmd = ~|bus_pending | bus_pending[i];
+      
+      assign cmd_ready[i] = fb_bus_sel[i] & accept_cmd & fb_bus_cmd_ready[i];
+      assign fb_bus_cmd_valid[i] = fb_bus_sel[i] & accept_cmd & fb_mbus_cmd_valid;
    end
 endgenerate
    assign fb_mbus_cmd_ready = |cmd_ready;
@@ -69,35 +93,16 @@ generate
    end
 endgenerate
 
-   wire [NBUS-1:0] bus_dout_sel;
-   wire [NBUS-1:0] bus_dout_sel_nxt;
-   wire [NBUS-1:0] hds_bus_cmd;
-   wire [NBUS-1:0] hds_bus_dout;
-
-   // Bus cycle FSM
-   // Assert (03181514)
-generate
-   for(i=0;i<NBUS;i=i+1) begin
-      assign hds_bus_cmd[i] = fb_bus_cmd_ready[i] & fb_bus_cmd_valid[i];
-      assign hds_bus_dout[i] = fb_bus_ready[i] & fb_bus_valid[i];
-      
-      assign bus_dout_sel_nxt[i] = hds_bus_cmd[i] | ~hds_bus_dout[i];
-
-      ncpu32k_cell_dff_lr #(1) dff_bus_dout_sel
-                      (clk,rst_n, (hds_bus_cmd[i] | hds_bus_dout[i]), bus_dout_sel_nxt[i], bus_dout_sel[i]);
-   end
-endgenerate
-
    // Data Routing
    wire [NBUS-1:0] dout_valid;
    wire [DW-1:0] dout[NBUS-1:0];
 generate
    for(i=0;i<NBUS;i=i+1) begin
-      assign dout_valid = bus_dout_sel[i] & fb_bus_valid[i];
+      assign dout_valid[i] = bus_pending[i] & fb_bus_valid[i];
       if (i==0)
-         assign dout[i] = {DW{bus_dout_sel[i]}} & fb_bus_dout[DW*(i+1)-1:DW*i];
+         assign dout[i] = {DW{bus_pending[i]}} & fb_bus_dout[DW*(i+1)-1:DW*i];
       else
-         assign dout[i] = dout[i-1] | ({DW{bus_dout_sel[i]}} & fb_bus_dout[DW*(i+1)-1:DW*i]);
+         assign dout[i] = dout[i-1] | ({DW{bus_pending[i]}} & fb_bus_dout[DW*(i+1)-1:DW*i]);
    end
 endgenerate
    assign fb_mbus_valid = |dout_valid;
@@ -106,7 +111,7 @@ endgenerate
    // Direct route
 generate
    for(i=0;i<NBUS;i=i+1) begin
-      assign fb_bus_ready[i] = fb_mbus_ready;
+      assign fb_bus_ready[i] = fb_mbus_ready & bus_pending[i];
    end
 endgenerate
 
@@ -116,7 +121,7 @@ endgenerate
    // Assertions (03181514)
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if ((|bus_dout_sel) & ~(^bus_dout_sel))
+      if ((|bus_pending) & ~(^bus_pending))
          $fatal ("\n conflicting bus cycle\n");
    end
 `endif
