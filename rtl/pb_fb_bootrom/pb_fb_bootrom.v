@@ -18,7 +18,7 @@
 
 module pb_fb_bootrom
 #(
-   parameter SIZE_BYTES = 1*1024,
+   parameter SIZE_BYTES = 512,
    parameter MEMH_FILE = "",
    parameter ENABLE_BYPASS
 )
@@ -59,22 +59,24 @@ generate
       assign cmd_ready = ~valid;
 endgenerate
 
+   wire [$clog2(SIZE_BYTES)-1:0] mem_addr = cmd_addr[$clog2(SIZE_BYTES)-1:0];
+
    always @(posedge clk or negedge rst_n) begin
       if(~rst_n)
          dout <= {`NCPU_DW{1'b0}};
       else if(push & ~|cmd_we_msk)
-         dout <= mem[cmd_addr];
+         dout <= mem[mem_addr];
    end
    always @(posedge clk) begin
       if(push) begin
          if(cmd_we_msk[3])
-            mem[cmd_addr][31:24] <= din[31:24];
+            mem[mem_addr][31:24] <= din[31:24];
          if(cmd_we_msk[2])
-            mem[cmd_addr][23:16] <= din[23:16];
+            mem[mem_addr][23:16] <= din[23:16];
          if(cmd_we_msk[1])
-            mem[cmd_addr][15:8] <= din[15:8];
+            mem[mem_addr][15:8] <= din[15:8];
          if(cmd_we_msk[0])
-            mem[cmd_addr][7:0] <= din[7:0];
+            mem[mem_addr][7:0] <= din[7:0];
       end
    end
    
