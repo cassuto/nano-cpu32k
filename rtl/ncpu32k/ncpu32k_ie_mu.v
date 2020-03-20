@@ -74,7 +74,7 @@ module ncpu32k_ie_mu
                               dbus_cmd_addr[1:0]==2'b11 ? 4'b1000 : 4'b0000);
    wire [31:0] din_8b = {ieu_operand_3[7:0], ieu_operand_3[7:0], ieu_operand_3[7:0], ieu_operand_3[7:0]};
                          
-   wire [`NCPU_DW/8-1:0] we_msk_16b = dbus_cmd_addr[0] ? 4'b0011 : 4'b1100;
+   wire [`NCPU_DW/8-1:0] we_msk_16b = dbus_cmd_addr[0] ? 4'b1100 : 4'b0011;
    wire [31:0] din_16b = {ieu_operand_3[15:0], ieu_operand_3[15:0]};
    
    // Size
@@ -139,7 +139,7 @@ module ncpu32k_ie_mu
                           ({8{dbus_cmd_addr[1:0]==2'b01}} & dbus_dout[15:8]) |
                           ({8{dbus_cmd_addr[1:0]==2'b10}} & dbus_dout[23:16]) |
                           ({8{dbus_cmd_addr[1:0]==2'b11}} & dbus_dout[31:24]);
-   wire [15:0] dout_16b = dbus_cmd_addr[0] ? dbus_dout[15:0] : dbus_dout[31:16];
+   wire [15:0] dout_16b = dbus_cmd_addr[0] ? dbus_dout[31:16] : dbus_dout[15:0];
    
    // Data bits mask, sign extend
    assign mu_load =
