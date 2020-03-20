@@ -40,7 +40,7 @@ module soc_toplevel
    parameter SDR_nCAS_Latency = 3,
    
    // Bootrom parameters
-   parameter BOOTM_SIZE_BYTES = 512,
+   parameter BOOTM_SIZE_BYTES = 1024,
    parameter BOOTM_MEMH_FILE = "bootstrap.mem"
 )
 (
