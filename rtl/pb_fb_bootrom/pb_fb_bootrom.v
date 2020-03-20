@@ -18,7 +18,7 @@
 
 module pb_fb_bootrom
 #(
-   parameter SIZE_BYTES = 512,
+   parameter SIZE_BYTES,
    parameter MEMH_FILE = "",
    parameter ENABLE_BYPASS
 )
