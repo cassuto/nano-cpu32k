@@ -40,12 +40,13 @@ module soc_toplevel
    parameter SDR_nCAS_Latency = 3,
    
    // Bootrom parameters
-   parameter BOOTM_SIZE_BYTES = 1024,
+   parameter BOOTM_SIZE_BYTES = 2048,
    parameter BOOTM_MEMH_FILE = "bootstrap.mem"
 )
 (
    input                            CPU_CLK,
    input                            SDR_CLK,
+   input                            UART_CLK,
    input                            RST_L,
    
    // SDRAM Interface
@@ -63,7 +64,11 @@ module soc_toplevel
    output                           SPI_SCK,
    output                           SPI_CS_L,
    output                           SPI_MOSI,
-   input                            SPI_MISO
+   input                            SPI_MISO,
+   
+   // UART TTL Interface
+   input                            UART_RX_L,
+   output                           UART_TX_L
 );
 
    // Internal parameters. Not edit
@@ -110,6 +115,9 @@ module soc_toplevel
    wire                 l2_ch_valid;            // From L2_cache of pb_fb_L2_cache.v
    wire                 pb_spi_cmd_ready;       // From pb_spi_master of soc_pb_spi_master.v
    wire                 pb_spi_valid;           // From pb_spi_master of soc_pb_spi_master.v
+   wire                 pb_uart_cmd_ready;      // From pb_uart of soc_pb_uart.v
+   wire                 pb_uart_irq;            // From pb_uart of soc_pb_uart.v
+   wire                 pb_uart_valid;          // From pb_uart of soc_pb_uart.v
    wire [L2_CH_AW-3:0]  sdr_cmd_addr;           // From L2_cache of pb_fb_L2_cache.v
    wire                 sdr_cmd_bst_rd_ack;     // From fb_DRAM_ctrl of pb_fb_DRAM_ctrl.v
    wire                 sdr_cmd_bst_rd_req;     // From L2_cache of pb_fb_L2_cache.v
@@ -124,6 +132,8 @@ module soc_toplevel
    wire                 rst_n;
    wire                 sdr_clk;
    wire                 sdr_rst_n;
+   wire                 uart_clk;
+   wire                 uart_rst_n;
    wire [`NCPU_NIRQ-1:0] fb_irqs;
    wire [NBUS-1:0]      fb_bus_sel;
    wire [NBUS-1:0]      fb_bus_valid;
@@ -358,7 +368,7 @@ module soc_toplevel
       
    assign fb_bus_valid =
       {
-         1'b0, //pb_uart_valid
+         pb_uart_valid,
          pb_spi_valid,
          pb_bootm_valid,
          l2_ch_valid
@@ -366,7 +376,7 @@ module soc_toplevel
    
    assign fb_bus_dout =
       {
-         32'b0, //pb_uart_dout
+         pb_uart_dout[`NCPU_DW-1:0],
          pb_spi_dout[`NCPU_DW-1:0],
          pb_bootm_dout[`NCPU_DW-1:0],
          l2_ch_dout[`NCPU_DW-1:0]
@@ -374,7 +384,7 @@ module soc_toplevel
       
    assign fb_bus_cmd_ready =
       {
-         1'b0, // uart_cmd_ready
+         pb_uart_cmd_valid,
          pb_spi_cmd_ready,
          pb_bootm_cmd_ready,
          l2_ch_cmd_ready
@@ -426,6 +436,33 @@ module soc_toplevel
       .SPI_MISO                         (SPI_MISO));
    
    /************************************************************
+    * UART Controller
+    ************************************************************/
+    /* soc_pb_uart AUTO_TEMPLATE (
+         .clk_baud       (uart_clk),        // UART clk domain
+         .rst_baud_n     (uart_rst_n),
+      );*/
+   soc_pb_uart pb_uart
+      (/*AUTOINST*/
+       // Outputs
+       .pb_uart_cmd_ready               (pb_uart_cmd_ready),
+       .pb_uart_dout                    (pb_uart_dout[31:0]),
+       .pb_uart_valid                   (pb_uart_valid),
+       .pb_uart_irq                     (pb_uart_irq),
+       .UART_TX_L                       (UART_TX_L),
+       // Inputs
+       .clk                             (clk),
+       .clk_baud                        (uart_clk),              // Templated
+       .rst_n                           (rst_n),
+       .rst_baud_n                      (uart_rst_n),            // Templated
+       .pb_uart_cmd_valid               (pb_uart_cmd_valid),
+       .pb_uart_cmd_addr                (pb_uart_cmd_addr[`NCPU_AW-1:0]),
+       .pb_uart_cmd_we_msk              (pb_uart_cmd_we_msk[3:0]),
+       .pb_uart_din                     (pb_uart_din[31:0]),
+       .pb_uart_ready                   (pb_uart_ready),
+       .UART_RX_L                       (UART_RX_L));
+   
+   /************************************************************
     * CPU Core (L1 Caches/MMUs/IRQC/TSC/...)
     ************************************************************/
    ncpu32k
@@ -457,7 +494,7 @@ module soc_toplevel
    /************************************************************
     * Interrupt Requests
     ************************************************************/
-   assign fb_irqs = {`NCPU_NIRQ{1'b0}};
+   assign fb_irqs = {{`NCPU_NIRQ-2{1'b0}}, pb_uart_irq, 1'b0};
    
    
    /************************************************************
@@ -488,6 +525,19 @@ module soc_toplevel
       end
    end
    assign sdr_rst_n = sdr_rst_r[1];
+   
+   assign uart_clk = UART_CLK;
+   
+   // Reset UART. flip flops
+   reg [1:0] uart_rst_r;
+   always @(posedge UART_CLK or RST_L) begin
+      if(~RST_L) begin
+         uart_rst_r <= 0;
+      end else begin
+         uart_rst_r <= {uart_rst_r[0],1'b1};
+      end
+   end
+   assign uart_rst_n = uart_rst_r[1];
    
 endmodule
 
