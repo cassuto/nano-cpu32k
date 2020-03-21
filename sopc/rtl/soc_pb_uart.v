@@ -1,5 +1,27 @@
 /**@file
  * Simple 16550 compatible UART
+ * Spec:
+ * Limitations:
+ * 1. Register and features of 16550 are partially implemented:
+ * --------+-----------------+------------------------------------------------
+ * Address |  Desc           | Unimplemented field(s)
+ * --------+-----------------+------------------------------------------------
+ * 0x0     |  RBR (DLAB = 0) |
+ *         |  DLL (DLAB = 1) |
+ * --------+-----------------+------------------------------------------------
+ * 0x1     |  IER (DLAB = 0) | EM EL
+ *         |  DLM (DLAB = 1) |
+ * --------+-----------------+------------------------------------------------
+ * 0x2     |  FCR            | DMA RCVRL RCVRH
+ * 0x3     |  LCR            | WLS[0..1] STB PEN EPS SP SB
+ * 0x4     |  MCR            | (all)
+ * 0x5     |  LSR            | PE FE BI ERR
+ * 0x6     |  MSR            | (all)
+ * 0x7     |  SCR            | (all)
+ * --------+-----------------+-------------------------------------------------
+ * 2. Transmission protocol (Non programmable)
+ *      8-bit data, 1-bit stop, no parity
+ * 3. Unsupport modem and hardware flow control.
  */
 
 /***************************************************************************/
