@@ -5,5 +5,6 @@ typedef unsigned int flash_addr_t;
 
 extern void spi_flash_init(void);
 extern void spi_flash_read(char *buff, flash_addr_t addr, int len);
+extern void spi_flash_dump();
 
 #endif // SPI_FLASH_25QXX_H_

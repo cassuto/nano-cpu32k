@@ -1,6 +1,5 @@
 
 TEXT_SECTION_ADDR = 0x80000000
-RODATA_SECTION_ADDR = 0x100
 
 AS = ../../out/bin/ncpu32k-unknown-elf-as
 LD = ../../out/bin/ncpu32k-unknown-elf-ld
@@ -22,9 +21,9 @@ dis: bootrom.bin
 	$(OBJDUMP) -D -b binary -m ncpu32k bootrom.bin
 
 bootrom: $(TARGETS)
-	$(LD) $^ -o bootrom $(LDFLAGS) -Ttext $(TEXT_SECTION_ADDR) -Trodata $(RODATA_SECTION_ADDR)
+	$(LD) $^ -o bootrom $(LDFLAGS) -Ttext $(TEXT_SECTION_ADDR)
 bootrom.bin: $(TARGETS)
-	$(LD) $^ -s -o $@ $(LDFLAGS) -Ttext $(TEXT_SECTION_ADDR) -Trodata $(RODATA_SECTION_ADDR) --oformat binary
+	$(LD) $^ -s -o $@ $(LDFLAGS) -Ttext $(TEXT_SECTION_ADDR) --oformat binary
 
 %.o: %.S
 	$(AS) $< -o $@

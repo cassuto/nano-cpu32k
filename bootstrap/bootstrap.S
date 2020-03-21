@@ -9,9 +9,9 @@
 .type	_start, @function
 _start:
 	/* Set up stack */
-	/* Bootorm size = 512 Bytes */
-	mhi sp, hi(0x80000200)
-	or sp, sp, lo(0x80000200)
+	/* Bootorm size = 1024 Bytes */
+	mhi sp, hi(0x80000400)
+	or sp, sp, lo(0x80000400)
 	
 	/* Return address of entry */
 	mhi lnk, hi(hlt)
