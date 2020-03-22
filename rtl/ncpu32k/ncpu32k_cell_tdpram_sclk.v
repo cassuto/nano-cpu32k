@@ -27,9 +27,9 @@
 
 module ncpu32k_cell_tdpram_sclk
 #(
-   parameter AW,
-   parameter DW,
-   parameter ENABLE_READ_ENABLE,
+   parameter AW=-1,
+   parameter DW=-1,
+   parameter ENABLE_READ_ENABLE=-1,
    parameter CLEAR_ON_INIT = 1
 )
 (

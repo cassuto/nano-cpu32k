@@ -17,11 +17,13 @@
 /*  Lesser General Public License for more details.                        */
 /***************************************************************************/
 
+`include "ncpu32k_config.h"
+
 module ncpu32k_cell_sdpram_sclk
 #(
-   parameter AW,
-   parameter DW,
-   parameter ENABLE_BYPASS,
+   parameter AW=-1,
+   parameter DW=-1,
+   parameter ENABLE_BYPASS=-1,
    parameter CLEAR_ON_INIT = 1
 )
 (

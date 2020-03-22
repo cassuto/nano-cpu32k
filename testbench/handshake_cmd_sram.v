@@ -22,12 +22,13 @@ module handshake_cmd_sram
    input                      cmd_valid, /* cmd is presented at sram'input */
    input [`NCPU_AW-1:0]       cmd_addr
 );
-   reg[DW-1:0] mem[0:SIZE_BYTES-1];
+   localparam SIZE_WORDS = SIZE_BYTES/DW/8;
+   reg[DW-1:0] mem[0:SIZE_WORDS-1];
 
    initial begin
       integer i;
-      for(i=0;i<SIZE_BYTES;i=i+1) begin : for_size_bytes
-         mem[i] = 8'b0;
+      for(i=0;i<SIZE_WORDS;i=i+1) begin : for_size_bytes
+         mem[i] = {DW{1'b0}};
       end
       if(MEMH_FILE !== "") begin :memh_file_not_emp
          $readmemh (MEMH_FILE, mem);
@@ -36,7 +37,7 @@ module handshake_cmd_sram
    end
 
    wire [AW-1:0] addr_w;
-   wire [DW-1:0] dout_nxt = mem[addr_w];
+   wire [DW-1:0] dout_nxt = mem[addr_w[AW-1:2]];
 
    reg [AW-1:0] addr_r;
    reg [DW-1:0] din_r;
@@ -77,13 +78,13 @@ module handshake_cmd_sram
             delay_r: begin
                if (|we_msk_r) begin
                   if(we_msk_r[3])
-                     mem[addr_r+3][31:24] <= din[31:24];
+                     mem[addr_r[AW-1:2]][31:24] <= din[31:24];
                   if(we_msk_r[2])
-                     mem[addr_r+2][23:16] <= din[23:16];
+                     mem[addr_r[AW-1:2]][23:16] <= din[23:16];
                   if(we_msk_r[1])
-                     mem[addr_r+1][15:8] <= din[15:8];
+                     mem[addr_r[AW-1:2]][15:8] <= din[15:8];
                   if(we_msk_r[0])
-                     mem[addr_r][7:0] <= din[7:0];
+                     mem[addr_r[AW-1:2]][7:0] <= din[7:0];
                end else begin
                   dout <= dout_nxt; // Output
                end
@@ -125,13 +126,13 @@ module handshake_cmd_sram
             DELAY: begin
                if (|we_msk_r) begin
                   if(we_msk_r[3])
-                     mem[addr_r+3][31:24] <= din[31:24];
+                     mem[addr_r[AW-1:2]][31:24] <= din[31:24];
                   if(we_msk_r[2])
-                     mem[addr_r+2][23:16] <= din[23:16];
+                     mem[addr_r[AW-1:2]][23:16] <= din[23:16];
                   if(we_msk_r[1])
-                     mem[addr_r+1][15:8] <= din[15:8];
+                     mem[addr_r[AW-1:2]][15:8] <= din[15:8];
                   if(we_msk_r[0])
-                     mem[addr_r][7:0] <= din[7:0];
+                     mem[addr_r[AW-1:2]][7:0] <= din[7:0];
                end else begin
                   dout <= dout_nxt; // Output
                end
@@ -159,13 +160,13 @@ module handshake_cmd_sram
          always @(posedge clk) begin
             if(push) begin
                if(cmd_we_msk[3])
-                  mem[cmd_addr+3][31:24] <= din[31:24];
+                  mem[cmd_addr[AW-1:2]][31:24] <= din[31:24];
                if(cmd_we_msk[2])
-                  mem[cmd_addr+2][23:16] <= din[23:16];
+                  mem[cmd_addr[AW-1:2]][23:16] <= din[23:16];
                if(cmd_we_msk[1])
-                  mem[cmd_addr+1][15:8] <= din[15:8];
+                  mem[cmd_addr[AW-1:2]][15:8] <= din[15:8];
                if(cmd_we_msk[0])
-                  mem[cmd_addr][7:0] <= din[7:0];
+                  mem[cmd_addr[AW-1:2]][7:0] <= din[7:0];
             end
          end
       end else if(DELAY==1) begin : delay_1
@@ -185,13 +186,13 @@ module handshake_cmd_sram
          always @(posedge clk) begin
             if(push) begin
                if(cmd_we_msk[3])
-                  mem[cmd_addr+3][31:24] <= din[31:24];
+                  mem[cmd_addr[AW-1:2]][31:24] <= din[31:24];
                if(cmd_we_msk[2])
-                  mem[cmd_addr+2][23:16] <= din[23:16];
+                  mem[cmd_addr[AW-1:2]][23:16] <= din[23:16];
                if(cmd_we_msk[1])
-                  mem[cmd_addr+1][15:8] <= din[15:8];
+                  mem[cmd_addr[AW-1:2]][15:8] <= din[15:8];
                if(cmd_we_msk[0])
-                  mem[cmd_addr][7:0] <= din[7:0];
+                  mem[cmd_addr[AW-1:2]][7:0] <= din[7:0];
             end
          end
       end

@@ -15,8 +15,8 @@
 
 module sco_fifo_asclk
 #(
-   parameter DW, // Data bits
-   parameter AW, // Address bits
+   parameter DW=-1, // Data bits
+   parameter AW=-1, // Address bits
    parameter CLEAR_ON_INIT = 1
 )
 (

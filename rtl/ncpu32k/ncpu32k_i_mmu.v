@@ -18,7 +18,7 @@
 module ncpu32k_i_mmu
 #(
    parameter TLB_NSETS_LOG2 = 7, // (2^TLB_NSETS_LOG2) entries
-   parameter CPU_RESET_VECTOR
+   parameter CPU_RESET_VECTOR = `NCPU_ERST_VECTOR
 )
 (
    input                   clk,
