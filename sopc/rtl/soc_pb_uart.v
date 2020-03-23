@@ -203,12 +203,8 @@ module soc_pb_uart
                   endcase
             end
          endcase
-      end
-   end
-
-   // RX cmd
-   always @(posedge clk_baud) begin
-      if(phy_cke) begin
+         
+         // RX cmd
          if(phy_cmd_rd_vld & phy_cmd_rd_rdy) begin
             // cmd handshaked
             phy_cmd_rd_rdy <= 1'b0;
@@ -232,7 +228,7 @@ module soc_pb_uart
    wire rx_empty;
    reg dat_ready = 1'b0;
 
-   assign baud_div = {DLR[13:0], 4'b0000};
+   assign baud_div = {DLR[14:0], 1'b0};
    assign pb_uart_irq = ~IIR[0];
 
    assign phy_cmd_rd_vld = rx_status;
@@ -299,10 +295,23 @@ module soc_pb_uart
       if(~rx_full | rx_status)
          rx_status <= phy_cmd_rd_rdy;
    end
+   
+   // Is data ready in RBR ?
+   always @(posedge clk) begin
+      if(~dat_ready)
+         dat_ready <= ~rx_empty;
+      else if(rd_RBR)
+         dat_ready <= 1'b0;
+   end
 
+   reg [2:0] cmd_addr_r = 2'b0;
+   always @(posedge clk)
+      if (hds_cmd)
+         cmd_addr_r <= pb_uart_cmd_addr[2:0];
+   
    // Readout registers
    always @(*) begin
-      case(pb_uart_cmd_addr[2:0])
+      case(cmd_addr_r)
          // RBR (DLAB = 0)
          // DLL (DLAB = 1)
          3'b000: pb_uart_dout = {24'b0, DLAB ? DLR[7:0] : RBR};
@@ -326,9 +335,9 @@ module soc_pb_uart
 
    reg RBR_written = 1'b0;
    
-   // Writeback registers
    always @(posedge clk) begin
-      if(hds_cmd & cmd_we)
+      // Writeback registers
+      if(hds_cmd & cmd_we) begin
          case(pb_uart_cmd_addr[2:0])
             3'b000:
                if(DLAB)
@@ -343,18 +352,9 @@ module soc_pb_uart
             3'b011:
                LCR[7] <= pb_uart_din[7+24];
          endcase
-   end
-
-   // Is data ready in RBR ?
-   always @(posedge clk) begin
-      if(~dat_ready)
-         dat_ready <= ~rx_empty;
-      else if(rd_RBR)
-         dat_ready <= 1'b0;
-   end
-
-   // IRQ FSM
-   always @(posedge clk) begin
+      end
+      
+      // IRQ FSM
       if(IIR[0]) begin
          if(dat_ready & IER[0]) begin
             // Raise RX buffer full IRQ
