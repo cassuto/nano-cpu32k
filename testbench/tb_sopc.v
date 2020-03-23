@@ -1,14 +1,15 @@
 
 `include "ncpu32k_config.h"
 
-module tb_sopc_flash_config();
-   `include "include/DevParam.h"
+module spi_flash_config();
+`include "include/DevParam.h"
 endmodule
 
 module tb_sopc();
 
    reg clk = 0;
    reg sdr_clk = 0;
+   reg uart_clk = 0;
    reg rst_n = 0;
    reg DRAM_CLK = 0;
    
@@ -24,6 +25,10 @@ module tb_sopc();
    // Cache clk 80MHz
    initial begin
       forever #(12.5/2) clk = ~clk;
+   end
+   // UART clk 14.7456MHz
+   initial begin
+      forever #(67.82/2) uart_clk = ~uart_clk;
    end
 
    // Generate reset
@@ -83,6 +88,7 @@ module tb_sopc();
    (
       .CPU_CLK (clk),
       .SDR_CLK (sdr_clk),
+      .UART_CLK (uart_clk),
       .RST_L   (rst_n),
 
       .DRAM_CKE   (DRAM_CKE),   // Synchronous Clock Enable
@@ -98,7 +104,10 @@ module tb_sopc();
       .SPI_SCK    (SPI_SCK),
       .SPI_CS_L   (SPI_CS_L),
       .SPI_MOSI   (SPI_MOSI),
-      .SPI_MISO   (SPI_MISO)
+      .SPI_MISO   (SPI_MISO),
+      
+      .UART_RX_L  (UART_RX_L),
+      .UART_TX_L  (UART_TX_L)
    );
    
    assign SF_Vpp_W_DQ2=0; // Disable WP
@@ -108,5 +117,7 @@ module tb_sopc();
    initial begin
      SF_Vcc='d3000;  // 3.000V 
    end
+   
+   assign UART_RX_L = 1'b0;
    
 endmodule
