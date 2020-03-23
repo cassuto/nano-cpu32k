@@ -92,7 +92,7 @@ static inline void w25qxx_write_status_reg(char dat)
 static inline void w25qxx_wait_busy()
 {
 	/* 0x03: WEL & Busy bit */
-	while (w25qxx_read_status_reg() & 0x03 == 0x03)
+	while ((w25qxx_read_status_reg() & 0x03) == 0x03)
 		__asm__ __volatile__("nop");
 }
 

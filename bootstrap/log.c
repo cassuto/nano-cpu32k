@@ -8,10 +8,10 @@ void log_char(char ch)
 	wmsr(MSR_DBGR_MSGPORT, (int)ch);
 }
 
-void log_msg(const unsigned char *msg)
+void log_msg(const char *msg)
 {
 	while(*msg) {
-		log_char(*msg);
+		log_char(*((const unsigned char *)msg));
 		++msg;
 	}
 }

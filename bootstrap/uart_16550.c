@@ -1,7 +1,7 @@
 #include "uart_16550.h"
 
 /* CLK frequency of UART (Hz) */
-#define UART_FCLK 18432000L
+#define UART_FCLK 14745600L
 
 /* 16550 registers */
 #define UART_REG_BASE 0x82000000
@@ -29,7 +29,7 @@ void uart_init(int baudrate)
 void uart_putc(char ch)
 {
 	/* Wait till THR is not full */
-	while(UART_REG_LSR() & (1<<5)==0)
+	while((UART_REG_LSR() & (1<<5)) ==0)
 		__asm__ __volatile__("nop");
 
 	UART_REG_RBR_DLL() = ch;
@@ -38,7 +38,7 @@ void uart_putc(char ch)
 char uart_getc()
 {
 	/* Wait till data ready */
-	while(UART_REG_LSR() & (1<<0)==0)
+	while((UART_REG_LSR() & (1<<0)) ==0)
 		__asm__ __volatile__("nop");
 
 	return UART_REG_RBR_DLL();
