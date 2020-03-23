@@ -384,7 +384,7 @@ module soc_toplevel
       
    assign fb_bus_cmd_ready =
       {
-         pb_uart_cmd_valid,
+         pb_uart_cmd_ready,
          pb_spi_cmd_ready,
          pb_bootm_cmd_ready,
          l2_ch_cmd_ready
@@ -504,7 +504,7 @@ module soc_toplevel
 
    // Reset system flip flops
    reg [1:0] rst_r;
-   always @(posedge CPU_CLK or RST_L) begin
+   always @(posedge CPU_CLK or negedge RST_L) begin
       if(~RST_L) begin
          rst_r <= 0;
       end else begin
@@ -517,7 +517,7 @@ module soc_toplevel
    
    // Reset SDR controller flip flops
    reg [1:0] sdr_rst_r;
-   always @(posedge SDR_CLK or RST_L) begin
+   always @(posedge SDR_CLK or negedge RST_L) begin
       if(~RST_L) begin
          sdr_rst_r <= 0;
       end else begin
@@ -530,7 +530,7 @@ module soc_toplevel
    
    // Reset UART. flip flops
    reg [1:0] uart_rst_r;
-   always @(posedge UART_CLK or RST_L) begin
+   always @(posedge UART_CLK or negedge RST_L) begin
       if(~RST_L) begin
          uart_rst_r <= 0;
       end else begin

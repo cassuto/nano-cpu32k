@@ -72,7 +72,6 @@ module ncpu32k_i_mmu
    wire hds_ibus_cmd;
    wire hds_ibus_dout;
    wire hds_icache_cmd;
-   wire hds_icache_dout;
    wire icache_cmd_valid_w;
    
    // flush_strobe will:
@@ -110,7 +109,6 @@ module ncpu32k_i_mmu
    assign hds_ibus_dout = ibus_valid & ibus_ready;
       
    assign hds_icache_cmd = icache_cmd_valid & icache_cmd_ready;
-   assign hds_icache_dout = icache_valid & icache_ready;
    
    // Cacnel the current cmd handshake with icache when flush_strobe.
    assign icache_cmd_valid = ~flush_strobe & icache_cmd_valid_w;
@@ -184,7 +182,7 @@ module ncpu32k_i_mmu
       #(
          .AW (TLB_NSETS_LOG2),
          .DW (`NCPU_DW),
-         .ENABLE_READ_ENABLE (1)
+         .ENABLE_BYPASS_B2A (1)
          )
       tlb_l_sclk
          (
@@ -195,13 +193,13 @@ module ncpu32k_i_mmu
           .we_a   (1'b0),
           .din_a  (),
           .dout_a (tlb_l_r[`NCPU_DW-1:0]),
-          .re_a   (tlb_read),
+          .en_a   (tlb_read),
           // Port B
           .addr_b (msr_imm_tlbl_idx[TLB_NSETS_LOG2-1:0]),
           .we_b   (msr_imm_tlbl_we),
           .din_b  (msr_imm_tlbl_nxt),
           .dout_b (msr_imm_tlbl),
-          .re_b   (1'b1)
+          .en_b   (1'b1)
          );
 
    // Instance of highpart TLB
@@ -209,7 +207,7 @@ module ncpu32k_i_mmu
       #(
          .AW (TLB_NSETS_LOG2),
          .DW (`NCPU_DW),
-         .ENABLE_READ_ENABLE (1)
+         .ENABLE_BYPASS_B2A (1)
          )
       tlb_h_sclk
          (
@@ -220,13 +218,13 @@ module ncpu32k_i_mmu
           .we_a   (1'b0),
           .din_a  (),
           .dout_a (tlb_h_r[`NCPU_DW-1:0]),
-          .re_a   (tlb_read),
+          .en_a   (tlb_read),
           // Port B
           .addr_b (msr_imm_tlbh_idx[TLB_NSETS_LOG2-1:0]),
           .we_b   (msr_imm_tlbh_we),
           .din_b  (msr_imm_tlbh_nxt),
           .dout_b (msr_imm_tlbh),
-          .re_b   (1'b1)
+          .en_b   (1'b1)
          );
    
    wire tlb_v = tlb_l_r[0];

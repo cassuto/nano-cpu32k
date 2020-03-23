@@ -18,7 +18,7 @@
 
 module pb_fb_router
 #(
-   parameter NBUS
+   parameter NBUS=-1
 )
 (
    input                      clk,
@@ -48,7 +48,7 @@ module pb_fb_router
    localparam AW = `NCPU_AW;
    localparam DW = `NCPU_DW;
    
-   genvar i;
+   genvar i,j,k,x,y;
 
    wire [NBUS-1:0] bus_pending;
    wire [NBUS-1:0] bus_pending_nxt;
@@ -72,24 +72,24 @@ endgenerate
    // Cmd Routing
    wire [NBUS-1:0] cmd_ready;
 generate
-   for(i=0;i<NBUS;i=i+1) begin
+   for(j=0;j<NBUS;j=j+1) begin
       // Exclusive bus channel
       // If there is not any bus taking the time slice,
       // or this is the bus being occupied, we can accept new cmd.
-      wire accept_cmd = ~|bus_pending | bus_pending[i];
+      wire accept_cmd = ~|bus_pending | bus_pending[j];
       
-      assign cmd_ready[i] = fb_bus_sel[i] & accept_cmd & fb_bus_cmd_ready[i];
-      assign fb_bus_cmd_valid[i] = fb_bus_sel[i] & accept_cmd & fb_mbus_cmd_valid;
+      assign cmd_ready[j] = fb_bus_sel[j] & accept_cmd & fb_bus_cmd_ready[j];
+      assign fb_bus_cmd_valid[j] = fb_bus_sel[j] & accept_cmd & fb_mbus_cmd_valid;
    end
 endgenerate
    assign fb_mbus_cmd_ready = |cmd_ready;
    
    // Direct route
 generate
-   for(i=0;i<NBUS;i=i+1) begin
-      assign fb_bus_cmd_addr[AW*(i+1)-1:AW*i]         = fb_mbus_cmd_addr;
-      assign fb_bus_cmd_we_msk[DW/8*(i+1)-1:DW/8*i]   = fb_mbus_cmd_we_msk;
-      assign fb_bus_din[DW*(i+1)-1:DW*i]              = fb_mbus_din;
+   for(k=0;k<NBUS;k=k+1) begin
+      assign fb_bus_cmd_addr[AW*(k+1)-1:AW*k]         = fb_mbus_cmd_addr;
+      assign fb_bus_cmd_we_msk[DW/8*(k+1)-1:DW/8*k]   = fb_mbus_cmd_we_msk;
+      assign fb_bus_din[DW*(k+1)-1:DW*k]              = fb_mbus_din;
    end
 endgenerate
 
@@ -97,12 +97,12 @@ endgenerate
    wire [NBUS-1:0] dout_valid;
    wire [DW-1:0] dout[NBUS-1:0];
 generate
-   for(i=0;i<NBUS;i=i+1) begin
-      assign dout_valid[i] = bus_pending[i] & fb_bus_valid[i];
-      if (i==0)
-         assign dout[i] = {DW{bus_pending[i]}} & fb_bus_dout[DW*(i+1)-1:DW*i];
+   for(x=0;x<NBUS;x=x+1) begin
+      assign dout_valid[x] = bus_pending[x] & fb_bus_valid[x];
+      if (x==0)
+         assign dout[x] = {DW{bus_pending[x]}} & fb_bus_dout[DW*(x+1)-1:DW*x];
       else
-         assign dout[i] = dout[i-1] | ({DW{bus_pending[i]}} & fb_bus_dout[DW*(i+1)-1:DW*i]);
+         assign dout[x] = dout[x-1] | ({DW{bus_pending[x]}} & fb_bus_dout[DW*(x+1)-1:DW*x]);
    end
 endgenerate
    assign fb_mbus_valid = |dout_valid;

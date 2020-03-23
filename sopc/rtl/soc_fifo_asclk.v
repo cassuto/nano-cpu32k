@@ -16,8 +16,7 @@
 module sco_fifo_asclk
 #(
    parameter DW=-1, // Data bits
-   parameter AW=-1, // Address bits
-   parameter CLEAR_ON_INIT = 1
+   parameter AW=-1  // Address bits
 )
 (
    input wclk,
@@ -82,14 +81,14 @@ module sco_fifo_asclk
       if(push & ~full)
          mem[wptr_b[AW-1:0]] <= din;
 
-   // Initial block. For verification only.
-generate
-   if(CLEAR_ON_INIT) begin :clear_on_init
+   // synthesis translate_off
+`ifndef SYNTHESIS 
+   initial begin : ini
       integer i;
-      initial
-         for(i=0; i < (1<<AW); i=i+1)
-            mem[i] = {DW{1'b0}};
+      for(i=0; i < (1<<AW); i=i+1)
+         mem[i] = {DW{1'b0}};
    end
-endgenerate
+`endif
+   // synthesis translate_on
          
 endmodule

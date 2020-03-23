@@ -17,16 +17,16 @@
 
 module ncpu32k_psr
 #(
-   parameter CPUID_VER = 1,
-   parameter CPUID_REV = 0,
-   parameter CPUID_FIMM = 1,
-   parameter CPUID_FDMM = 1,
-   parameter CPUID_FICA = 0,
-   parameter CPUID_FDCA = 0,
-   parameter CPUID_FDBG = 0,
-   parameter CPUID_FFPU = 0,
-   parameter CPUID_FIRQC = 1,
-   parameter CPUID_FTSC = 1
+   parameter [7:0] CPUID_VER = 1,
+   parameter [9:0] CPUID_REV = 0,
+   parameter [0:0] CPUID_FIMM = 1,
+   parameter [0:0] CPUID_FDMM = 1,
+   parameter [0:0] CPUID_FICA = 0,
+   parameter [0:0] CPUID_FDCA = 0,
+   parameter [0:0] CPUID_FDBG = 0,
+   parameter [0:0] CPUID_FFPU = 0,
+   parameter [0:0] CPUID_FIRQC = 1,
+   parameter [0:0] CPUID_FTSC = 1
 )
 (
    input                   clk,

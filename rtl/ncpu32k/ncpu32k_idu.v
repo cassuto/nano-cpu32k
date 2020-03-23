@@ -21,7 +21,7 @@ module ncpu32k_idu(
    output                     idu_in_ready, /* idu is ready to accepted Insn */
    input                      idu_in_valid, /* Insn is prestented at idu's input */
    input [`NCPU_IW-1:0]       idu_insn,
-   output [`NCPU_AW-3:0]      idu_insn_pc,
+   input [`NCPU_AW-3:0]       idu_insn_pc,
    input                      idu_op_jmprel,
    input                      idu_op_jmpfar,
    input                      idu_op_syscall,
@@ -40,8 +40,6 @@ module ncpu32k_idu(
    output                     regf_rs2_re,
    output [`NCPU_REG_AW-1:0]  regf_rs2_addr,
    input [`NCPU_DW-1:0]       regf_rs2_dout,
-   output                     ifu_jmpfar,
-   output [`NCPU_AW-3:0]      ifu_jmpfar_addr,
    input                      ieu_in_ready, /* ieu is ready to accepted ops  */
    output                     ieu_in_valid, /* ops is presented at ieu's input */
    output [`NCPU_DW-1:0]      ieu_operand_1,
@@ -274,14 +272,8 @@ module ncpu32k_idu(
    wire wb_regf = ~(idu_op_syscall | idu_op_ret | op_mu_barr | idu_op_jmprel | op_cmp | emu_insn | op_mu_store | op_wmsr) | idu_jmprel_link;
    wire [`NCPU_REG_AW-1:0] wb_reg_addr = idu_jmprel_link ? `NCPU_REGNO_LNK : f_rd[4:0];
    
-   // Register-Indirect jump
-   wire jmp_reg = (idu_op_jmpfar);
    // Link address ?
    wire jmp_link = (idu_op_jmpfar | idu_jmprel_link);
-   
-   // Register-operand jmp
-   assign ifu_jmpfar_addr = regf_rs1_dout[`NCPU_AW-1:2]; // no unalign check
-   
    
    // Pipeline
    wire                 pipebuf_cas;
@@ -387,9 +379,6 @@ module ncpu32k_idu(
    ncpu32k_cell_dff_lr #(1) dff_ieu_wb_regf
                    (clk,rst_n, pipebuf_cas, wb_regf & not_flushing, ieu_wb_regf);
    
-   ncpu32k_cell_dff_lr #(1) dff_ifu_jmpfar
-                   (clk,rst_n, pipebuf_cas, jmp_reg & not_flushing, ifu_jmpfar);
-           
    ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_link
                    (clk,rst_n, pipebuf_cas, jmp_link & not_flushing, ieu_jmplink);
    ncpu32k_cell_dff_lr #(1) dff_ieu_syscall

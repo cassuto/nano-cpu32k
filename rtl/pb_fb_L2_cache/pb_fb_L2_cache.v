@@ -20,7 +20,8 @@ module pb_fb_L2_cache
    parameter P_LINE	= 6, // 2^P_LINE bytes per line (= busrt length of DRAM)
    parameter L2_CH_AW = 25,
    parameter L2_CH_DW = 32,
-   parameter ENABLE_BYPASS
+   parameter ENABLE_BYPASS=-1,
+   parameter CLEAR_ON_INIT = 1
 )
 (
    input                   clk,
@@ -71,13 +72,13 @@ module pb_fb_L2_cache
          pending_r <= (push | ~pop);
    end
    
-   generate
+generate
       if (ENABLE_BYPASS) begin :enable_bypass
          assign l2_ch_cmd_ready = (~pending_r | pop);
       end else begin
          assign l2_ch_cmd_ready = (~pending_r);
       end
-   endgenerate
+endgenerate
    
    always @(posedge clk) begin
 		if (~pending_r) begin
@@ -128,7 +129,7 @@ module pb_fb_L2_cache
 
 generate
 	genvar i;
-	for(i=0; i<(1<<P_WAYS); i=i+1) begin
+	for(i=0; i<(1<<P_WAYS); i=i+1) begin : entry_wires
 		assign match[i] = ~fls_pending & cache_v[i][entry_idx] & (cache_addr[i][entry_idx] == maddr[L2_CH_AW-1:P_LINE+P_SETS]);
 		assign free[i] = fls_pending ? (fls_cnt[P_WAYS+P_SETS-1:P_SETS] == i) : ~|cache_lru[i][entry_idx];
 		assign lru[i] = {P_WAYS{match[i]}} & cache_lru[i][entry_idx];
@@ -160,26 +161,20 @@ generate
    end
 endgenerate
 
-   // Reset control
+   // Initial blocks
 generate
-   genvar j;
-   for(i=0;i<(1<<P_SETS);i=i+1) begin
-      always @(posedge clk or negedge rst_n) begin
-         if (~rst_n) begin
-            cache_dirty[i] <= 0;
-         end
-      end
-   end
-   for(i=0;i<(1<<P_WAYS);i=i+1) begin
-      for(j=0;j<(1<<P_SETS);j=j+1) begin
-         always @(posedge clk or negedge rst_n) begin
-            if (~rst_n) begin
-               cache_v[i][j] <= 0;
-               cache_lru[i][j] <= i;
-               cache_addr[i][j] <= 0;
+   if (CLEAR_ON_INIT) begin : clear_on_init
+      genvar j,k;
+      for(k=0;k<(1<<P_SETS);k=k+1)
+         initial
+            cache_dirty[k] = 0;
+      for(k=0;k<(1<<P_WAYS);k=k+1)
+         for(j=0;j<(1<<P_SETS);j=j+1)
+            initial begin
+               cache_v[k][j] = 0;
+               cache_lru[k][j] = k;
+               cache_addr[k][j] = 0;
             end
-         end
-      end
    end
 endgenerate
 
@@ -233,7 +228,7 @@ endgenerate
 
 generate
 	for(i=0; i<(1<<P_WAYS); i=i+1)
-		always @(posedge clk) begin
+		always @(posedge clk)
 			if(ch_idle && mmreq)
 				if(hit) begin
                // Update LRU priority
@@ -246,7 +241,6 @@ generate
                // Mark clean when entry is freed
                cache_dirty[entry_idx][i] <= 1'b0;
             end
-      end
 endgenerate
 
    // Main FSM

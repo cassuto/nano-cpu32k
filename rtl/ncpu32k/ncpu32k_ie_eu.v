@@ -36,7 +36,7 @@ module ncpu32k_ie_eu
    input                      ieu_let_lsa_pc,
    input                      mu_exp_taken,
    input [`NCPU_DW-1:0]       mu_lsa,
-   input [`NCPU_DW:0]         linkaddr,
+   input [`NCPU_DW-1:0]       linkaddr,
    // PSR
    input [`NCPU_PSR_DW-1:0]   msr_psr,
    input [`NCPU_PSR_DW-1:0]   msr_psr_nold,
@@ -211,7 +211,7 @@ module ncpu32k_ie_eu
    wire wmsr_psr_imme;
    wire wmsr_psr_dmme;
    wire [9:0] wmsr_psr_res;
-   assign {wmsr_psr_res[9],wmsr_psr_res[8],wmsr_psr_dmme,wmsr_psr_imme,wmsr_psr_ire,wmsr_psr_rm,wmsr_psr_res[3],wmsr_psr_res[2], wmsr_psr_res[1],wmsr_psr_cc} = wmsr_operand;
+   assign {wmsr_psr_res[9],wmsr_psr_res[8],wmsr_psr_dmme,wmsr_psr_imme,wmsr_psr_ire,wmsr_psr_rm,wmsr_psr_res[3],wmsr_psr_res[2], wmsr_psr_res[1],wmsr_psr_cc} = wmsr_operand[9:0];
 
    // Write back PSR Assert (03060934)
    wire extexp_taken = ieu_specul_extexp | mu_exp_taken | ieu_emu_insn;

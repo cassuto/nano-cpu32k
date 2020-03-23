@@ -20,9 +20,8 @@
 
 module ncpu32k_cell_tdpram_aclkd_sclk
 #(
-   parameter AW,
-   parameter DW,
-   parameter CLEAR_ON_INIT = 1
+   parameter AW=-1,
+   parameter DW=-1
 )
 (
    // Port A
@@ -40,30 +39,30 @@ module ncpu32k_cell_tdpram_aclkd_sclk
    output [DW-1:0]               dout_b,
    input                         en_b
 );
+   genvar i,j;
    reg [DW-1:0] mem_vector[(1<<AW)-1:0];
    
-   // Initial block. For verification only.
-   generate
-      if(CLEAR_ON_INIT) begin :clear_on_init
-         integer i;
-         initial
-            for(i=0; i < (1<<AW); i=i+1)
-               mem_vector[i] = {DW{1'b0}};
+   // synthesis translate_off
+`ifndef SYNTHESIS 
+   initial begin : ini
+      integer k;
+      for(k=0; k<(1<<AW); k=k+1) begin
+         mem_vector[k] = {DW{1'b0}};
       end
-   endgenerate
+   end
+`endif
+   // synthesis translate_on
 
    //
    // Read & Write Port A
    //
-   reg [DW-1:0]     dout_a_r = 0;
+   reg [DW-1:0] dout_a_r = 0;
 
 generate
-   genvar i;
-   for(i=0;i<DW/8;i=i+1) begin
+   for(i=0;i<DW/8;i=i+1)
       always @(posedge clk_a)
          if(en_a & we_a[i])
             mem_vector[addr_a][(i+1)*8-1:i*8] <= din_a[(i+1)*8-1:i*8];
-   end
 endgenerate
    always @(posedge clk_a)
       if (en_a)
@@ -72,14 +71,13 @@ endgenerate
    //
    // Read & Write Port B
    //
-   reg [DW-1:0]     dout_b_r = 0;
+   reg [DW-1:0] dout_b_r = 0;
 
 generate
-   for(i=0;i<DW/8;i=i+1) begin
+   for(j=0;j<DW/8;j=j+1)
       always @(posedge clk_b)
-         if(en_b & we_b[i])
-            mem_vector[addr_b][(i+1)*8-1:i*8] <= din_b[(i+1)*8-1:i*8];
-   end
+         if(en_b & we_b[j])
+            mem_vector[addr_b][(j+1)*8-1:j*8] <= din_b[(j+1)*8-1:j*8];
 endgenerate
    always @(posedge clk_b)
       if (en_b)

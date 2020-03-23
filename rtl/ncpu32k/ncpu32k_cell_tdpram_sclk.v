@@ -3,11 +3,6 @@
  * Timing info:
  * 1. WRITE first strategy (On the same port, dout is valid immediately when din is
  *       written and dout is enabled)
- *
- * 2. Anything about 're' (ReadEnable) signal:
- *    dout will go valid in the next clk when re == 1
- *    dout will keep its value in the next clk when re == 1 and we == 0
- *    dout will change to its new value in the next clk when re == 1 and we == 1
  */
 
 /***************************************************************************/
@@ -29,8 +24,7 @@ module ncpu32k_cell_tdpram_sclk
 #(
    parameter AW=-1,
    parameter DW=-1,
-   parameter ENABLE_READ_ENABLE=-1,
-   parameter CLEAR_ON_INIT = 1
+   parameter ENABLE_BYPASS_B2A=-1
 )
 (
    input                         clk,
@@ -40,36 +34,37 @@ module ncpu32k_cell_tdpram_sclk
    input                         we_a,
    input [DW-1:0]                din_a,
    output [DW-1:0]               dout_a,
-   input                         re_a,
+   input                         en_a,
    // Port B
    input [AW-1:0]                addr_b,
    input                         we_b,
    input [DW-1:0]                din_b,
    output [DW-1:0]               dout_b,
-   input                         re_b
+   input                         en_b
 );
+
    reg [DW-1:0] mem_vector[(1<<AW)-1:0];
    
-   // Initial block. For verification only.
-   generate
-      if(CLEAR_ON_INIT) begin :clear_on_init
-         integer i;
-         initial
-            for(i=0; i < (1<<AW); i=i+1)
-               mem_vector[i] = {DW{1'b0}};
-      end
-   endgenerate
+   // synthesis translate_off
+`ifndef SYNTHESIS 
+   initial begin : ini
+      integer i;
+      for(i=0; i < (1<<AW); i=i+1)
+         mem_vector[i] = {DW{1'b0}};
+   end
+`endif
+   // synthesis translate_on
 
    //
    // Read & Write Port A
    //
-   reg [DW-1:0]     dout_a_r;
+   reg [DW-1:0] dout_a_r = 0;
 
    always @(posedge clk) begin
-      if (we_a) begin
+      if (en_a & we_a) begin
          mem_vector[addr_a] <= din_a;
          dout_a_r <= din_a;
-      end else begin
+      end else if (en_a) begin
          dout_a_r <= mem_vector[addr_a];
       end
    end
@@ -77,59 +72,59 @@ module ncpu32k_cell_tdpram_sclk
    //
    // Read & Write Port B
    //
-   reg [DW-1:0]     dout_b_r;
+   reg [DW-1:0] dout_b_r = 0;
 
    always @(posedge clk) begin
-      if (we_b) begin
+      if (en_b & we_b) begin
          mem_vector[addr_b] <= din_b;
          dout_b_r <= din_b;
-      end else begin
+      end else if (en_b) begin
          dout_b_r <= mem_vector[addr_b];
       end
    end
-   
-   always @(posedge clk or negedge rst_n)
-      if(~rst_n) begin
-         dout_a_r <= {DW{1'b0}};
-         dout_b_r <= {DW{1'b0}};
-      end
-   
+
+   // Bypass
 generate
-   if(ENABLE_READ_ENABLE) begin : enable_read_enable
-      //
-      // Read Enable Control
-      //
-      reg ram_vld_a_r;
-      reg ram_vld_b_r;
-      reg [DW-1:0] last_a_r;
-      reg [DW-1:0] last_b_r;
-      
-      assign dout_a = ram_vld_a_r ? dout_a_r : last_a_r;
-      assign dout_b = ram_vld_b_r ? dout_b_r : last_b_r;
+   if (ENABLE_BYPASS_B2A) begin : bypass_on
+      reg bypass;
+      reg [DW-1:0] din_b_r;
+      assign dout_a = bypass ? din_b_r : dout_a_r;
 
       always @(posedge clk or negedge rst_n)
-         if(~rst_n) begin
-            last_a_r <= {DW{1'b0}};
-            last_b_r <= {DW{1'b0}};
-            ram_vld_a_r <= 1;
-            ram_vld_b_r <= 1;
-         end else begin
-            if (ram_vld_a_r | we_a)
-               last_a_r <= we_a ? din_a : dout_a_r; // Sync last_r with dout_r in writing
-            if (ram_vld_b_r | we_b)
-               last_b_r <= we_b ? din_b : dout_b_r; // Sync last_r with dout_r in writing
-         end
+         if (~rst_n)
+            din_b_r <= {DW{1'b0}};
+         else if (en_a)
+            din_b_r <= din_b;
 
       // Bypass FSM
-      always @(posedge clk) begin
-         ram_vld_a_r <= re_a;
-         ram_vld_b_r <= re_b;
-      end
-   end else begin
-      // No ReadEnable Control
+      always @(posedge clk or negedge rst_n)
+         if (~rst_n)
+            bypass <= 0;
+         else if (addr_a == addr_b & en_b&we_b & en_a)
+            bypass <= 1;
+         else if (en_a) // Keep bypass valid till the next Read
+            bypass <= 0;
+            
+   end else begin : bypass_off
       assign dout_a = dout_a_r;
-      assign dout_b = dout_b_r;
    end
 endgenerate
 
+   assign dout_b = dout_b_r;
+
+   // synthesis translate_off
+`ifndef SYNTHESIS 
+   
+   // Assertions 03060725
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if(en_a&we_a & en_b&we_b & addr_a==addr_b) begin
+         $fatal ("\n DPEAM accessing conflict.\n");
+      end
+   end
+`endif
+   
+`endif
+   // synthesis translate_on
+   
 endmodule

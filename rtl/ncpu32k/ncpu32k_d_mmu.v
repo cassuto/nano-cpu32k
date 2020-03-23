@@ -68,9 +68,6 @@ module ncpu32k_d_mmu
 
    // MMU FSM
    wire hds_dbus_cmd;
-   wire hds_dbus_dout;
-   wire hds_dcache_cmd;
-   wire hds_dcache_dout;
    wire dcache_cmd_valid_w;
 
    wire flush_strobe;
@@ -93,11 +90,6 @@ module ncpu32k_d_mmu
          .cas        (hds_dbus_cmd)
       );
       
-   assign hds_dbus_dout = dbus_valid & dbus_ready;
-      
-   assign hds_dcache_cmd = dcache_cmd_valid & dcache_cmd_ready;
-   assign hds_dcache_dout = dcache_valid & dcache_ready;
-   
    // Cacnel the current cmd handshake with icache when Exception raised.
    assign dcache_cmd_valid = ~flush_strobe & dcache_cmd_valid_w;
    
@@ -157,7 +149,7 @@ module ncpu32k_d_mmu
       #(
          .AW (TLB_NSETS_LOG2),
          .DW (`NCPU_DW),
-         .ENABLE_READ_ENABLE (1)
+         .ENABLE_BYPASS_B2A (1)
          )
       tlb_l_sclk
          (
@@ -168,13 +160,13 @@ module ncpu32k_d_mmu
           .we_a   (1'b0),
           .din_a  (),
           .dout_a (tlb_l_r[`NCPU_DW-1:0]),
-          .re_a   (tlb_read),
+          .en_a   (tlb_read),
           // Port B
           .addr_b (msr_dmm_tlbl_idx[TLB_NSETS_LOG2-1:0]),
           .we_b   (msr_dmm_tlbl_we),
           .din_b  (msr_dmm_tlbl_nxt),
           .dout_b (msr_dmm_tlbl),
-          .re_b   (1'b1)
+          .en_b   (1'b1)
          );
 
    // Instance of highpart TLB
@@ -182,7 +174,7 @@ module ncpu32k_d_mmu
       #(
          .AW (TLB_NSETS_LOG2),
          .DW (`NCPU_DW),
-         .ENABLE_READ_ENABLE (1)
+         .ENABLE_BYPASS_B2A (1)
          )
       tlb_h_sclk
          (
@@ -193,13 +185,13 @@ module ncpu32k_d_mmu
           .we_a   (1'b0),
           .din_a  (),
           .dout_a (tlb_h_r[`NCPU_DW-1:0]),
-          .re_a   (tlb_read),
+          .en_a   (tlb_read),
           // Port B
           .addr_b (msr_dmm_tlbh_idx[TLB_NSETS_LOG2-1:0]),
           .we_b   (msr_dmm_tlbh_we),
           .din_b  (msr_dmm_tlbh_nxt),
           .dout_b (msr_dmm_tlbh),
-          .re_b   (1'b1)
+          .en_b   (1'b1)
          );
    
    wire tlb_v = tlb_l_r[0];

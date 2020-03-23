@@ -89,7 +89,7 @@ module ncpu32k_core(
    wire                 idu_in_ready;           // From idu of ncpu32k_idu.v
    wire                 idu_in_valid;           // From ifu of ncpu32k_ifu.v
    wire [`NCPU_IW-1:0]  idu_insn;               // From ifu of ncpu32k_ifu.v
-   wire [`NCPU_AW-3:0]  idu_insn_pc;            // From ifu of ncpu32k_ifu.v, ...
+   wire [`NCPU_AW-3:0]  idu_insn_pc;            // From ifu of ncpu32k_ifu.v
    wire                 idu_jmprel_link;        // From ifu of ncpu32k_ifu.v
    wire                 idu_let_lsa_pc;         // From ifu of ncpu32k_ifu.v
    wire                 idu_op_jmpfar;          // From ifu of ncpu32k_ifu.v
@@ -131,8 +131,6 @@ module ncpu32k_core(
    wire [`NCPU_REG_AW-1:0] ieu_wb_reg_addr;     // From idu of ncpu32k_idu.v
    wire                 ieu_wb_regf;            // From idu of ncpu32k_idu.v
    wire [`NCPU_AW-3:0]  ifu_flush_jmp_tgt;      // From ieu of ncpu32k_ieu.v
-   wire                 ifu_jmpfar;             // From idu of ncpu32k_idu.v
-   wire [`NCPU_AW-3:0]  ifu_jmpfar_addr;        // From idu of ncpu32k_idu.v
    wire [`NCPU_DW-1:0]  msr_coreid;             // From psr of ncpu32k_psr.v
    wire [`NCPU_DW-1:0]  msr_cpuid;              // From psr of ncpu32k_psr.v
    wire [`NCPU_DW-1:0]  msr_elsa;               // From psr of ncpu32k_psr.v
@@ -308,13 +306,10 @@ module ncpu32k_core(
       (/*AUTOINST*/
        // Outputs
        .idu_in_ready                    (idu_in_ready),
-       .idu_insn_pc                     (idu_insn_pc[`NCPU_AW-3:0]),
        .regf_rs1_re                     (regf_rs1_re),
        .regf_rs1_addr                   (regf_rs1_addr[`NCPU_REG_AW-1:0]),
        .regf_rs2_re                     (regf_rs2_re),
        .regf_rs2_addr                   (regf_rs2_addr[`NCPU_REG_AW-1:0]),
-       .ifu_jmpfar                      (ifu_jmpfar),
-       .ifu_jmpfar_addr                 (ifu_jmpfar_addr[`NCPU_AW-3:0]),
        .ieu_in_valid                    (ieu_in_valid),
        .ieu_operand_1                   (ieu_operand_1[`NCPU_DW-1:0]),
        .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),
@@ -348,6 +343,7 @@ module ncpu32k_core(
        .rst_n                           (rst_n),
        .idu_in_valid                    (idu_in_valid),
        .idu_insn                        (idu_insn[`NCPU_IW-1:0]),
+       .idu_insn_pc                     (idu_insn_pc[`NCPU_AW-3:0]),
        .idu_op_jmprel                   (idu_op_jmprel),
        .idu_op_jmpfar                   (idu_op_jmpfar),
        .idu_op_syscall                  (idu_op_syscall),
@@ -448,7 +444,6 @@ module ncpu32k_core(
        .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
        .ieu_wb_regf                     (ieu_wb_regf),
        .ieu_wb_reg_addr                 (ieu_wb_reg_addr[`NCPU_REG_AW-1:0]),
-       .ieu_jmpreg                      (ieu_jmpreg),
        .ieu_insn_pc                     (ieu_insn_pc[`NCPU_AW-3:0]),
        .ieu_jmplink                     (ieu_jmplink),
        .ieu_syscall                     (ieu_syscall),

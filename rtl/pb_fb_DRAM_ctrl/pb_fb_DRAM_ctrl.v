@@ -34,8 +34,8 @@ module pb_fb_DRAM_ctrl
    parameter nCAS_Latency = 3, // CAS latency
    
    // Burst Length
-   parameter BRUST_RD_LENGTH = 7'h20, // 32 x SDR_DATA_BITS bits
-   parameter BRUST_WE_LENGTH = 7'h20  // 32 x SDR_DATA_BITS bits
+   parameter [6:0] BRUST_RD_LENGTH = 7'h20, // 32 x SDR_DATA_BITS bits
+   parameter [6:0] BRUST_WE_LENGTH = 7'h20  // 32 x SDR_DATA_BITS bits
 )
 (
    input                            clk,
@@ -88,14 +88,14 @@ module pb_fb_DRAM_ctrl
    reg [(1<<SDR_BA_BITS)-1:0] bank_act_r;
    
    // Main FSM
-   localparam S_IDLE = 0;
-   localparam S_NOP = 1;
-   localparam S_PRECHARGE = 2;
-   localparam S_LOAD_MODE = 3;
-   localparam S_AUTO_REFRESH = 4;
-   localparam S_WRITE_READ = 5;
-   localparam S_END_WRITE_READ = 6;
-   localparam S_INIT_WRITE_READ = 7;
+   localparam [2:0] S_IDLE = 0;
+   localparam [2:0] S_NOP = 1;
+   localparam [2:0] S_PRECHARGE = 2;
+   localparam [2:0] S_LOAD_MODE = 3;
+   localparam [2:0] S_AUTO_REFRESH = 4;
+   localparam [2:0] S_WRITE_READ = 5;
+   localparam [2:0] S_END_WRITE_READ = 6;
+   localparam [2:0] S_INIT_WRITE_READ = 7;
 
    reg [2:0] status_r;
    reg [2:0] status_ret_r;
@@ -117,8 +117,8 @@ module pb_fb_DRAM_ctrl
          DRAM_DQM <= 2'b11;
          DRAM_CS_WE_RAS_CAS_L <= 4'b1111; // NOP
       end else begin
-         rf_cnt_r <= rf_cnt_r + 1;
-         status_delay_r <= status_delay_r - 1;
+         rf_cnt_r <= rf_cnt_r + 1'b1;
+         status_delay_r <= status_delay_r - 1'b1;
          
          // Default values
          DRAM_CS_WE_RAS_CAS_L <= 4'b1111; // NOP
@@ -259,7 +259,7 @@ module pb_fb_DRAM_ctrl
                else
                   DRAM_CS_WE_RAS_CAS_L <= 4'b0010; // WRITE
                status_ret_r <= S_END_WRITE_READ;
-               status_delay_r <= sdr_cmd_bst_rd_ack ? BRUST_RD_LENGTH - 6 : BRUST_WE_LENGTH - 2;
+               status_delay_r <= sdr_cmd_bst_rd_ack ? BRUST_RD_LENGTH - 7'h6 : BRUST_WE_LENGTH - 7'h2;
             end
 
          endcase

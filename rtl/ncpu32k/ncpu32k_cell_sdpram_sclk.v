@@ -23,8 +23,7 @@ module ncpu32k_cell_sdpram_sclk
 #(
    parameter AW=-1,
    parameter DW=-1,
-   parameter ENABLE_BYPASS=-1,
-   parameter CLEAR_ON_INIT = 1
+   parameter ENABLE_BYPASS=-1
 )
 (
    input                         clk,
@@ -36,47 +35,45 @@ module ncpu32k_cell_sdpram_sclk
    input [DW-1:0]                din,
    output [DW-1:0]               dout
 );
+
    reg [DW-1:0] mem_vector[(1<<AW)-1:0];
    
-   // Initial block. For verification only.
-   generate
-      if(CLEAR_ON_INIT) begin :clear_on_init
-         integer i;
-         initial
-            for(i=0; i < (1<<AW); i=i+1)
-               mem_vector[i] = {DW{1'b0}};
-      end
-   endgenerate
+   // synthesis translate_off
+`ifndef SYNTHESIS 
+   initial begin : ini
+      integer i;
+      for(i=0; i < (1<<AW); i=i+1)
+         mem_vector[i] = {DW{1'b0}};
+   end
+`endif
+   // synthesis translate_on
 
-   reg [DW-1:0] dout_r;
+   reg [DW-1:0] dout_r = 0;
    // Bypass
    reg bypass;
    reg [DW-1:0] din_r;
-   generate
-      if (ENABLE_BYPASS) begin : bypass_on
-         assign dout = bypass ? din_r : dout_r;
+generate
+   if (ENABLE_BYPASS) begin : bypass_on
+      assign dout = bypass ? din_r : dout_r;
 
-         always @(posedge clk or negedge rst_n)
-            if(~rst_n) begin
-               din_r <= {DW{1'b0}};
-               bypass <= 0;
-            end else if (re)
-               din_r <= din;
+      always @(posedge clk or negedge rst_n)
+         if(~rst_n)
+            din_r <= {DW{1'b0}};
+         else if (re)
+            din_r <= din;
 
-         // Bypass FSM
-         always @(posedge clk)
-            if (waddr == raddr & we & re)
-               bypass <= 1;
-            else if (re) // Keep bypass valid till the next Read
-               bypass <= 0;
-      end else begin : bypass_off
-         assign dout = dout_r;
-      end
-   endgenerate
-   
-   always @(posedge clk or negedge rst_n)
-      if (~rst_n)
-         dout_r <= {DW{1'b0}};
+      // Bypass FSM
+      always @(posedge clk or negedge rst_n)
+         if (~rst_n)
+            bypass <= 0;
+         else if (waddr == raddr & we & re)
+            bypass <= 1;
+         else if (re) // Keep bypass valid till the next Read
+            bypass <= 0;
+   end else begin : bypass_off
+      assign dout = dout_r;
+   end
+endgenerate
 
    // SRAM block
    // Write & Read

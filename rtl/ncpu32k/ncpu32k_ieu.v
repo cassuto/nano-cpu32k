@@ -47,7 +47,6 @@ module ncpu32k_ieu(
    input [2:0]                ieu_mu_load_size,
    input                      ieu_wb_regf,
    input [`NCPU_REG_AW-1:0]   ieu_wb_reg_addr,
-   input                      ieu_jmpreg,
    input [`NCPU_AW-3:0]       ieu_insn_pc,
    input                      ieu_jmplink,
    input                      ieu_syscall,
@@ -148,7 +147,7 @@ module ncpu32k_ieu(
    wire                 wb_mu_in_valid;         // From mu of ncpu32k_ie_mu.v
    // End of automatics
    wire                 ieu_mu_in_valid;
-   wire [`NCPU_DW:0]    linkaddr;
+   wire [`NCPU_DW-1:0]  linkaddr;
    
    ncpu32k_ie_au au
       (/*AUTOINST*/
@@ -277,7 +276,7 @@ module ncpu32k_ieu(
        .ieu_let_lsa_pc                  (ieu_let_lsa_pc),
        .mu_exp_taken                    (mu_exp_taken),
        .mu_lsa                          (mu_lsa[`NCPU_DW-1:0]),
-       .linkaddr                        (linkaddr[`NCPU_DW:0]),
+       .linkaddr                        (linkaddr[`NCPU_DW-1:0]),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
        .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
        .msr_cpuid                       (msr_cpuid[`NCPU_DW-1:0]),
@@ -297,10 +296,9 @@ module ncpu32k_ieu(
        .msr_tsc_tcr                     (msr_tsc_tcr[`NCPU_DW-1:0]));
         
    wire hds_ieu_in = ieu_in_ready & ieu_in_valid;
-   wire hds_wb_mu_in = wb_mu_in_ready & wb_mu_in_valid;
    
    // Link address (offset(jmp)+1), which indicates the next insn of current jmp insn.
-   assign linkaddr = {{(`NCPU_DW-`NCPU_AW+1){1'b0}}, {ieu_insn_pc[`NCPU_AW-3:0]+1'b1, 2'b00}};
+   assign linkaddr = {{(`NCPU_DW-`NCPU_AW){1'b0}}, {ieu_insn_pc[`NCPU_AW-3:0]+1'b1, 2'b00}};
    
    // WriteBack (commit)
    // Before commit, modules must check this bit.
