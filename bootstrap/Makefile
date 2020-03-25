@@ -10,8 +10,8 @@ GCC =../../out/bin/ncpu32k-unknown-elf-gcc
 CFLAGS := -O2 -Wall
 LDFLAGS = -L/home/ain/nano-cpu32k/out/lib/gcc/ncpu32k-unknown-elf/5.4.0/ -lgcc
 
-TARGETS = bootstrap.o entry.o log.o spi_flash_w25qxx.o uart_16550.o
-HEADERS = log.h msr.h spi_flash_w25qxx.h uart_16550.h
+TARGETS = bootstrap.o entry.o log.o spi_flash_w25qxx.o uart_16550.o memtest.o
+HEADERS = config.h log.h msr.h spi_flash_w25qxx.h uart_16550.h
 
 .PHONY: all dis clean
 
