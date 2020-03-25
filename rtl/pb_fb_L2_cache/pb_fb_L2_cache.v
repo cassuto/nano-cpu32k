@@ -13,6 +13,8 @@
 /*  Lesser General Public License for more details.                        */
 /***************************************************************************/
 
+`include "ncpu32k_config.h"
+
 module pb_fb_L2_cache
 #(
    parameter P_WAYS = 2, // 2^ways
@@ -145,14 +147,14 @@ endgenerate
    
 generate
    if (P_WAYS==2) begin : p_ways_2
-      // 4-to-2 binary encoder
+      // 4-to-2 binary encoder. Assert (03251128)
       assign match_set = fls_cnt[P_WAYS+P_SETS-1:P_SETS] | {|match[3:2], match[3] | match[1]};
       // 4-to-2 binary encoder
       assign free_set_idx = {|free[3:2], free[3] | free[1]};
       // LRU threshold
       assign lru_thresh = lru[0] | lru[1] | lru[2] | lru[3];
    end else if (P_WAYS==1) begin : p_ways_1
-      // 1-to-2 binary encoder
+      // 1-to-2 binary encoder. Assert (03251128)
       assign match_set = fls_cnt[P_WAYS+P_SETS-1:P_SETS] | match[1];
       // 1-to-2 binary encoder
       assign free_set_idx = free[1];
@@ -344,12 +346,23 @@ endgenerate
    
    // synthesis translate_off
 `ifndef SYNTHESIS                   
-                 
+   `include "ncpu32k_assert.h"
+   
    // Assertions (03161421)
 `ifdef NCPU_ENABLE_ASSERT
    initial begin
       if(L2_CH_DW!=32)
          $fatal ("\n non 32bit L2 cache unsupported.");
+   end
+`endif
+
+   // Assertions (03251128)
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk) begin
+      if (count_1(match)>1)
+         $fatal(0, "math should be mutex.");
+      if (count_1(free)>1)
+         $fatal(0, "free should be mutex.");
    end
 `endif
 

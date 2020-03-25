@@ -277,7 +277,8 @@ module ncpu32k_ifu(
 
    // synthesis translate_off
 `ifndef SYNTHESIS                   
-                 
+   `include "ncpu32k_assert.h"
+   
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
@@ -289,8 +290,7 @@ module ncpu32k_ifu(
    // Assertions 03060653
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if(exp_taken & (op_syscall|exp_imm_tlb_miss|exp_imm_page_fault) &
-                     ~(op_syscall^exp_imm_tlb_miss^exp_imm_page_fault))
+      if(exp_taken & count_1({op_syscall,exp_imm_tlb_miss,exp_imm_page_fault})>1)
          $fatal ("\n ctrls of 'exp_vector' should be mutex\n");
    end
 `endif

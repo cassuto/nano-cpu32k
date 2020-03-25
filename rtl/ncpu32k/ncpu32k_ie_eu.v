@@ -284,13 +284,12 @@ module ncpu32k_ie_eu
    
    // synthesis translate_off
 `ifndef SYNTHESIS
+   `include "ncpu32k_assert.h"
 
    // Assertions 03060934
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if (commit & (ieu_ret|ieu_syscall|ieu_specul_extexp|mu_exp_taken|au_cc_we|wmsr_psr_we) &
-                  ~(ieu_ret^ieu_syscall^ieu_specul_extexp^mu_exp_taken^au_cc_we^wmsr_psr_we)
-       )
+      if (commit & count_1({ieu_ret,ieu_syscall,ieu_specul_extexp,mu_exp_taken,au_cc_we,wmsr_psr_we})>1)
          $fatal ("\n ctrls of msr_psr writeback MUX should be mutex\n");
    end
 `endif

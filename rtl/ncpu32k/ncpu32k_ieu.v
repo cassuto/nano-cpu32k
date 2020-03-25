@@ -419,28 +419,20 @@ module ncpu32k_ieu(
    
    // synthesis translate_off
 `ifndef SYNTHESIS
+   `include "ncpu32k_assert.h"
    
    // Assertions 03060935
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if(regf_we & (ieu_lu_opc_bus[`NCPU_LU_AND] |
-                     ieu_lu_opc_bus[`NCPU_LU_OR] |
-                     ieu_lu_opc_bus[`NCPU_LU_XOR] |
-                     lu_op_shift |
-                     au_op_adder |
-                     au_op_mhi |
-                     ieu_mu_load |
-                     ieu_jmplink |
-                     ieu_eu_dout_op)
-                  & ~(ieu_lu_opc_bus[`NCPU_LU_AND] ^
-                        ieu_lu_opc_bus[`NCPU_LU_OR] ^
-                        ieu_lu_opc_bus[`NCPU_LU_XOR] ^
-                        lu_op_shift ^
-                        au_op_adder ^
-                        au_op_mhi ^
-                        ieu_mu_load ^
-                        ieu_jmplink ^
-                        ieu_eu_dout_op)
+      if(regf_we & count_1({ieu_lu_opc_bus[`NCPU_LU_AND],
+                     ieu_lu_opc_bus[`NCPU_LU_OR],
+                     ieu_lu_opc_bus[`NCPU_LU_XOR],
+                     lu_op_shift,
+                     au_op_adder,
+                     au_op_mhi,
+                     ieu_mu_load,
+                     ieu_jmplink,
+                     ieu_eu_dout_op})>1
                   )
          $fatal ("\n ctrls of 'regf_din' MUX should be mutex\n");
    end
@@ -449,8 +441,7 @@ module ncpu32k_ieu(
    // Assertions 03060725
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if((ieu_specul_jmprel|ieu_specul_jmpfar|ieu_syscall|ieu_ret|ieu_specul_extexp|mu_exp_taken|ieu_emu_insn) &
-            ~(ieu_specul_jmprel^ieu_specul_jmpfar^ieu_syscall^ieu_ret^ieu_specul_extexp^mu_exp_taken^ieu_emu_insn)) begin
+      if(count_1({ieu_specul_jmprel,ieu_specul_jmpfar,ieu_syscall,ieu_ret,ieu_specul_extexp,mu_exp_taken,ieu_emu_insn})>1) begin
          $fatal ("\n ctrls of 'ifu_flush_jmp_tgt' MUX should be mutex\n");
       end
    end
