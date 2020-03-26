@@ -1,0 +1,502 @@
+*******************************************************************************
+*
+*                      IMPORT XISE SUMMARY REPORT
+*
+*                       (import_ise_summary.txt)
+*
+*  PLEASE READ THIS REPORT TO GET THE DETAILED INFORMATION ON THE DATA THAT
+*  WAS PARSED FROM THE ISE PROJECT AND IMPORTED INTO THE CURRENT PROJECT.
+*
+*
+* The report is divided into following three sections:-
+*
+* Section (1) - ISE PROJECT INFORMATION
+*
+*  This section provides the details of the ISE project that was imported
+*
+* Section (2) - EXCEPTIONS
+*
+*  This section summarizes the ISE project data that was either not imported or
+*  not mapped into the current project
+*
+* Section (3) - MAPPED DATA
+*
+*  This section summarizes the Vivado project information that was imported
+*  from the ISE project data
+*
+*******************************************************************************
+
+Section (1) - ISE PROJECT INFORMATION
+-------------------------------------
+
+The following items describes the information about the ISE project that was imported:-
+
+Project Name    = ncpu32k-spartan6
+Project File    = E:/_processor_cores/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/ncpu32k-spartan6.xise
+Project Version = 14.7
+Device Family   = Spartan6
+Part Name       = xc6slx16-2-ftg256*
+
+*This part is not supported in Vivado and is replaced with the default part in the new project.
+ Please see Section (3.1) - "Target Device" below for more details.
+
+
+Section (2) - EXCEPTIONS
+------------------------
+
+The following sub-sections describes the list of items that were NOT mapped from the
+XISE file contents into the current project:-
+
+Section (2.1) - Missing Sources
+-------------------------------
+None
+
+
+Section (2.2) - Unknown Sources
+-------------------------------
+None
+
+
+Section (2.3) - IP Import Issues
+--------------------------------
+None
+
+
+Section (2.4) - Unknown Properties
+----------------------------------
+
+The following ISE properties were not mapped into the current project:-
+
+
+<ISE Property Name>                                              <ISE Property Value>
+"AES Initial Vector spartan6"                                    ''
+"AES Key (Hex String) spartan6"                                  ''
+"Allow SelectMAP Pins to Persist"                                'false'
+"Analysis Effort Level"                                          'Standard'
+"Asynchronous To Synchronous"                                    'false'
+"Automatically Insert glbl Module in the Netlist"                'true'
+"Automatically Run Generate Target PROM/ACE File"                'false'
+"BRAM Utilization Ratio"                                         '100'
+"Bring Out Global Set/Reset Net as a Port"                       'false'
+"Bring Out Global Tristate Net as a Port"                        'false'
+"Bus Delimiter"                                                  '<>'
+"Case"                                                           'Maintain'
+"Case Implementation Style"                                      'None'
+"Change Device Speed To"                                         '-2'
+"Change Device Speed To Post Trace"                              '-2'
+"Configuration Clk (Configuration Pins)"                         'Pull Up'
+"Configuration Pin Done"                                         'Pull Up'
+"Configuration Pin M0"                                           'Pull Up'
+"Configuration Pin M1"                                           'Pull Up'
+"Configuration Pin M2"                                           'Pull Up'
+"Configuration Pin Program"                                      'Pull Up'
+"Configuration Rate spartan6"                                    '2'
+"Correlate Output to Input Design"                               'false'
+"Create Binary Configuration File"                               'false'
+"Create IEEE 1532 Configuration File spartan6"                   'false'
+"Create ReadBack Data Files"                                     'false'
+"Cross Clock Analysis"                                           'false'
+"DSP Utilization Ratio"                                          '100'
+"Device Speed Grade/Select ABS Minimum"                          '-2'
+"Disable Detailed Package Model Insertion"                       'false'
+"Do Not Escape Signal and Instance Names in Netlist"             'false'
+"Done (Output Events)"                                           'Default (4)'
+"Drive Awake Pin During Suspend/Wake Sequence spartan6"          'false'
+"Drive Done Pin High"                                            'false'
+"Enable BitStream Compression"                                   'false'
+"Enable Cyclic Redundancy Checking (CRC) spartan6"               'true'
+"Enable Debugging of Serial Mode BitStream"                      'false'
+"Enable External Master Clock spartan6"                          'false'
+"Enable Internal Done Pipe"                                      'true'
+"Enable Message Filtering"                                       'false'
+"Enable Multi-Pin Wake-Up Suspend Mode spartan6"                 'false'
+"Enable Outputs (Output Events)"                                 'Default (5)'
+"Enable Suspend/Wake Global Set/Reset spartan6"                  'false'
+"Encrypt Bitstream spartan6"                                     'false'
+"Encrypt Key Select spartan6"                                    'BBRAM'
+"Essential Bits"                                                 'false'
+"Evaluation Development Board"                                   'None Specified'
+"FPGA Start-Up Clock"                                            'CCLK'
+"FSM Style"                                                      'LUT'
+"Flatten Output Netlist"                                         'false'
+"Functional Model Target Language ArchWiz"                       'Verilog'
+"Functional Model Target Language Coregen"                       'Verilog'
+"Functional Model Target Language Schematic"                     'Verilog'
+"GTS Cycle During Suspend/Wakeup Sequence spartan6"              '4'
+"GWE Cycle During Suspend/Wakeup Sequence spartan6"              '5'
+"Generate Asynchronous Delay Report"                             'false'
+"Generate Clock Region Report"                                   'false'
+"Generate Constraints Interaction Report"                        'false'
+"Generate Constraints Interaction Report Post Trace"             'false'
+"Generate Datasheet Section"                                     'true'
+"Generate Detailed MAP Report"                                   'false'
+"Generate Multiple Hierarchical Netlist Files"                   'false'
+"Generate Post-Place & Route Power Report"                       'false'
+"Generate Post-Place & Route Simulation Model"                   'false'
+"Generate RTL Schematic"                                         'Yes'
+"Generate Testbench File"                                        'false'
+"Generate Timegroups Section"                                    'false'
+"Generate Timegroups Section Post Trace"                         'false'
+"Global Optimization Goal"                                       'AllClockNets'
+"Global Optimization map spartan6"                               'Off'
+"Global Set/Reset Port Name"                                     'GSR_PORT'
+"Global Tristate Port Name"                                      'GTS_PORT'
+"Hierarchy Separator"                                            '/'
+"Ignore User Timing Constraints Map"                             'false'
+"Include 'uselib Directive in Verilog File"                      'false'
+"Include SIMPRIM Models in Verilog File"                         'false'
+"Include UNISIM Models in Verilog File"                          'false'
+"Include sdf_annotate task in Verilog File"                      'true'
+"Insert Buffers to Prevent Pulse Swallowing"                     'true'
+"JTAG Pin TCK"                                                   'Pull Up'
+"JTAG Pin TDI"                                                   'Pull Up'
+"JTAG Pin TDO"                                                   'Pull Up'
+"JTAG Pin TMS"                                                   'Pull Up'
+"Keep Hierarchy"                                                 'No'
+"Last Unlock Status"                                             'false'
+"Library for Verilog Sources"                                    ''
+"Mask Pins for Multi-Pin Wake-Up Suspend Mode spartan6"          '0x00'
+"Max Fanout"                                                     '100000'
+"Maximum Compression"                                            'false'
+"Maximum Number of Lines in Report"                              '1000'
+"Maximum Signal Name Length"                                     '20'
+"Move First Flip-Flop Stage"                                     'true'
+"Move Last Flip-Flop Stage"                                      'true'
+"MultiBoot: Insert IPROG CMD in the Bitfile spartan6"            'Enable'
+"MultiBoot: Next Configuration Mode spartan6"                    '001'
+"MultiBoot: Starting Address for Golden Configuration spartan6"  '0x00000000'
+"MultiBoot: Starting Address for Next Configuration spartan6"    '0x00000000'
+"MultiBoot: Use New Mode for Next Configuration spartan6"        'true'
+"MultiBoot: User-Defined Register for Failsafe Scheme spartan6"  '0x0000'
+"Netlist Translation Type"                                       'Timestamp'
+"Number of Paths in Error/Verbose Report"                        '3'
+"Optimize Instantiated Primitives"                               'false'
+"Other Bitgen Command Line Options spartan6"                     ''
+"Other XPWR Command Line Options"                                ''
+"Output Extended Identifiers"                                    'false'
+"Output File Name"                                               'toplevel'
+"Perform Advanced Analysis"                                      'false'
+"Perform Advanced Analysis Post Trace"                           'false'
+"Place And Route Mode"                                           'Normal Place and Route'
+"Place MultiBoot Settings into Bitstream spartan6"               'false'
+"Port to be used"                                                'Auto - default'
+"Post Map Simulation Model Name"                                 'toplevel_map.v'
+"Post Place & Route Simulation Model Name"                       'toplevel_timesim.v'
+"Post Synthesis Simulation Model Name"                           'toplevel_synthesis.v'
+"Post Translate Simulation Model Name"                           'toplevel_translate.v'
+"Produce Verbose Report"                                         'false'
+"RAM Extraction"                                                 'true'
+"ROM Extraction"                                                 'true'
+"ROM Style"                                                      'Auto'
+"Read Cores"                                                     'true'
+"Reduce Control Sets"                                            'Auto'
+"Regenerate Core"                                                'Under Current Project Setting'
+"Register Duplication Xst"                                       'true'
+"Release Write Enable (Output Events)"                           'Default (6)'
+"Rename Design Instance in Testbench File to"                    'UUT'
+"Rename Top Level Architecture To"                               'Structure'
+"Rename Top Level Entity to"                                     ''
+"Report Paths by Endpoint"                                       '3'
+"Report Paths by Endpoint Post Trace"                            '3'
+"Report Type"                                                    'Verbose Report'
+"Report Type Post Trace"                                         'Verbose Report'
+"Reset On Configuration Pulse Width"                             '100'
+"Retry Configuration if CRC Error Occurs spartan6"               'false'
+"Revision Select"                                                '00'
+"Revision Select Tristate"                                       'Disable'
+"Safe Implementation"                                            'No'
+"Security"                                                       'Enable Readback and Reconfiguration'
+"Set SPI Configuration Bus Width spartan6"                       '1'
+"Setup External Master Clock Division spartan6"                  '1'
+"Shift Register Extraction"                                      'true'
+"Shift Register Minimum Size spartan6"                           '2'
+"Show All Models"                                                'false'
+"Slice Utilization Ratio"                                        '100'
+"Top-Level Module Name in Output Netlist"                        ''
+"Tristate On Configuration Pulse Width"                          '0'
+"Unused IOB Pins"                                                'Pull Down'
+"Use Clock Enable"                                               'Auto'
+"Use DSP Block spartan6"                                         'Auto'
+"Use Smart Guide"                                                'false'
+"Use Synchronous Reset"                                          'Auto'
+"Use Synchronous Set"                                            'Auto'
+"Use Synthesis Constraints File"                                 'true'
+"UserID Code (8 Digit Hexadecimal)"                              '0xFFFFFFFF'
+"VCCAUX Voltage Level spartan6"                                  '2.5V'
+"VHDL Source Analysis Standard"                                  'VHDL-93'
+"Wait for DCM and PLL Lock (Output Events) spartan6"             'Default (NoWait)'
+"Wakeup Clock spartan6"                                          'Startup Clock'
+"Watchdog Timer Value spartan6"                                  '0xFFFF'
+"Write Timing Constraints"                                       'false'
+
+
+Section (3) - MAPPED DATA
+-------------------------
+
+The following sub-sections describes the list of items that were imported from the
+ISE properties and sources and mapped into the current project:-
+
+Section (3.1) - Target Device
+-----------------------------
+
+Default Part = xc7vx485tffg1157-1
+Family       = virtex7
+Package      = ffg1157
+Speed Grade  = -1
+
+
+Section (3.2) - Filesets
+------------------------
+
+<sources_1>
+FILESET_TYPE   = DesignSrcs
+TOP            = toplevel
+DESIGN_MODE    = RTL
+VERILOG_DIR    = 
+VERILOG_DEFINE = 
+VHDL_GENERICS  = 
+
+File(s):-
+NAME      = dcm_clktree.xco
+FILE PATH = e:/_processor_cores/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/ncpu32k-spartan6.srcs/sources_1/ip/dcm_clktree/dcm_clktree.xco
+FILE_TYPE = IP
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_cell_dff_l.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_cell_dff_l.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_cell_dff_lr.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_cell_dff_lr.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_ipdu.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ipdu.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_ie_mu.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_mu.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_ie_lu.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_lu.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_ie_eu.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_eu.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_ie_au.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_au.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_cell_sdpram_sclk.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_cell_sdpram_sclk.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_cell_pipebuf.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_cell_pipebuf.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_cell_dff_r.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_cell_dff_r.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_regfile.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_regfile.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_psr.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_psr.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_ifu.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ifu.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_ieu.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ieu.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_idu.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_idu.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_cell_tdpram_sclk.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_cell_tdpram_sclk.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_bpu.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_bpu.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = soc_fifo_asclk.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/sopc/rtl/soc_fifo_asclk.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_tsc.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_tsc.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_i_mmu.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_i_mmu.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_i_cache.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_i_cache.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_irqc.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_irqc.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_d_mmu.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_d_mmu.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_d_cache.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_d_cache.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_core.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_core.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_cell_tdpram_aclkd_sclk.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_cell_tdpram_aclkd_sclk.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = soc_pb_uart.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/sopc/rtl/soc_pb_uart.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = soc_pb_spi_master.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/sopc/rtl/soc_pb_spi_master.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = pb_fb_router.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/pb_fb_router/pb_fb_router.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = pb_fb_L2_cache.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/pb_fb_L2_cache/pb_fb_L2_cache.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = pb_fb_DRAM_ctrl.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/pb_fb_DRAM_ctrl/pb_fb_DRAM_ctrl.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = pb_fb_bootrom.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/pb_fb_bootrom/pb_fb_bootrom.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = pb_fb_arbiter.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/pb_fb_arbiter/pb_fb_arbiter.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = soc_toplevel.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/sopc/rtl/soc_toplevel.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = toplevel.v
+FILE PATH = E:/_processor_cores/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/toplevel.v
+FILE_TYPE = Verilog
+LIBRARY   = xil_defaultlib
+
+NAME      = ncpu32k_config.h
+FILE PATH = E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_config.h
+FILE_TYPE = Verilog Header
+LIBRARY   = xil_defaultlib
+
+
+<constrs_1>
+FILESET_TYPE   = Constrs
+
+Note: During the import operation, any constraint file(s) that are found in the ISE project will be added to the current Vivado project.
+      However, please note that none of these files will be automatically marked as a "Target Constraint File". To set a constraint file
+      as target, select the file in the GUI "Sources" window, right-click on this file and then select "Set Target UCF". Alternatively,
+      the target constraint file can be set using the "set_property target_constrs_file <filename> <fileset>" Tcl command.
+
+File(s):-
+None
+
+<sim_1>
+FILESET_TYPE   = SimulationSrcs
+
+File(s):-
+None
+
+Section (3.3) - Design Runs(s)
+------------------------------
+
+<synth_1>
+FLOW      = Vivado Synthesis 2018
+PART      = xc7vx485tffg1157-1
+SRCSET    = sources_1
+CONSTRSET = constrs_1
+STRATEGY  = Vivado Synthesis Defaults
+
+Options:-
+
+Note: The current run uses Vivado Strategies; hence no ISE run options will be mapped to this run during the import operation.
+
+
+
+<impl_1>
+FLOW      = Vivado Implementation 2018
+PART      = xc7vx485tffg1157-1
+SRCSET    = sources_1
+CONSTRSET = constrs_1
+STRATEGY  = Vivado Implementation Defaults
+
+Options:-
+
+Note: The current run uses Vivado Strategies; hence no ISE run options will be mapped to this run during the import operation.
+
+
+
+<sim_1>
+TOP  = unknown
+SOURCE_SET  = sources_1
+
+Options:-
+        

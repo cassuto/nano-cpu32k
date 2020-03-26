@@ -1,0 +1,407 @@
+Release 14.7 - xst P.20131013 (nt)
+Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved.
+--> Parameter TMPDIR set to xst/projnav.tmp
+
+
+Total REAL time to Xst completion: 0.00 secs
+Total CPU time to Xst completion: 0.14 secs
+ 
+--> Parameter xsthdpdir set to xst
+
+
+Total REAL time to Xst completion: 0.00 secs
+Total CPU time to Xst completion: 0.14 secs
+ 
+--> Reading design: pb_fb_arbiter.prj
+
+TABLE OF CONTENTS
+  1) Synthesis Options Summary
+  2) HDL Parsing
+  3) HDL Elaboration
+  4) HDL Synthesis
+       4.1) HDL Synthesis Report
+  5) Advanced HDL Synthesis
+       5.1) Advanced HDL Synthesis Report
+  6) Low Level Synthesis
+  7) Partition Report
+  8) Design Summary
+       8.1) Primitive and Black Box Usage
+       8.2) Device utilization summary
+       8.3) Partition Resource Summary
+       8.4) Timing Report
+            8.4.1) Clock Information
+            8.4.2) Asynchronous Control Signals Information
+            8.4.3) Timing Summary
+            8.4.4) Timing Details
+            8.4.5) Cross Clock Domains Report
+
+
+=========================================================================
+*                      Synthesis Options Summary                        *
+=========================================================================
+---- Source Parameters
+Input File Name                    : "pb_fb_arbiter.prj"
+Ignore Synthesis Constraint File   : NO
+
+---- Target Parameters
+Output File Name                   : "pb_fb_arbiter"
+Output Format                      : NGC
+Target Device                      : xc6slx16-2-ftg256
+
+---- Source Options
+Top Module Name                    : pb_fb_arbiter
+Automatic FSM Extraction           : YES
+FSM Encoding Algorithm             : Auto
+Safe Implementation                : No
+FSM Style                          : LUT
+RAM Extraction                     : Yes
+RAM Style                          : Auto
+ROM Extraction                     : Yes
+Shift Register Extraction          : YES
+ROM Style                          : Auto
+Resource Sharing                   : YES
+Asynchronous To Synchronous        : NO
+Shift Register Minimum Size        : 2
+Use DSP Block                      : Auto
+Automatic Register Balancing       : No
+
+---- Target Options
+LUT Combining                      : Auto
+Reduce Control Sets                : Auto
+Add IO Buffers                     : YES
+Global Maximum Fanout              : 100000
+Add Generic Clock Buffer(BUFG)     : 16
+Register Duplication               : YES
+Optimize Instantiated Primitives   : NO
+Use Clock Enable                   : Auto
+Use Synchronous Set                : Auto
+Use Synchronous Reset              : Auto
+Pack IO Registers into IOBs        : Auto
+Equivalent register Removal        : YES
+
+---- General Options
+Optimization Goal                  : Speed
+Optimization Effort                : 1
+Power Reduction                    : NO
+Keep Hierarchy                     : No
+Netlist Hierarchy                  : As_Optimized
+RTL Output                         : Yes
+Global Optimization                : AllClockNets
+Read Cores                         : YES
+Write Timing Constraints           : NO
+Cross Clock Analysis               : NO
+Hierarchy Separator                : /
+Bus Delimiter                      : <>
+Case Specifier                     : Maintain
+Slice Utilization Ratio            : 100
+BRAM Utilization Ratio             : 100
+DSP48 Utilization Ratio            : 100
+Auto BRAM Packing                  : NO
+Slice Utilization Ratio Delta      : 5
+
+---- Other Options
+Cores Search Directories           : {"ipcore_dir"  }
+
+=========================================================================
+
+
+=========================================================================
+*                          HDL Parsing                                  *
+=========================================================================
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 20.
+Parsing module <ncpu32k_cell_dff_lr>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\pb_fb_arbiter\pb_fb_arbiter.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <pb_fb_arbiter>.
+
+=========================================================================
+*                            HDL Elaboration                            *
+=========================================================================
+
+Elaborating module <pb_fb_arbiter>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=1)>.
+
+=========================================================================
+*                           HDL Synthesis                               *
+=========================================================================
+
+Synthesizing Unit <pb_fb_arbiter>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\pb_fb_arbiter\pb_fb_arbiter.v".
+    Summary:
+	inferred   4 Multiplexer(s).
+Unit <pb_fb_arbiter> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 1
+        RST_VECTOR = 1'b0
+    Found 1-bit register for signal <Q>.
+    Summary:
+	inferred   1 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr> synthesized.
+
+=========================================================================
+HDL Synthesis Report
+
+Macro Statistics
+# Registers                                            : 2
+ 1-bit register                                        : 2
+# Multiplexers                                         : 4
+ 1-bit 2-to-1 multiplexer                              : 2
+ 32-bit 2-to-1 multiplexer                             : 1
+ 4-bit 2-to-1 multiplexer                              : 1
+
+=========================================================================
+
+=========================================================================
+*                       Advanced HDL Synthesis                          *
+=========================================================================
+
+
+=========================================================================
+Advanced HDL Synthesis Report
+
+Macro Statistics
+# Registers                                            : 2
+ Flip-Flops                                            : 2
+# Multiplexers                                         : 3
+ 1-bit 2-to-1 multiplexer                              : 1
+ 32-bit 2-to-1 multiplexer                             : 1
+ 4-bit 2-to-1 multiplexer                              : 1
+
+=========================================================================
+
+=========================================================================
+*                         Low Level Synthesis                           *
+=========================================================================
+
+Optimizing unit <pb_fb_arbiter> ...
+
+Mapping all equations...
+Building and optimizing final netlist ...
+Found area constraint ratio of 100 (+ 5) on block pb_fb_arbiter, actual ratio is 1.
+FlipFlop dff_dbus_dout_sel/Q_0 has been replicated 1 time(s)
+FlipFlop dff_ibus_dout_sel/Q_0 has been replicated 1 time(s)
+
+Final Macro Processing ...
+
+=========================================================================
+Final Register Report
+
+Macro Statistics
+# Registers                                            : 4
+ Flip-Flops                                            : 4
+
+=========================================================================
+
+=========================================================================
+*                           Partition Report                            *
+=========================================================================
+
+Partition Implementation Status
+-------------------------------
+
+  No Partitions were found in this design.
+
+-------------------------------
+
+=========================================================================
+*                            Design Summary                             *
+=========================================================================
+
+Top Level Output File Name         : pb_fb_arbiter.ngc
+
+Primitive and Black Box Usage:
+------------------------------
+# BELS                             : 109
+#      INV                         : 1
+#      LUT2                        : 73
+#      LUT3                        : 33
+#      LUT5                        : 1
+#      LUT6                        : 1
+# FlipFlops/Latches                : 4
+#      FDC                         : 4
+# Clock Buffers                    : 1
+#      BUFGP                       : 1
+# IO Buffers                       : 277
+#      IBUF                        : 139
+#      OBUF                        : 138
+
+Device utilization summary:
+---------------------------
+
+Selected Device : 6slx16ftg256-2 
+
+
+Slice Logic Utilization: 
+ Number of Slice Registers:               4  out of  18224     0%  
+ Number of Slice LUTs:                  109  out of   9112     1%  
+    Number used as Logic:               109  out of   9112     1%  
+
+Slice Logic Distribution: 
+ Number of LUT Flip Flop pairs used:    110
+   Number with an unused Flip Flop:     106  out of    110    96%  
+   Number with an unused LUT:             1  out of    110     0%  
+   Number of fully used LUT-FF pairs:     3  out of    110     2%  
+   Number of unique control sets:         1
+
+IO Utilization: 
+ Number of IOs:                         278
+ Number of bonded IOBs:                 278  out of    186   149% (*) 
+
+Specific Feature Utilization:
+ Number of BUFG/BUFGCTRLs:                1  out of     16     6%  
+
+WARNING:Xst:1336 -  (*) More than 100% of Device resources are used
+
+---------------------------
+Partition Resource Summary:
+---------------------------
+
+  No Partitions were found in this design.
+
+---------------------------
+
+
+=========================================================================
+Timing Report
+
+NOTE: THESE TIMING NUMBERS ARE ONLY A SYNTHESIS ESTIMATE.
+      FOR ACCURATE TIMING INFORMATION PLEASE REFER TO THE TRACE REPORT
+      GENERATED AFTER PLACE-and-ROUTE.
+
+Clock Information:
+------------------
+-----------------------------------+------------------------+-------+
+Clock Signal                       | Clock buffer(FF name)  | Load  |
+-----------------------------------+------------------------+-------+
+clk                                | BUFGP                  | 4     |
+-----------------------------------+------------------------+-------+
+
+Asynchronous Control Signals Information:
+----------------------------------------
+No asynchronous control signals found in this design
+
+Timing Summary:
+---------------
+Speed Grade: -2
+
+   Minimum period: 1.535ns (Maximum Frequency: 651.466MHz)
+   Minimum input arrival time before clock: 3.757ns
+   Maximum output required time after clock: 6.134ns
+   Maximum combinational path delay: 7.055ns
+
+Timing Details:
+---------------
+All values displayed in nanoseconds (ns)
+
+=========================================================================
+Timing constraint: Default period analysis for Clock 'clk'
+  Clock period: 1.535ns (frequency: 651.466MHz)
+  Total number of paths / destination ports: 4 / 4
+-------------------------------------------------------------------------
+Delay:               1.535ns (Levels of Logic = 1)
+  Source:            dff_ibus_dout_sel/Q_0_1 (FF)
+  Destination:       dff_ibus_dout_sel/Q_0 (FF)
+  Source Clock:      clk rising
+  Destination Clock: clk rising
+
+  Data Path: dff_ibus_dout_sel/Q_0_1 to dff_ibus_dout_sel/Q_0
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     FDC:C->Q              1   0.525   0.682  dff_ibus_dout_sel/Q_0_1 (dff_ibus_dout_sel/Q_0_1)
+     LUT6:I5->O            2   0.254   0.000  dff_ibus_dout_sel/Q_0_rstpot (dff_ibus_dout_sel/Q_0_rstpot)
+     FDC:D                     0.074          dff_ibus_dout_sel/Q_0
+    ----------------------------------------
+    Total                      1.535ns (0.853ns logic, 0.682ns route)
+                                       (55.6% logic, 44.4% route)
+
+=========================================================================
+Timing constraint: Default OFFSET IN BEFORE for Clock 'clk'
+  Total number of paths / destination ports: 22 / 8
+-------------------------------------------------------------------------
+Offset:              3.757ns (Levels of Logic = 2)
+  Source:            fb_dbus_cmd_valid (PAD)
+  Destination:       dff_ibus_dout_sel/Q_0 (FF)
+  Destination Clock: clk rising
+
+  Data Path: fb_dbus_cmd_valid to dff_ibus_dout_sel/Q_0
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     IBUF:I->O            41   1.328   2.101  fb_dbus_cmd_valid_IBUF (fb_dbus_cmd_valid_IBUF)
+     LUT5:I0->O            2   0.254   0.000  dff_dbus_dout_sel/Q_0_rstpot (dff_dbus_dout_sel/Q_0_rstpot)
+     FDC:D                     0.074          dff_dbus_dout_sel/Q_0
+    ----------------------------------------
+    Total                      3.757ns (1.656ns logic, 2.101ns route)
+                                       (44.1% logic, 55.9% route)
+
+=========================================================================
+Timing constraint: Default OFFSET OUT AFTER for Clock 'clk'
+  Total number of paths / destination ports: 67 / 67
+-------------------------------------------------------------------------
+Offset:              6.134ns (Levels of Logic = 2)
+  Source:            dff_dbus_dout_sel/Q_0 (FF)
+  Destination:       fb_mbus_ready (PAD)
+  Source Clock:      clk rising
+
+  Data Path: dff_dbus_dout_sel/Q_0 to fb_mbus_ready
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     FDC:C->Q             34   0.525   1.781  dff_dbus_dout_sel/Q_0 (dff_dbus_dout_sel/Q_0)
+     LUT3:I0->O            1   0.235   0.681  Mmux_fb_mbus_ready11 (fb_mbus_ready_OBUF)
+     OBUF:I->O                 2.912          fb_mbus_ready_OBUF (fb_mbus_ready)
+    ----------------------------------------
+    Total                      6.134ns (3.672ns logic, 2.462ns route)
+                                       (59.9% logic, 40.1% route)
+
+=========================================================================
+Timing constraint: Default path analysis
+  Total number of paths / destination ports: 210 / 138
+-------------------------------------------------------------------------
+Delay:               7.055ns (Levels of Logic = 3)
+  Source:            fb_dbus_cmd_valid (PAD)
+  Destination:       fb_mbus_cmd_addr<31> (PAD)
+
+  Data Path: fb_dbus_cmd_valid to fb_mbus_cmd_addr<31>
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     IBUF:I->O            41   1.328   1.899  fb_dbus_cmd_valid_IBUF (fb_dbus_cmd_valid_IBUF)
+     LUT3:I0->O            1   0.235   0.681  Mmux_fb_mbus_cmd_addr321 (fb_mbus_cmd_addr_9_OBUF)
+     OBUF:I->O                 2.912          fb_mbus_cmd_addr_9_OBUF (fb_mbus_cmd_addr<9>)
+    ----------------------------------------
+    Total                      7.055ns (4.475ns logic, 2.580ns route)
+                                       (63.4% logic, 36.6% route)
+
+=========================================================================
+
+Cross Clock Domains Report:
+--------------------------
+
+Clock to Setup on destination clock clk
+---------------+---------+---------+---------+---------+
+               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+---------------+---------+---------+---------+---------+
+clk            |    1.535|         |         |         |
+---------------+---------+---------+---------+---------+
+
+=========================================================================
+
+
+Total REAL time to Xst completion: 3.00 secs
+Total CPU time to Xst completion: 3.03 secs
+ 
+--> 
+
+Total memory usage is 231652 kilobytes
+
+Number of errors   :    0 (   0 filtered)
+Number of warnings :    1 (   0 filtered)
+Number of infos    :    0 (   0 filtered)
+

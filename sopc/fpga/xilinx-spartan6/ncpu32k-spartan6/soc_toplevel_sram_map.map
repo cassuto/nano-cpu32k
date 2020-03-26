@@ -1,0 +1,16 @@
+Release 14.7 Map P.20131013 (nt)
+Xilinx Map Application Log File for Design 'soc_toplevel_sram'
+
+Design Information
+------------------
+Command Line   : map -intstyle ise -p xc6slx16-ftg256-2 -w -logic_opt off -ol
+high -t 1 -xt 0 -register_duplication off -r 4 -global_opt off -mt off -ir off
+-pr off -lc off -power off -o soc_toplevel_sram_map.ncd soc_toplevel_sram.ngd
+soc_toplevel_sram.pcf 
+Target Device  : xc6slx16
+Target Package : ftg256
+Target Speed   : -2
+Mapper Version : spartan6 -- $Revision: 1.55 $
+Mapped Date    : Sun Mar 22 14:20:32 2020
+
+Mapping design into LUTs...

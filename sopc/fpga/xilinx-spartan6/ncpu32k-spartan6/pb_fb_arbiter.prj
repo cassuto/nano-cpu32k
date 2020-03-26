@@ -1,0 +1,2 @@
+verilog work "../../../../rtl/ncpu32k/ncpu32k_cell_dff_lr.v"
+verilog work "../../../../rtl/pb_fb_arbiter/pb_fb_arbiter.v"

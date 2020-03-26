@@ -1,0 +1,202 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--This is an ISE project configuration file.-->
+<!--It holds project specific layout data for the projectmgr plugin.-->
+<!--Copyright (c) 1995-2009 Xilinx, Inc.  All rights reserved.-->
+<Project version="2" owner="projectmgr" name="ncpu32k-spartan6" >
+   <!--This is an ISE project configuration file.-->
+   <ItemView engineview="SynthesisOnly" guiview="Source" compilemode="AutoCompile" >
+      <ClosedNodes>
+         <ClosedNodesVersion>2</ClosedNodesVersion>
+         <ClosedNode>/soc_toplevel E:|_processor_cores|nano-cpu32k|sopc|rtl|soc_toplevel.v</ClosedNode>
+         <ClosedNode>/tb_sopc E:|_processor_cores|nano-cpu32k|testbench|tb_sopc.v</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/L2_cache - pb_fb_L2_cache</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/fb_arbi - pb_fb_arbiter</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/fb_router - pb_fb_router</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/ncpu32k - ncpu32k</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/ncpu32k - ncpu32k/core - ncpu32k_core/idu - ncpu32k_idu</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/ncpu32k - ncpu32k/core - ncpu32k_core/ieu - ncpu32k_ieu</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/ncpu32k - ncpu32k/core - ncpu32k_core/ifu - ncpu32k_ifu</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/ncpu32k - ncpu32k/core - ncpu32k_core/psr - ncpu32k_psr</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/ncpu32k - ncpu32k/core - ncpu32k_core/regfile0 - ncpu32k_regfile</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/ncpu32k - ncpu32k/d_mmu - ncpu32k_d_mmu/pipebuf_ifu - ncpu32k_cell_pipebuf</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/ncpu32k - ncpu32k/i_mmu - ncpu32k_i_mmu/pipebuf_ifu - ncpu32k_cell_pipebuf</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/ncpu32k - ncpu32k/irqc - ncpu32k_irqc</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/ncpu32k - ncpu32k/tsc - ncpu32k_tsc</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel/pb_uart - soc_pb_uart</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem>toplevel (E:/_processor_cores/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/toplevel.v)</SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff000000000000000100000001000000000000000000000000000000000202000000010000000100000064000001be000000020000000000000000000000000200000064ffffffff000000810000000300000002000001be0000000100000003000000000000000100000003</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >true</UserChangedColumnWidths>
+      <CurrentItem>toplevel (E:/_processor_cores/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/toplevel.v)</CurrentItem>
+   </ItemView>
+   <ItemView engineview="SynthesisOnly" sourcetype="" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+         <ClosedNode>Design Utilities</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem/>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000100000000000000000000000000000000000000000000000163000000010000000100000000000000000000000064ffffffff000000810000000000000001000001630000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem/>
+   </ItemView>
+   <ItemView guiview="File" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+      </ClosedNodes>
+      <SelectedItems/>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff000000000000000100000000000000000100000000000000000000000000000000000002d2000000040101000100000000000000000000000064ffffffff0000008100000000000000040000003d0000000100000000000000240000000100000000000000780000000100000000000001f90000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem>dcm_clktree.xco</CurrentItem>
+   </ItemView>
+   <ItemView guiview="Library" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+         <ClosedNode>work</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems/>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000000000000010000000000000000000000000000000000000121000000010001000100000000000000000000000064ffffffff000000810000000000000001000001210000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem>work</CurrentItem>
+   </ItemView>
+   <ItemView engineview="SynthesisOnly" sourcetype="DESUT_VERILOG" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+         <ClosedNode>CORE Generator</ClosedNode>
+         <ClosedNode>Configure Target Device</ClosedNode>
+         <ClosedNode>Design Utilities</ClosedNode>
+         <ClosedNode>Implement Design</ClosedNode>
+         <ClosedNode>User Constraints</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem>Analyze Design Using ChipScope</SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >5</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000100000000000000000000000000000000000000000000000152000000010000000100000000000000000000000064ffffffff000000810000000000000001000001520000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem>Analyze Design Using ChipScope</CurrentItem>
+   </ItemView>
+   <ItemView engineview="SynthesisOnly" sourcetype="DESUT_XCO" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+         <ClosedNode>CORE Generator</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem></SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000100000000000000000000000000000000000000000000000163000000010000000100000000000000000000000064ffffffff000000810000000000000001000001630000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem></CurrentItem>
+   </ItemView>
+   <SourceProcessView>000000ff0000000000000002000000c8000000a701000000050100000002</SourceProcessView>
+   <CurrentView>Implementation</CurrentView>
+   <ItemView engineview="BehavioralSim" guiview="Source" compilemode="AutoCompile" >
+      <ClosedNodes>
+         <ClosedNodesVersion>2</ClosedNodesVersion>
+         <ClosedNode>/tb_sopc E:|_processor_cores|nano-cpu32k|testbench|tb_sopc.v</ClosedNode>
+         <ClosedNode>/toplevel E:|_processor_cores|nano-cpu32k|sopc|fpga|xilinx-spartan6|ncpu32k-spartan6|toplevel.v/soc - soc_toplevel</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem>toplevel (E:/_processor_cores/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/toplevel.v)</SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >3</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000100000000000000000000000000000000020200000001000000010000006400000144000000020000000000000000000000000200000064ffffffff000000810000000300000002000001440000000100000003000000000000000100000003</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem>toplevel (E:/_processor_cores/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/toplevel.v)</CurrentItem>
+   </ItemView>
+   <ItemView engineview="BehavioralSim" sourcetype="" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+         <ClosedNode>Design Utilities/Compile HDL Simulation Libraries</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem>Design Utilities</SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000100000000000000000000000000000000000000000000000163000000010000000100000000000000000000000064ffffffff000000810000000000000001000001630000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem>Design Utilities</CurrentItem>
+   </ItemView>
+   <ItemView engineview="SynthesisOnly" sourcetype="DESUT_CDC" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem></SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000100000000000000000000000000000000000000000000000163000000010000000100000000000000000000000064ffffffff000000810000000000000001000001630000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem></CurrentItem>
+   </ItemView>
+   <ItemView engineview="SynthesisOnly" sourcetype="DESUT_UCF" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+         <ClosedNode>User Constraints</ClosedNode>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem/>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000100000000000000000000000000000000000000000000000163000000010000000100000000000000000000000064ffffffff000000810000000000000001000001630000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem/>
+   </ItemView>
+   <ItemView engineview="SynthesisOnly" guiview="Source" compilemode="ManualCompile" >
+      <ClosedNodes>
+         <ClosedNodesVersion>2</ClosedNodesVersion>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem>ncpu32k_cell_dff_l.v (E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_cell_dff_l.v)</SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000100000000000000000000000000000000000000000000000198000000020000000000000000000000000000000064ffffffff0000008100000000000000020000011b00000001000000000000007d0000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem>ncpu32k_cell_dff_l.v (E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_cell_dff_l.v)</CurrentItem>
+   </ItemView>
+   <ItemView engineview="BehavioralSim" sourcetype="DESUT_VERILOG" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem>Simulate Behavioral Model</SelectedItem>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000100000000000000000000000000000000000000000000000163000000010000000100000000000000000000000064ffffffff000000810000000000000001000001630000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem>Simulate Behavioral Model</CurrentItem>
+   </ItemView>
+   <ItemView engineview="BehavioralSim" sourcetype="DESUT_XCO" guiview="Process" >
+      <ClosedNodes>
+         <ClosedNodesVersion>1</ClosedNodesVersion>
+      </ClosedNodes>
+      <SelectedItems>
+         <SelectedItem/>
+      </SelectedItems>
+      <ScrollbarPosition orientation="vertical" >0</ScrollbarPosition>
+      <ScrollbarPosition orientation="horizontal" >0</ScrollbarPosition>
+      <ViewHeaderState orientation="horizontal" >000000ff00000000000000010000000100000000000000000000000000000000000000000000000163000000010000000100000000000000000000000064ffffffff000000810000000000000001000001630000000100000000</ViewHeaderState>
+      <UserChangedColumnWidths orientation="horizontal" >false</UserChangedColumnWidths>
+      <CurrentItem/>
+   </ItemView>
+</Project>

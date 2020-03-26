@@ -1,0 +1,178 @@
+--------------------------------------------------------------------------------
+Release 14.7 Trace  (nt)
+Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved.
+
+E:\Xilinx\14.7\ISE_DS\ISE\bin\nt\unwrapped\trce.exe -intstyle ise -v 3 -s 2 -n
+3 -fastpaths -xml soc_toplevel.twx soc_toplevel.ncd -o soc_toplevel.twr
+soc_toplevel.pcf
+
+Design file:              soc_toplevel.ncd
+Physical constraint file: soc_toplevel.pcf
+Device,package,speed:     xc6slx16,ftg256,C,-2 (PRODUCTION 1.23 2013-10-13)
+Report level:             verbose report
+
+Environment Variable      Effect 
+--------------------      ------ 
+NONE                      No environment variables were set
+--------------------------------------------------------------------------------
+
+INFO:Timing:2698 - No timing constraints found, doing default enumeration.
+INFO:Timing:3412 - To improve timing, see the Timing Closure User Guide (UG612).
+INFO:Timing:2752 - To get complete path coverage, use the unconstrained paths 
+   option. All paths that are not constrained will be reported in the 
+   unconstrained paths section(s) of the report.
+INFO:Timing:3339 - The clock-to-out numbers in this timing report are based on 
+   a 50 Ohm transmission line loading model.  For the details of this model, 
+   and for more information on accounting for different loading conditions, 
+   please see the device datasheet.
+
+
+
+Data Sheet report:
+-----------------
+All values displayed in nanoseconds (ns)
+
+Setup/Hold to clock CPU_CLK
+------------+------------+------------+------------+------------+------------------+--------+
+            |Max Setup to|  Process   |Max Hold to |  Process   |                  | Clock  |
+Source      | clk (edge) |   Corner   | clk (edge) |   Corner   |Internal Clock(s) | Phase  |
+------------+------------+------------+------------+------------+------------------+--------+
+RST_L       |    3.041(R)|      SLOW  |   -1.363(R)|      FAST  |CPU_CLK_BUFGP     |   0.000|
+SPI_MISO    |    5.575(R)|      SLOW  |   -2.881(R)|      FAST  |CPU_CLK_BUFGP     |   0.000|
+------------+------------+------------+------------+------------+------------------+--------+
+
+Setup/Hold to clock SDR_CLK
+-------------+------------+------------+------------+------------+------------------+--------+
+             |Max Setup to|  Process   |Max Hold to |  Process   |                  | Clock  |
+Source       | clk (edge) |   Corner   | clk (edge) |   Corner   |Internal Clock(s) | Phase  |
+-------------+------------+------------+------------+------------+------------------+--------+
+DRAM_DATA<0> |    0.591(R)|      SLOW  |    0.501(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<1> |    0.870(R)|      SLOW  |    0.158(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<2> |    0.814(R)|      SLOW  |    0.287(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<3> |    0.746(R)|      SLOW  |    0.277(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<4> |    1.053(R)|      SLOW  |    0.063(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<5> |    1.066(R)|      SLOW  |   -0.028(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<6> |    1.076(R)|      SLOW  |    0.038(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<7> |    1.130(R)|      SLOW  |   -0.089(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<8> |    0.900(R)|      SLOW  |    0.206(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<9> |    1.113(R)|      SLOW  |   -0.069(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<10>|    0.961(R)|      SLOW  |    0.152(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<11>|    1.169(R)|      SLOW  |   -0.124(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<12>|    1.429(R)|      SLOW  |   -0.426(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<13>|    1.588(R)|      SLOW  |   -0.660(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<14>|    1.720(R)|      SLOW  |   -0.643(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<15>|    1.547(R)|      SLOW  |   -0.620(R)|      SLOW  |SDR_CLK_BUFGP     |   0.000|
+RST_L        |    2.254(R)|      SLOW  |   -0.949(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+-------------+------------+------------+------------+------------+------------------+--------+
+
+Setup/Hold to clock UART_CLK
+------------+------------+------------+------------+------------+------------------+--------+
+            |Max Setup to|  Process   |Max Hold to |  Process   |                  | Clock  |
+Source      | clk (edge) |   Corner   | clk (edge) |   Corner   |Internal Clock(s) | Phase  |
+------------+------------+------------+------------+------------+------------------+--------+
+RST_L       |    1.577(R)|      SLOW  |   -0.597(R)|      FAST  |UART_CLK_BUFGP    |   0.000|
+UART_RX_L   |    1.662(R)|      SLOW  |   -0.642(R)|      FAST  |UART_CLK_BUFGP    |   0.000|
+------------+------------+------------+------------+------------+------------------+--------+
+
+Clock CPU_CLK to Pad
+------------+-----------------+------------+-----------------+------------+------------------+--------+
+            |Max (slowest) clk|  Process   |Min (fastest) clk|  Process   |                  | Clock  |
+Destination |  (edge) to PAD  |   Corner   |  (edge) to PAD  |   Corner   |Internal Clock(s) | Phase  |
+------------+-----------------+------------+-----------------+------------+------------------+--------+
+SPI_CS_L    |        10.786(R)|      SLOW  |         4.730(R)|      FAST  |CPU_CLK_BUFGP     |   0.000|
+SPI_MOSI    |        10.289(R)|      SLOW  |         4.528(R)|      FAST  |CPU_CLK_BUFGP     |   0.000|
+SPI_SCK     |        10.593(R)|      SLOW  |         4.613(R)|      FAST  |CPU_CLK_BUFGP     |   0.000|
+------------+-----------------+------------+-----------------+------------+------------------+--------+
+
+Clock SDR_CLK to Pad
+-------------+-----------------+------------+-----------------+------------+------------------+--------+
+             |Max (slowest) clk|  Process   |Min (fastest) clk|  Process   |                  | Clock  |
+Destination  |  (edge) to PAD  |   Corner   |  (edge) to PAD  |   Corner   |Internal Clock(s) | Phase  |
+-------------+-----------------+------------+-----------------+------------+------------------+--------+
+DRAM_ADDR<0> |         9.369(R)|      SLOW  |         3.964(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<1> |         9.504(R)|      SLOW  |         4.033(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<2> |         9.299(R)|      SLOW  |         3.904(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<3> |         9.165(R)|      SLOW  |         3.856(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<4> |         9.176(R)|      SLOW  |         3.868(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<5> |         9.091(R)|      SLOW  |         3.741(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<6> |         9.091(R)|      SLOW  |         3.741(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<7> |         9.313(R)|      SLOW  |         3.884(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<8> |         9.115(R)|      SLOW  |         3.772(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<9> |         8.753(R)|      SLOW  |         3.552(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<10>|         8.937(R)|      SLOW  |         3.635(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<11>|         9.115(R)|      SLOW  |         3.813(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_ADDR<12>|         9.177(R)|      SLOW  |         3.832(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_BA<0>   |         8.560(R)|      SLOW  |         3.460(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_BA<1>   |         8.532(R)|      SLOW  |         3.384(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_CAS_L   |         9.414(R)|      SLOW  |         3.984(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_CS_L    |         9.214(R)|      SLOW  |         3.888(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<0> |        10.252(R)|      SLOW  |         3.717(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<1> |         9.906(R)|      SLOW  |         3.893(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<2> |         9.906(R)|      SLOW  |         3.878(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<3> |        10.252(R)|      SLOW  |         3.717(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<4> |        10.877(R)|      SLOW  |         3.971(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<5> |        11.021(R)|      SLOW  |         4.137(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<6> |        11.021(R)|      SLOW  |         4.087(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<7> |        11.313(R)|      SLOW  |         4.081(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<8> |        11.308(R)|      SLOW  |         3.934(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<9> |        11.581(R)|      SLOW  |         3.991(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<10>|        11.581(R)|      SLOW  |         3.975(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<11>|        11.912(R)|      SLOW  |         4.195(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<12>|        11.909(R)|      SLOW  |         4.296(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<13>|        12.527(R)|      SLOW  |         4.502(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<14>|        12.360(R)|      SLOW  |         4.455(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DATA<15>|        12.360(R)|      SLOW  |         4.430(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DQM<0>  |         9.902(R)|      SLOW  |         4.278(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_DQM<1>  |        10.086(R)|      SLOW  |         4.376(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_RAS_L   |         9.215(R)|      SLOW  |         3.865(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+DRAM_WE_L    |        10.261(R)|      SLOW  |         4.504(R)|      FAST  |SDR_CLK_BUFGP     |   0.000|
+-------------+-----------------+------------+-----------------+------------+------------------+--------+
+
+Clock UART_CLK to Pad
+------------+-----------------+------------+-----------------+------------+------------------+--------+
+            |Max (slowest) clk|  Process   |Min (fastest) clk|  Process   |                  | Clock  |
+Destination |  (edge) to PAD  |   Corner   |  (edge) to PAD  |   Corner   |Internal Clock(s) | Phase  |
+------------+-----------------+------------+-----------------+------------+------------------+--------+
+UART_TX_L   |         9.060(R)|      SLOW  |         3.720(R)|      FAST  |UART_CLK_BUFGP    |   0.000|
+------------+-----------------+------------+-----------------+------------+------------------+--------+
+
+Clock to Setup on destination clock CPU_CLK
+---------------+---------+---------+---------+---------+
+               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+---------------+---------+---------+---------+---------+
+CPU_CLK        |   34.348|         |         |         |
+SDR_CLK        |    2.346|         |         |         |
+UART_CLK       |   14.932|         |         |         |
+---------------+---------+---------+---------+---------+
+
+Clock to Setup on destination clock SDR_CLK
+---------------+---------+---------+---------+---------+
+               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+---------------+---------+---------+---------+---------+
+CPU_CLK        |   23.276|         |         |         |
+SDR_CLK        |    6.443|         |         |         |
+---------------+---------+---------+---------+---------+
+
+Clock to Setup on destination clock UART_CLK
+---------------+---------+---------+---------+---------+
+               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+---------------+---------+---------+---------+---------+
+CPU_CLK        |    6.334|         |         |         |
+UART_CLK       |    6.683|         |         |         |
+---------------+---------+---------+---------+---------+
+
+
+Analysis completed Sun Mar 22 16:35:54 2020 
+--------------------------------------------------------------------------------
+
+Trace Settings:
+-------------------------
+Trace Settings 
+
+Peak Memory Usage: 210 MB
+
+
+

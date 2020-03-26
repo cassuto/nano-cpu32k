@@ -1,0 +1,47 @@
+# compile verilog/system verilog design source files
+verilog xil_defaultlib  --include "../../../../../../../../rtl/ncpu32k" --include "../../../../ncpu32k-spartan6.srcs/sources_1/ip/clk_wiz_0" \
+"../../../../ncpu32k-spartan6.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0_clk_wiz.v" \
+"../../../../ncpu32k-spartan6.srcs/sources_1/ip/clk_wiz_0/clk_wiz_0.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_cell_dff_l.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_cell_dff_lr.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_ipdu.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_ie_mu.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_ie_lu.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_ie_eu.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_ie_au.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_cell_sdpram_sclk.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_cell_pipebuf.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_cell_dff_r.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_regfile.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_psr.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_ifu.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_ieu.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_idu.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_cell_tdpram_sclk.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_bpu.v" \
+"../../../../../../../rtl/soc_fifo_asclk.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_tsc.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_i_mmu.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_i_cache.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_irqc.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_d_mmu.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_d_cache.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_core.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k_cell_tdpram_aclkd_sclk.v" \
+"../../../../../../../rtl/soc_pb_uart.v" \
+"../../../../../../../rtl/soc_pb_spi_master.v" \
+"../../../../../../../../rtl/pb_fb_router/pb_fb_router.v" \
+"../../../../../../../../rtl/pb_fb_L2_cache/pb_fb_L2_cache.v" \
+"../../../../../../../../rtl/pb_fb_DRAM_ctrl/pb_fb_DRAM_ctrl.v" \
+"../../../../../../../../rtl/pb_fb_bootrom/pb_fb_bootrom.v" \
+"../../../../../../../../rtl/pb_fb_arbiter/pb_fb_arbiter.v" \
+"../../../../../../../../rtl/ncpu32k/ncpu32k.v" \
+"../../../../../../../rtl/soc_toplevel.v" \
+"../../../../toplevel.v" \
+"../../../../../../../../testbench/tb_sopc.v" \
+
+# compile glbl module
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort

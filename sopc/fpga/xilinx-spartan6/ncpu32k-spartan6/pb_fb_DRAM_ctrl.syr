@@ -1,0 +1,513 @@
+Release 14.7 - xst P.20131013 (nt)
+Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved.
+--> Parameter TMPDIR set to xst/projnav.tmp
+
+
+Total REAL time to Xst completion: 0.00 secs
+Total CPU time to Xst completion: 0.13 secs
+ 
+--> Parameter xsthdpdir set to xst
+
+
+Total REAL time to Xst completion: 0.00 secs
+Total CPU time to Xst completion: 0.13 secs
+ 
+--> Reading design: pb_fb_DRAM_ctrl.prj
+
+TABLE OF CONTENTS
+  1) Synthesis Options Summary
+  2) HDL Parsing
+  3) HDL Elaboration
+  4) HDL Synthesis
+       4.1) HDL Synthesis Report
+  5) Advanced HDL Synthesis
+       5.1) Advanced HDL Synthesis Report
+  6) Low Level Synthesis
+  7) Partition Report
+  8) Design Summary
+       8.1) Primitive and Black Box Usage
+       8.2) Device utilization summary
+       8.3) Partition Resource Summary
+       8.4) Timing Report
+            8.4.1) Clock Information
+            8.4.2) Asynchronous Control Signals Information
+            8.4.3) Timing Summary
+            8.4.4) Timing Details
+            8.4.5) Cross Clock Domains Report
+
+
+=========================================================================
+*                      Synthesis Options Summary                        *
+=========================================================================
+---- Source Parameters
+Input File Name                    : "pb_fb_DRAM_ctrl.prj"
+Ignore Synthesis Constraint File   : NO
+
+---- Target Parameters
+Output File Name                   : "pb_fb_DRAM_ctrl"
+Output Format                      : NGC
+Target Device                      : xc6slx16-2-ftg256
+
+---- Source Options
+Top Module Name                    : pb_fb_DRAM_ctrl
+Automatic FSM Extraction           : YES
+FSM Encoding Algorithm             : Auto
+Safe Implementation                : No
+FSM Style                          : LUT
+RAM Extraction                     : Yes
+RAM Style                          : Auto
+ROM Extraction                     : Yes
+Shift Register Extraction          : YES
+ROM Style                          : Auto
+Resource Sharing                   : YES
+Asynchronous To Synchronous        : NO
+Shift Register Minimum Size        : 2
+Use DSP Block                      : Auto
+Automatic Register Balancing       : No
+
+---- Target Options
+LUT Combining                      : Auto
+Reduce Control Sets                : Auto
+Add IO Buffers                     : YES
+Global Maximum Fanout              : 100000
+Add Generic Clock Buffer(BUFG)     : 16
+Register Duplication               : YES
+Optimize Instantiated Primitives   : NO
+Use Clock Enable                   : Auto
+Use Synchronous Set                : Auto
+Use Synchronous Reset              : Auto
+Pack IO Registers into IOBs        : Auto
+Equivalent register Removal        : YES
+
+---- General Options
+Optimization Goal                  : Speed
+Optimization Effort                : 1
+Power Reduction                    : NO
+Keep Hierarchy                     : No
+Netlist Hierarchy                  : As_Optimized
+RTL Output                         : Yes
+Global Optimization                : AllClockNets
+Read Cores                         : YES
+Write Timing Constraints           : NO
+Cross Clock Analysis               : NO
+Hierarchy Separator                : /
+Bus Delimiter                      : <>
+Case Specifier                     : Maintain
+Slice Utilization Ratio            : 100
+BRAM Utilization Ratio             : 100
+DSP48 Utilization Ratio            : 100
+Auto BRAM Packing                  : NO
+Slice Utilization Ratio Delta      : 5
+
+---- Other Options
+Cores Search Directories           : {"ipcore_dir"  }
+
+=========================================================================
+
+
+=========================================================================
+*                          HDL Parsing                                  *
+=========================================================================
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\pb_fb_DRAM_ctrl\pb_fb_DRAM_ctrl.v" into library work
+Parsing module <pb_fb_DRAM_ctrl>.
+
+=========================================================================
+*                            HDL Elaboration                            *
+=========================================================================
+
+Elaborating module <pb_fb_DRAM_ctrl>.
+
+=========================================================================
+*                           HDL Synthesis                               *
+=========================================================================
+
+Synthesizing Unit <pb_fb_DRAM_ctrl>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\pb_fb_DRAM_ctrl\pb_fb_DRAM_ctrl.v".
+        SDR_COL_BITS = 9
+        SDR_ROW_BITS = 13
+        SDR_BA_BITS = 2
+        SDR_DATA_BITS = 16
+        SDR_ADDR_BITS = 13
+        N_BW = 1
+        tRP = 3
+        tMRD = 2
+        tRCD = 3
+        tRC = 9
+        tREF = 64
+        pREF = 9
+        nCAS_Latency = 3
+        BRUST_RD_LENGTH = 7'b0100000
+        BRUST_WE_LENGTH = 7'b0100000
+    Found 4x13-bit single-port RAM <Mram_line_prech_r> for signal <line_prech_r>.
+    Found 1-bit register for signal <rf_pending_r>.
+    Found 2-bit register for signal <DRAM_DQM>.
+    Found 4-bit register for signal <DRAM_CS_WE_RAS_CAS_L>.
+    Found 16-bit register for signal <rf_cnt_r>.
+    Found 3-bit register for signal <status_r>.
+    Found 3-bit register for signal <dout_vld_r>.
+    Found 1-bit register for signal <bank_act_r<3>>.
+    Found 1-bit register for signal <bank_act_r<2>>.
+    Found 1-bit register for signal <bank_act_r<1>>.
+    Found 1-bit register for signal <bank_act_r<0>>.
+    Found 1-bit register for signal <sdr_r_vld>.
+    Found 1-bit register for signal <sdr_w_rdy>.
+    Found 1-bit register for signal <sdr_cmd_bst_we_ack>.
+    Found 1-bit register for signal <sdr_cmd_bst_rd_ack>.
+    Found 16-bit register for signal <din_r>.
+    Found 16-bit register for signal <sdr_dout>.
+    Found 7-bit register for signal <status_delay_r>.
+    Found 3-bit register for signal <status_ret_r>.
+    Found 2-bit register for signal <DRAM_BA>.
+    Found 1-bit register for signal <DRAM_ADDR<12>>.
+    Found 1-bit register for signal <DRAM_ADDR<11>>.
+    Found 1-bit register for signal <DRAM_ADDR<10>>.
+    Found 1-bit register for signal <DRAM_ADDR<9>>.
+    Found 1-bit register for signal <DRAM_ADDR<8>>.
+    Found 1-bit register for signal <DRAM_ADDR<7>>.
+    Found 1-bit register for signal <DRAM_ADDR<6>>.
+    Found 1-bit register for signal <DRAM_ADDR<5>>.
+    Found 1-bit register for signal <DRAM_ADDR<4>>.
+    Found 1-bit register for signal <DRAM_ADDR<3>>.
+    Found 1-bit register for signal <DRAM_ADDR<2>>.
+    Found 1-bit register for signal <DRAM_ADDR<1>>.
+    Found 1-bit register for signal <DRAM_ADDR<0>>.
+    Found 8-bit register for signal <col_adr_r>.
+    Found 2-bit register for signal <bank_adr_r>.
+    Found 13-bit register for signal <line_adr_r>.
+    Found 7-bit subtractor for signal <status_delay_r[6]_GND_1_o_sub_8_OUT> created at line 121.
+    Found 16-bit adder for signal <rf_cnt_r[15]_GND_1_o_add_6_OUT> created at line 120.
+    Found 1-bit 4-to-1 multiplexer for signal <bank_adr_r[1]_bank_act_r[3]_Mux_29_o> created at line 212.
+    Found 1-bit tristate buffer for signal <DRAM_DATA<15>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<14>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<13>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<12>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<11>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<10>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<9>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<8>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<7>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<6>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<5>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<4>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<3>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<2>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<1>> created at line 77
+    Found 1-bit tristate buffer for signal <DRAM_DATA<0>> created at line 77
+    Found 1-bit comparator equal for signal <n0052> created at line 200
+    Found 13-bit comparator equal for signal <bank_adr_r[1]_line_adr_r[12]_equal_32_o> created at line 215
+    Summary:
+	inferred   1 RAM(s).
+	inferred   2 Adder/Subtractor(s).
+	inferred 117 D-type flip-flop(s).
+	inferred   2 Comparator(s).
+	inferred  50 Multiplexer(s).
+	inferred  16 Tristate(s).
+Unit <pb_fb_DRAM_ctrl> synthesized.
+
+=========================================================================
+HDL Synthesis Report
+
+Macro Statistics
+# RAMs                                                 : 1
+ 4x13-bit single-port RAM                              : 1
+# Adders/Subtractors                                   : 2
+ 16-bit adder                                          : 1
+ 7-bit subtractor                                      : 1
+# Registers                                            : 35
+ 1-bit register                                        : 22
+ 13-bit register                                       : 1
+ 16-bit register                                       : 3
+ 2-bit register                                        : 3
+ 3-bit register                                        : 3
+ 4-bit register                                        : 1
+ 7-bit register                                        : 1
+ 8-bit register                                        : 1
+# Comparators                                          : 2
+ 1-bit comparator equal                                : 1
+ 13-bit comparator equal                               : 1
+# Multiplexers                                         : 50
+ 1-bit 2-to-1 multiplexer                              : 31
+ 1-bit 4-to-1 multiplexer                              : 1
+ 2-bit 2-to-1 multiplexer                              : 1
+ 3-bit 2-to-1 multiplexer                              : 13
+ 4-bit 2-to-1 multiplexer                              : 2
+ 7-bit 2-to-1 multiplexer                              : 2
+# Tristates                                            : 16
+ 1-bit tristate buffer                                 : 16
+
+=========================================================================
+
+=========================================================================
+*                       Advanced HDL Synthesis                          *
+=========================================================================
+
+
+Synthesizing (advanced) Unit <pb_fb_DRAM_ctrl>.
+The following registers are absorbed into counter <rf_cnt_r>: 1 register on signal <rf_cnt_r>.
+INFO:Xst:3231 - The small RAM <Mram_line_prech_r> will be implemented on LUTs in order to maximize performance and save block RAM resources. If you want to force its implementation on block, use option/constraint ram_style.
+    -----------------------------------------------------------------------
+    | ram_type           | Distributed                         |          |
+    -----------------------------------------------------------------------
+    | Port A                                                              |
+    |     aspect ratio   | 4-word x 13-bit                     |          |
+    |     clkA           | connected to signal <clk>           | rise     |
+    |     weA            | connected to internal node          | high     |
+    |     addrA          | connected to signal <bank_adr_r>    |          |
+    |     diA            | connected to signal <line_adr_r>    |          |
+    |     doA            | connected to internal node          |          |
+    -----------------------------------------------------------------------
+Unit <pb_fb_DRAM_ctrl> synthesized (advanced).
+
+=========================================================================
+Advanced HDL Synthesis Report
+
+Macro Statistics
+# RAMs                                                 : 1
+ 4x13-bit single-port distributed RAM                  : 1
+# Adders/Subtractors                                   : 1
+ 7-bit subtractor                                      : 1
+# Counters                                             : 1
+ 16-bit up counter                                     : 1
+# Registers                                            : 101
+ Flip-Flops                                            : 101
+# Comparators                                          : 2
+ 1-bit comparator equal                                : 1
+ 13-bit comparator equal                               : 1
+# Multiplexers                                         : 50
+ 1-bit 2-to-1 multiplexer                              : 31
+ 1-bit 4-to-1 multiplexer                              : 1
+ 2-bit 2-to-1 multiplexer                              : 1
+ 3-bit 2-to-1 multiplexer                              : 13
+ 4-bit 2-to-1 multiplexer                              : 2
+ 7-bit 2-to-1 multiplexer                              : 2
+
+=========================================================================
+
+=========================================================================
+*                         Low Level Synthesis                           *
+=========================================================================
+INFO:Xst:2261 - The FF/Latch <DRAM_DQM_0> in Unit <pb_fb_DRAM_ctrl> is equivalent to the following FF/Latch, which will be removed : <DRAM_DQM_1> 
+
+Optimizing unit <pb_fb_DRAM_ctrl> ...
+
+Mapping all equations...
+Building and optimizing final netlist ...
+Found area constraint ratio of 100 (+ 5) on block pb_fb_DRAM_ctrl, actual ratio is 2.
+FlipFlop status_r_0 has been replicated 1 time(s)
+
+Final Macro Processing ...
+
+=========================================================================
+Final Register Report
+
+Macro Statistics
+# Registers                                            : 117
+ Flip-Flops                                            : 117
+
+=========================================================================
+
+=========================================================================
+*                           Partition Report                            *
+=========================================================================
+
+Partition Implementation Status
+-------------------------------
+
+  No Partitions were found in this design.
+
+-------------------------------
+
+=========================================================================
+*                            Design Summary                             *
+=========================================================================
+
+Top Level Output File Name         : pb_fb_DRAM_ctrl.ngc
+
+Primitive and Black Box Usage:
+------------------------------
+# BELS                             : 176
+#      GND                         : 1
+#      INV                         : 4
+#      LUT1                        : 15
+#      LUT2                        : 14
+#      LUT3                        : 3
+#      LUT4                        : 36
+#      LUT5                        : 29
+#      LUT6                        : 35
+#      MUXCY                       : 22
+#      VCC                         : 1
+#      XORCY                       : 16
+# FlipFlops/Latches                : 117
+#      FDC                         : 29
+#      FDCE                        : 2
+#      FDE                         : 80
+#      FDP                         : 6
+# RAMS                             : 13
+#      RAM16X1S                    : 13
+# Clock Buffers                    : 1
+#      BUFGP                       : 1
+# IO Buffers                       : 100
+#      IBUF                        : 42
+#      IOBUF                       : 16
+#      OBUF                        : 42
+
+Device utilization summary:
+---------------------------
+
+Selected Device : 6slx16ftg256-2 
+
+
+Slice Logic Utilization: 
+ Number of Slice Registers:              85  out of  18224     0%  
+ Number of Slice LUTs:                  149  out of   9112     1%  
+    Number used as Logic:               136  out of   9112     1%  
+    Number used as Memory:               13  out of   2176     0%  
+       Number used as RAM:               13
+
+Slice Logic Distribution: 
+ Number of LUT Flip Flop pairs used:    153
+   Number with an unused Flip Flop:      68  out of    153    44%  
+   Number with an unused LUT:             4  out of    153     2%  
+   Number of fully used LUT-FF pairs:    81  out of    153    52%  
+   Number of unique control sets:         8
+
+IO Utilization: 
+ Number of IOs:                         101
+ Number of bonded IOBs:                 101  out of    186    54%  
+    IOB Flip Flops/Latches:              32
+
+Specific Feature Utilization:
+ Number of BUFG/BUFGCTRLs:                1  out of     16     6%  
+
+---------------------------
+Partition Resource Summary:
+---------------------------
+
+  No Partitions were found in this design.
+
+---------------------------
+
+
+=========================================================================
+Timing Report
+
+NOTE: THESE TIMING NUMBERS ARE ONLY A SYNTHESIS ESTIMATE.
+      FOR ACCURATE TIMING INFORMATION PLEASE REFER TO THE TRACE REPORT
+      GENERATED AFTER PLACE-and-ROUTE.
+
+Clock Information:
+------------------
+-----------------------------------+------------------------+-------+
+Clock Signal                       | Clock buffer(FF name)  | Load  |
+-----------------------------------+------------------------+-------+
+clk                                | BUFGP                  | 130   |
+-----------------------------------+------------------------+-------+
+
+Asynchronous Control Signals Information:
+----------------------------------------
+No asynchronous control signals found in this design
+
+Timing Summary:
+---------------
+Speed Grade: -2
+
+   Minimum period: 5.497ns (Maximum Frequency: 181.920MHz)
+   Minimum input arrival time before clock: 5.674ns
+   Maximum output required time after clock: 5.554ns
+   Maximum combinational path delay: No path found
+
+Timing Details:
+---------------
+All values displayed in nanoseconds (ns)
+
+=========================================================================
+Timing constraint: Default period analysis for Clock 'clk'
+  Clock period: 5.497ns (frequency: 181.920MHz)
+  Total number of paths / destination ports: 2133 / 180
+-------------------------------------------------------------------------
+Delay:               5.497ns (Levels of Logic = 3)
+  Source:            bank_adr_r_1 (FF)
+  Destination:       DRAM_ADDR_11 (FF)
+  Source Clock:      clk rising
+  Destination Clock: clk rising
+
+  Data Path: bank_adr_r_1 to DRAM_ADDR_11
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     FDE:C->Q             34   0.525   1.661  bank_adr_r_1 (bank_adr_r_1)
+     LUT6:I4->O           27   0.250   1.436  _n0505_inv11 (_n0505_inv1)
+     LUT4:I3->O            3   0.254   1.042  _n0614_inv1_rstpot (_n0614_inv1_rstpot)
+     LUT4:I0->O            1   0.254   0.000  DRAM_ADDR_11_dpot (DRAM_ADDR_11_dpot)
+     FDE:D                     0.074          DRAM_ADDR_11
+    ----------------------------------------
+    Total                      5.497ns (1.357ns logic, 4.140ns route)
+                                       (24.7% logic, 75.3% route)
+
+=========================================================================
+Timing constraint: Default OFFSET IN BEFORE for Clock 'clk'
+  Total number of paths / destination ports: 243 / 192
+-------------------------------------------------------------------------
+Offset:              5.674ns (Levels of Logic = 2)
+  Source:            rst_n (PAD)
+  Destination:       DRAM_CS_WE_RAS_CAS_L_0 (FF)
+  Destination Clock: clk rising
+
+  Data Path: rst_n to DRAM_CS_WE_RAS_CAS_L_0
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     IBUF:I->O            77   1.328   2.030  rst_n_IBUF (rst_n_IBUF)
+     INV:I->O             37   0.255   1.603  rst_n_inv1_INV_0 (rst_n_inv)
+     FDP:PRE                   0.459          DRAM_CS_WE_RAS_CAS_L_0
+    ----------------------------------------
+    Total                      5.674ns (2.042ns logic, 3.632ns route)
+                                       (36.0% logic, 64.0% route)
+
+=========================================================================
+Timing constraint: Default OFFSET OUT AFTER for Clock 'clk'
+  Total number of paths / destination ports: 73 / 57
+-------------------------------------------------------------------------
+Offset:              5.554ns (Levels of Logic = 2)
+  Source:            dout_vld_r_2 (FF)
+  Destination:       DRAM_DATA<15> (PAD)
+  Source Clock:      clk rising
+
+  Data Path: dout_vld_r_2 to DRAM_DATA<15>
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     FDC:C->Q              1   0.525   0.681  dout_vld_r_2 (dout_vld_r_2)
+     INV:I->O             16   0.255   1.181  dout_vld_r<2>_inv1_INV_0 (dout_vld_r<2>_inv)
+     IOBUF:T->IO               2.912          DRAM_DATA_15_IOBUF (DRAM_DATA<15>)
+    ----------------------------------------
+    Total                      5.554ns (3.692ns logic, 1.862ns route)
+                                       (66.5% logic, 33.5% route)
+
+=========================================================================
+
+Cross Clock Domains Report:
+--------------------------
+
+Clock to Setup on destination clock clk
+---------------+---------+---------+---------+---------+
+               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+---------------+---------+---------+---------+---------+
+clk            |    5.497|         |         |         |
+---------------+---------+---------+---------+---------+
+
+=========================================================================
+
+
+Total REAL time to Xst completion: 3.00 secs
+Total CPU time to Xst completion: 3.57 secs
+ 
+--> 
+
+Total memory usage is 232676 kilobytes
+
+Number of errors   :    0 (   0 filtered)
+Number of warnings :    0 (   0 filtered)
+Number of infos    :    2 (   0 filtered)
+

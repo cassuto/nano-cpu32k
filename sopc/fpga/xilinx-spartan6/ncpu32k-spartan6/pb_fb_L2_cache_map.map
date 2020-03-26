@@ -1,0 +1,66 @@
+Release 14.7 Map P.20131013 (nt)
+Xilinx Map Application Log File for Design 'pb_fb_L2_cache'
+
+Design Information
+------------------
+Command Line   : map -intstyle ise -p xc6slx16-ftg256-2 -w -logic_opt off -ol
+high -t 1 -xt 0 -register_duplication off -r 4 -global_opt off -mt off -ir off
+-pr off -lc off -power off -o pb_fb_L2_cache_map.ncd pb_fb_L2_cache.ngd
+pb_fb_L2_cache.pcf 
+Target Device  : xc6slx16
+Target Package : ftg256
+Target Speed   : -2
+Mapper Version : spartan6 -- $Revision: 1.55 $
+Mapped Date    : Sun Mar 22 13:21:39 2020
+
+Mapping design into LUTs...
+Running directed packing...
+Running delay-based LUT packing...
+Updating timing models...
+INFO:Map:215 - The Interim Design Summary has been generated in the MAP Report
+   (.mrp).
+Running timing-driven placement...
+Total REAL time at the beginning of Placer: 3 secs 
+Total CPU  time at the beginning of Placer: 4 secs 
+
+Phase 1.1  Initial Placement Analysis
+Phase 1.1  Initial Placement Analysis (Checksum:6dcabe) REAL time: 6 secs 
+
+Phase 2.7  Design Feasibility Check
+Phase 2.7  Design Feasibility Check (Checksum:6dcabe) REAL time: 6 secs 
+
+Phase 3.31  Local Placement Optimization
+Phase 3.31  Local Placement Optimization (Checksum:6dcabe) REAL time: 6 secs 
+
+Phase 4.2  Initial Placement for Architecture Specific Features
+...
+....
+Phase 4.2  Initial Placement for Architecture Specific Features
+(Checksum:20d01a8c) REAL time: 15 secs 
+
+Phase 5.36  Local Placement Optimization
+Phase 5.36  Local Placement Optimization (Checksum:20d01a8c) REAL time: 15 secs 
+
+Phase 6.30  Global Clock Region Assignment
+Phase 6.30  Global Clock Region Assignment (Checksum:20d01a8c) REAL time: 15 secs 
+
+Phase 7.3  Local Placement Optimization
+...
+....
+Phase 7.3  Local Placement Optimization (Checksum:328ff273) REAL time: 24 secs 
+
+Phase 8.5  Local Placement Optimization
+Phase 8.5  Local Placement Optimization (Checksum:328ff273) REAL time: 24 secs 
+
+Phase 9.8  Global Placement
+....................
+.....................
+................................................................
+..................................................................................................................................
+..............................
+Phase 9.8  Global Placement (Checksum:8641001c) REAL time: 30 secs 
+
+Phase 10.5  Local Placement Optimization
+Phase 10.5  Local Placement Optimization (Checksum:8641001c) REAL time: 30 secs 
+
+Phase 11.18  Placement Optimization

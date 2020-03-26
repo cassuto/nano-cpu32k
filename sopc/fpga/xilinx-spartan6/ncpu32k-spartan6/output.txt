@@ -1,0 +1,8 @@
+Storage Target: SPI Flash Single FPGA
+8M
+FF
+bs_flash
+E:\_processor_cores\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6\
+
+MCS
+No

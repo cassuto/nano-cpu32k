@@ -1,0 +1,2 @@
+verilog work "../../../rtl/soc_fifo_asclk.v"
+verilog work "../../../rtl/soc_pb_uart.v"

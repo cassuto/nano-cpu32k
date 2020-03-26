@@ -1,0 +1,107 @@
+Vivado Simulator 2018.2
+Copyright 1986-1999, 2001-2018 Xilinx, Inc. All Rights Reserved.
+Running: E:/Xilinx/Vivado/2018.2/bin/unwrapped/win64.o/xelab.exe -wto eea10d0a6ce4479696c5648d4dcf905a --incr --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip -L xpm --snapshot tb_sopc_behav xil_defaultlib.tb_sopc xil_defaultlib.glbl -log elaborate.log 
+Using 2 slave threads.
+Starting static elaboration
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/pb_fb_DRAM_ctrl/pb_fb_DRAM_ctrl.v:277]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/pb_fb_L2_cache/pb_fb_L2_cache.v:352]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/pb_fb_arbiter/pb_fb_arbiter.v:97]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/pb_fb_arbiter/pb_fb_arbiter.v:99]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/pb_fb_arbiter/pb_fb_arbiter.v:107]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/pb_fb_arbiter/pb_fb_arbiter.v:115]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/pb_fb_router/pb_fb_router.v:125]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/pb_fb_router/pb_fb_router.v:133]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/sopc/rtl/soc_pb_uart.v:384]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/sopc/rtl/soc_pb_uart.v:400]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_i_mmu.v:279]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_i_mmu.v:287]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_d_mmu.v:258]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_irqc.v:57]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ifu.v:285]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ifu.v:294]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ifu.v:303]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ieu.v:445]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ieu.v:454]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_mu.v:162]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_eu.v:294]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_eu.v:304]
+WARNING: [VRFC 10-696] first argument of $fatal is invalid, expecting 0, 1 or 2 [E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_eu.v:314]
+Completed static elaboration
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 277, File E:/_processor_cores/nano-cpu32k/rtl/pb_fb_DRAM_ctrl/pb_fb_DRAM_ctrl.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 97, File E:/_processor_cores/nano-cpu32k/rtl/pb_fb_arbiter/pb_fb_arbiter.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 99, File E:/_processor_cores/nano-cpu32k/rtl/pb_fb_arbiter/pb_fb_arbiter.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 107, File E:/_processor_cores/nano-cpu32k/rtl/pb_fb_arbiter/pb_fb_arbiter.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 115, File E:/_processor_cores/nano-cpu32k/rtl/pb_fb_arbiter/pb_fb_arbiter.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 125, File E:/_processor_cores/nano-cpu32k/rtl/pb_fb_router/pb_fb_router.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 133, File E:/_processor_cores/nano-cpu32k/rtl/pb_fb_router/pb_fb_router.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 384, File E:/_processor_cores/nano-cpu32k/sopc/rtl/soc_pb_uart.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 400, File E:/_processor_cores/nano-cpu32k/sopc/rtl/soc_pb_uart.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 279, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_i_mmu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 287, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_i_mmu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 258, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_d_mmu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 285, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ifu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 294, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ifu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 303, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ifu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 162, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_mu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 294, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_eu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 304, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_eu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 314, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ie_eu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 445, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ieu.v
+INFO: [XSIM 43-4329] Assuming default value 1 for the first arguement of $fatal at Line 454, File E:/_processor_cores/nano-cpu32k/rtl/ncpu32k/ncpu32k_ieu.v
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.pb_fb_DRAM_ctrl
+Compiling module xil_defaultlib.ncpu32k_cell_tdpram_aclkd_sclk(A...
+Compiling module xil_defaultlib.pb_fb_L2_cache(ENABLE_BYPASS=0)
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr_default
+Compiling module xil_defaultlib.pb_fb_arbiter
+Compiling module xil_defaultlib.pb_fb_router(NBUS=4)
+Compiling module xil_defaultlib.pb_fb_bootrom(SIZE_BYTES=2048,ME...
+Compiling module xil_defaultlib.soc_pb_spi_master
+Compiling module xil_defaultlib.sco_fifo_asclk(DW=8,AW=4)
+Compiling module xil_defaultlib.soc_pb_uart
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=32)
+Compiling module xil_defaultlib.ncpu32k_cell_pipebuf(DW=32)
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=32,RST_VE...
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=32,RST_VE...
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=13)
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=19)
+Compiling module xil_defaultlib.ncpu32k_cell_tdpram_sclk(AW=7,DW...
+Compiling module xil_defaultlib.ncpu32k_i_mmu(CPU_RESET_VECTOR=3...
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=4)
+Compiling module xil_defaultlib.ncpu32k_d_mmu_default
+Compiling module xil_defaultlib.ncpu32k_i_cache
+Compiling module xil_defaultlib.ncpu32k_d_cache
+Compiling module xil_defaultlib.ncpu32k_cell_dff_r(DW=32)
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=32,RST_VE...
+Compiling module xil_defaultlib.ncpu32k_cell_dff_r_default
+Compiling module xil_defaultlib.ncpu32k_irqc
+Compiling module xil_defaultlib.ncpu32k_tsc
+Compiling module xil_defaultlib.ncpu32k_cell_sdpram_sclk(AW=5,DW...
+Compiling module xil_defaultlib.ncpu32k_regfile
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(RST_VECTOR=1...
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=10)
+Compiling module xil_defaultlib.ncpu32k_psr
+Compiling module xil_defaultlib.ncpu32k_ipdu
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=3)
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=30)
+Compiling module xil_defaultlib.ncpu32k_ifu
+Compiling module xil_defaultlib.ncpu32k_bpu_default
+Compiling module xil_defaultlib.ncpu32k_cell_pipebuf_default
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=6)
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=9)
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=2)
+Compiling module xil_defaultlib.ncpu32k_cell_dff_lr(DW=5)
+Compiling module xil_defaultlib.ncpu32k_idu
+Compiling module xil_defaultlib.ncpu32k_ie_au
+Compiling module xil_defaultlib.ncpu32k_ie_lu
+Compiling module xil_defaultlib.ncpu32k_ie_mu
+Compiling module xil_defaultlib.ncpu32k_ie_eu
+Compiling module xil_defaultlib.ncpu32k_ieu
+Compiling module xil_defaultlib.ncpu32k_core
+Compiling module xil_defaultlib.ncpu32k(CPU_RESET_VECTOR=32'b100...
+Compiling module xil_defaultlib.soc_toplevel_default
+Compiling module xil_defaultlib.tb_sopc
+Compiling module xil_defaultlib.glbl
+Built simulation snapshot tb_sopc_behav

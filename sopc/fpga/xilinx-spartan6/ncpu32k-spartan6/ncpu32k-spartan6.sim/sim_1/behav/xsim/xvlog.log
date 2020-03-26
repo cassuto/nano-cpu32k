@@ -1,0 +1,4 @@
+INFO: [VRFC 10-2263] Analyzing Verilog file "E:/_processor_cores/nano-cpu32k/testbench/tb_sopc.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_sopc
+INFO: [VRFC 10-2458] undeclared symbol UART_RX_L, assumed default net type wire [E:/_processor_cores/nano-cpu32k/testbench/tb_sopc.v:105]
+INFO: [VRFC 10-2458] undeclared symbol UART_TX_L, assumed default net type wire [E:/_processor_cores/nano-cpu32k/testbench/tb_sopc.v:106]

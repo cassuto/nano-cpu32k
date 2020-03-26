@@ -1,0 +1,10 @@
+*.ngc
+*.edn
+*.ngo
+*.ngm
+
+*.html
+*.cdc
+*.cfi
+*.cmd_log
+*.ipf

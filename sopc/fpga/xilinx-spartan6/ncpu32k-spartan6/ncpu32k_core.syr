@@ -1,0 +1,942 @@
+Release 14.7 - xst P.20131013 (nt)
+Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved.
+--> Parameter TMPDIR set to xst/projnav.tmp
+
+
+Total REAL time to Xst completion: 0.00 secs
+Total CPU time to Xst completion: 0.13 secs
+ 
+--> Parameter xsthdpdir set to xst
+
+
+Total REAL time to Xst completion: 0.00 secs
+Total CPU time to Xst completion: 0.14 secs
+ 
+--> Reading design: ncpu32k_core.prj
+
+TABLE OF CONTENTS
+  1) Synthesis Options Summary
+  2) HDL Parsing
+  3) HDL Elaboration
+  4) HDL Synthesis
+       4.1) HDL Synthesis Report
+  5) Advanced HDL Synthesis
+       5.1) Advanced HDL Synthesis Report
+  6) Low Level Synthesis
+  7) Partition Report
+  8) Design Summary
+       8.1) Primitive and Black Box Usage
+       8.2) Device utilization summary
+       8.3) Partition Resource Summary
+       8.4) Timing Report
+            8.4.1) Clock Information
+            8.4.2) Asynchronous Control Signals Information
+            8.4.3) Timing Summary
+            8.4.4) Timing Details
+            8.4.5) Cross Clock Domains Report
+
+
+=========================================================================
+*                      Synthesis Options Summary                        *
+=========================================================================
+---- Source Parameters
+Input File Name                    : "ncpu32k_core.prj"
+Ignore Synthesis Constraint File   : NO
+
+---- Target Parameters
+Output File Name                   : "ncpu32k_core"
+Output Format                      : NGC
+Target Device                      : xc6slx16-2-ftg256
+
+---- Source Options
+Top Module Name                    : ncpu32k_core
+Automatic FSM Extraction           : YES
+FSM Encoding Algorithm             : Auto
+Safe Implementation                : No
+FSM Style                          : LUT
+RAM Extraction                     : Yes
+RAM Style                          : Auto
+ROM Extraction                     : Yes
+Shift Register Extraction          : YES
+ROM Style                          : Auto
+Resource Sharing                   : YES
+Asynchronous To Synchronous        : NO
+Shift Register Minimum Size        : 2
+Use DSP Block                      : Auto
+Automatic Register Balancing       : No
+
+---- Target Options
+LUT Combining                      : Auto
+Reduce Control Sets                : Auto
+Add IO Buffers                     : YES
+Global Maximum Fanout              : 100000
+Add Generic Clock Buffer(BUFG)     : 16
+Register Duplication               : YES
+Optimize Instantiated Primitives   : NO
+Use Clock Enable                   : Auto
+Use Synchronous Set                : Auto
+Use Synchronous Reset              : Auto
+Pack IO Registers into IOBs        : Auto
+Equivalent register Removal        : YES
+
+---- General Options
+Optimization Goal                  : Speed
+Optimization Effort                : 1
+Power Reduction                    : NO
+Keep Hierarchy                     : No
+Netlist Hierarchy                  : As_Optimized
+RTL Output                         : Yes
+Global Optimization                : AllClockNets
+Read Cores                         : YES
+Write Timing Constraints           : NO
+Cross Clock Analysis               : NO
+Hierarchy Separator                : /
+Bus Delimiter                      : <>
+Case Specifier                     : Maintain
+Slice Utilization Ratio            : 100
+BRAM Utilization Ratio             : 100
+DSP48 Utilization Ratio            : 100
+Auto BRAM Packing                  : NO
+Slice Utilization Ratio Delta      : 5
+
+---- Other Options
+Cores Search Directories           : {"ipcore_dir"  }
+
+=========================================================================
+
+
+=========================================================================
+*                          HDL Parsing                                  *
+=========================================================================
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 20.
+Parsing module <ncpu32k_cell_dff_lr>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ipdu.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_ipdu>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ie_mu.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_ie_mu>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ie_lu.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_ie_lu>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ie_eu.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_ie_eu>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ie_au.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_ie_au>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_sdpram_sclk.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 20.
+Parsing module <ncpu32k_cell_sdpram_sclk>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_pipebuf.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 20.
+Parsing module <ncpu32k_cell_pipebuf>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_r.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 20.
+Parsing module <ncpu32k_cell_dff_r>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_regfile.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 20.
+Parsing module <ncpu32k_regfile>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_psr.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_psr>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ifu.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_ifu>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ieu.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_ieu>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_idu.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_idu>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_bpu.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_bpu>.
+Analyzing Verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_core.v" into library work
+Parsing verilog file "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\/ncpu32k_config.h" included at line 16.
+Parsing module <ncpu32k_core>.
+
+=========================================================================
+*                            HDL Elaboration                            *
+=========================================================================
+
+Elaborating module <ncpu32k_core>.
+
+Elaborating module <ncpu32k_regfile>.
+
+Elaborating module <ncpu32k_cell_sdpram_sclk(AW=5,DW=32,ENABLE_BYPASS=1)>.
+
+Elaborating module <ncpu32k_psr>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=1)>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=1,RST_VECTOR=1'b1)>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=10)>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=32)>.
+
+Elaborating module <ncpu32k_ifu>.
+
+Elaborating module <ncpu32k_ipdu>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=3)>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=30)>.
+WARNING:HDLCompiler:1127 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_core.v" Line 263: Assignment to bpu_jmprel ignored, since the identifier is never used
+
+Elaborating module <ncpu32k_bpu>.
+WARNING:HDLCompiler:1127 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_core.v" Line 287: Assignment to bpu_jmprel ignored, since the identifier is never used
+
+Elaborating module <ncpu32k_idu>.
+
+Elaborating module <ncpu32k_cell_pipebuf(DW=1)>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=6)>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=9)>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=2)>.
+
+Elaborating module <ncpu32k_cell_dff_lr(DW=5)>.
+WARNING:HDLCompiler:552 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_idu.v" Line 282: Input port din[0] is not connected on this instance
+
+Elaborating module <ncpu32k_ieu>.
+
+Elaborating module <ncpu32k_ie_au>.
+WARNING:HDLCompiler:1127 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ieu.v" Line 161: Assignment to au_mul ignored, since the identifier is never used
+WARNING:HDLCompiler:1127 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ieu.v" Line 162: Assignment to au_div ignored, since the identifier is never used
+
+Elaborating module <ncpu32k_ie_lu>.
+
+Elaborating module <ncpu32k_ie_mu>.
+WARNING:HDLCompiler:1127 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ieu.v" Line 200: Assignment to wb_mu_in_valid ignored, since the identifier is never used
+
+Elaborating module <ncpu32k_ie_eu>.
+WARNING:HDLCompiler:1127 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ie_eu.v" Line 205: Assignment to epsr_res ignored, since the identifier is never used
+WARNING:HDLCompiler:1127 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ie_eu.v" Line 214: Assignment to wmsr_psr_res ignored, since the identifier is never used
+
+Elaborating module <ncpu32k_cell_dff_r(DW=1)>.
+
+=========================================================================
+*                           HDL Synthesis                               *
+=========================================================================
+
+Synthesizing Unit <ncpu32k_core>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_core.v".
+INFO:Xst:3210 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_core.v" line 240: Output port <bpu_jmprel> of the instance <ifu> is unconnected or connected to loadless signal.
+INFO:Xst:3210 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_core.v" line 284: Output port <bpu_jmprel> of the instance <bpu> is unconnected or connected to loadless signal.
+    Summary:
+	no macro.
+Unit <ncpu32k_core> synthesized.
+
+Synthesizing Unit <ncpu32k_regfile>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_regfile.v".
+    Summary:
+	no macro.
+Unit <ncpu32k_regfile> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_sdpram_sclk>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_sdpram_sclk.v".
+        AW = 5
+        DW = 32
+        ENABLE_BYPASS = 1
+    Found 32x32-bit dual-port RAM <Mram_mem_vector> for signal <mem_vector>.
+    Found 32-bit register for signal <din_r>.
+    Found 1-bit register for signal <bypass>.
+    Found 32-bit register for signal <dout_r>.
+    Found 5-bit comparator equal for signal <waddr[4]_raddr[4]_equal_4_o> created at line 69
+    Summary:
+	inferred   1 RAM(s).
+	inferred  65 D-type flip-flop(s).
+	inferred   1 Comparator(s).
+	inferred   1 Multiplexer(s).
+Unit <ncpu32k_cell_sdpram_sclk> synthesized.
+
+Synthesizing Unit <ncpu32k_psr>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_psr.v".
+        CPUID_VER = 8'b00000001
+        CPUID_REV = 10'b0000000000
+        CPUID_FIMM = 1'b1
+        CPUID_FDMM = 1'b1
+        CPUID_FICA = 1'b0
+        CPUID_FDCA = 1'b0
+        CPUID_FDBG = 1'b0
+        CPUID_FFPU = 1'b0
+        CPUID_FIRQC = 1'b1
+        CPUID_FTSC = 1'b1
+    Summary:
+	inferred  12 Multiplexer(s).
+Unit <ncpu32k_psr> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr_1>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 1
+        RST_VECTOR = 1'b0
+    Found 1-bit register for signal <Q>.
+    Summary:
+	inferred   1 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr_1> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr_2>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 1
+        RST_VECTOR = 1'b1
+    Found 1-bit register for signal <Q>.
+    Summary:
+	inferred   1 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr_2> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr_3>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 10
+        RST_VECTOR = 10'b0000000000
+    Found 10-bit register for signal <Q>.
+    Summary:
+	inferred  10 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr_3> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr_4>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 32
+        RST_VECTOR = 32'b00000000000000000000000000000000
+    Found 32-bit register for signal <Q>.
+    Summary:
+	inferred  32 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr_4> synthesized.
+
+Synthesizing Unit <ncpu32k_ifu>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ifu.v".
+WARNING:Xst:647 - Input <ibus_out_id<1:0>> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <ibus_out_id_nxt<1:0>> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <bpu_msr_epc<1:0>> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <ibus_cmd_ready> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Found 3-bit adder for signal <reset_cnt_nxt> created at line 104.
+    Found 30-bit adder for signal <flush_next_tgt> created at line 109.
+    Found 30-bit adder for signal <flush_jmprel_tgt_org> created at line 188.
+    Found 30-bit adder for signal <ibus_out_id_nxt[31]_GND_10_o_add_19_OUT> created at line 199.
+    Summary:
+	inferred   4 Adder/Subtractor(s).
+	inferred  13 Multiplexer(s).
+Unit <ncpu32k_ifu> synthesized.
+
+Synthesizing Unit <ncpu32k_ipdu>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ipdu.v".
+WARNING:Xst:647 - Input <clk> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <rst_n> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Summary:
+	no macro.
+Unit <ncpu32k_ipdu> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr_5>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 3
+        RST_VECTOR = 3'b000
+    Found 3-bit register for signal <Q>.
+    Summary:
+	inferred   3 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr_5> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr_6>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 30
+        RST_VECTOR = 30'b000000000000000000000000000000
+    Found 30-bit register for signal <Q>.
+    Summary:
+	inferred  30 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr_6> synthesized.
+
+Synthesizing Unit <ncpu32k_bpu>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_bpu.v".
+        BPU_JMPREL_STRATEGY = "always_taken"
+WARNING:Xst:647 - Input <bpu_insn_pc> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <bpu_wb_insn_pc> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <clk> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <rst_n> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <bpu_rd> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <bpu_wb> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <bpu_wb_jmprel> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <bpu_wb_hit> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:653 - Signal <bpu_jmprel> is used but never assigned. This sourceless signal will be automatically connected to value GND.
+    Summary:
+	no macro.
+Unit <ncpu32k_bpu> synthesized.
+
+Synthesizing Unit <ncpu32k_idu>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_idu.v".
+WARNING:Xst:2898 - Port 'din', unconnected in block instance 'pipebuf_ifu', is tied to GND.
+INFO:Xst:3210 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_idu.v" line 282: Output port <dout> of the instance <pipebuf_ifu> is unconnected or connected to loadless signal.
+    Summary:
+	inferred  11 Multiplexer(s).
+Unit <ncpu32k_idu> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_pipebuf>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_pipebuf.v".
+        DW = 1
+        ENABLE_BYPASS = 1
+    Summary:
+	no macro.
+Unit <ncpu32k_cell_pipebuf> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr_7>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 6
+        RST_VECTOR = 6'b000000
+    Found 6-bit register for signal <Q>.
+    Summary:
+	inferred   6 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr_7> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr_8>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 9
+        RST_VECTOR = 9'b000000000
+    Found 9-bit register for signal <Q>.
+    Summary:
+	inferred   9 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr_8> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr_9>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 2
+        RST_VECTOR = 2'b00
+    Found 2-bit register for signal <Q>.
+    Summary:
+	inferred   2 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr_9> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_lr_10>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_lr.v".
+        DW = 5
+        RST_VECTOR = 5'b00000
+    Found 5-bit register for signal <Q>.
+    Summary:
+	inferred   5 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_lr_10> synthesized.
+
+Synthesizing Unit <ncpu32k_ieu>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ieu.v".
+WARNING:Xst:647 - Input <ieu_mu_barr> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+INFO:Xst:3210 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ieu.v" line 152: Output port <au_mul> of the instance <au> is unconnected or connected to loadless signal.
+INFO:Xst:3210 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ieu.v" line 152: Output port <au_div> of the instance <au> is unconnected or connected to loadless signal.
+INFO:Xst:3210 - "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ieu.v" line 187: Output port <wb_mu_in_valid> of the instance <mu> is unconnected or connected to loadless signal.
+    Found 30-bit adder for signal <linkaddr<31:2>> created at line 301.
+    Found 1-bit comparator not equal for signal <n0017> created at line 363
+    Found 30-bit comparator not equal for signal <n0020> created at line 364
+    Summary:
+	inferred   1 Adder/Subtractor(s).
+	inferred   2 Comparator(s).
+	inferred   4 Multiplexer(s).
+Unit <ncpu32k_ieu> synthesized.
+
+Synthesizing Unit <ncpu32k_ie_au>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ie_au.v".
+WARNING:Xst:647 - Input <ieu_au_opc_bus<7:3>> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <clk> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <rst_n> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:653 - Signal <au_mul> is used but never assigned. This sourceless signal will be automatically connected to value GND.
+WARNING:Xst:653 - Signal <au_div> is used but never assigned. This sourceless signal will be automatically connected to value GND.
+    Found 33-bit adder for signal <n0041> created at line 47.
+    Found 33-bit adder for signal <n0030> created at line 47.
+    Found 1-bit comparator equal for signal <ieu_operand_1[31]_adder_operand2_com[31]_equal_5_o> created at line 49
+    Found 32-bit comparator equal for signal <cmp_eq> created at line 57
+    Found 1-bit comparator equal for signal <au_adder[31]_adder_overflow_equal_7_o> created at line 59
+    Summary:
+	inferred   2 Adder/Subtractor(s).
+	inferred   3 Comparator(s).
+	inferred   1 Multiplexer(s).
+Unit <ncpu32k_ie_au> synthesized.
+
+Synthesizing Unit <ncpu32k_ie_lu>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ie_lu.v".
+WARNING:Xst:647 - Input <ieu_lu_opc_bus<2:0>> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <clk> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <rst_n> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Found 64-bit shifter logical right for signal <shift_wide> created at line 53
+    Summary:
+	inferred   3 Multiplexer(s).
+	inferred   1 Combinational logic shifter(s).
+Unit <ncpu32k_ie_lu> synthesized.
+
+Synthesizing Unit <ncpu32k_ie_mu>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ie_mu.v".
+        ENABLE_PIPEBUF_BYPASS = 1
+    Found 32-bit adder for signal <mu_lsa> created at line 61.
+    Summary:
+	inferred   1 Adder/Subtractor(s).
+	inferred   2 Multiplexer(s).
+Unit <ncpu32k_ie_mu> synthesized.
+
+Synthesizing Unit <ncpu32k_ie_eu>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_ie_eu.v".
+WARNING:Xst:647 - Input <clk> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+WARNING:Xst:647 - Input <rst_n> is never used. This port will be preserved and left unconnected if it belongs to a top-level block or it belongs to a sub-block and the hierarchy of this sub-block is preserved.
+    Found 32-bit adder for signal <msr_addr> created at line 110.
+    Summary:
+	inferred   1 Adder/Subtractor(s).
+	inferred  10 Multiplexer(s).
+Unit <ncpu32k_ie_eu> synthesized.
+
+Synthesizing Unit <ncpu32k_cell_dff_r>.
+    Related source file is "E:\_processor_cores\nano-cpu32k\rtl\ncpu32k\ncpu32k_cell_dff_r.v".
+        DW = 1
+        RST_VECTOR = 1'b0
+    Found 1-bit register for signal <Q>.
+    Summary:
+	inferred   1 D-type flip-flop(s).
+Unit <ncpu32k_cell_dff_r> synthesized.
+
+=========================================================================
+HDL Synthesis Report
+
+Macro Statistics
+# RAMs                                                 : 2
+ 32x32-bit dual-port RAM                               : 2
+# Adders/Subtractors                                   : 9
+ 3-bit adder                                           : 1
+ 30-bit adder                                          : 4
+ 32-bit adder                                          : 2
+ 33-bit adder                                          : 2
+# Registers                                            : 63
+ 1-bit register                                        : 42
+ 10-bit register                                       : 1
+ 2-bit register                                        : 1
+ 3-bit register                                        : 3
+ 30-bit register                                       : 5
+ 32-bit register                                       : 8
+ 5-bit register                                        : 1
+ 6-bit register                                        : 1
+ 9-bit register                                        : 1
+# Comparators                                          : 7
+ 1-bit comparator equal                                : 2
+ 1-bit comparator not equal                            : 1
+ 30-bit comparator not equal                           : 1
+ 32-bit comparator equal                               : 1
+ 5-bit comparator equal                                : 2
+# Multiplexers                                         : 58
+ 1-bit 2-to-1 multiplexer                              : 18
+ 10-bit 2-to-1 multiplexer                             : 2
+ 16-bit 2-to-1 multiplexer                             : 1
+ 3-bit 2-to-1 multiplexer                              : 5
+ 30-bit 2-to-1 multiplexer                             : 13
+ 32-bit 2-to-1 multiplexer                             : 17
+ 5-bit 2-to-1 multiplexer                              : 1
+ 8-bit 2-to-1 multiplexer                              : 1
+# Logic shifters                                       : 1
+ 64-bit shifter logical right                          : 1
+# Xors                                                 : 2
+ 1-bit xor2                                            : 1
+ 32-bit xor2                                           : 1
+
+=========================================================================
+INFO:Xst:1767 - HDL ADVISOR - Resource sharing has identified that some arithmetic operations in this design can share the same physical resources for reduced device utilization. For improved clock frequency you may try to disable resource sharing.
+
+=========================================================================
+*                       Advanced HDL Synthesis                          *
+=========================================================================
+
+WARNING:Xst:1290 - Hierarchical block <dff_dout> is unconnected in block <pipebuf_ifu>.
+   It will be removed from the design.
+WARNING:Xst:1290 - Hierarchical block <dff_ieu_mu_barr> is unconnected in block <idu>.
+   It will be removed from the design.
+WARNING:Xst:2677 - Node <Q_11> of sequential type is unconnected in block <dff_idu_insn>.
+WARNING:Xst:2677 - Node <Q_3> of sequential type is unconnected in block <dff_ieu_au_opc_bus>.
+WARNING:Xst:2677 - Node <Q_4> of sequential type is unconnected in block <dff_ieu_au_opc_bus>.
+WARNING:Xst:2677 - Node <Q_5> of sequential type is unconnected in block <dff_ieu_au_opc_bus>.
+WARNING:Xst:2677 - Node <Q_6> of sequential type is unconnected in block <dff_ieu_au_opc_bus>.
+WARNING:Xst:2677 - Node <Q_7> of sequential type is unconnected in block <dff_ieu_au_opc_bus>.
+
+Synthesizing (advanced) Unit <ncpu32k_cell_sdpram_sclk>.
+INFO:Xst:3226 - The RAM <Mram_mem_vector> will be implemented as a BLOCK RAM, absorbing the following register(s): <dout_r>
+    -----------------------------------------------------------------------
+    | ram_type           | Block                               |          |
+    -----------------------------------------------------------------------
+    | Port A                                                              |
+    |     aspect ratio   | 32-word x 32-bit                    |          |
+    |     mode           | read-first                          |          |
+    |     clkA           | connected to signal <clk>           | rise     |
+    |     weA            | connected to signal <we>            | high     |
+    |     addrA          | connected to signal <waddr>         |          |
+    |     diA            | connected to signal <din>           |          |
+    -----------------------------------------------------------------------
+    | optimization       | speed                               |          |
+    -----------------------------------------------------------------------
+    | Port B                                                              |
+    |     aspect ratio   | 32-word x 32-bit                    |          |
+    |     mode           | read-first                          |          |
+    |     clkB           | connected to signal <clk>           | rise     |
+    |     enB            | connected to signal <re>            | high     |
+    |     addrB          | connected to signal <raddr>         |          |
+    |     doB            | connected to signal <dout_r>        |          |
+    -----------------------------------------------------------------------
+    | optimization       | speed                               |          |
+    -----------------------------------------------------------------------
+Unit <ncpu32k_cell_sdpram_sclk> synthesized (advanced).
+
+Synthesizing (advanced) Unit <ncpu32k_ifu>.
+The following registers are absorbed into counter <dff_reset_cnt/Q>: 1 register on signal <dff_reset_cnt/Q>.
+Unit <ncpu32k_ifu> synthesized (advanced).
+
+=========================================================================
+Advanced HDL Synthesis Report
+
+Macro Statistics
+# RAMs                                                 : 2
+ 32x32-bit dual-port block RAM                         : 2
+# Adders/Subtractors                                   : 7
+ 14-bit adder                                          : 1
+ 30-bit adder                                          : 4
+ 32-bit adder                                          : 1
+ 33-bit adder carry in                                 : 1
+# Counters                                             : 1
+ 3-bit up counter                                      : 1
+# Registers                                            : 422
+ Flip-Flops                                            : 422
+# Comparators                                          : 7
+ 1-bit comparator equal                                : 2
+ 1-bit comparator not equal                            : 1
+ 30-bit comparator not equal                           : 1
+ 32-bit comparator equal                               : 1
+ 5-bit comparator equal                                : 2
+# Multiplexers                                         : 58
+ 1-bit 2-to-1 multiplexer                              : 18
+ 10-bit 2-to-1 multiplexer                             : 2
+ 16-bit 2-to-1 multiplexer                             : 1
+ 3-bit 2-to-1 multiplexer                              : 5
+ 30-bit 2-to-1 multiplexer                             : 13
+ 32-bit 2-to-1 multiplexer                             : 17
+ 5-bit 2-to-1 multiplexer                              : 1
+ 8-bit 2-to-1 multiplexer                              : 1
+# Logic shifters                                       : 1
+ 64-bit shifter logical right                          : 1
+# Xors                                                 : 2
+ 1-bit xor2                                            : 1
+ 32-bit xor2                                           : 1
+
+=========================================================================
+
+=========================================================================
+*                         Low Level Synthesis                           *
+=========================================================================
+INFO:Xst:2261 - The FF/Latch <Q_3> in Unit <ncpu32k_cell_dff_lr_8> is equivalent to the following 4 FFs/Latches, which will be removed : <Q_4> <Q_5> <Q_6> <Q_7> 
+WARNING:Xst:2677 - Node <pipebuf_ifu/dff_dout/Q_0> of sequential type is unconnected in block <ncpu32k_idu>.
+WARNING:Xst:1710 - FF/Latch <Q_3> (without init value) has a constant value of 0 in block <ncpu32k_cell_dff_lr_8>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:2677 - Node <dff_reset_cnt/Q_2> of sequential type is unconnected in block <ncpu32k_ifu>.
+WARNING:Xst:1710 - FF/Latch <dff_ieu_mu_load_size/Q_2> (without init value) has a constant value of 0 in block <ncpu32k_idu>. This FF/Latch will be trimmed during the optimization process.
+WARNING:Xst:1895 - Due to other FF/Latch trimming, FF/Latch <dff_ieu_mu_store_size/Q_2> (without init value) has a constant value of 0 in block <ncpu32k_idu>. This FF/Latch will be trimmed during the optimization process.
+
+Optimizing unit <ncpu32k_core> ...
+
+Optimizing unit <ncpu32k_ieu> ...
+
+Optimizing unit <ncpu32k_ie_mu> ...
+
+Optimizing unit <ncpu32k_ie_au> ...
+
+Optimizing unit <ncpu32k_ie_lu> ...
+
+Optimizing unit <ncpu32k_ie_eu> ...
+
+Optimizing unit <ncpu32k_cell_dff_lr_6> ...
+
+Optimizing unit <ncpu32k_ifu> ...
+INFO:Xst:2261 - The FF/Latch <dff_idu_specul_jmpfar/Q_0> in Unit <ncpu32k_ifu> is equivalent to the following FF/Latch, which will be removed : <dff_idu_op_jmpfar/Q_0> 
+INFO:Xst:2261 - The FF/Latch <dff_idu_specul_jmpfar/Q_0> in Unit <ncpu32k_ifu> is equivalent to the following FF/Latch, which will be removed : <dff_idu_op_jmpfar/Q_0> 
+
+Optimizing unit <ncpu32k_cell_dff_lr_4> ...
+
+Optimizing unit <ncpu32k_psr> ...
+
+Optimizing unit <ncpu32k_cell_dff_lr_3> ...
+
+Optimizing unit <ncpu32k_idu> ...
+WARNING:Xst:2677 - Node <ifu/dff_idu_insn/Q_11> of sequential type is unconnected in block <ncpu32k_core>.
+WARNING:Xst:2677 - Node <idu/dff_ieu_mu_barr/Q_0> of sequential type is unconnected in block <ncpu32k_core>.
+INFO:Xst:2261 - The FF/Latch <idu/dff_imm_oper_r/Q_20> in Unit <ncpu32k_core> is equivalent to the following FF/Latch, which will be removed : <idu/dff_imm_oper_r/Q_22> 
+INFO:Xst:2261 - The FF/Latch <idu/dff_imm_oper_r/Q_18> in Unit <ncpu32k_core> is equivalent to the following 12 FFs/Latches, which will be removed : <idu/dff_imm_oper_r/Q_19> <idu/dff_imm_oper_r/Q_20> <idu/dff_imm_oper_r/Q_21> <idu/dff_imm_oper_r/Q_23> <idu/dff_imm_oper_r/Q_24> <idu/dff_imm_oper_r/Q_25> <idu/dff_imm_oper_r/Q_26> <idu/dff_imm_oper_r/Q_27> <idu/dff_imm_oper_r/Q_28> <idu/dff_imm_oper_r/Q_29> <idu/dff_imm_oper_r/Q_30> <idu/dff_imm_oper_r/Q_31> 
+
+Mapping all equations...
+Building and optimizing final netlist ...
+Found area constraint ratio of 100 (+ 5) on block ncpu32k_core, actual ratio is 17.
+FlipFlop idu/dff_imm_oper_r/Q_0 has been replicated 1 time(s)
+FlipFlop idu/dff_rs1_dout_valid_r/Q_0 has been replicated 7 time(s)
+FlipFlop idu/dff_rs2_dout_valid_r/Q_0 has been replicated 4 time(s)
+FlipFlop regfile0/dpram_sclk0/bypass has been replicated 7 time(s)
+FlipFlop regfile0/dpram_sclk1/bypass has been replicated 6 time(s)
+FlipFlop regfile0/dpram_sclk1/din_r_0 has been replicated 1 time(s)
+
+Final Macro Processing ...
+
+=========================================================================
+Final Register Report
+
+Macro Statistics
+# Registers                                            : 426
+ Flip-Flops                                            : 426
+
+=========================================================================
+
+=========================================================================
+*                           Partition Report                            *
+=========================================================================
+
+Partition Implementation Status
+-------------------------------
+
+  No Partitions were found in this design.
+
+-------------------------------
+
+=========================================================================
+*                            Design Summary                             *
+=========================================================================
+
+Top Level Output File Name         : ncpu32k_core.ngc
+
+Primitive and Black Box Usage:
+------------------------------
+# BELS                             : 2007
+#      GND                         : 1
+#      INV                         : 6
+#      LUT1                        : 59
+#      LUT2                        : 52
+#      LUT3                        : 122
+#      LUT4                        : 198
+#      LUT5                        : 435
+#      LUT6                        : 657
+#      MUXCY                       : 215
+#      MUXF7                       : 63
+#      VCC                         : 1
+#      XORCY                       : 198
+# FlipFlops/Latches                : 426
+#      FDC                         : 1
+#      FDCE                        : 424
+#      FDPE                        : 1
+# RAMS                             : 2
+#      RAMB8BWER                   : 2
+# Clock Buffers                    : 1
+#      BUFGP                       : 1
+# IO Buffers                       : 822
+#      IBUF                        : 454
+#      OBUF                        : 368
+
+Device utilization summary:
+---------------------------
+
+Selected Device : 6slx16ftg256-2 
+
+
+Slice Logic Utilization: 
+ Number of Slice Registers:             426  out of  18224     2%  
+ Number of Slice LUTs:                 1529  out of   9112    16%  
+    Number used as Logic:              1529  out of   9112    16%  
+
+Slice Logic Distribution: 
+ Number of LUT Flip Flop pairs used:   1639
+   Number with an unused Flip Flop:    1213  out of   1639    74%  
+   Number with an unused LUT:           110  out of   1639     6%  
+   Number of fully used LUT-FF pairs:   316  out of   1639    19%  
+   Number of unique control sets:        15
+
+IO Utilization: 
+ Number of IOs:                         828
+ Number of bonded IOBs:                 823  out of    186   442% (*) 
+
+Specific Feature Utilization:
+ Number of Block RAM/FIFO:                1  out of     32     3%  
+    Number using Block RAM only:          1
+ Number of BUFG/BUFGCTRLs:                1  out of     16     6%  
+
+WARNING:Xst:1336 -  (*) More than 100% of Device resources are used
+
+---------------------------
+Partition Resource Summary:
+---------------------------
+
+  No Partitions were found in this design.
+
+---------------------------
+
+
+=========================================================================
+Timing Report
+
+NOTE: THESE TIMING NUMBERS ARE ONLY A SYNTHESIS ESTIMATE.
+      FOR ACCURATE TIMING INFORMATION PLEASE REFER TO THE TRACE REPORT
+      GENERATED AFTER PLACE-and-ROUTE.
+
+Clock Information:
+------------------
+-----------------------------------+------------------------+-------+
+Clock Signal                       | Clock buffer(FF name)  | Load  |
+-----------------------------------+------------------------+-------+
+clk                                | BUFGP                  | 428   |
+-----------------------------------+------------------------+-------+
+
+Asynchronous Control Signals Information:
+----------------------------------------
+No asynchronous control signals found in this design
+
+Timing Summary:
+---------------
+Speed Grade: -2
+
+   Minimum period: 14.452ns (Maximum Frequency: 69.196MHz)
+   Minimum input arrival time before clock: 14.808ns
+   Maximum output required time after clock: 20.559ns
+   Maximum combinational path delay: 20.915ns
+
+Timing Details:
+---------------
+All values displayed in nanoseconds (ns)
+
+=========================================================================
+Timing constraint: Default period analysis for Clock 'clk'
+  Clock period: 14.452ns (frequency: 69.196MHz)
+  Total number of paths / destination ports: 6451931 / 915
+-------------------------------------------------------------------------
+Delay:               14.452ns (Levels of Logic = 10)
+  Source:            regfile0/dpram_sclk0/Mram_mem_vector (RAM)
+  Destination:       regfile0/dpram_sclk1/Mram_mem_vector (RAM)
+  Source Clock:      clk rising
+  Destination Clock: clk rising
+
+  Data Path: regfile0/dpram_sclk0/Mram_mem_vector to regfile0/dpram_sclk1/Mram_mem_vector
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     RAMB8BWER:CLKAWRCLK->DOADO0    3   2.100   0.766  regfile0/dpram_sclk0/Mram_mem_vector (regfile0/dpram_sclk0/dout_r<0>)
+     LUT5:I4->O            8   0.254   0.943  idu/Mmux_ieu_operand_1110 (ieu_operand_1<0>)
+     MUXCY:DI->O           1   0.181   0.000  ieu/mu/Madd_mu_lsa_cy<0> (ieu/mu/Madd_mu_lsa_cy<0>)
+     XORCY:CI->O          30   0.206   1.487  ieu/mu/Madd_mu_lsa_xor<1> (dbus_cmd_addr_1_OBUF)
+     LUT6:I5->O            9   0.254   0.976  ieu/ieu_in_ready1 (ieu_in_ready)
+     LUT6:I5->O           10   0.254   1.284  ieu/eu/msr_psr_rm_we1 (msr_psr_dmme_we)
+     LUT5:I1->O            2   0.254   0.726  ieu/eu/Mmux_msr_epsr_nxt51 (msr_epsr_nxt<4>)
+     LUT3:I2->O            2   0.254   1.156  psr/Mmux_msr_epsr51 (msr_epsr<4>)
+     LUT5:I0->O            3   0.254   0.766  ieu/eu/Mmux_msr_psr_rm_nxt11 (msr_psr_rm_nxt)
+     LUT6:I5->O            2   0.254   0.726  psr/Mmux_msr_psr_rm11 (msr_psr<4>)
+     LUT6:I5->O            4   0.254   0.803  ieu/regf_din<4>16 (regf_din<4>)
+     RAMB8BWER:DIADI4          0.300          regfile0/dpram_sclk1/Mram_mem_vector
+    ----------------------------------------
+    Total                     14.452ns (4.819ns logic, 9.633ns route)
+                                       (33.3% logic, 66.7% route)
+
+=========================================================================
+Timing constraint: Default OFFSET IN BEFORE for Clock 'clk'
+  Total number of paths / destination ports: 29645 / 1204
+-------------------------------------------------------------------------
+Offset:              14.808ns (Levels of Logic = 10)
+  Source:            ibus_flush_ack (PAD)
+  Destination:       regfile0/dpram_sclk1/Mram_mem_vector (RAM)
+  Destination Clock: clk rising
+
+  Data Path: ibus_flush_ack to regfile0/dpram_sclk1/Mram_mem_vector
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     IBUF:I->O            59   1.328   2.119  ibus_flush_ack_IBUF (ibus_flush_ack_IBUF)
+     LUT5:I2->O            5   0.235   0.841  ieu/mu/exp_misalign_SW6_SW0 (N296)
+     LUT6:I5->O            3   0.254   0.766  ieu/mu/exp_misalign_SW6 (N125)
+     LUT5:I4->O            1   0.254   1.137  ieu/eu/_n0239<13>1_SW5_SW2 (N209)
+     LUT6:I0->O            2   0.254   1.181  ieu/eu/_n0239<13>1_SW5 (N200)
+     LUT6:I0->O           17   0.254   1.437  ieu/eu/msr_epsr_we1 (msr_epsr_we)
+     LUT3:I0->O            2   0.235   1.156  psr/Mmux_msr_epsr51 (msr_epsr<4>)
+     LUT5:I0->O            3   0.254   0.766  ieu/eu/Mmux_msr_psr_rm_nxt11 (msr_psr_rm_nxt)
+     LUT6:I5->O            2   0.254   0.726  psr/Mmux_msr_psr_rm11 (msr_psr<4>)
+     LUT6:I5->O            4   0.254   0.803  ieu/regf_din<4>16 (regf_din<4>)
+     RAMB8BWER:DIADI4          0.300          regfile0/dpram_sclk1/Mram_mem_vector
+    ----------------------------------------
+    Total                     14.808ns (3.876ns logic, 10.932ns route)
+                                       (26.2% logic, 73.8% route)
+
+=========================================================================
+Timing constraint: Default OFFSET OUT AFTER for Clock 'clk'
+  Total number of paths / destination ports: 1352497 / 365
+-------------------------------------------------------------------------
+Offset:              20.559ns (Levels of Logic = 15)
+  Source:            regfile0/dpram_sclk0/Mram_mem_vector (RAM)
+  Destination:       ibus_cmd_addr<4> (PAD)
+  Source Clock:      clk rising
+
+  Data Path: regfile0/dpram_sclk0/Mram_mem_vector to ibus_cmd_addr<4>
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     RAMB8BWER:CLKAWRCLK->DOADO0    3   2.100   0.766  regfile0/dpram_sclk0/Mram_mem_vector (regfile0/dpram_sclk0/dout_r<0>)
+     LUT5:I4->O            8   0.254   0.943  idu/Mmux_ieu_operand_1110 (ieu_operand_1<0>)
+     MUXCY:DI->O           1   0.181   0.000  ieu/eu/Madd_msr_addr_Madd_cy<0> (ieu/eu/Madd_msr_addr_Madd_cy<0>)
+     MUXCY:CI->O           1   0.023   0.000  ieu/eu/Madd_msr_addr_Madd_cy<1> (ieu/eu/Madd_msr_addr_Madd_cy<1>)
+     XORCY:CI->O          18   0.206   1.235  ieu/eu/Madd_msr_addr_Madd_xor<2> (msr_dmm_tlbh_idx_2_OBUF)
+     LUT2:I1->O            1   0.254   0.682  ieu/eu/_n0239<13>1_SW0 (N109)
+     LUT6:I5->O           15   0.254   1.383  ieu/eu/wmsr_epsr_we1 (ieu/eu/wmsr_epsr_we)
+     LUT3:I0->O            2   0.235   0.726  ieu/eu/Mmux_msr_epsr_nxt11 (msr_epsr_nxt<0>)
+     LUT3:I2->O            2   0.254   0.726  psr/Mmux_msr_epsr11 (msr_epsr<0>)
+     LUT6:I5->O            2   0.254   0.726  ieu/eu/Mmux_msr_psr_cc_nxt15 (msr_psr_cc_nxt)
+     LUT3:I2->O           13   0.254   1.374  psr/Mmux_msr_psr_cc11 (msr_psr<0>)
+     LUT6:I2->O           32   0.254   1.748  ieu/Mmux_specul_flush11 (specul_flush)
+     LUT4:I1->O           29   0.235   1.470  ifu/Mmux_pc_addr_nxt2311 (ifu/Mmux_pc_addr_nxt231)
+     LUT5:I4->O            1   0.254   0.000  ifu/Mmux_pc_addr_nxt233_G (N483)
+     MUXF7:I1->O           1   0.175   0.681  ifu/Mmux_pc_addr_nxt233 (ibus_cmd_addr_4_OBUF)
+     OBUF:I->O                 2.912          ibus_cmd_addr_4_OBUF (ibus_cmd_addr<4>)
+    ----------------------------------------
+    Total                     20.559ns (8.099ns logic, 12.460ns route)
+                                       (39.4% logic, 60.6% route)
+
+=========================================================================
+Timing constraint: Default path analysis
+  Total number of paths / destination ports: 47034 / 44
+-------------------------------------------------------------------------
+Delay:               20.915ns (Levels of Logic = 14)
+  Source:            ibus_flush_ack (PAD)
+  Destination:       ibus_cmd_addr<4> (PAD)
+
+  Data Path: ibus_flush_ack to ibus_cmd_addr<4>
+                                Gate     Net
+    Cell:in->out      fanout   Delay   Delay  Logical Name (Net Name)
+    ----------------------------------------  ------------
+     IBUF:I->O            59   1.328   2.119  ibus_flush_ack_IBUF (ibus_flush_ack_IBUF)
+     LUT5:I2->O            5   0.235   0.841  ieu/mu/exp_misalign_SW6_SW0 (N296)
+     LUT6:I5->O            3   0.254   0.766  ieu/mu/exp_misalign_SW6 (N125)
+     LUT5:I4->O            1   0.254   1.137  ieu/eu/_n0239<13>1_SW5_SW2 (N209)
+     LUT6:I0->O            2   0.254   1.181  ieu/eu/_n0239<13>1_SW5 (N200)
+     LUT6:I0->O            3   0.254   0.994  ieu/eu/msr_epsr_we1_1 (ieu/eu/msr_epsr_we1)
+     LUT3:I0->O            2   0.235   0.726  psr/Mmux_msr_epsr11 (msr_epsr<0>)
+     LUT6:I5->O            2   0.254   0.726  ieu/eu/Mmux_msr_psr_cc_nxt15 (msr_psr_cc_nxt)
+     LUT3:I2->O           13   0.254   1.374  psr/Mmux_msr_psr_cc11 (msr_psr<0>)
+     LUT6:I2->O           32   0.254   1.748  ieu/Mmux_specul_flush11 (specul_flush)
+     LUT4:I1->O           29   0.235   1.470  ifu/Mmux_pc_addr_nxt2311 (ifu/Mmux_pc_addr_nxt231)
+     LUT5:I4->O            1   0.254   0.000  ifu/Mmux_pc_addr_nxt233_G (N483)
+     MUXF7:I1->O           1   0.175   0.681  ifu/Mmux_pc_addr_nxt233 (ibus_cmd_addr_4_OBUF)
+     OBUF:I->O                 2.912          ibus_cmd_addr_4_OBUF (ibus_cmd_addr<4>)
+    ----------------------------------------
+    Total                     20.915ns (7.152ns logic, 13.763ns route)
+                                       (34.2% logic, 65.8% route)
+
+=========================================================================
+
+Cross Clock Domains Report:
+--------------------------
+
+Clock to Setup on destination clock clk
+---------------+---------+---------+---------+---------+
+               | Src:Rise| Src:Fall| Src:Rise| Src:Fall|
+Source Clock   |Dest:Rise|Dest:Rise|Dest:Fall|Dest:Fall|
+---------------+---------+---------+---------+---------+
+clk            |   14.452|         |         |         |
+---------------+---------+---------+---------+---------+
+
+=========================================================================
+
+
+Total REAL time to Xst completion: 11.00 secs
+Total CPU time to Xst completion: 11.20 secs
+ 
+--> 
+
+Total memory usage is 239140 kilobytes
+
+Number of errors   :    0 (   0 filtered)
+Number of warnings :   51 (   0 filtered)
+Number of infos    :   13 (   0 filtered)
+

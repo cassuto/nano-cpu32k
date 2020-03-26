@@ -1,0 +1,9 @@
+run
+-ifmt MIXED
+-top dcm_clktree_exdes
+-p xc6slx16-ftg256-2
+-ifn xst.prj
+-ofn dcm_clktree_exdes
+-keep_hierarchy soft 
+-equivalent_register_removal no 
+-max_fanout 65535

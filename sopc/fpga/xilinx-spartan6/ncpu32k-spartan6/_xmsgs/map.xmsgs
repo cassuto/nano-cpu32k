@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- IMPORTANT: This is an internal file that has been generated
+     by the Xilinx ISE software.  Any direct editing or
+     changes made to this file may result in unpredictable
+     behavior or data corruption.  It is strongly advised that
+     users do not edit the contents of this file. -->
+<messages>
+<msg type="info" file="LIT" num="243" delta="old" >Logical network <arg fmt="%s" index="1">icon_control0&lt;35&gt;</arg> has no load.
+</msg>
+
+<msg type="info" file="LIT" num="395" delta="old" >The above <arg fmt="%s" index="1">info</arg> message is repeated <arg fmt="%d" index="2">26</arg> more times for the following (max. 5 shown):
+<arg fmt="%s" index="3">icon_control0&lt;34&gt;,
+icon_control0&lt;33&gt;,
+icon_control0&lt;32&gt;,
+icon_control0&lt;31&gt;,
+icon_control0&lt;30&gt;</arg>
+To see the details of these <arg fmt="%s" index="4">info</arg> messages, please use the -detail switch.
+</msg>
+
+<msg type="info" file="MapLib" num="562" delta="old" >No environment variables are currently set.
+</msg>
+
+<msg type="info" file="LIT" num="244" delta="old" >All of the single ended outputs in this design are using slew rate limited output drivers. The delay on speed critical single ended outputs can be dramatically reduced by designating them as fast outputs.
+</msg>
+
+<msg type="info" file="Pack" num="1716" delta="old" >Initializing temperature to <arg fmt="%0.3f" index="1">85.000</arg> Celsius. (default - Range: <arg fmt="%0.3f" index="2">0.000</arg> to <arg fmt="%0.3f" index="3">85.000</arg> Celsius)
+</msg>
+
+<msg type="info" file="Pack" num="1720" delta="old" >Initializing voltage to <arg fmt="%0.3f" index="1">1.140</arg> Volts. (default - Range: <arg fmt="%0.3f" index="2">1.140</arg> to <arg fmt="%0.3f" index="3">1.260</arg> Volts)
+</msg>
+
+<msg type="info" file="Map" num="215" delta="old" >The Interim Design Summary has been generated in the MAP Report (.mrp).
+</msg>
+
+<msg type="info" file="Pack" num="1650" delta="old" >Map created a placed design.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="372" delta="old" >Gated clock. Clock net <arg fmt="%s" index="1">icon_control0&lt;13&gt;</arg> is sourced by a combinatorial pin. This is not good design practice. Use the CE pin to control the loading of data into the flip-flop.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="367" delta="old" >The signal &lt;<arg fmt="%s" index="1">soc/pb_uart/rx_fifo/Mram_mem1_RAMD_D1_O</arg>&gt; is incomplete. The signal does not drive any load pins in the design.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="367" delta="old" >The signal &lt;<arg fmt="%s" index="1">soc/pb_uart/tx_fifo/Mram_mem1_RAMD_D1_O</arg>&gt; is incomplete. The signal does not drive any load pins in the design.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="1176" delta="old" >Issue with pin connections and/or configuration on block:&lt;<arg fmt="%s" index="1">U_ila_pro_0/U0/I_NO_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[7].u_ramb18/U_RAMB18</arg>&gt;:&lt;<arg fmt="%s" index="2">RAMB16BWER_RAMB16BWER</arg>&gt;.  The block is configured to use input parity pin DIBP0. There is dangling output for parity pin DOPB0.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="1176" delta="old" >Issue with pin connections and/or configuration on block:&lt;<arg fmt="%s" index="1">U_ila_pro_0/U0/I_NO_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[2].u_ramb18/U_RAMB18</arg>&gt;:&lt;<arg fmt="%s" index="2">RAMB16BWER_RAMB16BWER</arg>&gt;.  The block is configured to use input parity pin DIBP0. There is dangling output for parity pin DOPB0.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="1176" delta="old" >Issue with pin connections and/or configuration on block:&lt;<arg fmt="%s" index="1">U_ila_pro_0/U0/I_NO_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[5].u_ramb18/U_RAMB18</arg>&gt;:&lt;<arg fmt="%s" index="2">RAMB16BWER_RAMB16BWER</arg>&gt;.  The block is configured to use input parity pin DIBP0. There is dangling output for parity pin DOPB0.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="1176" delta="old" >Issue with pin connections and/or configuration on block:&lt;<arg fmt="%s" index="1">U_ila_pro_0/U0/I_NO_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[0].u_ramb18/U_RAMB18</arg>&gt;:&lt;<arg fmt="%s" index="2">RAMB16BWER_RAMB16BWER</arg>&gt;.  The block is configured to use input parity pin DIBP0. There is dangling output for parity pin DOPB0.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="1176" delta="old" >Issue with pin connections and/or configuration on block:&lt;<arg fmt="%s" index="1">U_ila_pro_0/U0/I_NO_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[3].u_ramb18/U_RAMB18</arg>&gt;:&lt;<arg fmt="%s" index="2">RAMB16BWER_RAMB16BWER</arg>&gt;.  The block is configured to use input parity pin DIBP0. There is dangling output for parity pin DOPB0.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="2212" delta="old" >Async clocking for BRAM (comp <arg fmt="%s" index="1">soc/L2_cache/cache_mem/Mram_mem_vector1</arg>) port(s) with READ_FIRST mode has certain restrictions. Make sure that there is no address collision. A read/write on one port and a write operation from the other port at the same address is not allowed.<arg fmt="%s" index="2"> RAMB16BWER, when both ports are 18 bits wide or smaller, A13-6 including A4 cannot be same. When any one port is 36 bits wide, A13-7 including A5 cannot be the same. </arg>Violating this restriction may result in the incorrect operation of the BRAM.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="2212" delta="old" >Async clocking for BRAM (comp <arg fmt="%s" index="1">soc/L2_cache/cache_mem/Mram_mem_vector2</arg>) port(s) with READ_FIRST mode has certain restrictions. Make sure that there is no address collision. A read/write on one port and a write operation from the other port at the same address is not allowed.<arg fmt="%s" index="2"> RAMB16BWER, when both ports are 18 bits wide or smaller, A13-6 including A4 cannot be same. When any one port is 36 bits wide, A13-7 including A5 cannot be the same. </arg>Violating this restriction may result in the incorrect operation of the BRAM.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="2212" delta="old" >Async clocking for BRAM (comp <arg fmt="%s" index="1">soc/L2_cache/cache_mem/Mram_mem_vector3</arg>) port(s) with READ_FIRST mode has certain restrictions. Make sure that there is no address collision. A read/write on one port and a write operation from the other port at the same address is not allowed.<arg fmt="%s" index="2"> RAMB16BWER, when both ports are 18 bits wide or smaller, A13-6 including A4 cannot be same. When any one port is 36 bits wide, A13-7 including A5 cannot be the same. </arg>Violating this restriction may result in the incorrect operation of the BRAM.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="2212" delta="old" >Async clocking for BRAM (comp <arg fmt="%s" index="1">soc/L2_cache/cache_mem/Mram_mem_vector4</arg>) port(s) with READ_FIRST mode has certain restrictions. Make sure that there is no address collision. A read/write on one port and a write operation from the other port at the same address is not allowed.<arg fmt="%s" index="2"> RAMB16BWER, when both ports are 18 bits wide or smaller, A13-6 including A4 cannot be same. When any one port is 36 bits wide, A13-7 including A5 cannot be the same. </arg>Violating this restriction may result in the incorrect operation of the BRAM.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="2212" delta="old" >Async clocking for BRAM (comp <arg fmt="%s" index="1">soc/L2_cache/cache_mem/Mram_mem_vector5</arg>) port(s) with READ_FIRST mode has certain restrictions. Make sure that there is no address collision. A read/write on one port and a write operation from the other port at the same address is not allowed.<arg fmt="%s" index="2"> RAMB16BWER, when both ports are 18 bits wide or smaller, A13-6 including A4 cannot be same. When any one port is 36 bits wide, A13-7 including A5 cannot be the same. </arg>Violating this restriction may result in the incorrect operation of the BRAM.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="2212" delta="old" >Async clocking for BRAM (comp <arg fmt="%s" index="1">soc/L2_cache/cache_mem/Mram_mem_vector6</arg>) port(s) with READ_FIRST mode has certain restrictions. Make sure that there is no address collision. A read/write on one port and a write operation from the other port at the same address is not allowed.<arg fmt="%s" index="2"> RAMB16BWER, when both ports are 18 bits wide or smaller, A13-6 including A4 cannot be same. When any one port is 36 bits wide, A13-7 including A5 cannot be the same. </arg>Violating this restriction may result in the incorrect operation of the BRAM.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="2212" delta="old" >Async clocking for BRAM (comp <arg fmt="%s" index="1">soc/L2_cache/cache_mem/Mram_mem_vector7</arg>) port(s) with READ_FIRST mode has certain restrictions. Make sure that there is no address collision. A read/write on one port and a write operation from the other port at the same address is not allowed.<arg fmt="%s" index="2"> RAMB16BWER, when both ports are 18 bits wide or smaller, A13-6 including A4 cannot be same. When any one port is 36 bits wide, A13-7 including A5 cannot be the same. </arg>Violating this restriction may result in the incorrect operation of the BRAM.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="2212" delta="old" >Async clocking for BRAM (comp <arg fmt="%s" index="1">soc/L2_cache/cache_mem/Mram_mem_vector8</arg>) port(s) with READ_FIRST mode has certain restrictions. Make sure that there is no address collision. A read/write on one port and a write operation from the other port at the same address is not allowed.<arg fmt="%s" index="2"> RAMB16BWER, when both ports are 18 bits wide or smaller, A13-6 including A4 cannot be same. When any one port is 36 bits wide, A13-7 including A5 cannot be the same. </arg>Violating this restriction may result in the incorrect operation of the BRAM.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="1176" delta="old" >Issue with pin connections and/or configuration on block:&lt;<arg fmt="%s" index="1">U_ila_pro_0/U0/I_NO_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[6].u_ramb18/U_RAMB18</arg>&gt;:&lt;<arg fmt="%s" index="2">RAMB16BWER_RAMB16BWER</arg>&gt;.  The block is configured to use input parity pin DIBP0. There is dangling output for parity pin DOPB0.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="1176" delta="old" >Issue with pin connections and/or configuration on block:&lt;<arg fmt="%s" index="1">U_ila_pro_0/U0/I_NO_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[1].u_ramb18/U_RAMB18</arg>&gt;:&lt;<arg fmt="%s" index="2">RAMB16BWER_RAMB16BWER</arg>&gt;.  The block is configured to use input parity pin DIBP0. There is dangling output for parity pin DOPB0.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="1176" delta="old" >Issue with pin connections and/or configuration on block:&lt;<arg fmt="%s" index="1">U_ila_pro_0/U0/I_NO_D.U_ILA/U_CAPSTOR/I_CASE1.I_YES_TB.U_TRACE_BUFFER/U_RAM/I_S6.U_CS_BRAM_CASCADE_S6/I_DEPTH_LTEQ_16K.U_SBRAM_0/I_B18KGT0.G_RAMB18[4].u_ramb18/U_RAMB18</arg>&gt;:&lt;<arg fmt="%s" index="2">RAMB16BWER_RAMB16BWER</arg>&gt;.  The block is configured to use input parity pin DIBP0. There is dangling output for parity pin DOPB0.
+</msg>
+
+<msg type="warning" file="PhysDesignRules" num="2410" delta="old" >This design is using one or more 9K Block RAMs (RAMB8BWER).  9K Block RAM initialization data, both user defined and default, may be incorrect and should not be used.  For more information, please reference Xilinx Answer Record 39999.
+</msg>
+
+</messages>
+
