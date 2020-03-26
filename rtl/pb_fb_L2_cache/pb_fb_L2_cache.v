@@ -75,11 +75,11 @@ module pb_fb_L2_cache
    end
    
 generate
-      if (ENABLE_BYPASS) begin :enable_bypass
-         assign l2_ch_cmd_ready = (~pending_r | pop);
-      end else begin
-         assign l2_ch_cmd_ready = (~pending_r);
-      end
+   if (ENABLE_BYPASS) begin :enable_bypass
+      assign l2_ch_cmd_ready = (~pending_r | pop);
+   end else begin
+      assign l2_ch_cmd_ready = (~pending_r);
+   end
 endgenerate
    
    always @(posedge clk) begin
@@ -166,17 +166,21 @@ endgenerate
    // Initial blocks
 generate
    if (CLEAR_ON_INIT) begin : clear_on_init
-      genvar j,k;
-      for(k=0;k<(1<<P_SETS);k=k+1)
-         initial
+      initial begin : init_dirty
+         integer k;
+         for(k=0;k<(1<<P_SETS);k=k+1)
             cache_dirty[k] = 0;
-      for(k=0;k<(1<<P_WAYS);k=k+1)
-         for(j=0;j<(1<<P_SETS);j=j+1)
-            initial begin
-               cache_v[k][j] = 0;
-               cache_lru[k][j] = k;
-               cache_addr[k][j] = 0;
+      end
+
+      initial begin : init_v
+         integer k,j;
+         for(k=0;k<(1<<P_WAYS);k=k+1)
+            for(j=0;j<(1<<P_SETS);j=j+1) begin
+                  cache_v[k][j] = 0;
+                  cache_lru[k][j] = k;
+                  cache_addr[k][j] = 0;
             end
+      end
    end
 endgenerate
 
@@ -253,7 +257,7 @@ endgenerate
 		case(status_r)
 			S_IDLE: begin
 				nl_baddr_r <= dirty ? {cache_addr[free_set_idx][entry_idx], entry_idx} : maddr[L2_CH_AW-1:P_LINE]; 
-				if(mmreq && ~hit) begin
+				if(mmreq & ~hit) begin
                // Cache missed
                // Fill a free entry.
                // If the target entry is dirty, firstly sync with the
