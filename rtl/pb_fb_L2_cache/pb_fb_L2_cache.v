@@ -194,7 +194,7 @@ endgenerate
    always @(posedge sdr_clk)
       sdr_din <= line_adr_cnt[0] ? ch_mem_dout[15:0] : ch_mem_dout[31:16];
 
-   localparam CH_AW = P_WAYS+P_SETS+P_LINE-1;
+   localparam CH_AW = P_WAYS+P_SETS+P_LINE-2;
    
    // Mask HI/LO 16bit. Assert (03161421)
    wire [3:0] line_adr_cnt_msk = {line_adr_cnt[0], line_adr_cnt[0], ~line_adr_cnt[0], ~line_adr_cnt[0]};
