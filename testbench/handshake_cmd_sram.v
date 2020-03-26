@@ -22,7 +22,7 @@ module handshake_cmd_sram
    input                      cmd_valid, /* cmd is presented at sram'input */
    input [`NCPU_AW-1:0]       cmd_addr
 );
-   localparam SIZE_WORDS = SIZE_BYTES/DW/8;
+   localparam SIZE_WORDS = SIZE_BYTES/DW*8;
    reg[DW-1:0] mem[0:SIZE_WORDS-1];
 
    initial begin
