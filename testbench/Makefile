@@ -2,14 +2,16 @@ AS = ../toolchain/bin/ncpu32k-unknown-elf-as
 OBJCOPY = ../toolchain/bin/ncpu32k-unknown-elf-objcopy
 PYTHON = python
 
+BIN ?= insn.bin
+
 TARGETS := sim/insn.mem
 
 .PHONY: all clean
 
 all: $(TARGETS)
 
-$(TARGETS): insn.bin
-	$(PYTHON) generate_rams.py $< $@
+$(TARGETS): $(BIN)
+	$(PYTHON) generate_rams_w.py $< $@
 
 insn.bin: insn.o
 	$(OBJCOPY) -O binary -S $< $@
@@ -18,4 +20,4 @@ insn.bin: insn.o
 	$(AS) $< -o $@
 
 clean:
-	-rm ./*.o ./insn.bin ./insn.mem ../synthesis/ise/insn.mem
+	-rm ./*.o ./insn.bin ./insn.mem sim/insn.mem
