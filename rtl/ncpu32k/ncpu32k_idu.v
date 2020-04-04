@@ -256,6 +256,9 @@ module ncpu32k_idu(
                      // Exception insns
                      idu_op_syscall | idu_op_ret);
    
+   // Wrtie PC to ELSA when emu_insn exception raised
+   wire let_lsa_pc_nxt = idu_let_lsa_pc | emu_insn;
+   
    // Insn presents rs1 and imm as operand.
    wire insn_imm14 = (op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |
                      op_add_i |
@@ -396,6 +399,6 @@ module ncpu32k_idu(
    ncpu32k_cell_dff_lr #(1) dff_ieu_specul_exp
                    (clk,rst_n, pipebuf_cas, idu_specul_extexp & not_flushing, ieu_specul_extexp);
    ncpu32k_cell_dff_lr #(1) dff_ieu_let_lsa_pc
-                   (clk,rst_n, pipebuf_cas, idu_let_lsa_pc & not_flushing, ieu_let_lsa_pc);
+                   (clk,rst_n, pipebuf_cas, let_lsa_pc_nxt & not_flushing, ieu_let_lsa_pc);
 
 endmodule
