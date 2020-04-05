@@ -376,6 +376,13 @@ module soc_pb_uart
    // synthesis translate_off
 `ifndef SYNTHESIS
 
+   // Monitor TX
+   always @(posedge clk) begin
+      if(we_RBR) begin
+         //$write("%c", pb_uart_din);
+      end
+   end
+
    // Assertions 03202136
 `ifdef NCPU_ENABLE_ASSERT
    reg hds_phy_cmd_rd=0;

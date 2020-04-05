@@ -13,8 +13,8 @@ module tb_sopc();
    reg rst_n = 0;
    reg DRAM_CLK = 0;
    
-   // DRAM clk 100MHz
-   localparam tCK = 10; // ns
+   // DRAM clk 133MHz
+   localparam tCK = 7.5; // ns
    initial begin
       // phrase +0.8ns (+28.8deg)
       #0.8 forever #(tCK/2) sdr_clk = ~sdr_clk;
@@ -29,6 +29,7 @@ module tb_sopc();
    // UART clk 14.7456MHz
    initial begin
       forever #(67.82/2) uart_clk = ~uart_clk;
+      //forever #(6.782/2) uart_clk = ~uart_clk; // 147.4MHz for faster simulation
    end
 
    // Generate reset
@@ -78,7 +79,8 @@ module tb_sopc();
    );
 
    // SPI FLASH
-   N25Qxxx spi_flash (SPI_CS_L, SPI_SCK, SF_HOLD_DQ3, SF_DQ0, SF_DQ1, SF_Vcc, SF_Vpp_W_DQ2);
+   //N25Qxxx spi_flash (SPI_CS_L, SPI_SCK, SF_HOLD_DQ3, SF_DQ0, SF_DQ1, SF_Vcc, SF_Vpp_W_DQ2);
+   assign SF_DQ1 = 1'b0;
    
    assign SF_DQ0 = SPI_MOSI;
    assign SPI_MISO = SF_DQ1;
@@ -119,5 +121,10 @@ module tb_sopc();
    end
    
    assign UART_RX_L = 1'b0;
+   
+   rs232_debugger rs232_dbg
+   (
+      .DCE_TXD_L_I(UART_TX_L)
+   );
    
 endmodule
