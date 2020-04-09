@@ -36,4 +36,18 @@ module ncpu32k_cell_dff_lr # (
      else if (LOAD)
        Q <= #1 D;
    end
+   
+   // synthesis translate_off
+`ifndef SYNTHESIS                   
+
+   // Assertions
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge CLK) begin
+      if(D == {DW{1'bx}})
+         $fatal ("\n dff uncertain state! \n");
+   end
+`endif
+
+`endif
+   // synthesis translate_on
 endmodule
