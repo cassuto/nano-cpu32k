@@ -29,10 +29,13 @@ module ncpu32k_irqc(
    output [`NCPU_DW-1:0]      msr_irqc_irr
 );
    wire [`NCPU_DW-1:0] imr_r;
+   wire [`NCPU_NIRQ-1:0] msr_irqc_irr_0;
    
    // Synchronize IRQs
+   ncpu32k_cell_dff_r #(`NCPU_NIRQ) dff_msr_irqc_irr_0
+                   (clk,rst_n, irqs_lvl_i[`NCPU_NIRQ-1:0], msr_irqc_irr_0[`NCPU_NIRQ-1:0]);
    ncpu32k_cell_dff_r #(`NCPU_NIRQ) dff_msr_irqc_irr
-                   (clk,rst_n, irqs_lvl_i[`NCPU_NIRQ-1:0], msr_irqc_irr[`NCPU_NIRQ-1:0]);
+                   (clk,rst_n, msr_irqc_irr_0[`NCPU_NIRQ-1:0], msr_irqc_irr[`NCPU_NIRQ-1:0]);
                    
    // IMR Register
    ncpu32k_cell_dff_lr #(`NCPU_DW, {`NCPU_DW{1'b1}}) dff_imr_r
