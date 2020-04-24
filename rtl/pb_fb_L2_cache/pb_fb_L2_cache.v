@@ -41,6 +41,7 @@ module pb_fb_L2_cache
    
    // 2:1 SDRAM interface
    input                   sdr_clk,
+   input                   sdr_rst_n,
    input [L2_CH_DW/2-1:0]  sdr_dout,
    output reg[L2_CH_DW/2-1:0] sdr_din,
    output reg              sdr_cmd_bst_rd_req,
@@ -56,7 +57,7 @@ module pb_fb_L2_cache
    reg [L2_CH_AW-P_LINE-1:0] nl_baddr_r;
    wire [L2_CH_DW/2-1:0] nl_dout;
    
-   reg l2_ch_valid_r = 1'b0;
+   reg l2_ch_valid_r;
 	reg [L2_CH_AW-1:0] addr_r;
 	reg [L2_CH_DW-1:0] din_r;
 	reg [3:0] size_msk_r;
@@ -99,8 +100,8 @@ endgenerate
    assign l2_ch_valid = pending_r & l2_ch_valid_r;
    
    // Flushing FSM
-	reg fls_req = 1'b0;
-	reg [P_WAYS+P_SETS:0] fls_cnt = 0;
+	reg fls_req;
+	reg [P_WAYS+P_SETS:0] fls_cnt;
 	wire fls_pending = fls_cnt[P_WAYS+P_SETS];
    
 	wire [P_SETS-1:0] entry_idx = fls_pending ? fls_cnt[P_SETS-1:0] : maddr[P_LINE+P_SETS-1:P_LINE];
@@ -112,10 +113,10 @@ endgenerate
    localparam S_READ_PENDING_1 = 3'b100;
    localparam S_READ_PENDING_2 = 3'b101;
    
-	reg [2:0]status_r = 0;
+	reg [2:0]status_r;
    wire ch_idle = status_r == S_IDLE;
-	reg [P_LINE-2:0]line_adr_cnt = 0; // unit: word (2 B)
-	reg line_adr_cnt_msb = 0;
+	reg [P_LINE-2:0]line_adr_cnt; // unit: word (2 B)
+	reg line_adr_cnt_msb_sr;
    
    wire [L2_CH_DW-1:0]ch_mem_dout;
 
@@ -141,23 +142,23 @@ endgenerate
 	wire hit = |match;
 	wire dirty = |(free & cache_dirty[entry_idx]);	
 
-   wire [P_WAYS-1:0] match_set;
-   wire [P_WAYS-1:0] free_set_idx;
+   wire [P_WAYS-1:0] match_way;
+   wire [P_WAYS-1:0] free_way_idx;
    wire [P_WAYS-1:0] lru_thresh;
    
 generate
    if (P_WAYS==2) begin : p_ways_2
       // 4-to-2 binary encoder. Assert (03251128)
-      assign match_set = fls_cnt[P_WAYS+P_SETS-1:P_SETS] | {|match[3:2], match[3] | match[1]};
+      assign match_way = fls_cnt[P_WAYS+P_SETS-1:P_SETS] | {|match[3:2], match[3] | match[1]};
       // 4-to-2 binary encoder
-      assign free_set_idx = {|free[3:2], free[3] | free[1]};
+      assign free_way_idx = {|free[3:2], free[3] | free[1]};
       // LRU threshold
       assign lru_thresh = lru[0] | lru[1] | lru[2] | lru[3];
    end else if (P_WAYS==1) begin : p_ways_1
       // 1-to-2 binary encoder. Assert (03251128)
-      assign match_set = fls_cnt[P_WAYS+P_SETS-1:P_SETS] | match[1];
+      assign match_way = fls_cnt[P_WAYS+P_SETS-1:P_SETS] | match[1];
       // 1-to-2 binary encoder
-      assign free_set_idx = free[1];
+      assign free_way_idx = free[1];
       // LRU threshold
       assign lru_thresh = lru[0] | lru[1];
    end
@@ -184,10 +185,12 @@ generate
    end
 endgenerate
 
-   // When burst transmission for cache line filling or writing back
-   // maintain the line addr counter
-   always @(posedge sdr_clk)
-      if(l2_ch_w_rdy | l2_ch_r_vld)
+   // Maintain the line addr counter,
+   // when burst transmission for cache line filling or writing back
+   always @(posedge sdr_clk or negedge sdr_rst_n)
+      if(~sdr_rst_n)
+         line_adr_cnt <= {P_LINE-1{1'b0}};
+      else if(l2_ch_w_rdy | l2_ch_r_vld)
          line_adr_cnt <= line_adr_cnt + 1'b1;
 
    // Mask HI/LO 16bit. Assert (03161421)
@@ -201,14 +204,31 @@ endgenerate
    
    wire ch_mem_en_a = l2_ch_w_rdy | l2_ch_r_vld;
    wire [L2_CH_DW/8-1:0] ch_mem_we_a = {4{l2_ch_w_rdy}} & line_adr_cnt_msk;
-   wire [CH_AW-1:0] ch_mem_addr_a = {match_set, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], line_adr_cnt[P_LINE-2:1]};
+   wire [CH_AW-1:0] ch_mem_addr_a = {match_way, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], line_adr_cnt[P_LINE-2:1]};
    wire [L2_CH_DW-1:0] ch_mem_din_a = {nl_dout[L2_CH_DW/2-1:0], nl_dout[L2_CH_DW/2-1:0]};
    wire ch_mem_en_b = mmreq & hit & ch_idle;
    wire [L2_CH_DW/8-1:0] ch_mem_we_b = mwmask;
-   wire [CH_AW-1:0] ch_mem_addr_b = {match_set, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], maddr[P_LINE-1:2]};
+   wire [CH_AW-1:0] ch_mem_addr_b = {match_way, ~entry_idx[P_SETS-1:10-P_LINE], entry_idx[10-P_LINE-1:0], maddr[P_LINE-1:2]};
    wire [L2_CH_DW-1:0] ch_mem_din_b = mdin;
    wire [L2_CH_DW-1:0] ch_mem_dout_b;
    
+`ifdef PLATFORM_XILINX_XC6
+   ramblk_cache_mem cache_mem
+      (
+         .clka    (sdr_clk),
+         .addra   (ch_mem_addr_a[CH_AW-1:0]),
+         .wea     (ch_mem_we_a[L2_CH_DW/8-1:0]),
+         .dina    (ch_mem_din_a[L2_CH_DW-1:0]),
+         .douta   (ch_mem_dout[L2_CH_DW-1:0]),
+         .ena     (ch_mem_en_a),
+         .clkb    (clk),
+         .addrb   (ch_mem_addr_b[CH_AW-1:0]),
+         .web     (ch_mem_we_b[L2_CH_DW/8-1:0]),
+         .dinb    (ch_mem_din_b[L2_CH_DW-1:0]),
+         .doutb   (ch_mem_dout_b[L2_CH_DW-1:0]),
+         .enb     (ch_mem_en_b)
+      );
+`else
    ncpu32k_cell_tdpram_aclkd_sclk
       #(
          .AW(CH_AW),
@@ -229,110 +249,120 @@ endgenerate
          .dout_b  (ch_mem_dout_b[L2_CH_DW-1:0]),
          .en_b    (ch_mem_en_b)
       );
+`endif
 
    assign l2_ch_dout = ch_mem_dout_b;
 
 generate
 	for(i=0; i<(1<<P_WAYS); i=i+1)
 		always @(posedge clk)
-			if(ch_idle && mmreq)
-				if(hit) begin
+         if(ch_idle && mmreq)
+            if(hit) begin
                // Update LRU priority
-					cache_lru[i][entry_idx] <= match[i] ? {P_WAYS{1'b1}} : cache_lru[i][entry_idx] - (cache_lru[i][entry_idx] > lru_thresh); 
-					// Mark dirty when written
+               cache_lru[i][entry_idx] <= match[i] ? {P_WAYS{1'b1}} : cache_lru[i][entry_idx] - (cache_lru[i][entry_idx] > lru_thresh); 
+               // Mark dirty when written
                if(match[i]) begin
                   cache_dirty[entry_idx][i] <= cache_dirty[entry_idx][i] || (|mwmask);
                end
-				end else if(free[i]) begin
+            end else if(free[i]) begin
                // Mark clean when entry is freed
                cache_dirty[entry_idx][i] <= 1'b0;
             end
 endgenerate
 
    // Main FSM
-	always @(posedge clk) begin
-		line_adr_cnt_msb <= line_adr_cnt[P_LINE-2];
-		fls_req <= ~fls_cnt[P_WAYS+P_SETS] & (fls_req | l2_ch_flush);
-		
-		case(status_r)
-			S_IDLE: begin
-				nl_baddr_r <= dirty ? {cache_addr[free_set_idx][entry_idx], entry_idx} : maddr[L2_CH_AW-1:P_LINE]; 
-				if(mmreq & ~hit) begin
-               // Cache missed
-               // Fill a free entry.
-               // If the target entry is dirty, firstly sync with the
-               // next level cache/memory, then refill it.
-					if(~fls_pending) begin
-                  cache_v[free_set_idx][entry_idx] <= 1'b1;
-                  cache_addr[free_set_idx][entry_idx] <= maddr[L2_CH_AW-1:P_LINE+P_SETS];
+	always @(posedge clk or negedge rst_n) begin
+      if(~rst_n) begin
+         status_r <= S_IDLE;
+         fls_req <= 1'b0;
+         line_adr_cnt_msb_sr <= 1'b0;
+         fls_cnt <= 0;
+         l2_ch_valid_r <= 1'b0;
+      end else begin
+         line_adr_cnt_msb_sr <= line_adr_cnt[P_LINE-2];
+         fls_req <= ~fls_cnt[P_WAYS+P_SETS] & (fls_req | l2_ch_flush);
+         
+         case(status_r)
+            S_IDLE: begin
+               nl_baddr_r <= dirty ? {cache_addr[free_way_idx][entry_idx], entry_idx} : maddr[L2_CH_AW-1:P_LINE]; 
+               if(mmreq & ~hit) begin
+                  // Cache missed
+                  // Fill a free entry.
+                  // If the target entry is dirty, firstly sync with the
+                  // next level cache/memory, then refill it.
+                  if(~fls_pending) begin
+                     cache_v[free_way_idx][entry_idx] <= 1'b1;
+                     cache_addr[free_way_idx][entry_idx] <= maddr[L2_CH_AW-1:P_LINE+P_SETS];
+                  end
+                  nl_rd_r <= ~dirty & ~fls_pending;
+                  nl_we_r <= dirty;
+                  status_r <= dirty ? S_WRITE_PENDING : S_READ_PENDING_1;
+                  l2_ch_valid_r <= 1'b0;
+               end else begin
+                  // Accept flush request
+                  fls_cnt[P_WAYS+P_SETS] <= fls_cnt[P_WAYS+P_SETS] | fls_req;
+                  // Accept accessing cmd
+                  l2_ch_valid_r <= 1'b1;
                end
-					nl_rd_r <= ~dirty & ~fls_pending;
-					nl_we_r <= dirty;
-					status_r <= dirty ? S_WRITE_PENDING : S_READ_PENDING_1;
-               l2_ch_valid_r <= 1'b0;
-				end else begin
-               // Accept flush request
-					fls_cnt[P_WAYS+P_SETS] <= fls_cnt[P_WAYS+P_SETS] | fls_req;
-               // Accept accessing cmd
-               l2_ch_valid_r <= 1'b1;
             end
-			end
-         // Pending for writing
-			S_WRITE_PENDING: begin
-				nl_rd_r <= ~fls_pending;
-				if(line_adr_cnt_msb) begin
-					nl_we_r <= 1'b0;
-					status_r <= S_RAW;
-				end
-			end
-         // Read-after-write
-         // Note writing is not really finished.
-			S_RAW: begin
-				nl_baddr_r <= maddr[L2_CH_AW-1:P_LINE];
-				if(~line_adr_cnt_msb)
-               status_r <= S_READ_PENDING_1;
-			end
-         // Pending for reading
-			S_READ_PENDING_1: begin	
-				if(fls_pending) begin
-					fls_cnt <= fls_cnt + 1'b1;
-					status_r <= S_IDLE;
-				end else if(line_adr_cnt_msb)
-               status_r <= S_READ_PENDING_2;
-			end
-			S_READ_PENDING_2: begin
-				nl_rd_r <= 1'b0;
-				if(~line_adr_cnt_msb) begin
-					status_r <= S_IDLE;
-				end
-			end
-		endcase
+            // Pending for writing
+            S_WRITE_PENDING: begin
+               nl_rd_r <= ~fls_pending;
+               if(line_adr_cnt_msb_sr) begin
+                  nl_we_r <= 1'b0;
+                  status_r <= S_RAW;
+               end
+            end
+            // Read-after-write
+            // Note writing is not really finished.
+            S_RAW: begin
+               nl_baddr_r <= maddr[L2_CH_AW-1:P_LINE];
+               if(~line_adr_cnt_msb_sr)
+                  status_r <= S_READ_PENDING_1;
+            end
+            // Pending for reading
+            S_READ_PENDING_1: begin	
+               if(fls_pending) begin
+                  fls_cnt <= fls_cnt + 1'b1;
+                  status_r <= S_IDLE;
+               end else if(line_adr_cnt_msb_sr)
+                  status_r <= S_READ_PENDING_2;
+            end
+            S_READ_PENDING_2: begin
+               nl_rd_r <= 1'b0;
+               if(~line_adr_cnt_msb_sr) begin
+                  status_r <= S_IDLE;
+               end
+            end
+         endcase
+      end
 	end
 	
    // SDRAM arbiter
+   // *Cross clock domain*
    // Receive signals from nl_*
    
    // 2 Flip flops for crossing clock domains
-   reg [1:0]sdr_rd_r;
-	reg [1:0]sdr_we_r;
+   reg [1:0]sdr_rd_sr;
+	reg [1:0]sdr_we_sr;
    reg [L2_CH_AW-3:0] sdr_cmd_addr_r;
    
    // Sample requests at SDRAM clock rise
-   always @ (posedge sdr_clk or negedge rst_n) begin
-      if(~rst_n) begin
-         sdr_rd_r <= 0;
-         sdr_we_r <= 0;
+   always @ (posedge sdr_clk or negedge sdr_rst_n) begin
+      if(~sdr_rst_n) begin
+         sdr_rd_sr <= 0;
+         sdr_we_sr <= 0;
          sdr_cmd_bst_rd_req <= 1'b0;
          sdr_cmd_bst_we_req <= 1'b0;
       end else begin
-         sdr_rd_r <= {sdr_rd_r[0], nl_rd_r};
-         sdr_we_r <= {sdr_we_r[0], nl_we_r};
+         sdr_rd_sr <= {sdr_rd_sr[0], nl_rd_r};
+         sdr_we_sr <= {sdr_we_sr[0], nl_we_r};
          sdr_cmd_addr_r <= {nl_baddr_r[L2_CH_AW-P_LINE-1:0], {P_LINE-2{1'b0}}};
          
          // Priority arbiter
-         if(sdr_we_r[1])
+         if(sdr_we_sr[1])
             sdr_cmd_bst_we_req <= 1'b1;
-         else if(sdr_rd_r[1])
+         else if(sdr_rd_sr[1])
             sdr_cmd_bst_rd_req <= 1'b1;
          else begin
             sdr_cmd_bst_we_req <= 1'b0;

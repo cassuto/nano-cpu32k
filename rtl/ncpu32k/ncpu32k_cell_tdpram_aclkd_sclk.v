@@ -1,6 +1,6 @@
 /**@file
  * Cell - True Double-port Async clock domain RAM
- * Read first mode
+ * Write first mode
  */
 
 /***************************************************************************/
@@ -65,7 +65,9 @@ generate
             mem_vector[addr_a][(i+1)*8-1:i*8] <= din_a[(i+1)*8-1:i*8];
 endgenerate
    always @(posedge clk_a)
-      if (en_a)
+      if (en_a & |we_a)
+         dout_a_r <= din_a;
+      else if(en_a)
          dout_a_r <= mem_vector[addr_a];
    
    //
@@ -80,7 +82,9 @@ generate
             mem_vector[addr_b][(j+1)*8-1:j*8] <= din_b[(j+1)*8-1:j*8];
 endgenerate
    always @(posedge clk_b)
-      if (en_b)
+      if (en_b & |we_b)
+         dout_b_r <= din_b;
+      else if(en_b)
          dout_b_r <= mem_vector[addr_b];
    
    assign dout_a = dout_a_r;

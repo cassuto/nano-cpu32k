@@ -28,7 +28,7 @@ module pb_fb_DRAM_ctrl
    parameter tRP = 3,
    parameter tMRD = 2,
    parameter tRCD = 3,
-   parameter tRC = 9,
+   parameter tRFC = 9,
    parameter tREF = 64, // ms
    parameter pREF = 9, // = floor(log2(Fclk*tREF/(2^SDR_ROW_BITS)))
    parameter nCAS_Latency = 3, // CAS latency
@@ -203,7 +203,7 @@ module pb_fb_DRAM_ctrl
                   DRAM_DQM <= 2'b00;
                   status_ret_r <= S_IDLE;
                end
-               status_delay_r <= tRC - 2;
+               status_delay_r <= tRFC - 2;
             end
 
             // Read/Write

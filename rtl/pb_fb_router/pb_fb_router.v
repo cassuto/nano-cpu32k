@@ -118,10 +118,12 @@ endgenerate
    // synthesis translate_off
 `ifndef SYNTHESIS
    
+   `include "ncpu32k_assert.h"
+   
    // Assertions (03181514)
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if ((|bus_pending) & ~(^bus_pending))
+      if (count_1(bus_pending) > 1)
          $fatal ("\n conflicting bus cycle\n");
    end
 `endif
@@ -129,7 +131,7 @@ endgenerate
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if ((|fb_bus_sel) & ~(^fb_bus_sel))
+      if (count_1(fb_bus_sel) > 1)
          $fatal ("\n conflicting cmd scheme\n");
    end
 `endif

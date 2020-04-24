@@ -34,7 +34,7 @@ module soc_toplevel
    parameter SDR_tRP = 3,
    parameter SDR_tMRD = 2,
    parameter SDR_tRCD = 3,
-   parameter SDR_tRC = 9,
+   parameter SDR_tRFC = 9,
    parameter SDR_tREF = 64, // ms
    parameter SDR_pREF = 9, // = floor(log2(Fclk*tREF/(2^ROW_BW)))
    parameter SDR_nCAS_Latency = 3,
@@ -182,7 +182,7 @@ module soc_toplevel
        .tRP             (SDR_tRP),
        .tMRD            (SDR_tMRD),
        .tRCD            (SDR_tRCD),
-       .tRC             (SDR_tRC),
+       .tRFC            (SDR_tRFC),
        .tREF            (SDR_tREF),
        .pREF            (SDR_pREF),
        .nCAS_Latency    (SDR_nCAS_Latency)
@@ -245,6 +245,7 @@ module soc_toplevel
       .l2_ch_din                        (l2_ch_din[L2_CH_DW-1:0]),
       .l2_ch_flush                      (l2_ch_flush),
       .sdr_clk                          (sdr_clk),
+      .sdr_rst_n                        (sdr_rst_n),
       .sdr_dout                         (sdr_dout[L2_CH_DW/2-1:0]),
       .sdr_r_vld                        (sdr_r_vld),
       .sdr_w_rdy                        (sdr_w_rdy));

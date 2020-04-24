@@ -93,8 +93,8 @@ module soc_pb_uart
    wire phy_cke = div_cnt_nxt == baud_div; // RX/TX clk enable
 
    // Baud CLK divisior
-   always @(posedge clk_baud or negedge rst_n) begin
-      if(~rst_n)
+   always @(posedge clk_baud or negedge rst_baud_n) begin
+      if(~rst_baud_n)
          div_cnt <= 16'h0000;
       else
          div_cnt <= phy_cke ? 16'h0000 : div_cnt_nxt;
@@ -102,19 +102,20 @@ module soc_pb_uart
 
    reg [6:0] tx_shift_cnt = 6'b000000;
    reg tx_pending = 1'b0;
-   reg we_vld_r = 1'b0;
+   reg we_vld_sr = 1'b0;
+   reg [7:0] phy_din_sr;
    reg uart_tx_r;
 
    // TX Frame
    //   0   | xxxx xxxx |  1
    // ------+-----------+------> t
    // Start |  Data     | Stop
-   wire [9:0] tx_frame = {1'b1, phy_din, 1'b0};
+   wire [9:0] tx_frame = {1'b1, phy_din_sr[7:0], 1'b0};
 
    // TX FSM
    always @(posedge clk_baud) begin
       uart_tx_r <= tx_frame[tx_shift_cnt[6:3]] | ~tx_pending;
-      we_vld_r <= phy_cmd_we_vld;
+      we_vld_sr <= phy_cmd_we_vld;
 
       if(phy_cke) begin
          if(tx_shift_cnt == 7'b1001111)
@@ -131,16 +132,19 @@ module soc_pb_uart
       if(phy_cke) begin
          if(tx_shift_cnt == 7'b1001111 | ~tx_pending) begin
             // Accept new cmd
-            tx_pending <= we_vld_r;
-            phy_cmd_we_rdy <= ~we_vld_r;
-         end else if(~we_vld_r)
+            tx_pending <= we_vld_sr;
+            phy_cmd_we_rdy <= ~we_vld_sr;
+            if (we_vld_sr) begin
+               phy_din_sr <= phy_din;
+            end
+         end else if(~we_vld_sr)
             phy_cmd_we_rdy <= 1'b1;
       end
    end
 
    reg [1:0] rx_status_r = 2'b0;
    reg [6:0] rx_smpl_cnt = 7'h00;
-   reg uart_rx_r;
+   reg uart_rx_sr;
    reg [6:0] dout_r;
 
    localparam [1:0] RX_S_DETECT = 2'd0;
@@ -149,12 +153,12 @@ module soc_pb_uart
 
    // RX FSM
    always @(posedge clk_baud) begin
-      uart_rx_r <= UART_RX_L;
+      uart_rx_sr <= UART_RX_L;
 
       if(phy_cke) begin
          case(rx_status_r)
             RX_S_DETECT:
-               if(uart_rx_r) begin
+               if(uart_rx_sr) begin
                   // Waiting for START bit
                   rx_smpl_cnt <= 7'h00;
                end else begin
@@ -187,7 +191,7 @@ module soc_pb_uart
                      2'b10: begin
                         // Receive last bit of all 8bits
                         if(~phy_cmd_rd_rdy) begin
-                           phy_dout <= {uart_rx_r, dout_r[6:0]};
+                           phy_dout <= {uart_rx_sr, dout_r[6:0]};
                         end else begin
                            phy_dout_overun <= 1'b1;
                         end
@@ -197,7 +201,7 @@ module soc_pb_uart
                      end
                      default: begin
                         // Shift in DATA bit
-                        dout_r <= {uart_rx_r, dout_r[6:1]};
+                        dout_r <= {uart_rx_sr, dout_r[6:1]};
                         rx_status_r <= RX_S_PENDING;
                      end
                   endcase
@@ -228,7 +232,10 @@ module soc_pb_uart
    wire rx_empty;
    reg dat_ready = 1'b0;
 
-   assign baud_div = {DLR[14:0], 1'b0};
+   reg [15:0] DLR_sr = 8'ha0;
+   always @(posedge clk_baud)
+      DLR_sr <= DLR;
+   assign baud_div = {DLR_sr[14:0], 1'b0};
    assign pb_uart_irq = ~IIR[0];
 
    assign phy_cmd_rd_vld = rx_status;
@@ -238,6 +245,19 @@ module soc_pb_uart
    wire rd_RBR = hds_cmd & ~cmd_we & (pb_uart_cmd_addr[2:0] == 3'b000) & ~DLAB; // Read RBR
    wire we_RBR = hds_cmd & cmd_we & (pb_uart_cmd_addr[2:0] == 3'b000) & ~DLAB; // Write RBR
    
+`ifdef PLATFORM_XILINX_XC6
+   queue16_fwft_blk tx_fifo
+	(
+	  .wr_clk(clk),
+	  .rd_clk(clk_baud),
+	  .din(pb_uart_din[7:0]),
+	  .wr_en(we_RBR),
+	  .rd_en(&tx_status),
+	  .dout(phy_din[7:0]),
+	  .full(tx_full),
+	  .empty(tx_empty)
+	);
+`else
    sco_fifo_asclk
    #(
       .DW (8),
@@ -256,7 +276,21 @@ module soc_pb_uart
       .full (tx_full),
       .empty (tx_empty)
    );
+`endif
 
+`ifdef PLATFORM_XILINX_XC6
+   queue16_blk rx_fifo
+	(
+	  .wr_clk(clk_baud),
+	  .rd_clk(clk),
+	  .din(phy_dout[7:0]),
+	  .wr_en(~rx_status & phy_cmd_rd_rdy),
+	  .rd_en(~dat_ready & ~rx_empty),
+	  .dout(RBR[7:0]),
+	  .full(rx_full),
+	  .empty(rx_empty)
+	);
+`else
    sco_fifo_asclk
    #(
       .DW (8),
@@ -275,6 +309,7 @@ module soc_pb_uart
       .full (rx_full),
       .empty (rx_empty)
    );
+`endif
 
    // TX FIFO FSM
    always @(posedge clk_baud) begin
@@ -309,6 +344,13 @@ module soc_pb_uart
       if (hds_cmd)
          cmd_addr_r <= pb_uart_cmd_addr[2:0];
    
+   reg [1:0] phy_cmd_we_rdy_sr;
+   reg [1:0] phy_dout_overun_sr;
+   always @(posedge clk) begin
+      phy_cmd_we_rdy_sr <= {phy_cmd_we_rdy_sr[0], phy_cmd_we_rdy};
+      phy_dout_overun_sr <= {phy_dout_overun_sr[0], phy_dout_overun};
+   end
+   
    // Readout registers
    always @(*) begin
       case(cmd_addr_r)
@@ -325,7 +367,7 @@ module soc_pb_uart
          // MCR TODO: DTR RTS OUT1 OUT2 LOOP
          3'b100: pb_uart_dout = 32'h0;
          // LSR TODO: Parity and errors
-         3'b101: pb_uart_dout = {{16'b0, phy_cmd_we_rdy, ~tx_full, 3'b000, phy_dout_overun, dat_ready}, 8'b0};
+         3'b101: pb_uart_dout = {{16'b0, phy_cmd_we_rdy_sr[1], ~tx_full, 3'b000, phy_dout_overun_sr[1], dat_ready}, 8'b0};
          // MSR TODO
          3'b110: pb_uart_dout = {8'b0, 8'b10000000, 16'b0};
          // SCR TODO
