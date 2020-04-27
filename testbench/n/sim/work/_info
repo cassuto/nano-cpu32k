@@ -1,0 +1,76 @@
+m255
+K4
+z2
+13
+cModel Technology
+Z0 dE:/_processor_cores/nano-cpu32k/testbench/sim
+!s112 0.1
+!i10d 8192
+!i10e 25
+!i10f 100
+vn_DFF_l
+Z1 !s110 1587969283
+Z2 IIB9IQ2ZeH2^>h>>9X?=EC3
+Z3 V`JN@9S9cnhjKRR_L]QIcM3
+Z4 dE:/_processor_cores/nano-cpu32k/testbench/n/sim
+Z5 w1587968833
+Z6 8E:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_l.v
+Z7 FE:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_l.v
+L0 22
+Z8 OL;L;10.2c;57
+r1
+31
+Z9 o-work work -L mtiAvm -L mtiOvm -L mtiUvm -L mtiUPF
+Z10 !s92 -work work +incdir+E:/_processor_cores/nano-cpu32k/rtl/n/include -L mtiAvm -L mtiOvm -L mtiUvm -L mtiUPF
+Z11 nn_@d@f@f_l
+!i10b 1
+Z12 !s100 JYfcjc06O6NOSkB?;AUZ;0
+!s85 0
+Z13 !s108 1587969283.228000
+Z14 !s107 E:/_processor_cores/nano-cpu32k/rtl/n/include/ncpu32k_config.h|E:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_l.v|
+Z15 !s90 -reportprogress|300|-work|work|-vopt|+incdir+E:/_processor_cores/nano-cpu32k/rtl/n/include|E:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_l.v|
+!i111 0
+vn_DFF_lr
+R1
+!i10b 1
+!s100 zY`i7l4NiLRYHCcd5aK@k3
+IZ4Zn3E6bCiDRK<1XKb3Z^0
+R3
+R4
+w1587968829
+8E:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_lr.v
+FE:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_lr.v
+L0 22
+R8
+r1
+!s85 0
+31
+!s108 1587969283.438000
+!s107 E:/_processor_cores/nano-cpu32k/rtl/n/include/ncpu32k_config.h|E:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_lr.v|
+!s90 -reportprogress|300|-work|work|-vopt|+incdir+E:/_processor_cores/nano-cpu32k/rtl/n/include|E:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_lr.v|
+!i111 0
+R9
+R10
+nn_@d@f@f_lr
+vn_DFF_r
+Z16 I?3:8c`HRCZ1>BY=`A=5YP0
+R3
+R4
+Z17 w1587968871
+Z18 8E:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_r.v
+Z19 FE:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_r.v
+L0 22
+R8
+r1
+31
+R9
+Z20 nn_@d@f@f_r
+R1
+Z21 !s100 lzYPc:mX[@?MUWmW4?1bj3
+Z22 !s108 1587969283.133000
+Z23 !s107 E:/_processor_cores/nano-cpu32k/rtl/n/include/ncpu32k_config.h|E:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_r.v|
+Z24 !s90 -reportprogress|300|-work|work|-vopt|+incdir+E:/_processor_cores/nano-cpu32k/rtl/n/include|E:/_processor_cores/nano-cpu32k/rtl/n/cells/n_DFF_r.v|
+R10
+!i10b 1
+!s85 0
+!i111 0
