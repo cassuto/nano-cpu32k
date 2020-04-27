@@ -57,14 +57,5 @@ module ncpu32k_ie_lu(
 `endif
    assign lu_shift = ieu_lu_opc_bus[`NCPU_LU_LSL] ? reverse_bits(shift_right) : shift_right;
    assign lu_op_shift = ieu_lu_opc_bus[`NCPU_LU_LSL] | ieu_lu_opc_bus[`NCPU_LU_LSR] | ieu_lu_opc_bus[`NCPU_LU_ASR];
-
-   /*
-   assign lu_valid_in = ieu_lu_valid_in & (ieu_lu_opc_bus[`NCPU_LU_AND] |
-                      ieu_lu_opc_bus[`NCPU_LU_OR] |
-                      ieu_lu_opc_bus[`NCPU_LU_XOR] |
-                      lu_op_shift);
-                      
-   assign ieu_lu_ready_in = lu_ready_in;
-   */
    
 endmodule

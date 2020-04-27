@@ -32,9 +32,9 @@ module toplevel
    parameter SDR_tRP = 3,
    parameter SDR_tMRD = 2,
    parameter SDR_tRCD = 3,
-   parameter SDR_tRC = 9,
+   parameter SDR_tRFC = 9,
    parameter SDR_tREF = 64, // ms
-   parameter SDR_pREF = 9, // = floor(log2(Fclk*tREF/(2^ROW_BW)))
+   parameter SDR_pREF = 9, // = floor(log2(Fclk*tREF/(2^SDR_ROW_BITS)))
    parameter SDR_nCAS_Latency = 3
 )
 (
@@ -65,12 +65,13 @@ module toplevel
    output [1:0]               LED_INC
 );
 
+   wire CLK_50M_buf;
    wire clk;
    wire sdr_clk;
    wire dram_clk;
    wire uart_clk;
    wire smpl_clk;
-   //reg rst_n = 0;
+   reg rst_n_r = 1'b1;
    wire rst_n;
   
    ODDR2 #(
@@ -89,17 +90,23 @@ module toplevel
       .S(1'b0)    	// 1-bit set input
    );
    
+   IBUFG #(.IOSTANDARD("DEFAULT")) IBUFG_inst 
+   (
+      .O(CLK_50M_buf),
+      .I(CLK_50M_IN)
+   );
+
    // DCM
    dcm_clktree dcm_clkt
 	(
-		.CLK_IN1(CLK_50M_IN), 
-		.CLK_OUT1(clk), 
+		.CLK_IN1(CLK_50M_buf),
+      .CLK_OUT1(clk),
 		.CLK_OUT2(sdr_clk),
 		.CLK_OUT3(dram_clk),
 		.CLK_OUT4(uart_clk),
       .CLK_OUT5(smpl_clk)
     );
-
+    
    // SoC Core
    soc_toplevel
    #(
@@ -111,7 +118,7 @@ module toplevel
       .SDR_tRP         (SDR_tRP),
       .SDR_tMRD        (SDR_tMRD),
       .SDR_tRCD        (SDR_tRCD),
-      .SDR_tRC         (SDR_tRC),
+      .SDR_tRFC        (SDR_tRFC),
       .SDR_tREF        (SDR_tREF),
       .SDR_pREF        (SDR_pREF),
       .SDR_nCAS_Latency (SDR_nCAS_Latency)
@@ -143,35 +150,40 @@ module toplevel
    );
    
    // Reset counter
-   /*reg [4:0] rst_cnt = 4'b0;
+   /*reg [5:0] rst_cnt = 4'b0;
    always @(posedge clk) begin
-      if(~rst_n)
+      if(~SYS_RST_N) begin
+         rst_cnt <= 0;
+         rst_n_r <= 1'b0;
+      end else if(~rst_cnt[5]) begin
          rst_cnt <= rst_cnt+1'b1;
-      if(rst_cnt[4])
-         rst_n <= 1'b1;
+      end
+      if(rst_cnt[5])
+         rst_n_r <= 1'b1;
    end*/
-   reg rst_n_r;
    always @(posedge clk or negedge SYS_RST_N)
       if(~SYS_RST_N)
          rst_n_r <= 0;
       else
          rst_n_r <= 1;
+
+   // Global RST
    assign rst_n = rst_n_r;
-   
-   reg [19:0] led_cnt = 20'b0;
+
+   //reg [19:0] led_cnt = 20'b0;
    reg led_r = 0;
-   always @(posedge smpl_clk) begin
+   /*always @(posedge smpl_clk) begin
       if(rst_n)
          led_cnt <= led_cnt+1'b1;
       if(led_cnt[19])
-         led_r <= ~led_r;
-   end
+         led_r <= 1'b1;
+   end*/
    
    reg dbg_r=0;
-   always @(posedge uart_clk) begin
+   /*always @(posedge uart_clk) begin
       if(~UART_TX_L)
          dbg_r<=1;
-   end
+   end*/
    assign LED_INC[0] = dbg_r;
    assign LED_INC[1] = led_r;
    

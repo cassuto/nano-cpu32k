@@ -88,7 +88,7 @@ module ncpu32k_ie_mu
                      ({`NCPU_DW{ieu_mu_store_size==3'd2}} & din_16b) |
                      ({`NCPU_DW{ieu_mu_store_size==3'd1}} & din_8b);
 
-   wire mu_op_nxt = ieu_mu_load | ieu_mu_store;
+   wire mu_vld_op = (ieu_mu_load | ieu_mu_store) & ieu_mu_in_valid;
    
    // Internal, Don't deliver it out
    wire dmm_exp_raised_w = (exp_dmm_tlb_miss | exp_dmm_page_fault);
@@ -118,7 +118,7 @@ module ncpu32k_ie_mu
    wire send_cmd = ~pending & ~exp_misalign;
 
    // Send cmd to dbus if it's a valid MU operation
-   assign dbus_cmd_valid = mu_op_nxt & ieu_mu_in_valid & send_cmd;
+   assign dbus_cmd_valid = mu_vld_op & send_cmd;
 
    // Assert (03092009)
    wire [`NCPU_VECT_DW-1:0] exp_vector =

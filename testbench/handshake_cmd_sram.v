@@ -25,7 +25,7 @@ module handshake_cmd_sram
    localparam SIZE_WORDS = SIZE_BYTES/DW*8;
    reg[DW-1:0] mem[0:SIZE_WORDS-1];
 
-   initial begin
+   initial begin : initial_blk
       integer i;
       for(i=0;i<SIZE_WORDS;i=i+1) begin : for_size_bytes
          mem[i] = {DW{1'b0}};

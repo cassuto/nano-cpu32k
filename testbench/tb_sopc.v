@@ -13,18 +13,18 @@ module tb_sopc();
    reg rst_n = 0;
    reg DRAM_CLK = 0;
    
-   // DRAM clk 133MHz
-   localparam tCK = 7.5; // ns
+   // DRAM clk 80MHz
+   localparam tCK = 7.5; // ns.  7.5 - 133MHz
    initial begin
-      // phrase +0.8ns (+28.8deg)
-      #0.8 forever #(tCK/2) sdr_clk = ~sdr_clk;
+      // phrase shift +0.8ns (+28.8deg)
+      /*#0.8*/#1.0 forever #(tCK/2) sdr_clk = ~sdr_clk;
    end
    initial begin
       forever #(tCK/2) DRAM_CLK = ~DRAM_CLK;
    end
-   // Cache clk 80MHz
+   // Cache clk 100MHz
    initial begin
-      forever #(12.5/2) clk = ~clk;
+      forever #(10.0/2) clk = ~clk;
    end
    // UART clk 14.7456MHz
    initial begin

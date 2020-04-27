@@ -28,7 +28,7 @@ irq_handler:
 
 _reset:
 	/* Config TSC */
-	mhi r1, hi(50 | (1<<28)|(1<<29)) # EN | P
+	mhi r1, hi(50 | (1<<28)|(1<<29)) # EN | I
 	or r1,r1, lo(50 | (1<<28)|(1<<29))
 	wmsr ((7<<9)+(1<<1))(r0), r1 # TCR
 	

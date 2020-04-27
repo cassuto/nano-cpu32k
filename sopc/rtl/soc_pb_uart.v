@@ -163,7 +163,7 @@ module soc_pb_uart
                   rx_smpl_cnt <= 7'h00;
                end else begin
                   // START bit detected
-                  // FIXME: add 8 cycles anti-jitter filter
+                  // 8 cycles anti-jitter filter
                   // Delay 16 cycles (8 + PENDING 8)
                   rx_smpl_cnt <= rx_smpl_cnt + 1'b1;
                   if(rx_smpl_cnt[2]) begin

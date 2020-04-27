@@ -23,8 +23,12 @@
 /////////////////////////////////////////////////////////////////////////////
 
 `ifndef IN_SIM
-//`define PLATFORM_XILINX_XC6
+`define PLATFORM_XILINX_XC6
 `endif
+
+// For FPGA, define this macro to disable rst_n port of DFFs, 
+// which reduces routing resources.
+`define NCPU_NO_RST
 
 /////////////////////////////////////////////////////////////////////////////
 // Configure VIRT Instructions

@@ -91,11 +91,17 @@ module dcm_clktree_exdes
   wire [NUM_C:1] clk;
   reg [C_W-1:0]  counter [NUM_C:1];
 
+  // Insert BUFGs on all input clocks that don't already have them
+  //--------------------------------------------------------------
+  BUFG clkin1_buf
+   (.O (clk_in1_buf),
+    .I (CLK_IN1));
+
   // Instantiation of the clocking network
   //--------------------------------------
   dcm_clktree clknetwork
    (// Clock in ports
-    .CLK_IN1            (CLK_IN1),
+    .CLK_IN1            (clk_in1_buf),
     // Clock out ports
     .CLK_OUT1           (clk_int[1]),
     .CLK_OUT2           (clk_int[2]),

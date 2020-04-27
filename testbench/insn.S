@@ -1,19 +1,18 @@
 .org 0x0
 jmp r0, _reset
 
-
-/* test syscall */
-.org 0xc
-ldwu r1, 3(r0)
-cmp r0,eq,r0
-add r1,r0,432
-ret
-add r2,r0,2
-add r2,r0,3
+/* test emu insn */
+# EINSN
+.org 0x4
+jmp r0, _emu_insn
 
 .org 0x100
-
+_emu_insn:
+	add r16,r16,233
+	#jmp r0, _emu_insn
+	ret
+	
 _reset:
-syscall 0xc
-add r2,r0,1
+	ldwa r1, 0(r0)
+	add r2,r2,1
 /* end */

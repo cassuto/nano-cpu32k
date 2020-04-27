@@ -27,14 +27,24 @@ module ncpu32k_cell_dff_r # (
    input CLK,
    input RST_n,
    input [DW-1:0] D, // Data input
+`ifdef NCPU_NO_RST
+   output reg [DW-1:0] Q = RST_VECTOR
+`else
    output reg [DW-1:0] Q // Data output
+`endif
 );
+`ifdef NCPU_NO_RST
+   always @(posedge CLK) begin
+       Q <= #1 D;
+   end
+`else
    always @(posedge CLK or negedge RST_n) begin
      if (!RST_n)
        Q <= RST_VECTOR;
      else
        Q <= #1 D;
    end
+`endif
    
    // synthesis translate_off
 `ifndef SYNTHESIS                   

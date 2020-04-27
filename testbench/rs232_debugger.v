@@ -51,7 +51,7 @@ module rs232_debugger
                rx_smpl_cnt <= 7'h00;
             end else begin
                // START bit detected
-               // FIXME: add 8 cycles anti-jitter filter
+               // 8 cycles anti-jitter filter
                // Delay 16 cycles (8 + PENDING 8)
                rx_smpl_cnt <= rx_smpl_cnt + 1'b1;
                if(rx_smpl_cnt[2]) begin
@@ -78,7 +78,7 @@ module rs232_debugger
                   end
                   2'b10: begin
                      // Receive last bit of all 8bits
-                     $write("%c", {uart_rx_r, dout_r[6:0]});
+                     //$write("%c", {uart_rx_r, dout_r[6:0]});
                      // Waiting for STOP bit
                      rx_status_r <= RX_S_PENDING;
                   end
