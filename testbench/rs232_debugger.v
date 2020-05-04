@@ -78,7 +78,7 @@ module rs232_debugger
                   end
                   2'b10: begin
                      // Receive last bit of all 8bits
-                     //$write("%c", {uart_rx_r, dout_r[6:0]});
+                     $write("%c", {uart_rx_r, dout_r[6:0]});
                      // Waiting for STOP bit
                      rx_status_r <= RX_S_PENDING;
                   end

@@ -42,7 +42,6 @@ module ncpu32k_ie_mu
    input                      ieu_mu_sign_ext,
    input [2:0]                ieu_mu_store_size,
    input [2:0]                ieu_mu_load_size,
-   input                      mu_exp_flush_ack,
    output [`NCPU_DW-1:0]      mu_load,
    output                     mu_exp_taken,
    output [`NCPU_AW-3:0]      mu_exp_tgt,
@@ -93,7 +92,8 @@ module ncpu32k_ie_mu
    // Internal, Don't deliver it out
    wire dmm_exp_raised_w = (exp_dmm_tlb_miss | exp_dmm_page_fault);
    // Handshaked with flush when exception raised
-   wire hds_dmm_exp = (dmm_exp_raised_w & mu_exp_flush_ack);
+   // This always succeed.
+   wire hds_dmm_exp = dmm_exp_raised_w;
    
    // MU FSM
    wire pending_r;
@@ -107,7 +107,7 @@ module ncpu32k_ie_mu
    ncpu32k_cell_dff_lr #(1) dff_pending_r
                    (clk,rst_n, (pending_push|pending_pop), pending_nxt, pending_r);
    
-   wire pending = pending_r & ~hds_dmm_exp; // bypass flush_ack
+   wire pending = pending_r; // bypass flush_ack
    
    // Exceptions
    // Just when pending, MMU exception can be delivered

@@ -27,14 +27,12 @@ module ncpu32k_ifu(
    input [`NCPU_AW-1:0]    ibus_out_id, /* address of data preseted at ibus_dout */
    input [`NCPU_AW-1:0]    ibus_out_id_nxt,
    output                  ibus_flush_req,
-   input                   ibus_flush_ack,
    input                   exp_imm_tlb_miss,
    input                   exp_imm_page_fault,
    input                   irqc_intr_sync,
    input [`NCPU_DW-1:0]    bpu_msr_epc,
    input [`NCPU_AW-3:0]    ifu_flush_jmp_tgt,
    input                   specul_flush,
-   output                  specul_flush_ack,
    input                   idu_in_ready, /* idu is ready to accepted Insn */
    output                  idu_in_valid, /* Insn is prestented at idu's input */
    output [`NCPU_IW-1:0]   idu_insn,
@@ -200,39 +198,9 @@ module ncpu32k_ifu(
 
    assign ibus_flush_req = specul_flush | op_syscall | op_ret | op_jmpfar_nxt | op_jmprel_nxt;
    
-   assign specul_flush_ack = ibus_flush_ack;
-   
-`ifdef NCPU_HANDSHAKE_NOT_ALWAYS_SUCCEED_WHEN_FLUSHING
-   // FMS to maintain ibus_cmd_addr
-   wire fls_status_r;
-   wire fls_status_nxt;
-   ncpu32k_cell_dff_r #(1) dff_fls_status
-                   (clk,rst_n, fls_status_nxt, fls_status_r);
-
-   assign fls_status_nxt = (
-         // in specul_flush there is no need to hold addr
-         (~fls_status_r & ibus_flush_req & ~specul_flush) ? 1'b1
-         : (fls_status_r & ibus_flush_ack) ? 1'b0
-         : fls_status_r
-      );
-   // Indicate whether to hold the ibus_cmd_addr
-   wire fls_hld_addr = fls_status_r & ~ibus_flush_ack; // bypass ack
-   
-   wire [`NCPU_AW-1:0] fls_addr_r;
-   wire [`NCPU_AW-1:0] fls_addr_nxt;
-   ncpu32k_cell_dff_lr #(`NCPU_AW) dff_fls_addr_r
-                   (clk,rst_n, ~fls_hld_addr, fls_addr_nxt[`NCPU_AW-1:0], fls_addr_r[`NCPU_AW-1:0]);
-
-   assign fls_addr_nxt = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
-                           
-   assign ibus_cmd_addr = fls_hld_addr ? fls_addr_r : fls_addr_nxt;
-`else
-   wire fls_hld_addr = 1'b0;
    assign ibus_cmd_addr = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
-`endif
-   
    assign ibus_cmd_valid = reset_cnt[1];
-   assign ibus_ready = (~fls_hld_addr) & fetch_ready & reset_cnt[1];
+   assign ibus_ready = fetch_ready & reset_cnt[1];
    
    assign insn = ibus_dout;
    
@@ -244,36 +212,38 @@ module ncpu32k_ifu(
    wire not_flushing = ~(specul_flush | extexp_taken);
    wire not_flushing_extexp = ~(specul_flush);
 
+   wire pipeflow = pipebuf_cas | specul_flush;
+   
    // Data path: no need to flush
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_insn_pc
-                   (clk,rst_n, pipebuf_cas, flush_insn_pc[`NCPU_AW-3:0], idu_insn_pc[`NCPU_AW-3:0]);
+                   (clk,rst_n, pipeflow, flush_insn_pc[`NCPU_AW-3:0], idu_insn_pc[`NCPU_AW-3:0]);
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_idu_specul_tgt
-                   (clk,rst_n, pipebuf_cas, specul_tgt_nxt, idu_specul_tgt[`NCPU_AW-3:0]);
+                   (clk,rst_n, pipeflow, specul_tgt_nxt, idu_specul_tgt[`NCPU_AW-3:0]);
   
    // Control path
    ncpu32k_cell_dff_lr #(`NCPU_IW) dff_idu_insn
-                   (clk,rst_n, pipebuf_cas, insn & {`NCPU_IW{not_flushing}}, idu_insn);
+                   (clk,rst_n, pipeflow, insn & {`NCPU_IW{not_flushing}}, idu_insn);
    ncpu32k_cell_dff_lr #(1) dff_idu_op_jmprel
-                   (clk,rst_n, pipebuf_cas, op_jmprel_nxt & not_flushing, idu_op_jmprel);
+                   (clk,rst_n, pipeflow, op_jmprel_nxt & not_flushing, idu_op_jmprel);
    ncpu32k_cell_dff_lr #(1) dff_idu_jmprel_link
-                   (clk,rst_n, pipebuf_cas, jmprel_link_nxt & not_flushing, idu_jmprel_link);
+                   (clk,rst_n, pipeflow, jmprel_link_nxt & not_flushing, idu_jmprel_link);
    ncpu32k_cell_dff_lr #(1) dff_idu_op_jmpfar
-                   (clk,rst_n, pipebuf_cas, op_jmpfar_nxt & not_flushing, idu_op_jmpfar);
+                   (clk,rst_n, pipeflow, op_jmpfar_nxt & not_flushing, idu_op_jmpfar);
    ncpu32k_cell_dff_lr #(1) dff_idu_op_ret
-                   (clk,rst_n, pipebuf_cas, op_ret & not_flushing, idu_op_ret);
+                   (clk,rst_n, pipeflow, op_ret & not_flushing, idu_op_ret);
    ncpu32k_cell_dff_lr #(1) dff_idu_op_syscall
-                   (clk,rst_n, pipebuf_cas, op_syscall & not_flushing, idu_op_syscall);
+                   (clk,rst_n, pipeflow, op_syscall & not_flushing, idu_op_syscall);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmpfar
-                   (clk,rst_n, pipebuf_cas, specul_jmp & op_jmpfar_nxt & not_flushing, idu_specul_jmpfar);
+                   (clk,rst_n, pipeflow, specul_jmp & op_jmpfar_nxt & not_flushing, idu_specul_jmpfar);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_jmprel
-                   (clk,rst_n, pipebuf_cas, specul_jmp & op_jmprel_nxt & not_flushing, idu_specul_jmprel);
+                   (clk,rst_n, pipeflow, specul_jmp & op_jmprel_nxt & not_flushing, idu_specul_jmprel);
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_bcc
-                   (clk,rst_n, pipebuf_cas, specul_bcc_nxt & not_flushing, idu_specul_bcc);
+                   (clk,rst_n, pipeflow, specul_bcc_nxt & not_flushing, idu_specul_bcc);
       // Yes, even external exceptions could be flushed
    ncpu32k_cell_dff_lr #(1) dff_idu_specul_extexp
-                   (clk,rst_n, pipebuf_cas, extexp_taken & not_flushing_extexp, idu_specul_extexp);
+                   (clk,rst_n, pipeflow, extexp_taken & not_flushing_extexp, idu_specul_extexp);
    ncpu32k_cell_dff_lr #(1) dff_idu_set_lsa_pc
-                   (clk,rst_n, pipebuf_cas, let_lsa_pc_nxt & not_flushing_extexp, idu_let_lsa_pc);
+                   (clk,rst_n, pipeflow, let_lsa_pc_nxt & not_flushing_extexp, idu_let_lsa_pc);
 
    // synthesis translate_off
 `ifndef SYNTHESIS                   

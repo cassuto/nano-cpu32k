@@ -336,69 +336,71 @@ module ncpu32k_idu(
    assign ieu_operand_3 = (rd_readas_rs2_r ? regf_rs2_dout : {`NCPU_DW{1'b0}});
 
    wire not_flushing = ~specul_flush;
-   
+
+   wire pipeflow = pipebuf_cas | specul_flush;
+
    // Data path: no need to flush
    // Note: LU/AU/EU (single-clk-op) insns wouldn't be commited when flushing
    // although we not flush the opc_bus, as we flush wb_regf.
    ncpu32k_cell_dff_lr #(`NCPU_LU_IOPW) dff_ieu_lu_opc_bus
-                   (clk,rst_n, pipebuf_cas, lu_opc_bus[`NCPU_LU_IOPW-1:0], ieu_lu_opc_bus[`NCPU_LU_IOPW-1:0]);
+                   (clk,rst_n, pipeflow, lu_opc_bus[`NCPU_LU_IOPW-1:0], ieu_lu_opc_bus[`NCPU_LU_IOPW-1:0]);
    ncpu32k_cell_dff_lr #(`NCPU_AU_IOPW) dff_ieu_au_opc_bus
-                   (clk,rst_n, pipebuf_cas, au_opc_bus[`NCPU_AU_IOPW-1:0], ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]);
+                   (clk,rst_n, pipeflow, au_opc_bus[`NCPU_AU_IOPW-1:0], ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]);
    ncpu32k_cell_dff_lr #(`NCPU_EU_IOPW) dff_ieu_eu_opc_bus
-                   (clk,rst_n, pipebuf_cas, eu_opc_bus[`NCPU_EU_IOPW-1:0], ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]);
+                   (clk,rst_n, pipeflow, eu_opc_bus[`NCPU_EU_IOPW-1:0], ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]);
                    
    ncpu32k_cell_dff_lr #(1) dff_ieu_au_cmp_eq
-                   (clk,rst_n, pipebuf_cas, au_cmp_eq, ieu_au_cmp_eq);
+                   (clk,rst_n, pipeflow, au_cmp_eq, ieu_au_cmp_eq);
    ncpu32k_cell_dff_lr #(1) dff_ieu_au_cmp_signed
-                   (clk,rst_n, pipebuf_cas, au_cmp_signed, ieu_au_cmp_signed);
+                   (clk,rst_n, pipeflow, au_cmp_signed, ieu_au_cmp_signed);
                    
    ncpu32k_cell_dff_lr #(3) dff_ieu_mu_store_size
-                   (clk,rst_n, pipebuf_cas, mu_store_size[2:0], ieu_mu_store_size[2:0]);
+                   (clk,rst_n, pipeflow, mu_store_size[2:0], ieu_mu_store_size[2:0]);
    ncpu32k_cell_dff_lr #(3) dff_ieu_mu_load_size
-                   (clk,rst_n, pipebuf_cas, mu_load_size[2:0], ieu_mu_load_size[2:0]);
+                   (clk,rst_n, pipeflow, mu_load_size[2:0], ieu_mu_load_size[2:0]);
 
    ncpu32k_cell_dff_lr #(`NCPU_REG_AW) dff_ieu_wb_reg_addr
-                   (clk,rst_n, pipebuf_cas, wb_reg_addr[`NCPU_REG_AW-1:0], ieu_wb_reg_addr[`NCPU_REG_AW-1:0]);
+                   (clk,rst_n, pipeflow, wb_reg_addr[`NCPU_REG_AW-1:0], ieu_wb_reg_addr[`NCPU_REG_AW-1:0]);
 
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_ieu_insn_pc
-               (clk, rst_n, pipebuf_cas, idu_insn_pc[`NCPU_AW-3:0], ieu_insn_pc[`NCPU_AW-3:0]);
+               (clk, rst_n, pipeflow, idu_insn_pc[`NCPU_AW-3:0], ieu_insn_pc[`NCPU_AW-3:0]);
                    
    ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_ieu_specul_tgt
-                   (clk,rst_n, pipebuf_cas, idu_specul_tgt[`NCPU_AW-3:0], ieu_specul_tgt[`NCPU_AW-3:0]);
+                   (clk,rst_n, pipeflow, idu_specul_tgt[`NCPU_AW-3:0], ieu_specul_tgt[`NCPU_AW-3:0]);
                    
    // Control path
    ncpu32k_cell_dff_lr #(1) dff_ieu_emu_insn
-                   (clk,rst_n, pipebuf_cas, emu_insn & not_flushing, ieu_emu_insn);
+                   (clk,rst_n, pipeflow, emu_insn & not_flushing, ieu_emu_insn);
                    
    ncpu32k_cell_dff_lr #(1) dff_ieu_mu_load
-                   (clk,rst_n, pipebuf_cas, op_mu_load & not_flushing, ieu_mu_load);
+                   (clk,rst_n, pipeflow, op_mu_load & not_flushing, ieu_mu_load);
    ncpu32k_cell_dff_lr #(1) dff_ieu_mu_store
-                   (clk,rst_n, pipebuf_cas, op_mu_store & not_flushing, ieu_mu_store);
+                   (clk,rst_n, pipeflow, op_mu_store & not_flushing, ieu_mu_store);
    ncpu32k_cell_dff_lr #(1) dff_ieu_mu_barr
-                   (clk,rst_n, pipebuf_cas, op_mu_barr & not_flushing, ieu_mu_barr);
+                   (clk,rst_n, pipeflow, op_mu_barr & not_flushing, ieu_mu_barr);
    ncpu32k_cell_dff_lr #(1) dff_ieu_mu_sign_ext
-                   (clk,rst_n, pipebuf_cas, mu_sign_ext & not_flushing, ieu_mu_sign_ext);
+                   (clk,rst_n, pipeflow, mu_sign_ext & not_flushing, ieu_mu_sign_ext);
                    
    ncpu32k_cell_dff_lr #(1) dff_ieu_wb_regf
-                   (clk,rst_n, pipebuf_cas, wb_regf & not_flushing, ieu_wb_regf);
+                   (clk,rst_n, pipeflow, wb_regf & not_flushing, ieu_wb_regf);
    
    ncpu32k_cell_dff_lr #(1) dff_ieu_jmp_link
-                   (clk,rst_n, pipebuf_cas, jmp_link & not_flushing, ieu_jmplink);
+                   (clk,rst_n, pipeflow, jmp_link & not_flushing, ieu_jmplink);
    ncpu32k_cell_dff_lr #(1) dff_ieu_syscall
-                   (clk,rst_n, pipebuf_cas, idu_op_syscall & not_flushing, ieu_syscall);
+                   (clk,rst_n, pipeflow, idu_op_syscall & not_flushing, ieu_syscall);
    ncpu32k_cell_dff_lr #(1) dff_ieu_ret
-                   (clk,rst_n, pipebuf_cas, idu_op_ret & not_flushing, ieu_ret);
+                   (clk,rst_n, pipeflow, idu_op_ret & not_flushing, ieu_ret);
                    
    ncpu32k_cell_dff_lr #(1) dff_ieu_specul_jmpfar
-                   (clk,rst_n, pipebuf_cas, idu_specul_jmpfar & not_flushing, ieu_specul_jmpfar);
+                   (clk,rst_n, pipeflow, idu_specul_jmpfar & not_flushing, ieu_specul_jmpfar);
    ncpu32k_cell_dff_lr #(1) dff_ieu_specul_jmprel
-                   (clk,rst_n, pipebuf_cas, idu_specul_jmprel & not_flushing, ieu_specul_jmprel);
+                   (clk,rst_n, pipeflow, idu_specul_jmprel & not_flushing, ieu_specul_jmprel);
 
    ncpu32k_cell_dff_lr #(1) dff_ieu_specul_bcc
-                   (clk,rst_n, pipebuf_cas, idu_specul_bcc & not_flushing, ieu_specul_bcc);
+                   (clk,rst_n, pipeflow, idu_specul_bcc & not_flushing, ieu_specul_bcc);
    ncpu32k_cell_dff_lr #(1) dff_ieu_specul_exp
-                   (clk,rst_n, pipebuf_cas, idu_specul_extexp & not_flushing, ieu_specul_extexp);
+                   (clk,rst_n, pipeflow, idu_specul_extexp & not_flushing, ieu_specul_extexp);
    ncpu32k_cell_dff_lr #(1) dff_ieu_let_lsa_pc
-                   (clk,rst_n, pipebuf_cas, let_lsa_pc_nxt & not_flushing, ieu_let_lsa_pc);
+                   (clk,rst_n, pipeflow, let_lsa_pc_nxt & not_flushing, ieu_let_lsa_pc);
 
 endmodule

@@ -37,7 +37,6 @@ module ncpu32k_core(
    input [`NCPU_AW-1:0]    ibus_out_id,
    input [`NCPU_AW-1:0]    ibus_out_id_nxt,
    output                  ibus_flush_req,
-   input                   ibus_flush_ack,
    input                   exp_imm_tlb_miss,
    input                   exp_imm_page_fault,
    input                   irqc_intr_sync,
@@ -166,7 +165,6 @@ module ncpu32k_core(
    wire                 regf_rs2_re;            // From idu of ncpu32k_idu.v
    wire                 regf_we;                // From ieu of ncpu32k_ieu.v
    wire                 specul_flush;           // From ieu of ncpu32k_ieu.v
-   wire                 specul_flush_ack;       // From ifu of ncpu32k_ifu.v
    // End of automatics
    
    /////////////////////////////////////////////////////////////////////////////
@@ -244,7 +242,6 @@ module ncpu32k_core(
        .ibus_cmd_valid                  (ibus_cmd_valid),
        .ibus_cmd_addr                   (ibus_cmd_addr[`NCPU_AW-1:0]),
        .ibus_flush_req                  (ibus_flush_req),
-       .specul_flush_ack                (specul_flush_ack),
        .idu_in_valid                    (idu_in_valid),
        .idu_insn                        (idu_insn[`NCPU_IW-1:0]),
        .idu_insn_pc                     (idu_insn_pc[`NCPU_AW-3:0]),
@@ -270,7 +267,6 @@ module ncpu32k_core(
        .ibus_cmd_ready                  (ibus_cmd_ready),
        .ibus_out_id                     (ibus_out_id[`NCPU_AW-1:0]),
        .ibus_out_id_nxt                 (ibus_out_id_nxt[`NCPU_AW-1:0]),
-       .ibus_flush_ack                  (ibus_flush_ack),
        .exp_imm_tlb_miss                (exp_imm_tlb_miss),
        .exp_imm_page_fault              (exp_imm_page_fault),
        .irqc_intr_sync                  (irqc_intr_sync),
@@ -471,8 +467,7 @@ module ncpu32k_core(
        .msr_irqc_imr                    (msr_irqc_imr[`NCPU_DW-1:0]),
        .msr_irqc_irr                    (msr_irqc_irr[`NCPU_DW-1:0]),
        .msr_tsc_tsr                     (msr_tsc_tsr[`NCPU_DW-1:0]),
-       .msr_tsc_tcr                     (msr_tsc_tcr[`NCPU_DW-1:0]),
-       .specul_flush_ack                (specul_flush_ack));
+       .msr_tsc_tcr                     (msr_tsc_tcr[`NCPU_DW-1:0]));
    
    
 endmodule

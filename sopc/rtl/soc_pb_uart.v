@@ -70,7 +70,7 @@ module soc_pb_uart
       else if (hds_cmd | hds_dout)
          pb_uart_valid <= (hds_cmd | ~hds_dout);
 
-   assign pb_uart_cmd_ready = ~pb_uart_valid | hds_cmd;
+   assign pb_uart_cmd_ready = ~pb_uart_valid | hds_dout;
    
    // PHY transceiver interface
    wire phy_cmd_rd_vld;
@@ -245,19 +245,6 @@ module soc_pb_uart
    wire rd_RBR = hds_cmd & ~cmd_we & (pb_uart_cmd_addr[2:0] == 3'b000) & ~DLAB; // Read RBR
    wire we_RBR = hds_cmd & cmd_we & (pb_uart_cmd_addr[2:0] == 3'b000) & ~DLAB; // Write RBR
    
-`ifdef PLATFORM_XILINX_XC6
-   queue16_fwft_blk tx_fifo
-	(
-	  .wr_clk(clk),
-	  .rd_clk(clk_baud),
-	  .din(pb_uart_din[7:0]),
-	  .wr_en(we_RBR),
-	  .rd_en(&tx_status),
-	  .dout(phy_din[7:0]),
-	  .full(tx_full),
-	  .empty(tx_empty)
-	);
-`else
    sco_fifo_asclk
    #(
       .DW (8),
@@ -276,21 +263,7 @@ module soc_pb_uart
       .full (tx_full),
       .empty (tx_empty)
    );
-`endif
 
-`ifdef PLATFORM_XILINX_XC6
-   queue16_blk rx_fifo
-	(
-	  .wr_clk(clk_baud),
-	  .rd_clk(clk),
-	  .din(phy_dout[7:0]),
-	  .wr_en(~rx_status & phy_cmd_rd_rdy),
-	  .rd_en(~dat_ready & ~rx_empty),
-	  .dout(RBR[7:0]),
-	  .full(rx_full),
-	  .empty(rx_empty)
-	);
-`else
    sco_fifo_asclk
    #(
       .DW (8),
@@ -309,7 +282,6 @@ module soc_pb_uart
       .full (rx_full),
       .empty (rx_empty)
    );
-`endif
 
    // TX FIFO FSM
    always @(posedge clk_baud) begin

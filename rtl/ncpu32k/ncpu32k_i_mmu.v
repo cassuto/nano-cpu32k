@@ -30,7 +30,6 @@ module ncpu32k_i_mmu
    input                   ibus_cmd_valid, /* cmd is presented at ibus'input */
    input [`NCPU_AW-1:0]    ibus_cmd_addr,
    input                   ibus_flush_req,
-   output                  ibus_flush_ack,
    output [`NCPU_AW-1:0]   ibus_out_id,
    output [`NCPU_AW-1:0]   ibus_out_id_nxt,
    input                   icache_valid, /* Insn is presented at ibus */
@@ -72,6 +71,7 @@ module ncpu32k_i_mmu
    wire hds_ibus_cmd;
    wire hds_ibus_dout;
    wire hds_icache_cmd;
+   wire hds_icache_dout;
    wire icache_cmd_valid_w;
    
    // flush_strobe will:
@@ -83,10 +83,33 @@ module ncpu32k_i_mmu
    //       always succeeded. Assert (03072258)
    // There is no need to cacnel the dout of the cmd that has been handshaked before
    // this clk.
-   wire flush_nstrobe_r;
+   /*wire flush_nstrobe_r;
    ncpu32k_cell_dff_lr #(1) dff_flush_nstrobe_r
                    (clk,rst_n, (icache_cmd_valid_w & icache_cmd_ready), ibus_flush_req, flush_nstrobe_r);
-   wire flush_strobe = (ibus_flush_req&~flush_nstrobe_r);
+   wire flush_strobe = (ibus_flush_req&~flush_nstrobe_r);*/
+   
+   wire icache_pending_r;
+   
+   ncpu32k_cell_dff_lr #(1) dff_out_valid
+                   (clk,rst_n, (hds_icache_cmd | hds_icache_dout), (hds_icache_cmd | ~hds_icache_dout), icache_pending_r);
+                   
+   reg fls_status_r = 1'b1;
+   
+   always @(posedge clk or negedge rst_n)
+      if(~rst_n)
+         fls_status_r <= 1'b1;
+      else begin
+         if(ibus_flush_req & icache_pending_r)
+            fls_status_r <= 1'b0;
+         else if(~icache_pending_r)
+            fls_status_r <= 1'b1;
+      end
+      
+   wire flush_strobe = ibus_flush_req;
+   
+   wire ibus_cmd_ready_w;
+   
+   assign ibus_cmd_ready = fls_status_r & ibus_cmd_ready_w;
    
    ncpu32k_cell_pipebuf
       #(
@@ -100,7 +123,7 @@ module ncpu32k_i_mmu
          .din        (),
          .dout       (),
          .in_valid   (ibus_cmd_valid),
-         .in_ready   (ibus_cmd_ready),
+         .in_ready   (ibus_cmd_ready_w),
          .out_valid  (icache_cmd_valid_w),
          .out_ready  (icache_cmd_ready | flush_strobe),
          .cas        (hds_ibus_cmd)
@@ -109,18 +132,15 @@ module ncpu32k_i_mmu
    assign hds_ibus_dout = ibus_valid & ibus_ready;
       
    assign hds_icache_cmd = icache_cmd_valid & icache_cmd_ready;
+   assign hds_icache_dout = icache_valid & icache_ready;
    
    // Cacnel the current cmd handshake with icache when flush_strobe.
    assign icache_cmd_valid = ~flush_strobe & icache_cmd_valid_w;
    
-   assign ibus_valid = icache_valid;
-   assign icache_ready = ibus_ready;
+   assign ibus_valid = icache_valid & fls_status_r;
+   assign icache_ready = ibus_ready | ~fls_status_r;
    
    assign ibus_dout = icache_dout;
-   
-   // When cmd handshaked with ibus the flushing could be finished
-   // In flush_strobe we should wait for it
-   assign ibus_flush_ack = hds_ibus_cmd & ~flush_strobe;
    
    // TLB is to be read
    wire tlb_read = hds_ibus_cmd;
@@ -163,8 +183,9 @@ module ncpu32k_i_mmu
    // Assert (03061058)
    wire [TLB_NSETS_LOG2-1:0] tgt_index_nxt = tgt_vpn_nxt[TLB_NSETS_LOG2-1:0];
 
-   ncpu32k_cell_dff_lr #(1) dff_msr_psr_imme_r
-                (clk,rst_n, tlb_read, msr_psr_imme, msr_psr_imme_r);
+   /*ncpu32k_cell_dff_lr #(1) dff_msr_psr_imme_r
+                (clk,rst_n, tlb_read, msr_psr_imme, msr_psr_imme_r);*/
+   assign msr_psr_imme_r = msr_psr_imme;
    ncpu32k_cell_dff_lr #(1) dff_msr_psr_rm_r
                 (clk,rst_n, tlb_read, msr_psr_rm, msr_psr_rm_r);
    ncpu32k_cell_dff_lr #(PPN_SHIFT) dff_tgt_page_offset_r

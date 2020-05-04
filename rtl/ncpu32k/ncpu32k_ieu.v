@@ -114,7 +114,6 @@ module ncpu32k_ieu(
    output [`NCPU_DW-1:0]      msr_tsc_tcr_nxt,
    output                     msr_tsc_tcr_we,
    output                     specul_flush,
-   input                      specul_flush_ack,
    output [`NCPU_AW-3:0]      ifu_flush_jmp_tgt,
    output                     bpu_wb,
    output                     bpu_wb_jmprel,
@@ -215,7 +214,6 @@ module ncpu32k_ieu(
        .ieu_mu_sign_ext                 (ieu_mu_sign_ext),
        .ieu_mu_store_size               (ieu_mu_store_size[2:0]),
        .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
-       .mu_exp_flush_ack                (mu_exp_flush_ack),
        .wb_mu_in_ready                  (wb_mu_in_ready));
         
    ncpu32k_ie_eu eu
@@ -302,8 +300,8 @@ module ncpu32k_ieu(
    
    // WriteBack (commit)
    // Before commit, modules must check this bit.
-   // valid signal from upstream makes sense here, as an insn with invalid info
-   // should be never committed.
+   // valid signal from upstream makes sense here, as an insn should be
+   // committed once while multi waiting cycles.
    assign commit = hds_ieu_in;
 
    // jmp target address
@@ -312,41 +310,6 @@ module ncpu32k_ieu(
    // EINSN vector target
    wire [`NCPU_VECT_DW-1:0] emu_exp_vect = `NCPU_EINSN_VECTOR;
    wire [`NCPU_AW-3:0] emu_exp_tgt = {{`NCPU_AW-2-`NCPU_VECT_DW{1'b0}}, emu_exp_vect[`NCPU_VECT_DW-1:2]};
-   
-   // Flush FSM
-   wire fls_status_r;
-   wire fls_status_nxt;
-   wire specul_flush_r;
-   wire specul_flush_nxt;
-   wire [`NCPU_AW-3:0] flush_jmp_tgt_r;
-   wire [`NCPU_AW-3:0] flush_jmp_tgt_nxt;
-   
-   assign fls_status_nxt =
-      (
-         // If speculative execution taken, then request flushing.
-         (~fls_status_r & specul_flush_nxt) ? 1'b1 :
-         // If request is acked, then exit flushing.
-         (fls_status_r & specul_flush_ack) ? 1'b0 : fls_status_r
-      );
-   
-   ncpu32k_cell_dff_r #(1) dff_fls_status_r
-                   (clk,rst_n, fls_status_nxt, fls_status_r);
-
-   wire ld_fls = ~fls_status_r;
-                   
-   ncpu32k_cell_dff_lr #(1) dff_specul_flush_r
-                   (clk,rst_n, ld_fls, specul_flush_nxt, specul_flush_r);
-
-   ncpu32k_cell_dff_lr #(`NCPU_AW-2) dff_flush_jmp_tgt_r
-                   (clk,rst_n, ld_fls, flush_jmp_tgt_nxt[`NCPU_AW-3:0], flush_jmp_tgt_r[`NCPU_AW-3:0]);
-   
-   // Flush is pending
-   wire hld_fls = fls_status_r & ~specul_flush_ack; // bypass flush_ack
-   
-   assign specul_flush = hld_fls ? specul_flush_r : specul_flush_nxt;
-   assign ifu_flush_jmp_tgt = hld_fls ? flush_jmp_tgt_r : flush_jmp_tgt_nxt;
-   
-   assign mu_exp_flush_ack = specul_flush_ack;
    
    //
    // Speculative execution checking point. Flush:
@@ -358,7 +321,7 @@ module ncpu32k_ieu(
    //    case 6: load/store: flush when exception raised.
    //    case 7: Insn is to be emulated
    // This should not be controlled by commit, instead flush_ack
-   assign specul_flush_nxt = commit &
+   assign specul_flush = commit &
       (
          (ieu_specul_jmprel & (ieu_specul_bcc != msr_psr_cc))
          | (ieu_specul_jmpfar & (ieu_specul_tgt != jmpfar_tgt))
@@ -371,7 +334,7 @@ module ncpu32k_ieu(
    
    // Speculative exec is failed, then flush all pre-insns and fetch the right target
    // Assert (03060725)
-   assign flush_jmp_tgt_nxt =
+   assign ifu_flush_jmp_tgt =
          ({`NCPU_AW-2{ieu_specul_jmprel}} & ieu_specul_tgt) |
          ({`NCPU_AW-2{ieu_specul_jmpfar}} & jmpfar_tgt) |
          ({`NCPU_AW-2{ieu_syscall}} & ieu_specul_tgt) |
@@ -415,7 +378,7 @@ module ncpu32k_ieu(
    assign ieu_mu_in_valid = ieu_in_valid;
    
    // IEU is ready when there is no flushing and MU is ready
-   assign ieu_in_ready = (~hld_fls) & ieu_mu_in_ready;
+   assign ieu_in_ready = ieu_mu_in_ready;
    
    // synthesis translate_off
 `ifndef SYNTHESIS

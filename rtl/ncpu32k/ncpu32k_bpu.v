@@ -24,7 +24,7 @@ module ncpu32k_bpu
    input                   rst_n,
    input [`NCPU_AW-3:0]    bpu_insn_pc,
    input                   bpu_rd,
-   output                  bpu_jmprel,
+   input                   bpu_jmprel,
    output [`NCPU_AW-3:0]   bpu_jmp_tgt,
    output                  bpu_jmprel_taken,
    output [`NCPU_DW-1:0]   bpu_msr_epc,

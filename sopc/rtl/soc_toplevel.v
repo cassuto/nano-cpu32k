@@ -468,7 +468,7 @@ module soc_toplevel
     ************************************************************/
    ncpu32k
      #(
-      .CPU_RESET_VECTOR (CPU_RESET_VECTOR)
+      .CPU_RESET_VECTOR (CPU_RESET_VECTOR/*32'h80000100*//*0*/)
      )
    ncpu32k
      (/*AUTOINST*/

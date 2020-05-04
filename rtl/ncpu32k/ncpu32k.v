@@ -68,7 +68,6 @@ module ncpu32k
    wire                 ibus_cmd_ready;         // From i_mmu of ncpu32k_i_mmu.v
    wire                 ibus_cmd_valid;         // From core of ncpu32k_core.v
    wire [`NCPU_IW-1:0]  ibus_dout;              // From i_mmu of ncpu32k_i_mmu.v
-   wire                 ibus_flush_ack;         // From i_mmu of ncpu32k_i_mmu.v
    wire                 ibus_flush_req;         // From core of ncpu32k_core.v
    wire [`NCPU_AW-1:0]  ibus_out_id;            // From i_mmu of ncpu32k_i_mmu.v
    wire [`NCPU_AW-1:0]  ibus_out_id_nxt;        // From i_mmu of ncpu32k_i_mmu.v
@@ -131,7 +130,6 @@ module ncpu32k
        .ibus_valid                      (ibus_valid),
        .ibus_dout                       (ibus_dout[`NCPU_IW-1:0]),
        .ibus_cmd_ready                  (ibus_cmd_ready),
-       .ibus_flush_ack                  (ibus_flush_ack),
        .ibus_out_id                     (ibus_out_id[`NCPU_AW-1:0]),
        .ibus_out_id_nxt                 (ibus_out_id_nxt[`NCPU_AW-1:0]),
        .icache_ready                    (icache_ready),
@@ -345,7 +343,6 @@ module ncpu32k
        .ibus_dout                       (ibus_dout[`NCPU_IW-1:0]),
        .ibus_out_id                     (ibus_out_id[`NCPU_AW-1:0]),
        .ibus_out_id_nxt                 (ibus_out_id_nxt[`NCPU_AW-1:0]),
-       .ibus_flush_ack                  (ibus_flush_ack),
        .exp_imm_tlb_miss                (exp_imm_tlb_miss),
        .exp_imm_page_fault              (exp_imm_page_fault),
        .irqc_intr_sync                  (irqc_intr_sync),
