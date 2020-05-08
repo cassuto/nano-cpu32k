@@ -57,14 +57,16 @@ module ncpu32k_ie_mu
    // wb_in can handshake successfully if downstream module accepted dout.
    wire hds_wb_in = wb_mu_in_valid & wb_mu_in_ready;
    
+   wire mu_vld_op = (ieu_mu_load | ieu_mu_store) & ieu_mu_in_valid;
+   
    assign mu_lsa = ieu_operand_1 + ieu_operand_2;
    
    assign dbus_cmd_addr = mu_lsa;
    
    // Address alignment check
    wire [2:0] mu_size = ieu_mu_load ? ieu_mu_load_size : ieu_mu_store_size;
-   wire exp_misalign = (mu_size==3'd3 & |dbus_cmd_addr[1:0]) |
-                       (mu_size==3'd2 & dbus_cmd_addr[0]);
+   wire exp_misalign = ((mu_size==3'd3 & |dbus_cmd_addr[1:0]) |
+                       (mu_size==3'd2 & dbus_cmd_addr[0])) & mu_vld_op;
    
    // B/HW align
    wire [`NCPU_DW/8-1:0] we_msk_8b = (dbus_cmd_addr[1:0]==2'b00 ? 4'b0001 :
@@ -87,8 +89,6 @@ module ncpu32k_ie_mu
                      ({`NCPU_DW{ieu_mu_store_size==3'd2}} & din_16b) |
                      ({`NCPU_DW{ieu_mu_store_size==3'd1}} & din_8b);
 
-   wire mu_vld_op = (ieu_mu_load | ieu_mu_store) & ieu_mu_in_valid;
-   
    // Internal, Don't deliver it out
    wire dmm_exp_raised_w = (exp_dmm_tlb_miss | exp_dmm_page_fault);
    // Handshaked with flush when exception raised
@@ -107,15 +107,13 @@ module ncpu32k_ie_mu
    ncpu32k_cell_dff_lr #(1) dff_pending_r
                    (clk,rst_n, (pending_push|pending_pop), pending_nxt, pending_r);
    
-   wire pending = pending_r; // bypass flush_ack
-   
    // Exceptions
    // Just when pending, MMU exception can be delivered
    // Misalignment exception could be delivered immediately as it blocked cmd request.
-   assign mu_exp_taken = (pending & dmm_exp_raised_w) | exp_misalign;
+   assign mu_exp_taken = (pending_r & dmm_exp_raised_w) | exp_misalign;
    
    // Just when not pending and no error we can send cmd
-   wire send_cmd = ~pending & ~exp_misalign;
+   wire send_cmd = ~pending_r & ~exp_misalign;
 
    // Send cmd to dbus if it's a valid MU operation
    assign dbus_cmd_valid = mu_vld_op & send_cmd;
