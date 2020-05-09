@@ -1,6 +1,5 @@
 /**@file
- * Simple SPI master controller without FIFO queue
- * Not timing strict
+ * SoC toplevel design
  */
 
 /***************************************************************************/
@@ -468,7 +467,7 @@ module soc_toplevel
     ************************************************************/
    ncpu32k
      #(
-      .CPU_RESET_VECTOR (CPU_RESET_VECTOR/*32'h80000100*//*0*/)
+      .CPU_RESET_VECTOR (CPU_RESET_VECTOR)
      )
    ncpu32k
      (/*AUTOINST*/
@@ -495,7 +494,7 @@ module soc_toplevel
    /************************************************************
     * Interrupt Requests
     ************************************************************/
-   assign fb_irqs = {{`NCPU_NIRQ-2{1'b0}}, pb_uart_irq, 1'b0};
+   assign fb_irqs = {{`NCPU_NIRQ-3{1'b0}}, pb_uart_irq, 1'b0, 1'b0};
    
    
    /************************************************************
