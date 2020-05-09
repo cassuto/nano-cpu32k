@@ -1,5 +1,5 @@
 /**@file
- * Cell - Pipe buffer
+ * Cell - DFF (D Flip Flop) with async Reset Port
  */
 
 /***************************************************************************/
@@ -19,45 +19,44 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_cell_pipebuf
-# (
+module nDFF_r # (
    parameter DW = 1, // Data Width in bits
-   parameter ENABLE_BYPASS = `NCPU_PIPEBUF_BYPASS // bypass when popping
+   parameter RST_VECTOR = {DW{1'b0}}
 )
 (
-   input                      clk,
-   input                      rst_n,
-   input [DW-1:0]             din,
-   output [DW-1:0]            dout,
-   input                      in_valid,
-   output                     in_ready,
-   output                     out_valid,
-   input                      out_ready,
-   output                     cas
+   input CLK,
+   input RST_n,
+   input [DW-1:0] D, // Data input
+`ifdef NCPU_NO_RST
+   output reg [DW-1:0] Q = RST_VECTOR
+`else
+   output reg [DW-1:0] Q // Data output
+`endif
 );
+`ifdef NCPU_NO_RST
+   always @(posedge CLK) begin
+       Q <= #1 D;
+   end
+`else
+   always @(posedge CLK or negedge RST_n) begin
+     if (!RST_n)
+       Q <= RST_VECTOR;
+     else
+       Q <= #1 D;
+   end
+`endif
+   
+   // synthesis translate_off
+`ifndef SYNTHESIS                   
 
-   wire push = (in_valid & in_ready);
-   wire pop = (out_valid & out_ready);
-   
-   //
-   // Equivalent to 1-slot FIFO
-   //
-   wire valid_nxt = (push | ~pop);
-   
-   ncpu32k_cell_dff_lr #(1) dff_out_valid
-                   (clk,rst_n, (push | pop), valid_nxt, out_valid);
-   
-   ncpu32k_cell_dff_lr #(DW) dff_dout
-                   (clk,rst_n, push, din, dout);
-   
-   generate
-      if (ENABLE_BYPASS) begin :enable_bypass
-         assign in_ready = ~out_valid | pop;
-      end else begin
-         assign in_ready = ~out_valid;
-      end
-   endgenerate
-   
-   assign cas = push;
-   
+   // Assertions
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge CLK) begin
+      if(D == {DW{1'bx}})
+         $fatal ("\n dff uncertain state! \n");
+   end
+`endif
+
+`endif
+   // synthesis translate_on
 endmodule

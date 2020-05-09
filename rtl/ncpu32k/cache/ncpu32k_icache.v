@@ -15,7 +15,7 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_i_cache
+module ncpu32k_icache
 (
    input                   clk,
    input                   rst_n,

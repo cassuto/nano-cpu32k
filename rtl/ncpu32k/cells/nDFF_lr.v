@@ -1,5 +1,5 @@
 /**@file
- * Cell - DFF (Data Flip Flop) with Reset Port
+ * Cell - DFF (D Flip Flop) with sync Load and async Reset Port.
  */
 
 /***************************************************************************/
@@ -19,13 +19,14 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_cell_dff_r # (
+module nDFF_lr # (
    parameter DW = 1, // Data Width in bits
    parameter RST_VECTOR = {DW{1'b0}}
 )
 (
    input CLK,
    input RST_n,
+   input LOAD,
    input [DW-1:0] D, // Data input
 `ifdef NCPU_NO_RST
    output reg [DW-1:0] Q = RST_VECTOR
@@ -35,13 +36,14 @@ module ncpu32k_cell_dff_r # (
 );
 `ifdef NCPU_NO_RST
    always @(posedge CLK) begin
+     if (LOAD)
        Q <= #1 D;
    end
 `else
    always @(posedge CLK or negedge RST_n) begin
      if (!RST_n)
        Q <= RST_VECTOR;
-     else
+     else if (LOAD)
        Q <= #1 D;
    end
 `endif

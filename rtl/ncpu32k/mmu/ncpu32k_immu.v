@@ -15,7 +15,7 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_i_mmu
+module ncpu32k_immu
 #(
    parameter TLB_NSETS_LOG2 = 7, // (2^TLB_NSETS_LOG2) entries
    parameter CPU_RESET_VECTOR = `NCPU_ERST_VECTOR
@@ -76,24 +76,20 @@ module ncpu32k_i_mmu
    
    // flush_strobe will:
    //    1. If the icache is accepting cmd while its dout is valid,
-   //       then cancel the current command request to icache.
+   //       then cancel the current command request to icache and flush dout.
    //    2. If the icache has accepted previous cmd and we're waiting for its dout,
-   //       then maskout any new command requests until icache goes ready again.
-   //       This ensures that, when flushing, any handshaking with ibus_cmd is
-   //       always succeeded. Assert (03072258)
-   // There is no need to cacnel the dout of the cmd that has been handshaked before
-   // this clk.
-   /*wire flush_nstrobe_r;
-   ncpu32k_cell_dff_lr #(1) dff_flush_nstrobe_r
-                   (clk,rst_n, (icache_cmd_valid_w & icache_cmd_ready), ibus_flush_req, flush_nstrobe_r);
-   wire flush_strobe = (ibus_flush_req&~flush_nstrobe_r);*/
-   
+   //       then wait to flush the dout and block any incoming cmd requests, until
+   //       icache goes ready again.
+   // When flush_strobe is asserted, pipebuf treats icache as always ready,
+   // which ensures that, when flushing, any handshaking with ibus_cmd is
+   // always succeeded. Assert (03072258)
+   //
    wire icache_pending_r;
    
-   ncpu32k_cell_dff_lr #(1) dff_out_valid
+   nDFF_lr #(1) dff_out_valid
                    (clk,rst_n, (hds_icache_cmd | hds_icache_dout), (hds_icache_cmd | ~hds_icache_dout), icache_pending_r);
                    
-   reg fls_status_r = 1'b1;
+   reg fls_status_r;
    
    always @(posedge clk or negedge rst_n)
       if(~rst_n)
@@ -157,10 +153,10 @@ module ncpu32k_i_mmu
    wire [`NCPU_AW-1:0] ibus_out_id_nxt_bypass = ibus_flush_req ? ibus_cmd_addr[`NCPU_AW-1:0] : ibus_out_id_nxt[`NCPU_AW-1:0];
 
    // Transfer when TLB is to be read
-   ncpu32k_cell_dff_lr #(`NCPU_AW, CPU_RESET_VECTOR-`NCPU_AW'd4) dff_id_nxt
+   nDFF_lr #(`NCPU_AW, CPU_RESET_VECTOR-`NCPU_AW'd4) dff_id_nxt
                    (clk,rst_n, tlb_read, ibus_cmd_addr[`NCPU_AW-1:0], ibus_out_id_nxt[`NCPU_AW-1:0]);
    // Transfer when handshaked with downstream module
-   ncpu32k_cell_dff_lr #(`NCPU_AW, CPU_RESET_VECTOR) dff_id
+   nDFF_lr #(`NCPU_AW, CPU_RESET_VECTOR) dff_id
                    (clk,rst_n, hds_ibus_dout|ibus_flush_req, ibus_out_id_nxt_bypass, ibus_out_id[`NCPU_AW-1:0]);
                    
    ////////////////////////////////////////////////////////////////////////////////
@@ -183,18 +179,18 @@ module ncpu32k_i_mmu
    // Assert (03061058)
    wire [TLB_NSETS_LOG2-1:0] tgt_index_nxt = tgt_vpn_nxt[TLB_NSETS_LOG2-1:0];
 
-   /*ncpu32k_cell_dff_lr #(1) dff_msr_psr_imme_r
+   /*nDFF_lr #(1) dff_msr_psr_imme_r
                 (clk,rst_n, tlb_read, msr_psr_imme, msr_psr_imme_r);*/
    assign msr_psr_imme_r = msr_psr_imme;
-   ncpu32k_cell_dff_lr #(1) dff_msr_psr_rm_r
+   nDFF_lr #(1) dff_msr_psr_rm_r
                 (clk,rst_n, tlb_read, msr_psr_rm, msr_psr_rm_r);
-   ncpu32k_cell_dff_lr #(PPN_SHIFT) dff_tgt_page_offset_r
+   nDFF_lr #(PPN_SHIFT) dff_tgt_page_offset_r
                 (clk,rst_n, tlb_read, tgt_page_offset_nxt[PPN_SHIFT-1:0], tgt_page_offset_r[PPN_SHIFT-1:0]);
-   ncpu32k_cell_dff_lr #(VPN_DW) dff_tgt_vpn_r
+   nDFF_lr #(VPN_DW) dff_tgt_vpn_r
                 (clk,rst_n, tlb_read, tgt_vpn_nxt[VPN_DW-1:0], tgt_vpn_r[VPN_DW-1:0]);
 
    // Dummy TLB (No translation)
-   ncpu32k_cell_dff_lr #(`NCPU_AW) dff_tlb
+   nDFF_lr #(`NCPU_AW) dff_tlb
                 (clk,rst_n, tlb_read, ibus_cmd_addr[`NCPU_AW-1:0], tlb_dummy_addr[`NCPU_AW-1:0]);
                 
                 
@@ -265,9 +261,9 @@ module ncpu32k_i_mmu
    // Permission check, Page Fault exception
    wire exp_imm_page_fault_nxt = perm_denied & ~exp_imm_tlb_miss_nxt & msr_psr_imme_r;
    
-   ncpu32k_cell_dff_lr #(1) dff_exp_imm_page_fault
+   nDFF_lr #(1) dff_exp_imm_page_fault
                 (clk,rst_n, hds_icache_cmd, exp_imm_page_fault_nxt, exp_imm_page_fault);
-   ncpu32k_cell_dff_lr #(1) dff_exp_imm_tlb_miss
+   nDFF_lr #(1) dff_exp_imm_tlb_miss
                 (clk,rst_n, hds_icache_cmd, exp_imm_tlb_miss_nxt, exp_imm_tlb_miss);
    
    assign tlb_addr = {tlb_ppn[PPN_DW-1:0], tgt_page_offset_r[PPN_SHIFT-1:0]};

@@ -15,7 +15,7 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_d_mmu
+module ncpu32k_dmmu
 #(
    parameter TLB_NSETS_LOG2 = 7 // (2^TLB_NSETS_LOG2) entries
 )
@@ -124,23 +124,23 @@ module ncpu32k_d_mmu
    // Assert (03091855)
    wire [TLB_NSETS_LOG2-1:0] tgt_index_nxt = tgt_vpn_nxt[TLB_NSETS_LOG2-1:0];
 
-   ncpu32k_cell_dff_lr #(1) dff_msr_psr_dmme_r
+   nDFF_lr #(1) dff_msr_psr_dmme_r
                 (clk,rst_n, tlb_read, msr_psr_dmme, msr_psr_dmme_r);
-   ncpu32k_cell_dff_lr #(1) dff_msr_psr_rm_r
+   nDFF_lr #(1) dff_msr_psr_rm_r
                 (clk,rst_n, tlb_read, msr_psr_rm, msr_psr_rm_r);
-   ncpu32k_cell_dff_lr #(`NCPU_DW/8) dff_dbus_cmd_we_msk_r
+   nDFF_lr #(`NCPU_DW/8) dff_dbus_cmd_we_msk_r
                 (clk,rst_n, tlb_read, dbus_cmd_we_msk[`NCPU_DW/8-1:0], dbus_cmd_we_msk_r[`NCPU_DW/8-1:0]);
-   ncpu32k_cell_dff_lr #(1) dff_dbus_cmd_we_r
+   nDFF_lr #(1) dff_dbus_cmd_we_r
                 (clk,rst_n, tlb_read, |dbus_cmd_we_msk, dbus_cmd_we_r);
-   ncpu32k_cell_dff_lr #(`NCPU_DW) dff_dbus_din_r
+   nDFF_lr #(`NCPU_DW) dff_dbus_din_r
                 (clk,rst_n, tlb_read, dbus_din[`NCPU_DW-1:0], dbus_din_r[`NCPU_DW-1:0]);
-   ncpu32k_cell_dff_lr #(PPN_SHIFT) dff_tgt_page_offset_r
+   nDFF_lr #(PPN_SHIFT) dff_tgt_page_offset_r
                 (clk,rst_n, tlb_read, tgt_page_offset_nxt[PPN_SHIFT-1:0], tgt_page_offset_r[PPN_SHIFT-1:0]);
-   ncpu32k_cell_dff_lr #(VPN_DW) dff_tgt_vpn_r
+   nDFF_lr #(VPN_DW) dff_tgt_vpn_r
                 (clk,rst_n, tlb_read, tgt_vpn_nxt[VPN_DW-1:0], tgt_vpn_r[VPN_DW-1:0]);
 
    // Dummy TLB (No translation)
-   ncpu32k_cell_dff_lr #(`NCPU_AW) dff_tlb
+   nDFF_lr #(`NCPU_AW) dff_tlb
                 (clk,rst_n, tlb_read, dbus_cmd_addr[`NCPU_AW-1:0], tlb_dummy_addr[`NCPU_AW-1:0]);
                 
                 

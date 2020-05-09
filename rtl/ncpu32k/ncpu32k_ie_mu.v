@@ -104,7 +104,7 @@ module ncpu32k_ie_mu
    
    wire pending_nxt = (pending_push | ~pending_pop);
 
-   ncpu32k_cell_dff_lr #(1) dff_pending_r
+   nDFF_lr #(1) dff_pending_r
                    (clk,rst_n, (pending_push|pending_pop), pending_nxt, pending_r);
    
    // Exceptions

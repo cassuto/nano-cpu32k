@@ -1,5 +1,5 @@
 /**@file
- * Cell - DFF (Data Flip Flop) with Load Port
+ * Cell - DFF (D Flip Flop) with sync Load Port
  */
 
 /***************************************************************************/
@@ -19,7 +19,7 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_cell_dff_l # (
+module nDFF_l # (
    parameter DW = 1 // Data Width in bits
 )
 (

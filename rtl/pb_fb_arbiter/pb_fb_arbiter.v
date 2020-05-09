@@ -66,9 +66,9 @@ module pb_fb_arbiter
    assign dbus_dout_sel_nxt = hds_dbus_cmd | ~hds_dbus_dout;
    assign ibus_dout_sel_nxt = hds_ibus_cmd | ~hds_ibus_dout;
    
-   ncpu32k_cell_dff_lr #(1) dff_dbus_dout_sel
+   nDFF_lr #(1) dff_dbus_dout_sel
                    (clk,rst_n, (hds_dbus_cmd | hds_dbus_dout), dbus_dout_sel_nxt, dbus_dout_sel);
-   ncpu32k_cell_dff_lr #(1) dff_ibus_dout_sel
+   nDFF_lr #(1) dff_ibus_dout_sel
                    (clk,rst_n, (hds_ibus_cmd | hds_ibus_dout), ibus_dout_sel_nxt, ibus_dout_sel);
 
    // Send cmd

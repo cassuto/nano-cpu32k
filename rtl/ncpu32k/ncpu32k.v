@@ -120,7 +120,7 @@ module ncpu32k
     * I-MMU
     ************************************************************/
 
-    ncpu32k_i_mmu
+    ncpu32k_immu
       #(
          .CPU_RESET_VECTOR (CPU_RESET_VECTOR)
       )
@@ -163,7 +163,7 @@ module ncpu32k
     * D-MMU
     ************************************************************/
    
-   ncpu32k_d_mmu d_mmu
+   ncpu32k_dmmu d_mmu
       (/*AUTOINST*/
        // Outputs
        .dbus_valid                      (dbus_valid),
@@ -204,7 +204,7 @@ module ncpu32k
     * I-Cache
     ************************************************************/
     
-   ncpu32k_i_cache i_cache
+   ncpu32k_icache i_cache
       (/*AUTOINST*/
        // Outputs
        .icache_valid                    (icache_valid),
@@ -228,7 +228,7 @@ module ncpu32k
     * D-Cache
     ************************************************************/
     
-   ncpu32k_d_cache d_cache
+   ncpu32k_dcache d_cache
       (/*AUTOINST*/
        // Outputs
        .dcache_valid                    (dcache_valid),

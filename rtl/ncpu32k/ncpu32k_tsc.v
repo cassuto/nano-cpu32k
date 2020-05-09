@@ -33,7 +33,7 @@ module ncpu32k_tsc(
    wire [`NCPU_DW-1:0] msr_tsc_tcr_r;
    
    // TCR
-   ncpu32k_cell_dff_lr #(`NCPU_DW) dff_tcr_r
+   nDFF_lr #(`NCPU_DW) dff_tcr_r
                    (clk,rst_n, msr_tsc_tcr_we, msr_tsc_tcr_nxt[`NCPU_DW-1:0], tcr_r[`NCPU_DW-1:0]);
 
    // Pack TCR
@@ -59,7 +59,7 @@ module ncpu32k_tsc(
    // Priority MUX
    wire [`NCPU_DW-1:0] tsr_nxt = msr_tsc_tsr_we ? msr_tsc_tsr_nxt : msr_tsc_tsr+1'b1;
    
-   ncpu32k_cell_dff_lr #(`NCPU_NIRQ) dff_tsr_r
+   nDFF_lr #(`NCPU_NIRQ) dff_tsr_r
                    (count_clk,rst_n, msr_tsc_tsr_we|count, tsr_nxt[`NCPU_DW-1:0], msr_tsc_tsr[`NCPU_DW-1:0]);
    
    // Raise IRQ if
@@ -68,7 +68,7 @@ module ncpu32k_tsc(
    // Clear IRQ when clear P
    wire irq_clr = msr_tsc_tcr_we & ~tcr_p;
 
-   ncpu32k_cell_dff_lr #(1) dff_tsc_irq
+   nDFF_lr #(1) dff_tsc_irq
                    (clk,rst_n, irq_set|irq_clr, (irq_set & ~irq_clr), tsc_irq);
 
 endmodule

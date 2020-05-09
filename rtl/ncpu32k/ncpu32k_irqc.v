@@ -32,13 +32,13 @@ module ncpu32k_irqc(
    wire [`NCPU_NIRQ-1:0] msr_irqc_irr_0;
    
    // Synchronize IRQs
-   ncpu32k_cell_dff_r #(`NCPU_NIRQ) dff_msr_irqc_irr_0
+   nDFF_r #(`NCPU_NIRQ) dff_msr_irqc_irr_0
                    (clk,rst_n, irqs_lvl_i[`NCPU_NIRQ-1:0], msr_irqc_irr_0[`NCPU_NIRQ-1:0]);
-   ncpu32k_cell_dff_r #(`NCPU_NIRQ) dff_msr_irqc_irr
+   nDFF_r #(`NCPU_NIRQ) dff_msr_irqc_irr
                    (clk,rst_n, msr_irqc_irr_0[`NCPU_NIRQ-1:0], msr_irqc_irr[`NCPU_NIRQ-1:0]);
                    
    // IMR Register
-   ncpu32k_cell_dff_lr #(`NCPU_DW, {`NCPU_DW{1'b1}}) dff_imr_r
+   nDFF_lr #(`NCPU_DW, {`NCPU_DW{1'b1}}) dff_imr_r
                    (clk,rst_n, msr_irqc_imr_we, msr_irqc_imr_nxt[`NCPU_DW-1:0], imr_r[`NCPU_DW-1:0]);
 
    // Bypass IMR write
@@ -47,7 +47,7 @@ module ncpu32k_irqc(
    wire [`NCPU_NIRQ-1:0] irq_masked = msr_irqc_irr & ~imr_r[`NCPU_NIRQ-1:0];
    wire irq_raised = |irq_masked & msr_psr_ire;
    
-   ncpu32k_cell_dff_r #(1) dff_irqc_intr_sync
+   nDFF_r #(1) dff_irqc_intr_sync
                    (clk,rst_n, irq_raised, irqc_intr_sync);
 
    // synthesis translate_off

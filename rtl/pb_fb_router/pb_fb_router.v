@@ -64,7 +64,7 @@ generate
       
       assign bus_pending_nxt[i] = hds_bus_cmd[i] | ~hds_bus_dout[i];
 
-      ncpu32k_cell_dff_lr #(1) dff_bus_dout_sel
+      nDFF_lr #(1) dff_bus_dout_sel
                       (clk,rst_n, (hds_bus_cmd[i] | hds_bus_dout[i]), bus_pending_nxt[i], bus_pending[i]);
    end
 endgenerate
