@@ -217,7 +217,7 @@ module soc_pb_uart
       end
    end
 
-   reg [15:0] DLR = 8'ha0;
+   reg [15:0] DLR = 8'h08;
    reg [3:0] IER = 8'h00;
    reg [7:0] LCR = 8'h00;
    reg [2:0] IIR = 3'b001;
@@ -232,7 +232,7 @@ module soc_pb_uart
    wire rx_empty;
    reg dat_ready = 1'b0;
 
-   reg [15:0] DLR_sr = 8'ha0;
+   reg [15:0] DLR_sr = 8'h08;
    always @(posedge clk_baud)
       DLR_sr <= DLR;
    assign baud_div = {DLR_sr[14:0], 1'b0};
