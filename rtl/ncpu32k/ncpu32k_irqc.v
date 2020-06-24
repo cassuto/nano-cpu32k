@@ -44,11 +44,8 @@ module ncpu32k_irqc(
    // Bypass IMR write
    assign msr_irqc_imr = msr_irqc_imr_we ? msr_irqc_imr_nxt : imr_r;
 
-   wire [`NCPU_NIRQ-1:0] irq_masked = msr_irqc_irr & ~imr_r[`NCPU_NIRQ-1:0];
-   wire irq_raised = |irq_masked & msr_psr_ire;
-   
-   nDFF_r #(1) dff_irqc_intr_sync
-                   (clk,rst_n, irq_raised, irqc_intr_sync);
+   wire [`NCPU_NIRQ-1:0] irq_masked = msr_irqc_irr & ~msr_irqc_imr[`NCPU_NIRQ-1:0];
+   assign irqc_intr_sync = |irq_masked & msr_psr_ire;
 
    // synthesis translate_off
 `ifndef SYNTHESIS
