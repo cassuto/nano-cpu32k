@@ -70,7 +70,7 @@ module soc_pb_uart
       else if (hds_cmd | hds_dout)
          pb_uart_valid <= (hds_cmd | ~hds_dout);
 
-   assign pb_uart_cmd_ready = ~pb_uart_valid | hds_dout;
+   assign pb_uart_cmd_ready = ~pb_uart_valid;
    
    // PHY transceiver interface
    wire phy_cmd_rd_vld;
@@ -231,6 +231,8 @@ module soc_pb_uart
    wire rx_full;
    wire rx_empty;
    reg dat_ready = 1'b0;
+   reg cmd_we_r;
+   reg [2:0] cmd_addr_r = 2'b0;
 
    reg [15:0] DLR_sr = 8'h08;
    always @(posedge clk_baud)
@@ -245,6 +247,12 @@ module soc_pb_uart
    wire rd_RBR = hds_cmd & ~cmd_we & (pb_uart_cmd_addr[2:0] == 3'b000) & ~DLAB; // Read RBR
    wire we_RBR = hds_cmd & cmd_we & (pb_uart_cmd_addr[2:0] == 3'b000) & ~DLAB; // Write RBR
    
+   always @(posedge clk)
+      if (hds_cmd) begin
+         cmd_we_r <= cmd_we;
+         cmd_addr_r <= pb_uart_cmd_addr[2:0];
+      end
+
    sco_fifo_asclk
    #(
       .DW (8),
@@ -311,11 +319,6 @@ module soc_pb_uart
          dat_ready <= 1'b0;
    end
 
-   reg [2:0] cmd_addr_r = 2'b0;
-   always @(posedge clk)
-      if (hds_cmd)
-         cmd_addr_r <= pb_uart_cmd_addr[2:0];
-   
    reg [1:0] phy_cmd_we_rdy_sr;
    reg [1:0] phy_dout_overun_sr;
    always @(posedge clk) begin
@@ -377,11 +380,11 @@ module soc_pb_uart
             // Raise TX buffer empty IRQ
             {RBR_written, IIR} <= {1'b0, 3'b010};
          end
-      end else if(hds_cmd)
+      end else if(hds_dout)
          // Accept/clear IRQ
-         if((IIR[2:1] == 2'b10) & ~cmd_we & (pb_uart_cmd_addr[2:0] == 3'b000) & ~DLAB | // read RBR
-            (IIR[2:1] == 2'b01) & (~cmd_we & (pb_uart_cmd_addr[2:0] == 3'b010) | // read IIR or write RBR
-                                   cmd_we & (pb_uart_cmd_addr[2:0] == 3'b000) & ~DLAB))
+         if((IIR[2:1] == 2'b10) & ~cmd_we_r & (cmd_addr_r[2:0] == 3'b000) & ~DLAB | // read RBR
+            (IIR[2:1] == 2'b01) & (~cmd_we_r & (cmd_addr_r[2:0] == 3'b010) | // read IIR or write RBR
+                                   cmd_we_r & (cmd_addr_r[2:0] == 3'b000) & ~DLAB))
          begin
             IIR[0] <= 1'b1; // no IRQ pending
          end
