@@ -1,3 +1,4 @@
+/* test irq */
 .org 0x0
 jmp r0, _reset
 

@@ -37,7 +37,7 @@ module tb_ncpu32k_sram();
    wire                    fb_dbus_cmd_valid;
    wire [`NCPU_AW-1:0]     fb_dbus_cmd_addr;
    wire [`NCPU_DW/8-1:0]   fb_dbus_cmd_we_msk;
-   wire [`NCPU_NIRQ-1:0]   fb_irqs;
+   reg [`NCPU_NIRQ-1:0]    fb_irqs;
    
    wire                    fb_mbus_valid;
    wire                    fb_mbus_ready;
@@ -94,7 +94,11 @@ module tb_ncpu32k_sram();
       .fb_mbus_cmd_we_msk  (fb_mbus_cmd_we_msk)
    );
    
-   assign fb_irqs = {`NCPU_NIRQ{1'b0}};
+   // assign fb_irqs = {`NCPU_NIRQ{1'b0}};
+   initial begin
+      fb_irqs = 0;
+      #500 fb_irqs = 32'b001;
+   end
    
    ncpu32k ncpu32k
    (

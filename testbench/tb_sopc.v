@@ -81,7 +81,6 @@ module tb_sopc();
    // SPI FLASH
    //N25Qxxx spi_flash (SPI_CS_L, SPI_SCK, SF_HOLD_DQ3, SF_DQ0, SF_DQ1, SF_Vcc, SF_Vpp_W_DQ2);
    assign SF_DQ1 = 1'b0;
-   
    assign SF_DQ0 = SPI_MOSI;
    assign SPI_MISO = SF_DQ1;
    
