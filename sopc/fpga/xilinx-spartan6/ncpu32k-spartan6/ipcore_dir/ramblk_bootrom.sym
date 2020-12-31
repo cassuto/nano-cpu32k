@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <symbol version="7" name="ramblk_bootrom">
     <symboltype>BLOCK</symboltype>
-    <timestamp>2020-12-30T15:30:45</timestamp>
+    <timestamp>2020-12-31T17:7:14</timestamp>
     <pin polarity="Input" x="0" y="80" name="addra[9:0]" />
     <pin polarity="Input" x="0" y="112" name="dina[31:0]" />
     <pin polarity="Input" x="0" y="144" name="ena" />

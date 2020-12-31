@@ -51,6 +51,7 @@ module ncpu32k_ifu(
    output                  bpu_rd,
    output                  bpu_jmprel,
    output [`NCPU_AW-3:0]   bpu_insn_pc,
+   output [`NCPU_AW-3:0]   bpu_jmprel_offset,
    input [`NCPU_AW-3:0]    bpu_jmp_tgt,
    input                   bpu_jmprel_taken
 );
@@ -134,6 +135,7 @@ module ncpu32k_ifu(
    assign specul_jmp = bpu_jmprel | op_jmpfar_nxt;
    assign bpu_rd = specul_jmp;
    assign bpu_jmprel = op_bcc;
+   assign bpu_jmprel_offset = jmprel_offset;
    assign bpu_insn_pc = flush_insn_pc;
    
    wire [`NCPU_AW-3:0] specul_tgt_nxt =

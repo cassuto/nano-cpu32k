@@ -17,7 +17,7 @@
 
 module ncpu32k_bpu
 #(
-   parameter BPU_JMPREL_STRATEGY = "always_taken"
+   parameter BPU_JMPREL_STRATEGY = "direction"
 )
 (
    input                   clk,
@@ -25,6 +25,7 @@ module ncpu32k_bpu
    input [`NCPU_AW-3:0]    bpu_insn_pc,
    input                   bpu_rd,
    input                   bpu_jmprel,
+   input [`NCPU_AW-3:0]    bpu_jmprel_offset,
    output [`NCPU_AW-3:0]   bpu_jmp_tgt,
    output                  bpu_jmprel_taken,
    output [`NCPU_DW-1:0]   bpu_msr_epc,
@@ -35,8 +36,12 @@ module ncpu32k_bpu
 );
    
    generate
-      if(BPU_JMPREL_STRATEGY=="always_taken") begin : class_always_taken
+      if(BPU_JMPREL_STRATEGY=="always_taken") begin : strategy_always_taken
+         assign bpu_jmprel_taken = 1'b1;
+      end else if(BPU_JMPREL_STRATEGY=="always_not_taken") begin : strategy_always_not_taken
          assign bpu_jmprel_taken = 1'b0;
+      end else if(BPU_JMPREL_STRATEGY=="direction") begin : strategy_always_taken
+         assign bpu_jmprel_taken = bpu_jmprel_offset[`NCPU_AW-3];
       end
    endgenerate
    

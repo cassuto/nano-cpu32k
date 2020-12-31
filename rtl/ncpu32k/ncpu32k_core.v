@@ -77,7 +77,8 @@ module ncpu32k_core(
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [`NCPU_AW-3:0]  bpu_insn_pc;            // From ifu of ncpu32k_ifu.v
    wire [`NCPU_AW-3:0]  bpu_jmp_tgt;            // From bpu of ncpu32k_bpu.v
-   wire                 bpu_jmprel;             // From ifu of ncpu32k_ifu.v, ...
+   wire                 bpu_jmprel;             // From ifu of ncpu32k_ifu.v
+   wire [`NCPU_AW-3:0]  bpu_jmprel_offset;      // From ifu of ncpu32k_ifu.v
    wire                 bpu_jmprel_taken;       // From bpu of ncpu32k_bpu.v
    wire [`NCPU_DW-1:0]  bpu_msr_epc;            // From bpu of ncpu32k_bpu.v
    wire                 bpu_rd;                 // From ifu of ncpu32k_ifu.v
@@ -259,6 +260,7 @@ module ncpu32k_core(
        .bpu_rd                          (bpu_rd),
        .bpu_jmprel                      (bpu_jmprel),
        .bpu_insn_pc                     (bpu_insn_pc[`NCPU_AW-3:0]),
+       .bpu_jmprel_offset               (bpu_jmprel_offset[`NCPU_AW-3:0]),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
@@ -280,7 +282,6 @@ module ncpu32k_core(
    ncpu32k_bpu bpu
       (/*AUTOINST*/
        // Outputs
-       .bpu_jmprel                      (bpu_jmprel),
        .bpu_jmp_tgt                     (bpu_jmp_tgt[`NCPU_AW-3:0]),
        .bpu_jmprel_taken                (bpu_jmprel_taken),
        .bpu_msr_epc                     (bpu_msr_epc[`NCPU_DW-1:0]),
@@ -289,6 +290,8 @@ module ncpu32k_core(
        .rst_n                           (rst_n),
        .bpu_insn_pc                     (bpu_insn_pc[`NCPU_AW-3:0]),
        .bpu_rd                          (bpu_rd),
+       .bpu_jmprel                      (bpu_jmprel),
+       .bpu_jmprel_offset               (bpu_jmprel_offset[`NCPU_AW-3:0]),
        .bpu_wb                          (bpu_wb),
        .bpu_wb_jmprel                   (bpu_wb_jmprel),
        .bpu_wb_insn_pc                  (bpu_wb_insn_pc[`NCPU_AW-3:0]),
