@@ -67,6 +67,10 @@
 	
 	* config.guess
 
+cgen v1.1.50
+guile v1.8
+texinfo v6.5
+
 -----------------[ GCC ]-----------------
 
 == gcc ==

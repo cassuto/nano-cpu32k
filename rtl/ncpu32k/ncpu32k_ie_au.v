@@ -79,6 +79,6 @@ module ncpu32k_ie_au(
 
    // Move HI18
    assign au_op_mhi = ieu_au_opc_bus[`NCPU_AU_MHI];
-   assign au_mhi = {ieu_operand_2[17:0], 14'b0};
+   assign au_mhi = {ieu_operand_2[16:0], 15'b0};
 
 endmodule

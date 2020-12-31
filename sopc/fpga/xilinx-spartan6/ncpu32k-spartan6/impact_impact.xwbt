@@ -1,8 +1,8 @@
 INTSTYLE=impact
-INFILE=E:\_processor_cores\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6\impact.xsl
-OUTFILE=E:\_processor_cores\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6\impact.xsl
+INFILE=E:\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6\impact.xsl
+OUTFILE=E:\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6\impact.xsl
 FAMILY=Single
 PART=Single
-WORKINGDIR=E:\_processor_cores\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6
+WORKINGDIR=E:\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6
 LICENSE=iMPACT
 USER_INFO=iMPACT

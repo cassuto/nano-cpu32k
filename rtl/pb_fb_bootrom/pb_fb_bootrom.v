@@ -43,7 +43,7 @@ function integer clogb2 (input integer bit_depth);
 endfunction
    localparam WORD_BYTES = `NCPU_DW/8;
    localparam SIZE_WORDS = SIZE_BYTES/WORD_BYTES;
-   localparam ADDR_BITS = 10;//clogb2(SIZE_WORDS);
+   localparam ADDR_BITS = 10;
    
    wire push = (cmd_valid & cmd_ready);
    wire pop = (valid & ready);

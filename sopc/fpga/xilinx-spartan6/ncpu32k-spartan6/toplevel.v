@@ -71,7 +71,7 @@ module toplevel
    wire dram_clk;
    wire uart_clk;
    wire smpl_clk;
-   reg rst_n_r = 1'b1;
+   reg rst_n_r = 1'b0;
    wire rst_n;
   
    ODDR2 #(
@@ -171,7 +171,7 @@ module toplevel
    assign rst_n = rst_n_r;
 
    //reg [19:0] led_cnt = 20'b0;
-   reg led_r = 0;
+   reg led_r = 1;
    /*always @(posedge smpl_clk) begin
       if(rst_n)
          led_cnt <= led_cnt+1'b1;

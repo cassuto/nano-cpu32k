@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Mon May 04 03:35:59 2020
+# Date: Wed Dec 30 15:29:54 2020
 #
 ##############################################################
 #
@@ -46,7 +46,7 @@ CSET axi_id_width=4
 CSET axi_slave_type=Memory_Slave
 CSET axi_type=AXI4_Full
 CSET byte_size=8
-CSET coe_file=E:\_processor_cores\nano-cpu32k\sopc\fpga\bootrom.coe
+CSET coe_file=E:\nano-cpu32k\sopc\fpga\bootrom.coe
 CSET collision_warnings=ALL
 CSET component_name=ramblk_bootrom
 CSET disable_collision_warnings=false
@@ -97,7 +97,7 @@ CSET use_regcea_pin=false
 CSET use_regceb_pin=false
 CSET use_rsta_pin=false
 CSET use_rstb_pin=false
-CSET write_depth_a=768
+CSET write_depth_a=1024
 CSET write_width_a=32
 CSET write_width_b=32
 # END Parameters
@@ -105,4 +105,4 @@ CSET write_width_b=32
 MISC pkg_timestamp=2012-11-19T16:22:25Z
 # END Extra information
 GENERATE
-# CRC: 3fb9e964
+# CRC: fa19b0a5

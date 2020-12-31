@@ -1,8 +1,8 @@
 INTSTYLE=ise
-INFILE=E:\_processor_cores\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6\toplevel.ncd
-OUTFILE=E:\_processor_cores\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6\toplevel.bit
+INFILE=E:\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6\toplevel.ncd
+OUTFILE=E:\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6\toplevel.bit
 FAMILY=Spartan6
 PART=xc6slx16-2ftg256
-WORKINGDIR=E:\_processor_cores\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6
+WORKINGDIR=E:\nano-cpu32k\sopc\fpga\xilinx-spartan6\ncpu32k-spartan6
 LICENSE=ISE
-USER_INFO=_
+USER_INFO=135256_15690819_173552794_661

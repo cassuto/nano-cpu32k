@@ -144,7 +144,7 @@ module ncpu32k_immu
    ////////////////////////////////////////////////////////////////////////////////
    // The following flip-flops are used to maintain the address of the (output-valid) insn
    // dff_id_nxt : Sync address with TLB
-   //              (after the cur is sent to TLB, the NEXT insn addr should be is presented at ibus_cmd_addr )
+   //              (after the cur is sent to TLB, the NEXT insn addr should be presented at ibus_cmd_addr )
    // dff_id     : Sync address with ibus dout
    //              (after handshaked with ibus dout, the NEXT insn addr is valid at ibus_out_id )
    ////////////////////////////////////////////////////////////////////////////////

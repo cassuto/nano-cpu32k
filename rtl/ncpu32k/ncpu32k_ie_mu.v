@@ -108,28 +108,26 @@ module ncpu32k_ie_mu
                    (clk,rst_n, (pending_push|pending_pop), pending_nxt, pending_r);
    
    // Exceptions
-   // Just when pending, MMU exception can be delivered
-   // Misalignment exception could be delivered immediately as it blocked cmd request.
+   // Just when pending MMU exception can be delivered
+   // while misalignment exception could be delivered immediately because it not send dbus cmd request.
    assign mu_exp_taken = (pending_r & dmm_exp_raised_w) | exp_misalign;
    
-   // Just when not pending and no error we can send cmd
+   // Just when not pending and no error we can send cmd to dbus
    wire send_cmd = ~pending_r & ~exp_misalign;
 
-   // Send cmd to dbus if it's a valid MU operation
+   // Send cmd to dbus if there is a valid MU operation
    assign dbus_cmd_valid = mu_vld_op & send_cmd;
 
    // Assert (03092009)
    wire [`NCPU_VECT_DW-1:0] exp_vector =
-      (
          ({`NCPU_VECT_DW{exp_dmm_tlb_miss}} & `NCPU_EDTM_VECTOR) |
          ({`NCPU_VECT_DW{exp_dmm_page_fault}} & `NCPU_EDPF_VECTOR) |
-         ({`NCPU_VECT_DW{exp_misalign}} & `NCPU_EALIGN_VECTOR)
-      );
+         ({`NCPU_VECT_DW{exp_misalign}} & `NCPU_EALIGN_VECTOR);
                      
    assign mu_exp_tgt = {{`NCPU_AW-2-`NCPU_VECT_DW{1'b0}}, exp_vector[`NCPU_VECT_DW-1:2]};
    
-   // MU is ready when handshaked with dbus dout (or Exception raised) if it was a MU operation
-   // This ensures that operations will not change before MU ready.
+   // MU is ready if and only if it was a MU operation and we have handshaked with dbus dout (or Exception raised)
+   // This ensures that operations of inputs not change before MU completed its transmission.
    assign ieu_mu_in_ready = ~(ieu_mu_load|ieu_mu_store) | (hds_wb_in | mu_exp_taken);
    
    // B/HW align

@@ -118,18 +118,16 @@ module ncpu32k_ifu(
    // Let ELSA = PC(Virtual Address)
    wire let_lsa_pc_nxt = (exp_imm_tlb_miss | exp_imm_page_fault);
    // MUX (03060653)
+   wire [`NCPU_VECT_DW-1:0] exp_vector_tlb =
+      ({`NCPU_VECT_DW{exp_imm_tlb_miss}} & `NCPU_EITM_VECTOR) |
+      ({`NCPU_VECT_DW{exp_imm_page_fault}} & `NCPU_EIPF_VECTOR);
    wire [`NCPU_VECT_DW-1:0] exp_vector =
       (
          ({`NCPU_VECT_DW{op_syscall}} & `NCPU_ESYSCALL_VECTOR) |
-         (
-            // IRQ takes precedence over TLB
-            irqc_intr_sync ? `NCPU_EIRQ_VECTOR :
-            (
-               ({`NCPU_VECT_DW{exp_imm_tlb_miss}} & `NCPU_EITM_VECTOR) |
-               ({`NCPU_VECT_DW{exp_imm_page_fault}} & `NCPU_EIPF_VECTOR)
-            )
-         )
+         // IRQ takes precedence over TLB
+         (irqc_intr_sync ? `NCPU_EIRQ_VECTOR : exp_vector_tlb)
       );
+      
    wire [`NCPU_AW-3:0] flush_exp_vect_tgt = {{`NCPU_AW-2-`NCPU_VECT_DW{1'b0}}, exp_vector[`NCPU_VECT_DW-1:2]};
    
    // Speculative execution
@@ -268,8 +266,7 @@ module ncpu32k_ifu(
    // Assertions 03071429
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if ((op_syscall|extexp_taken) &
-          ~(op_syscall^extexp_taken))
+      if (op_syscall&extexp_taken)
          $fatal ("\n ctrls of 'exp_taken' should be mutex\n");
    end
 `endif

@@ -27,7 +27,7 @@
 `endif
 
 // For FPGA, define this macro to disable rst_n port of DFFs, 
-// which reduces routing resources.
+// which reduces routing resources, however, reliable reset is not guaranteed!
 `define NCPU_NO_RST
 
 /////////////////////////////////////////////////////////////////////////////
@@ -183,70 +183,69 @@
 `define NCPU_EITM_VECTOR 8'h1c
 `define NCPU_EDTM_VECTOR 8'h20
 `define NCPU_EALIGN_VECTOR 8'h24
-`define NCPU_EINT_VECTOR 8'h28
 
 `define NCPU_VECT_DW 8
 
 /////////////////////////////////////////////////////////////////////////////
 // ISA GROUP - BASE
 /////////////////////////////////////////////////////////////////////////////
-`define NCPU_OP_AND 6'h0
-`define NCPU_OP_AND_I 6'h1
-`define NCPU_OP_OR 6'h2
-`define NCPU_OP_OR_I 6'h3
-`define NCPU_OP_XOR 6'h4
-`define NCPU_OP_XOR_I 6'h5
-`define NCPU_OP_LSL 6'h6
-`define NCPU_OP_LSL_I 6'h7
-`define NCPU_OP_LSR 6'h8
-`define NCPU_OP_LSR_I 6'h9
-`define NCPU_OP_JMP 6'ha
-`define NCPU_OP_JMP_I 6'hb
-`define NCPU_OP_CMP 6'hc
-`define NCPU_OP_BT 6'hd
-`define NCPU_OP_BF 6'he
-`define NCPU_OP_LDWU 6'hf
-`define NCPU_OP_STW 6'h10
-`define NCPU_OP_MBARR 6'h11
-`define NCPU_OP_SYSCALL 6'h12
-`define NCPU_OP_RET 6'h13
-`define NCPU_OP_WMSR 6'h14
-`define NCPU_OP_RMSR 6'h15
-`define NCPU_OP_VENTER 6'h16
-`define NCPU_OP_VLEAVE 6'h17
-`define NCPU_OP_JMP_LNK_I 6'h18
+`define NCPU_OP_AND 7'h0
+`define NCPU_OP_AND_I 7'h1
+`define NCPU_OP_OR 7'h2
+`define NCPU_OP_OR_I 7'h3
+`define NCPU_OP_XOR 7'h4
+`define NCPU_OP_XOR_I 7'h5
+`define NCPU_OP_LSL 7'h6
+`define NCPU_OP_LSL_I 7'h7
+`define NCPU_OP_LSR 7'h8
+`define NCPU_OP_LSR_I 7'h9
+`define NCPU_OP_JMP 7'ha
+`define NCPU_OP_JMP_I 7'hb
+`define NCPU_OP_CMP 7'hc
+`define NCPU_OP_BT 7'hd
+`define NCPU_OP_BF 7'he
+`define NCPU_OP_LDWU 7'hf
+`define NCPU_OP_STW 7'h10
+`define NCPU_OP_MBARR 7'h11
+`define NCPU_OP_SYSCALL 7'h12
+`define NCPU_OP_RET 7'h13
+`define NCPU_OP_WMSR 7'h14
+`define NCPU_OP_RMSR 7'h15
+`define NCPU_OP_VENTER 7'h16
+`define NCPU_OP_VLEAVE 7'h17
+`define NCPU_OP_JMP_LNK_I 7'h18
 
 /////////////////////////////////////////////////////////////////////////////
 // ISA GROUP - VIRT:
 /////////////////////////////////////////////////////////////////////////////
-`define NCPU_OP_ASR 6'h1a
-`define NCPU_OP_ASR_I 6'h1b
-`define NCPU_OP_ADD 6'h1c
-`define NCPU_OP_ADD_I 6'h1d
-`define NCPU_OP_SUB 6'h1e
-`define NCPU_OP_MUL 6'h1f
-`define NCPU_OP_DIV 6'h20
-`define NCPU_OP_DIVU 6'h21
-`define NCPU_OP_MOD 6'h22
-`define NCPU_OP_MODU 6'h23
-`define NCPU_OP_LDB 6'h24
-`define NCPU_OP_LDBU 6'h25
-`define NCPU_OP_LDH 6'h26
-`define NCPU_OP_LDHU 6'h27
-`define NCPU_OP_STB 6'h28
-`define NCPU_OP_STH 6'h29
-`define NCPU_OP_MHI 6'h2a
-`define NCPU_OP_FADDS 6'h2b
-`define NCPU_OP_FSUBS 6'h2c
-`define NCPU_OP_FMULS 6'h2d
-`define NCPU_OP_FDIVS 6'h2e
-`define NCPU_OP_FCMPS 6'h2f
-`define NCPU_OP_FITFS 6'h30
-`define NCPU_OP_FFTIS 6'h31
+`define NCPU_OP_ASR 7'h1a
+`define NCPU_OP_ASR_I 7'h1b
+`define NCPU_OP_ADD 7'h1c
+`define NCPU_OP_ADD_I 7'h1d
+`define NCPU_OP_SUB 7'h1e
+`define NCPU_OP_MUL 7'h1f
+`define NCPU_OP_DIV 7'h20
+`define NCPU_OP_DIVU 7'h21
+`define NCPU_OP_MOD 7'h22
+`define NCPU_OP_MODU 7'h23
+`define NCPU_OP_LDB 7'h24
+`define NCPU_OP_LDBU 7'h25
+`define NCPU_OP_LDH 7'h26
+`define NCPU_OP_LDHU 7'h27
+`define NCPU_OP_STB 7'h28
+`define NCPU_OP_STH 7'h29
+`define NCPU_OP_MHI 7'h2a
+`define NCPU_OP_FADDS 7'h2b
+`define NCPU_OP_FSUBS 7'h2c
+`define NCPU_OP_FMULS 7'h2d
+`define NCPU_OP_FDIVS 7'h2e
+`define NCPU_OP_FCMPS 7'h2f
+`define NCPU_OP_FITFS 7'h30
+`define NCPU_OP_FFTIS 7'h31
 
-`define NCPU_ATTR_EQ 8'd0
-`define NCPU_ATTR_GT 8'd1
-`define NCPU_ATTR_GTU 8'd2
+`define NCPU_COND_EQ 4'd0
+`define NCPU_COND_GT 4'd1
+`define NCPU_COND_GTU 4'd2
 
 /////////////////////////////////////////////////////////////////////////////
 // Internal OPC

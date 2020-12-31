@@ -6,7 +6,6 @@ isim/
 *.bld
 *.cmd_log
 *.lso
-*.ngc
 *.ngd
 *.ngr
 *.prj
