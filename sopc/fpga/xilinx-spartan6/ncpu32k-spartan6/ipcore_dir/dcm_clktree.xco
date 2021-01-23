@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Wed Dec 30 16:26:43 2020
+# Date: Thu Dec 31 18:28:43 2020
 #
 ##############################################################
 #
@@ -74,12 +74,12 @@ CSET clkout1_requested_out_freq=35.000
 CSET clkout1_requested_phase=0.000
 CSET clkout2_drives=BUFG
 CSET clkout2_requested_duty_cycle=50.000
-CSET clkout2_requested_out_freq=80.000
+CSET clkout2_requested_out_freq=100.000
 CSET clkout2_requested_phase=0.000
 CSET clkout2_used=true
 CSET clkout3_drives=BUFG
 CSET clkout3_requested_duty_cycle=50.000
-CSET clkout3_requested_out_freq=80.000
+CSET clkout3_requested_out_freq=100.000
 CSET clkout3_requested_phase=180.000
 CSET clkout3_used=true
 CSET clkout4_drives=BUFG
@@ -197,29 +197,29 @@ CSET override_pll=false
 CSET platform=nt
 CSET pll_bandwidth=OPTIMIZED
 CSET pll_clk_feedback=CLKFBOUT
-CSET pll_clkfbout_mult=35
+CSET pll_clkfbout_mult=14
 CSET pll_clkfbout_phase=0.000
 CSET pll_clkin_period=20.000
-CSET pll_clkout0_divide=25
+CSET pll_clkout0_divide=20
 CSET pll_clkout0_duty_cycle=0.500
 CSET pll_clkout0_phase=0.000
-CSET pll_clkout1_divide=11
+CSET pll_clkout1_divide=7
 CSET pll_clkout1_duty_cycle=0.500
 CSET pll_clkout1_phase=0.000
-CSET pll_clkout2_divide=11
+CSET pll_clkout2_divide=7
 CSET pll_clkout2_duty_cycle=0.500
 CSET pll_clkout2_phase=180.000
-CSET pll_clkout3_divide=59
+CSET pll_clkout3_divide=47
 CSET pll_clkout3_duty_cycle=0.500
 CSET pll_clkout3_phase=0.000
-CSET pll_clkout4_divide=88
+CSET pll_clkout4_divide=70
 CSET pll_clkout4_duty_cycle=0.500
 CSET pll_clkout4_phase=0.000
 CSET pll_clkout5_divide=1
 CSET pll_clkout5_duty_cycle=0.500
 CSET pll_clkout5_phase=0.000
 CSET pll_compensation=SYSTEM_SYNCHRONOUS
-CSET pll_divclk_divide=2
+CSET pll_divclk_divide=1
 CSET pll_notes=None
 CSET pll_ref_jitter=0.010
 CSET power_down_port=POWER_DOWN
@@ -266,4 +266,4 @@ CSET use_status=false
 MISC pkg_timestamp=2012-05-10T12:44:55Z
 # END Extra information
 GENERATE
-# CRC:   fe35aa
+# CRC: e01fac97

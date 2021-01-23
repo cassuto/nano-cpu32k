@@ -55,11 +55,11 @@
 // "Output    Output      Phase     Duty      Pk-to-Pk        Phase"
 // "Clock    Freq (MHz) (degrees) Cycle (%) Jitter (ps)  Error (ps)"
 //----------------------------------------------------------------------------
-// CLK_OUT1____35.000______0.000______50.0______316.575____235.067
-// CLK_OUT2____79.545______0.000______50.0______246.538____235.067
-// CLK_OUT3____79.545____180.000______50.0______246.538____235.067
-// CLK_OUT4____14.831______0.000______50.0______383.944____235.067
-// CLK_OUT5_____9.943______0.000______50.0______414.102____235.067
+// CLK_OUT1____35.000______0.000______50.0______284.757____199.399
+// CLK_OUT2___100.000______0.000______50.0______226.561____199.399
+// CLK_OUT3___100.000____180.000______50.0______226.561____199.399
+// CLK_OUT4____14.894______0.000______50.0______337.992____199.399
+// CLK_OUT5____10.000______0.000______50.0______365.284____199.399
 //
 //----------------------------------------------------------------------------
 // "Input Clock   Freq (MHz)    Input Jitter (UI)"
@@ -101,22 +101,22 @@ module dcm_clktree
   #(.BANDWIDTH              ("OPTIMIZED"),
     .CLK_FEEDBACK           ("CLKFBOUT"),
     .COMPENSATION           ("SYSTEM_SYNCHRONOUS"),
-    .DIVCLK_DIVIDE          (2),
-    .CLKFBOUT_MULT          (35),
+    .DIVCLK_DIVIDE          (1),
+    .CLKFBOUT_MULT          (14),
     .CLKFBOUT_PHASE         (0.000),
-    .CLKOUT0_DIVIDE         (25),
+    .CLKOUT0_DIVIDE         (20),
     .CLKOUT0_PHASE          (0.000),
     .CLKOUT0_DUTY_CYCLE     (0.500),
-    .CLKOUT1_DIVIDE         (11),
+    .CLKOUT1_DIVIDE         (7),
     .CLKOUT1_PHASE          (0.000),
     .CLKOUT1_DUTY_CYCLE     (0.500),
-    .CLKOUT2_DIVIDE         (11),
+    .CLKOUT2_DIVIDE         (7),
     .CLKOUT2_PHASE          (180.000),
     .CLKOUT2_DUTY_CYCLE     (0.500),
-    .CLKOUT3_DIVIDE         (59),
+    .CLKOUT3_DIVIDE         (47),
     .CLKOUT3_PHASE          (0.000),
     .CLKOUT3_DUTY_CYCLE     (0.500),
-    .CLKOUT4_DIVIDE         (88),
+    .CLKOUT4_DIVIDE         (70),
     .CLKOUT4_PHASE          (0.000),
     .CLKOUT4_DUTY_CYCLE     (0.500),
     .CLKIN_PERIOD           (20.000),

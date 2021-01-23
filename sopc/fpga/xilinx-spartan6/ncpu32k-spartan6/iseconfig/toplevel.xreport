@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <report-views version="2.0" >
  <header>
-  <DateModified>2020-12-31T12:25:52</DateModified>
+  <DateModified>2021-01-15T12:32:24</DateModified>
   <ModuleName>toplevel</ModuleName>
   <SummaryTimeStamp>2020-12-30T23:23:03</SummaryTimeStamp>
   <SavedFilePath>E:/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/iseconfig/toplevel.xreport</SavedFilePath>
