@@ -51,6 +51,8 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate /dcm_clktree_tb/CLK_IN1
 add wave -noupdate /dcm_clktree_tb/COUNT
+add wave -noupdate /dcm_clktree_tb/LOCKED
+add wave -noupdate /dcm_clktree_tb/RESET
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {3223025 ps} 0}
 configure wave -namecolwidth 238

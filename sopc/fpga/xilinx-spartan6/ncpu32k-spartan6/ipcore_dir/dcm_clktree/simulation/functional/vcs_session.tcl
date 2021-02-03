@@ -8,6 +8,9 @@ gui_sg_addsignal -group dcm_clktree_group {dcm_clktree_tb.CLK_IN1}
 gui_sg_addsignal -group dcm_clktree_group {{Output_clocks}} -divider
 gui_sg_addsignal -group dcm_clktree_group {dcm_clktree_tb.dut.clk}
 gui_list_expand -id Wave.1 dcm_clktree_tb.dut.clk
+gui_sg_addsignal -group dcm_clktree_group {{Status_control}} -divider
+gui_sg_addsignal -group dcm_clktree_group {dcm_clktree_tb.RESET}
+gui_sg_addsignal -group dcm_clktree_group {dcm_clktree_tb.LOCKED}
 gui_sg_addsignal -group dcm_clktree_group {{Counters}} -divider
 gui_sg_addsignal -group dcm_clktree_group {dcm_clktree_tb.COUNT}
 gui_sg_addsignal -group dcm_clktree_group {dcm_clktree_tb.dut.counter}

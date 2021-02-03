@@ -56,6 +56,7 @@ set_input_jitter CLK_IN1 0.2
 
 # FALSE PATH constraint added on COUNTER_RESET 
 set_false_path -from [get_ports "COUNTER_RESET"]
+set_false_path -from [get_ports "RESET"]
 
 # Derived clock periods. These are commented out because they are 
 #   automatically propogated by the tools

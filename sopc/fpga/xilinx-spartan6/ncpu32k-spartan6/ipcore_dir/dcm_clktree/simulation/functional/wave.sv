@@ -101,6 +101,14 @@ group insert \
     {dcm_clktree_tb.dut.counter[1]} \
     {dcm_clktree_tb.dut.counter[2]}  \     {dcm_clktree_tb.dut.counter[3]}  \     {dcm_clktree_tb.dut.counter[4]}  \  
     {dcm_clktree_tb.dut.counter[5]} 
+group using {Status/control}
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+   {nc::dcm_clktree_tb.RESET}    {nc::dcm_clktree_tb.LOCKED}
+
 
 set id [waveform add -signals [list {nc::dcm_clktree_tb.COUNT} ]]
 

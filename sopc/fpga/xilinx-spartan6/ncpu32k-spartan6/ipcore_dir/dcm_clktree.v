@@ -55,11 +55,11 @@
 // "Output    Output      Phase     Duty      Pk-to-Pk        Phase"
 // "Clock    Freq (MHz) (degrees) Cycle (%) Jitter (ps)  Error (ps)"
 //----------------------------------------------------------------------------
-// CLK_OUT1____35.000______0.000______50.0______284.757____199.399
-// CLK_OUT2___100.000______0.000______50.0______226.561____199.399
-// CLK_OUT3___100.000____180.000______50.0______226.561____199.399
-// CLK_OUT4____14.894______0.000______50.0______337.992____199.399
-// CLK_OUT5____10.000______0.000______50.0______365.284____199.399
+// CLK_OUT1____50.000______0.000______50.0______247.086____178.771
+// CLK_OUT2___100.000______0.000______50.0______209.375____178.771
+// CLK_OUT3___100.000____180.000______50.0______209.375____178.771
+// CLK_OUT4____14.754______0.000______50.0______319.316____178.771
+// CLK_OUT5____10.000______0.000______50.0______343.964____178.771
 //
 //----------------------------------------------------------------------------
 // "Input Clock   Freq (MHz)    Input Jitter (UI)"
@@ -68,7 +68,7 @@
 
 `timescale 1ps/1ps
 
-(* CORE_GENERATION_INFO = "dcm_clktree,clk_wiz_v3_6,{component_name=dcm_clktree,use_phase_alignment=true,use_min_o_jitter=false,use_max_i_jitter=false,use_dyn_phase_shift=false,use_inclk_switchover=false,use_dyn_reconfig=false,feedback_source=FDBK_AUTO,primtype_sel=PLL_BASE,num_out_clk=5,clkin1_period=20.000,clkin2_period=20.000,use_power_down=false,use_reset=false,use_locked=false,use_inclk_stopped=false,use_status=false,use_freeze=false,use_clk_valid=false,feedback_type=SINGLE,clock_mgr_type=AUTO,manual_override=false}" *)
+(* CORE_GENERATION_INFO = "dcm_clktree,clk_wiz_v3_6,{component_name=dcm_clktree,use_phase_alignment=true,use_min_o_jitter=false,use_max_i_jitter=false,use_dyn_phase_shift=false,use_inclk_switchover=false,use_dyn_reconfig=false,feedback_source=FDBK_AUTO,primtype_sel=PLL_BASE,num_out_clk=5,clkin1_period=20.000,clkin2_period=20.000,use_power_down=false,use_reset=true,use_locked=true,use_inclk_stopped=false,use_status=false,use_freeze=false,use_clk_valid=false,feedback_type=SINGLE,clock_mgr_type=AUTO,manual_override=false}" *)
 module dcm_clktree
  (// Clock in ports
   input         CLK_IN1,
@@ -77,7 +77,10 @@ module dcm_clktree
   output        CLK_OUT2,
   output        CLK_OUT3,
   output        CLK_OUT4,
-  output        CLK_OUT5
+  output        CLK_OUT5,
+  // Status and control signals
+  input         RESET,
+  output        LOCKED
  );
 
   // Input buffering
@@ -92,7 +95,6 @@ module dcm_clktree
   //    * Unused outputs are labeled unused
   wire [15:0] do_unused;
   wire        drdy_unused;
-  wire        locked_unused;
   wire        clkfbout;
   wire        clkfbout_buf;
   wire        clkout5_unused;
@@ -102,21 +104,21 @@ module dcm_clktree
     .CLK_FEEDBACK           ("CLKFBOUT"),
     .COMPENSATION           ("SYSTEM_SYNCHRONOUS"),
     .DIVCLK_DIVIDE          (1),
-    .CLKFBOUT_MULT          (14),
+    .CLKFBOUT_MULT          (18),
     .CLKFBOUT_PHASE         (0.000),
-    .CLKOUT0_DIVIDE         (20),
+    .CLKOUT0_DIVIDE         (18),
     .CLKOUT0_PHASE          (0.000),
     .CLKOUT0_DUTY_CYCLE     (0.500),
-    .CLKOUT1_DIVIDE         (7),
+    .CLKOUT1_DIVIDE         (9),
     .CLKOUT1_PHASE          (0.000),
     .CLKOUT1_DUTY_CYCLE     (0.500),
-    .CLKOUT2_DIVIDE         (7),
+    .CLKOUT2_DIVIDE         (9),
     .CLKOUT2_PHASE          (180.000),
     .CLKOUT2_DUTY_CYCLE     (0.500),
-    .CLKOUT3_DIVIDE         (47),
+    .CLKOUT3_DIVIDE         (61),
     .CLKOUT3_PHASE          (0.000),
     .CLKOUT3_DUTY_CYCLE     (0.500),
-    .CLKOUT4_DIVIDE         (70),
+    .CLKOUT4_DIVIDE         (90),
     .CLKOUT4_PHASE          (0.000),
     .CLKOUT4_DUTY_CYCLE     (0.500),
     .CLKIN_PERIOD           (20.000),
@@ -130,8 +132,9 @@ module dcm_clktree
     .CLKOUT3               (clkout3),
     .CLKOUT4               (clkout4),
     .CLKOUT5               (clkout5_unused),
-    .LOCKED                (locked_unused),
-    .RST                   (1'b0),
+    // Status and control signals
+    .LOCKED                (LOCKED),
+    .RST                   (RESET),
      // Input clock control
     .CLKFBIN               (clkfbout_buf),
     .CLKIN                 (clkin1));

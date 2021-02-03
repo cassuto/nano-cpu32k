@@ -66,7 +66,10 @@ module dcm_clktree_exdes
   input         COUNTER_RESET,
   output [5:1]  CLK_OUT,
   // High bits of counters driven by clocks
-  output [5:1]  COUNT
+  output [5:1]  COUNT,
+  // Status and control signals
+  input         RESET,
+  output        LOCKED
  );
 
   // Parameters for the counters
@@ -76,8 +79,8 @@ module dcm_clktree_exdes
   // Number of counters
   localparam    NUM_C     = 5;
   genvar        count_gen;
-  // Create reset for the counters
-  wire          reset_int = COUNTER_RESET;
+  // When the clock goes out of lock, reset the counters
+  wire          reset_int = !LOCKED || RESET || COUNTER_RESET;
 
    reg [NUM_C:1] rst_sync;
    reg [NUM_C:1] rst_sync_int;
@@ -107,7 +110,10 @@ module dcm_clktree_exdes
     .CLK_OUT2           (clk_int[2]),
     .CLK_OUT3           (clk_int[3]),
     .CLK_OUT4           (clk_int[4]),
-    .CLK_OUT5           (clk_int[5]));
+    .CLK_OUT5           (clk_int[5]),
+    // Status and control signals
+    .RESET              (RESET),
+    .LOCKED             (LOCKED));
 
 genvar clk_out_pins;
 

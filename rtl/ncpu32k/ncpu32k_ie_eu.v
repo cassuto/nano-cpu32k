@@ -107,7 +107,7 @@ module ncpu32k_ie_eu
    output                     msr_tsc_tcr_we
 );
 
-   wire [`NCPU_DW-1:0] msr_addr = ieu_operand_1 + ieu_operand_2;
+   wire [`NCPU_DW-1:0] msr_addr = ieu_operand_1 | ieu_operand_2;
    wire [`NCPU_MSR_BANK_AW-1:0] bank_addr = msr_addr[`NCPU_MSR_BANK_AW+`NCPU_MSR_BANK_OFF_AW-1:`NCPU_MSR_BANK_OFF_AW];
    wire [`NCPU_MSR_BANK_OFF_AW-1:0] bank_off = msr_addr[`NCPU_MSR_BANK_OFF_AW-1:0];
    

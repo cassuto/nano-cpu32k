@@ -1,7 +1,7 @@
 Release 14.7 - par P.20131013 (nt)
 Copyright (c) 1995-2013 Xilinx, Inc.  All rights reserved.
 
-Fri Jan 01 02:33:26 2021
+Wed Feb 03 15:26:29 2021
 
 
 # NOTE: This file is designed to be imported into a spreadsheet program
@@ -95,7 +95,7 @@ E9|||GND||||||||||||
 E10||IOBM|IO_L37P_GCLK13_0|UNUSED||0|||||||||
 E11||IOBS|IO_L64N_SCP4_0|UNUSED||0|||||||||
 E12||IOBS|IO_L1N_A24_VREF_1|UNUSED||1|||||||||
-E13|SPI_SCK|IOB|IO_L1P_A25_1|OUTPUT|LVTTL|1|12|SLOW||||LOCATED|YES|NONE|
+E13|SPI_SCK|IOB|IO_L1P_A25_1|OUTPUT|LVTTL|1|12|SLOW||||LOCATED|NO|NONE|
 E14|||TDO||||||||||||
 E15||IOBM|IO_L34P_A13_M1WE_1|UNUSED||1|||||||||
 E16||IOBS|IO_L34N_A12_M1BA2_1|UNUSED||1|||||||||

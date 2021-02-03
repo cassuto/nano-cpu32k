@@ -71,7 +71,8 @@ module toplevel
    wire dram_clk;
    wire uart_clk;
    wire smpl_clk;
-   reg rst_n_r = 1'b0;
+   wire pll_locked;
+   reg rst_n_r;
    wire rst_n;
   
    ODDR2 #(
@@ -104,7 +105,9 @@ module toplevel
 		.CLK_OUT2(sdr_clk),
 		.CLK_OUT3(dram_clk),
 		.CLK_OUT4(uart_clk),
-      .CLK_OUT5(smpl_clk)
+      .CLK_OUT5(smpl_clk),
+      .RESET(~SYS_RST_N),
+      .LOCKED(pll_locked)
     );
     
    // SoC Core
@@ -149,20 +152,8 @@ module toplevel
       .UART_TX_L  (UART_TX_L)
    );
    
-   // Reset counter
-   /*reg [5:0] rst_cnt = 4'b0;
-   always @(posedge clk) begin
-      if(~SYS_RST_N) begin
-         rst_cnt <= 0;
-         rst_n_r <= 1'b0;
-      end else if(~rst_cnt[5]) begin
-         rst_cnt <= rst_cnt+1'b1;
-      end
-      if(rst_cnt[5])
-         rst_n_r <= 1'b1;
-   end*/
-   always @(posedge clk or negedge SYS_RST_N)
-      if(~SYS_RST_N)
+   always @(posedge clk or negedge pll_locked)
+      if(~pll_locked)
          rst_n_r <= 0;
       else
          rst_n_r <= 1;
@@ -170,21 +161,15 @@ module toplevel
    // Global RST
    assign rst_n = rst_n_r;
 
-   //reg [19:0] led_cnt = 20'b0;
-   reg led_r = 1;
-   /*always @(posedge smpl_clk) begin
-      if(rst_n)
-         led_cnt <= led_cnt+1'b1;
-      if(led_cnt[19])
-         led_r <= 1'b1;
-   end*/
+   reg [4:0] led_cnt;
    
-   reg dbg_r=0;
-   /*always @(posedge uart_clk) begin
-      if(~UART_TX_L)
-         dbg_r<=1;
-   end*/
-   assign LED_INC[0] = dbg_r;
-   assign LED_INC[1] = led_r;
+   always @(posedge SPI_SCK or negedge rst_n)
+      if (~rst_n)
+         led_cnt <= 'b0;
+      else if (SPI_CS_L)
+         led_cnt <= led_cnt + 'b1;
+
+   assign LED_INC[0] = 1'b0;
+   assign LED_INC[1] = led_cnt[4] & SPI_CS_L;
    
 endmodule

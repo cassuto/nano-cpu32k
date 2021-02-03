@@ -57,7 +57,7 @@
 
 `timescale 1ps/1ps
 
-`define wait_lock @(posedge dut.clknetwork.pll_base_inst.LOCKED)
+`define wait_lock @(posedge LOCKED)
 
 module dcm_clktree_tb ();
 
@@ -80,6 +80,9 @@ module dcm_clktree_tb ();
 
   // The high bits of the sampling counters
   wire [5:1]  COUNT;
+  // Status and control signals
+  reg         RESET      = 0;
+  wire        LOCKED;
   reg         COUNTER_RESET = 0;
 wire [5:1] CLK_OUT;
 //Freq Check using the M & D values setting and actual Frequency generated
@@ -98,6 +101,10 @@ wire [5:1] CLK_OUT;
     // Set up any display statements using time to be readable
     $timeformat(-12, 2, "ps", 10);
     COUNTER_RESET = 0;
+    test_phase = "reset";
+    RESET = 1;
+    #(PER1*6);
+    RESET = 0;
     test_phase = "wait lock";
     `wait_lock;
     #(PER1*6);
@@ -126,7 +133,10 @@ wire [5:1] CLK_OUT;
     .COUNTER_RESET      (COUNTER_RESET),
     .CLK_OUT            (CLK_OUT),
     // High bits of the counters
-    .COUNT              (COUNT));
+    .COUNT              (COUNT),
+    // Status and control signals
+    .RESET              (RESET),
+    .LOCKED             (LOCKED));
 
 // Freq Check 
 
