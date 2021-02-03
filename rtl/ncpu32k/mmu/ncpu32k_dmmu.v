@@ -90,7 +90,7 @@ module ncpu32k_dmmu
          .cas        (hds_dbus_cmd)
       );
       
-   // Cacnel the current cmd handshake with icache when Exception raised.
+   // Cacnel the current cmd handshake with dcache when Exception raised.
    assign dcache_cmd_valid = ~flush_strobe & dcache_cmd_valid_w;
    
    // We assume that dbus will not go valid if its cmd is invalid.
