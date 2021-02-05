@@ -122,6 +122,7 @@ module tb_ncpu32k_DRAM_L2_cache();
       .l2_ch_flush   (l2_ch_flush),
       
       .sdr_clk       (sdr_clk),
+      .sdr_rst_n     (rst_n),
       .sdr_din       (sdr_din),
       .sdr_dout      (sdr_dout),
       .sdr_cmd_bst_rd_req  (sdr_cmd_bst_rd_req),

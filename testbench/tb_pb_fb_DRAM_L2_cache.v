@@ -41,7 +41,13 @@ module tb_pb_fb_DRAM_L2_cache();
 
    wire [3:0] DRAM_CS_WE_RAS_CAS_L;
    
-   sdr sdram0 (
+   sdr #(
+      .MEMH_FILE_B0 ("sdram_test_b0.mem"),
+      .MEMH_FILE_B1 ("sdram_test_b1.mem"),
+      .MEMH_FILE_B2 ("sdram_test_b2.mem"),
+      .MEMH_FILE_B3 ("sdram_test_b3.mem")
+   )
+   sdram0 (
       DRAM_DATA, DRAM_ADDR, DRAM_BA,
       DRAM_CLK, DRAM_CKE,
       DRAM_CS_WE_RAS_CAS_L[3], DRAM_CS_WE_RAS_CAS_L[1], DRAM_CS_WE_RAS_CAS_L[0], DRAM_CS_WE_RAS_CAS_L[2],
@@ -113,6 +119,7 @@ module tb_pb_fb_DRAM_L2_cache();
       .l2_ch_flush   (l2_ch_flush),
       
       .sdr_clk       (sdr_clk),
+      .sdr_rst_n     (rst_n),
       .sdr_din       (sdr_din),
       .sdr_dout      (sdr_dout),
       .sdr_cmd_bst_rd_req  (sdr_cmd_bst_rd_req),
@@ -123,12 +130,12 @@ module tb_pb_fb_DRAM_L2_cache();
    );
    
    assign l2_ch_din = 32'h34567890;
-   assign l2_ch_cmd_we_msk = 4'b1111;
+   assign l2_ch_cmd_we_msk = 4'b0000; //4'b1111;
    
    initial begin
       #0 l2_ch_cmd_valid = 1;
       #0 l2_ch_ready = 1;
-      #0 l2_ch_cmd_addr = 25'h234123;
+      #0 l2_ch_cmd_addr = 25'h0;
       
       #334781.25 l2_ch_ready = 0;
    end
@@ -136,12 +143,16 @@ module tb_pb_fb_DRAM_L2_cache();
       #334832.25 l2_ch_ready = 1;
    end
    
+   always @(posedge clk)
+      if (l2_ch_cmd_valid & l2_ch_cmd_ready)
+         l2_ch_cmd_addr <= l2_ch_cmd_addr + 1'b1;
+   
    wire hds_cmd = l2_ch_cmd_ready & l2_ch_cmd_valid;
    wire hds_dout = l2_ch_ready & l2_ch_valid;
    
    always @(posedge clk) begin
       if(hds_cmd)
-         l2_ch_cmd_addr <= l2_ch_cmd_addr + 4;
+         l2_ch_cmd_addr <= l2_ch_cmd_addr + 'd64;
    end
    always @(posedge clk) begin
       if(hds_dout) begin
