@@ -279,20 +279,21 @@ module ncpu32k_idu(
    wire jmp_link = (idu_op_jmpfar | idu_jmprel_link);
    
    // Pipeline
-   wire                 pipebuf_cas;
+   wire                 pipebuf_cke;
    wire [`NCPU_DW-1:0]  imm_oper_r;
 
-   ncpu32k_cell_pipebuf #(1) pipebuf_ifu
+   ncpu32k_cell_pipebuf pipebuf_ifu
       (
          .clk        (clk),
          .rst_n      (rst_n),
-         .din        (),
-         .dout       (),
-         .in_valid   (idu_in_valid),
-         .in_ready   (idu_in_ready),
-         .out_valid  (ieu_in_valid),
-         .out_ready  (ieu_in_ready),
-         .cas        (pipebuf_cas)
+         .a_en       (1'b1),
+         .a_valid    (idu_in_valid),
+         .a_ready    (idu_in_ready),
+         .b_en       (1'b1),
+         .b_valid    (ieu_in_valid),
+         .b_ready    (ieu_in_ready),
+         .cke        (pipebuf_cke),
+         .pending    ()
       );
 
    wire rs1_frm_regf_r;
@@ -302,18 +303,18 @@ module ncpu32k_idu(
    wire rd_readas_rs2_nxt;
    
    nDFF_lr #(1) dff_rs1_dout_valid_r
-                   (clk,rst_n, pipebuf_cas, regf_rs1_re, rs1_frm_regf_r);
+                   (clk,rst_n, pipebuf_cke, regf_rs1_re, rs1_frm_regf_r);
    nDFF_lr #(1) dff_rs2_dout_valid_r
-                   (clk,rst_n, pipebuf_cas, rs2_frm_regf_nxt, rs2_frm_regf_r);
+                   (clk,rst_n, pipebuf_cke, rs2_frm_regf_nxt, rs2_frm_regf_r);
    nDFF_lr #(1) dff_rd_readas_rs2_r
-                   (clk,rst_n, pipebuf_cas, rd_readas_rs2_nxt, rd_readas_rs2_r);
+                   (clk,rst_n, pipebuf_cke, rd_readas_rs2_nxt, rd_readas_rs2_r);
    
    // Request operand(s) from Regfile when needed
    // Note that op_mu_store and op_wmsr are special cases 
    assign rd_readas_rs2_nxt = op_mu_store | op_wmsr;
-   assign regf_rs1_re = (~insn_non_op) & pipebuf_cas;
+   assign regf_rs1_re = (~insn_non_op) & pipebuf_cke;
    assign regf_rs1_addr = f_rs1;
-   assign regf_rs2_re = ((~insn_imm & ~insn_non_op) | rd_readas_rs2_nxt) & pipebuf_cas;
+   assign regf_rs2_re = ((~insn_imm & ~insn_non_op) | rd_readas_rs2_nxt) & pipebuf_cke;
    assign regf_rs2_addr = rd_readas_rs2_nxt ? f_rd : f_rs2;
    
    // Sign-extended 15bit Integer
@@ -328,7 +329,7 @@ module ncpu32k_idu(
                            : uimm17;
 
    nDFF_lr #(`NCPU_DW) dff_imm_oper_r
-                   (clk,rst_n, pipebuf_cas, imm_oper_nxt, imm_oper_r);
+                   (clk,rst_n, pipebuf_cke, imm_oper_nxt, imm_oper_r);
 
    // Final Operands
    assign ieu_operand_1 = rs1_frm_regf_r ? regf_rs1_dout : imm_oper_r;
@@ -337,7 +338,7 @@ module ncpu32k_idu(
 
    wire not_flushing = ~specul_flush;
 
-   wire pipeflow = pipebuf_cas | specul_flush;
+   wire pipeflow = pipebuf_cke | specul_flush;
 
    // Data path: no need to flush
    // Note: opc_bus won't be here. Merely flushing 'wb_regf' can we ensure that

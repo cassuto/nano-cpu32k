@@ -148,7 +148,7 @@ module handshake_cmd_sram
          wire push = (cmd_valid & cmd_ready);
          wire pop = (valid & ready);
          wire valid_nxt = (push | ~pop);
-         ncpu32k_cell_dff_lr #(1) dff_out_valid
+         nDFF_lr #(1) dff_out_valid
                          (clk,rst_n, (push | pop), valid_nxt, valid);
                          
          assign cmd_ready = ~valid;
@@ -174,7 +174,7 @@ module handshake_cmd_sram
          wire push = (cmd_valid & cmd_ready);
          wire pop = (valid & ready);
          wire valid_nxt = (push | ~pop);
-         ncpu32k_cell_dff_lr #(1) dff_out_valid
+         nDFF_lr #(1) dff_out_valid
                          (clk,rst_n, (push | pop), valid_nxt, valid);
 
          assign cmd_ready = ~valid | pop;

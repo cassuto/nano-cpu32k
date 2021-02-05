@@ -109,20 +109,20 @@ module ncpu32k_immu
    
    ncpu32k_cell_pipebuf
       #(
-         .DW (`NCPU_IW),
          .ENABLE_BYPASS (1) // force bypassing. for Assert (03072258)
       )
    pipebuf_ifu
       (
          .clk        (clk),
          .rst_n      (rst_n),
-         .din        (),
-         .dout       (),
-         .in_valid   (ibus_cmd_valid),
-         .in_ready   (ibus_cmd_ready_w),
-         .out_valid  (icache_cmd_valid_w),
-         .out_ready  (icache_cmd_ready | flush_strobe),
-         .cas        (hds_ibus_cmd)
+         .a_en       (1'b1),
+         .a_valid    (ibus_cmd_valid),
+         .a_ready    (ibus_cmd_ready_w),
+         .b_en       (1'b1),
+         .b_valid    (icache_cmd_valid_w),
+         .b_ready    (icache_cmd_ready | flush_strobe),
+         .cke        (hds_ibus_cmd),
+         .pending    ()
       );
       
    assign hds_ibus_dout = ibus_valid & ibus_ready;

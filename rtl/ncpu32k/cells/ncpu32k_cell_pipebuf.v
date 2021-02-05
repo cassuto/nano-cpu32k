@@ -21,43 +21,42 @@
 
 module ncpu32k_cell_pipebuf
 # (
-   parameter DW = 1, // Data Width in bits
    parameter ENABLE_BYPASS = `NCPU_PIPEBUF_BYPASS // bypass when popping
 )
 (
    input                      clk,
    input                      rst_n,
-   input [DW-1:0]             din,
-   output [DW-1:0]            dout,
-   input                      in_valid,
-   output                     in_ready,
-   output                     out_valid,
-   input                      out_ready,
-   output                     cas
+   input                      a_en,    // enable ready output
+   input                      a_valid,
+   output                     a_ready,
+   input                      b_en,    // enable valid output
+   output                     b_valid,
+   input                      b_ready,
+   output                     cke,
+   output                     pending
 );
 
-   wire push = (in_valid & in_ready);
-   wire pop = (out_valid & out_ready);
+   wire push = (a_valid & a_ready);
+   wire pop = (b_valid & b_ready);
    
    //
    // Equivalent to 1-slot FIFO
    //
    wire valid_nxt = (push | ~pop);
    
-   nDFF_lr #(1) dff_out_valid
-                   (clk,rst_n, (push | pop), valid_nxt, out_valid);
+   nDFF_lr #(1) dff_pending
+                   (clk,rst_n, (push | pop), valid_nxt, pending);
    
-   nDFF_lr #(DW) dff_dout
-                   (clk,rst_n, push, din, dout);
+   assign b_valid = b_en & pending;
    
    generate
-      if (ENABLE_BYPASS) begin :enable_bypass
-         assign in_ready = ~out_valid | pop;
+      if (ENABLE_BYPASS) begin : bypass
+         assign a_ready = a_en & (~pending | pop);
       end else begin
-         assign in_ready = ~out_valid;
+         assign a_ready = a_en & (~pending);
       end
    endgenerate
    
-   assign cas = push;
+   assign cke = push;
    
 endmodule

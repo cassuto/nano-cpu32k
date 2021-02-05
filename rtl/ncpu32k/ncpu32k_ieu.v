@@ -351,16 +351,16 @@ module ncpu32k_ieu(
    // Write back regfile
    assign regf_din = 
       (
-            // Assert (03060935)
-            ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
-            ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |
-            ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_XOR]}} & lu_xor[`NCPU_DW-1:0]) |
-            ({`NCPU_DW{lu_op_shift}} & lu_shift[`NCPU_DW-1:0]) |
-            ({`NCPU_DW{au_op_adder}} & au_adder[`NCPU_DW-1:0]) |
-            ({`NCPU_DW{au_op_mhi}} & au_mhi[`NCPU_DW-1:0]) |
-            ({`NCPU_DW{ieu_mu_load}} & mu_load[`NCPU_DW-1:0]) |
-            ({`NCPU_DW{ieu_jmplink}} & linkaddr[`NCPU_DW-1:0]) |
-            ({`NCPU_DW{ieu_eu_dout_op}} & ieu_eu_dout[`NCPU_DW-1:0])
+         // Assert (03060935)
+         ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_AND]}} & lu_and[`NCPU_DW-1:0]) |
+         ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_OR]}} & lu_or[`NCPU_DW-1:0]) |
+         ({`NCPU_DW{ieu_lu_opc_bus[`NCPU_LU_XOR]}} & lu_xor[`NCPU_DW-1:0]) |
+         ({`NCPU_DW{lu_op_shift}} & lu_shift[`NCPU_DW-1:0]) |
+         ({`NCPU_DW{au_op_adder}} & au_adder[`NCPU_DW-1:0]) |
+         ({`NCPU_DW{au_op_mhi}} & au_mhi[`NCPU_DW-1:0]) |
+         ({`NCPU_DW{ieu_mu_load}} & mu_load[`NCPU_DW-1:0]) |
+         ({`NCPU_DW{ieu_jmplink}} & linkaddr[`NCPU_DW-1:0]) |
+         ({`NCPU_DW{ieu_eu_dout_op}} & ieu_eu_dout[`NCPU_DW-1:0])
       );
    
    assign regf_din_addr = ieu_wb_reg_addr;

@@ -74,20 +74,20 @@ module ncpu32k_dmmu
 
    ncpu32k_cell_pipebuf
       #(
-         .DW (`NCPU_IW),
          .ENABLE_BYPASS (1) // force bypassing.
       )
    pipebuf_ifu
       (
          .clk        (clk),
          .rst_n      (rst_n),
-         .din        (),
-         .dout       (),
-         .in_valid   (dbus_cmd_valid),
-         .in_ready   (dbus_cmd_ready),
-         .out_valid  (dcache_cmd_valid_w),
-         .out_ready  (dcache_cmd_ready | flush_strobe),
-         .cas        (hds_dbus_cmd)
+         .a_en       (1'b1),
+         .a_valid    (dbus_cmd_valid),
+         .a_ready    (dbus_cmd_ready),
+         .b_en       (1'b1),
+         .b_valid    (dcache_cmd_valid_w),
+         .b_ready    (dcache_cmd_ready | flush_strobe),
+         .cke        (hds_dbus_cmd),
+         .pending    ()
       );
       
    // Cacnel the current cmd handshake with dcache when Exception raised.
