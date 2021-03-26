@@ -96,8 +96,12 @@ module tb_issue_queue;
          issue_valid = 1'b0;
          @(posedge clk);
          
+         ///////////////////////////////////////////////////////////////////////
+         // Testcase - Basics
+         ///////////////////////////////////////////////////////////////////////
+         
          //
-         // Testcase - Push 1
+         // Push 1
          //
          cdb_BVALID = 1'b0;
          cdb_BDATA = 32'h32;
@@ -162,7 +166,7 @@ module tb_issue_queue;
          
          
          //
-         // Testcase - Push 2 (rs2 not ready)
+         // Push #2 (rs2 not ready)
          //
          @(posedge clk);
          issue_valid = 1'b1;
@@ -179,7 +183,7 @@ module tb_issue_queue;
          handshake_issue;
          
          //
-         // Testcase - Push 3 (rs1 not ready)
+         // Push #3 (rs1 not ready)
          //
          issue_valid = 1'b1;
          uop = 4'h3;
@@ -195,7 +199,7 @@ module tb_issue_queue;
          handshake_issue;
          
          //
-         // Testcase - Push 4
+         // Push #4
          //
          issue_valid = 1'b1;
          uop = 4'h4;
@@ -223,7 +227,7 @@ module tb_issue_queue;
          
          
          //
-         // Testcase - pop 1
+         // Pop #1
          //
          if (~fu_valid)
             $fatal($time);
@@ -237,7 +241,7 @@ module tb_issue_queue;
             $fatal($time);
          
          //
-         // Testcase - pop 4
+         // Pop #4
          //
          if (~fu_valid)
             $fatal($time);
@@ -254,7 +258,7 @@ module tb_issue_queue;
             $fatal($time);
             
          //
-         // Testcase - wake-up 3
+         // Wake-up 3
          //
          cdb_BVALID = 1'b1;
          cdb_BDATA = 32'h66;
@@ -275,7 +279,7 @@ module tb_issue_queue;
             $fatal($time);
             
          //
-         // Testcase - push 5 (rs1 not ready)
+         // Push #5 (rs1 not ready)
          //
          issue_valid = 1'b1;
          uop = 4'h5;
@@ -294,7 +298,7 @@ module tb_issue_queue;
          // rs2 of #2 == rs1 of #5
          
          //
-         // Testcase - Wake up #2 and #5
+         // Wake up #2 and #5
          //
          cdb_BVALID = 1'b1;
          cdb_BDATA = 32'h88;
@@ -304,7 +308,7 @@ module tb_issue_queue;
          cdb_BVALID = 1'b0;
          
          //
-         // Testcase Pop #2 or #5
+         // Pop #2 or #5
          //
          fu_ready = 1'b1;
          handshake_fu;
@@ -317,12 +321,191 @@ module tb_issue_queue;
          @(posedge clk);
          if (fu_valid)
             $fatal($time);
+            
+         ///////////////////////////////////////////////////////////////////////
+         // Testcase - Pipelined popping
+         ///////////////////////////////////////////////////////////////////////
+         
+         //
+         // Push #1 (rs1 not ready)
+         //
+         issue_valid = 1'b1;
+         uop = 4'h1;
+         rs1_rdy = 1'b0;
+         rs1_dat = 32'h12;
+         rs1_addr = 5'h2;
+
+         rs2_rdy = 1'b1;
+         rs2_dat = 32'h21;
+         rs2_addr = 5'h1;
+         handshake_issue;
+         
+         //
+         // Push #2 (rs1 not ready)
+         //
+         issue_valid = 1'b1;
+         uop = 4'h2;
+         rs1_rdy = 1'b0;
+         rs1_dat = 32'h36;
+         rs1_addr = 5'h3;
+
+         rs2_rdy = 1'b1;
+         rs2_dat = 32'h64;
+         rs2_addr = 5'h4;
+         handshake_issue;
+         
+         issue_valid = 1'b0;
+         
+         fork
+            begin
+               //
+               // Wake up #2
+               //
+               cdb_BVALID = 1'b1;
+               cdb_BDATA = 32'h51;
+               cdb_rd_we = 1'b1;
+               cdb_rd_addr = 5'h3;
+               @(posedge clk);
+               //
+               // Wake up #1
+               //
+               cdb_BVALID = 1'b1;
+               cdb_BDATA = 32'h52;
+               cdb_rd_we = 1'b1;
+               cdb_rd_addr = 5'h2;
+               @(posedge clk);
+               cdb_BVALID = 1'b0;
+            end
+            
+            begin
+               //
+               // Pop #2
+               //
+               @(posedge clk);
+               fu_ready = 1'b1;
+               handshake_fu;
+               if (fu_uop != 4'h2)
+                  $fatal($time);
+               if (fu_rs1_dat != 32'h51)
+                  $fatal($time);
+               if (fu_rs2_dat != 32'h64)
+                  $fatal($time);
+                  
+               if (~issue_ready)
+                  $fatal($time);
+               
+               //
+               // Pop #1
+               //
+               handshake_fu;
+               fu_ready = 1'b0;
+               if (fu_uop != 4'h1)
+                  $fatal($time);
+               if (fu_rs1_dat != 32'h52)
+                  $fatal($time);
+               if (fu_rs2_dat != 32'h21)
+                  $fatal($time);
+            end
+         join
+         
+         
+         @(posedge clk);
+         if (~issue_ready)
+            $fatal($time);
+            
+         ///////////////////////////////////////////////////////////////////////
+         // Testcase - pipelined pushing and popping with bypass
+         ///////////////////////////////////////////////////////////////////////
+
+         fork
+            begin
+               //
+               // Push #1 (rs1 not ready)
+               //
+               issue_valid = 1'b1;
+               uop = 4'h1;
+               rs1_rdy = 1'b0;
+               rs1_dat = 32'h12;
+               rs1_addr = 5'h2;
+
+               rs2_rdy = 1'b1;
+               rs2_dat = 32'h21;
+               rs2_addr = 5'h1;
+               handshake_issue;
+               
+               //
+               // Push #2 (rs2 not ready)
+               //
+               issue_valid = 1'b1;
+               uop = 4'h2;
+               rs1_rdy = 1'b1;
+               rs1_dat = 32'h36;
+               rs1_addr = 5'h3;
+
+               rs2_rdy = 1'b0;
+               rs2_dat = 32'h64;
+               rs2_addr = 5'h4;
+               handshake_issue;
+               issue_valid = 1'b0;
+            end
+            begin
+               //
+               // Wake up #1
+               //
+               cdb_BVALID = 1'b1;
+               cdb_BDATA = 32'h52;
+               cdb_rd_we = 1'b1;
+               cdb_rd_addr = 5'h2;
+               @(posedge clk);
+               //
+               // Wake up #2
+               //
+               cdb_BVALID = 1'b1;
+               cdb_BDATA = 32'h51;
+               cdb_rd_we = 1'b1;
+               cdb_rd_addr = 5'h4;
+               @(posedge clk);
+               cdb_BVALID = 1'b0;
+            end
+            begin
+               //
+               // Pop #1
+               //
+               @(posedge clk);
+               fu_ready = 1'b1;
+               handshake_fu;
+               if (fu_uop != 4'h1)
+                  $fatal($time);
+               if (fu_rs1_dat != 32'h52)
+                  $fatal($time);
+               if (fu_rs2_dat != 32'h21)
+                  $fatal($time);
+               //
+               // Pop #2
+               //
+               handshake_fu;
+               fu_ready = 1'b0;
+               if (fu_uop != 4'h2)
+                  $fatal($time);
+               if (fu_rs1_dat != 32'h36)
+                  $fatal($time);
+               if (fu_rs2_dat != 32'h51)
+                  $fatal($time);
+               if (~issue_ready)
+                  $fatal($time);
+            end
+         join
+         
+         @(posedge clk);
+         if (~issue_ready)
+            $fatal($time);
          
          $display("===============================");
          $display(" PASS !");
          $display("===============================");
          $finish();
       end
-
+      
+      
 
 endmodule
