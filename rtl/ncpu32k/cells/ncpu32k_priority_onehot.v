@@ -1,5 +1,5 @@
 /**
- * @file Out-of-order issue queue
+ * @file Priority one-hot arbiter.
  */
 
 /***************************************************************************/
@@ -24,8 +24,8 @@ module ncpu32k_priority_onehot
    parameter POLARITY_DOUT // Not zero = High level active, 0 = Low level active
 )
 (
-   input [DW-1:0] DIN,
-   output [DW-1:0] DOUT
+   input [DW-1:0] DIN, // LSB (0) has the highest priority, MSB (DW-1) has the lowest priority.
+   output [DW-1:0] DOUT // one-hot code
 );
    genvar i;
 
