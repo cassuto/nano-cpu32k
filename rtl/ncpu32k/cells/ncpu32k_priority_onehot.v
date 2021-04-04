@@ -1,5 +1,5 @@
-/**
- * @file Priority one-hot arbiter.
+/**@file
+ * Priority one-hot arbiter.
  */
 
 /***************************************************************************/

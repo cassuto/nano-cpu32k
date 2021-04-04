@@ -16,26 +16,26 @@
 module pb_fb_DRAM_ctrl
 #(
    // SDRAM bus parameters
-   parameter SDR_COL_BITS = 9,  // Column bits
-   parameter SDR_ROW_BITS = 13, // Row bits
-   parameter SDR_BA_BITS = 2,  // Bank bits
-   parameter SDR_DATA_BITS = 16, // Word bits
-   parameter SDR_ADDR_BITS = 13, // Address bus bits
-   
-   parameter N_BW = 1, // = floor(log2(L2_CH_DW/SDR_DATA_BITS))
-   
+   parameter CONFIG_SDR_COL_BITS = 9,  // Column bits
+   parameter CONFIG_SDR_ROW_BITS = 13, // Row bits
+   parameter CONFIG_SDR_BA_BITS = 2,  // Bank bits
+   parameter CONFIG_SDR_DATA_BITS = 16, // Word bits
+   parameter CONFIG_SDR_ADDR_BITS = 13, // Address bus bits
+
+   parameter N_BW = 1, // = floor(log2(L2_CH_DW/CONFIG_SDR_DATA_BITS))
+
    // SDRAM timing parameters
    parameter tRP = 3,
    parameter tMRD = 2,
    parameter tRCD = 3,
    parameter tRFC = 9,
    parameter tREF = 64, // ms
-   parameter pREF = 9, // = floor(log2(Fclk*tREF/(2^SDR_ROW_BITS)))
+   parameter pREF = 9, // = floor(log2(Fclk*tREF/(2^CONFIG_SDR_ROW_BITS)))
    parameter nCAS_Latency = 3, // CAS latency
-   
+
    // Burst Length
-   parameter [6:0] BRUST_RD_LENGTH = 7'h20, // 32 x SDR_DATA_BITS bits
-   parameter [6:0] BRUST_WE_LENGTH = 7'h20  // 32 x SDR_DATA_BITS bits
+   parameter [6:0] BRUST_RD_LENGTH = 7'h20, // 32 x CONFIG_SDR_DATA_BITS bits
+   parameter [6:0] BRUST_WE_LENGTH = 7'h20  // 32 x CONFIG_SDR_DATA_BITS bits
 )
 (
    input                            clk,
@@ -43,25 +43,25 @@ module pb_fb_DRAM_ctrl
    // SDRAM interface
    output                           DRAM_CKE,
    output reg [3:0]                 DRAM_CS_WE_RAS_CAS_L, // SDRAM #CS, #WE, #RAS, #CAS
-   output reg [SDR_BA_BITS-1:0]     DRAM_BA, // SDRAM bank address
-   output reg [SDR_ADDR_BITS-1:0]   DRAM_ADDR, // SDRAM address
-   inout      [SDR_DATA_BITS-1:0]   DRAM_DATA, // SDRAM data
+   output reg [CONFIG_SDR_BA_BITS-1:0]     DRAM_BA, // SDRAM bank address
+   output reg [CONFIG_SDR_ADDR_BITS-1:0]   DRAM_ADDR, // SDRAM address
+   inout      [CONFIG_SDR_DATA_BITS-1:0]   DRAM_DATA, // SDRAM data
    output reg [1:0]                 DRAM_DQM, // SDRAM DQM
-   
+
    // Cmd/Resp interface
    input                            sdr_cmd_bst_we_req,
    output reg                       sdr_cmd_bst_we_ack,
    input                            sdr_cmd_bst_rd_req,
    output reg                       sdr_cmd_bst_rd_ack,
-   input [SDR_ROW_BITS+SDR_BA_BITS+SDR_COL_BITS-N_BW-1:0] sdr_cmd_addr, // Algin at 2^N_BW words boundary
-   input [SDR_DATA_BITS-1:0]        sdr_din,
-   output reg [SDR_DATA_BITS-1:0]   sdr_dout,
+   input [CONFIG_SDR_ROW_BITS+CONFIG_SDR_BA_BITS+CONFIG_SDR_COL_BITS-N_BW-1:0] sdr_cmd_addr, // Algin at 2^N_BW words boundary
+   input [CONFIG_SDR_DATA_BITS-1:0]        sdr_din,
+   output reg [CONFIG_SDR_DATA_BITS-1:0]   sdr_dout,
    output reg                       sdr_r_vld,   // sdr_dout valid
    output reg                       sdr_w_rdy   // write ready
 );
 
    // I/O flip flops
-   reg [SDR_DATA_BITS-1:0] din_r;   
+   reg [CONFIG_SDR_DATA_BITS-1:0] din_r;
    reg [2:0] dout_vld_r;
 
    always @(posedge clk or negedge rst_n) begin
@@ -73,20 +73,20 @@ module pb_fb_DRAM_ctrl
          sdr_dout <= DRAM_DATA;
       end
    end
-   
+
    assign DRAM_DATA = dout_vld_r[2] ? din_r : 16'hzzzz;
 
    assign DRAM_CKE = 1'b1;
-   
+
    // Address ffs
-   reg [SDR_COL_BITS-N_BW-1:0] col_adr_r;
-   reg [SDR_BA_BITS-1:0] bank_adr_r;
-   reg [SDR_ROW_BITS-1:0] line_adr_r;
+   reg [CONFIG_SDR_COL_BITS-N_BW-1:0] col_adr_r;
+   reg [CONFIG_SDR_BA_BITS-1:0] bank_adr_r;
+   reg [CONFIG_SDR_ROW_BITS-1:0] line_adr_r;
 
    // Book active
-   reg [SDR_ROW_BITS-1:0] line_prech_r[3:0];
-   reg [(1<<SDR_BA_BITS)-1:0] bank_act_r;
-   
+   reg [CONFIG_SDR_ROW_BITS-1:0] line_prech_r[3:0];
+   reg [(1<<CONFIG_SDR_BA_BITS)-1:0] bank_act_r;
+
    // Main FSM
    localparam [2:0] S_IDLE = 0;
    localparam [2:0] S_NOP = 1;
@@ -103,7 +103,7 @@ module pb_fb_DRAM_ctrl
 
    reg [15:0] rf_cnt_r;
    reg rf_pending_r;
-   
+
    always @(posedge clk or negedge rst_n) begin
       if(~rst_n) begin
          rf_cnt_r <= 0;
@@ -119,11 +119,11 @@ module pb_fb_DRAM_ctrl
       end else begin
          rf_cnt_r <= rf_cnt_r + 1'b1;
          status_delay_r <= status_delay_r - 1'b1;
-         
+
          // Default values
          DRAM_CS_WE_RAS_CAS_L <= 4'b1111; // NOP
          status_r <= S_NOP;
-         
+
          case(status_r)
             S_IDLE: begin
                sdr_r_vld <= 1'b0;
@@ -214,7 +214,7 @@ module pb_fb_DRAM_ctrl
                   // Otherwise we should close the last-opened line and then reopen the current.
                   if(line_prech_r[bank_adr_r] == line_adr_r) begin
                      DRAM_ADDR[10] <= 1'b0; // no auto precharge
-                     DRAM_ADDR[SDR_COL_BITS-1:0] <= {col_adr_r, {N_BW{1'b0}}};
+                     DRAM_ADDR[CONFIG_SDR_COL_BITS-1:0] <= {col_adr_r, {N_BW{1'b0}}};
                      status_ret_r <= S_INIT_WRITE_READ;
                      if(sdr_cmd_bst_rd_ack) begin
                         DRAM_CS_WE_RAS_CAS_L <= 4'b0110; // READ
@@ -234,7 +234,7 @@ module pb_fb_DRAM_ctrl
                   end
                end else begin // bank not activate ?
                   DRAM_CS_WE_RAS_CAS_L <= 4'b0101; // ACTIVE
-                  DRAM_ADDR[SDR_ROW_BITS-1:0] <= line_adr_r;
+                  DRAM_ADDR[CONFIG_SDR_ROW_BITS-1:0] <= line_adr_r;
                   bank_act_r[bank_adr_r] <= 1'b1;
                   line_prech_r[bank_adr_r] <= line_adr_r;
                   status_ret_r <= S_WRITE_READ;
@@ -266,20 +266,20 @@ module pb_fb_DRAM_ctrl
       end
    end
 
-   
+
    // synthesis translate_off
-`ifndef SYNTHESIS                   
-                 
+`ifndef SYNTHESIS
+
    // Assertions (03141951)
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
-      if((sdr_cmd_bst_rd_req | sdr_cmd_bst_we_req) & ~(sdr_cmd_bst_rd_req^sdr_cmd_bst_we_req))
+      if(sdr_cmd_bst_rd_req & sdr_cmd_bst_we_req)
          $fatal ("\n conflicting rd and we req.");
    end
 `endif
 
 `endif
    // synthesis translate_on
-   
-   
+
+
 endmodule

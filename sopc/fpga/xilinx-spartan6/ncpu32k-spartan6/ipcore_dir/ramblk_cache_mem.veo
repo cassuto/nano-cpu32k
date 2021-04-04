@@ -22,7 +22,7 @@
 *     devices, or systems.  Use in such applications are expressly             *
 *     prohibited.                                                              *
 *                                                                              *
-*     (c) Copyright 1995-2020 Xilinx, Inc.                                     *
+*     (c) Copyright 1995-2021 Xilinx, Inc.                                     *
 *     All rights reserved.                                                     *
 *******************************************************************************/
 
@@ -51,13 +51,13 @@ ramblk_cache_mem your_instance_name (
   .clka(clka), // input clka
   .ena(ena), // input ena
   .wea(wea), // input [3 : 0] wea
-  .addra(addra), // input [11 : 0] addra
+  .addra(addra), // input [9 : 0] addra
   .dina(dina), // input [31 : 0] dina
   .douta(douta), // output [31 : 0] douta
   .clkb(clkb), // input clkb
   .enb(enb), // input enb
   .web(web), // input [3 : 0] web
-  .addrb(addrb), // input [11 : 0] addrb
+  .addrb(addrb), // input [9 : 0] addrb
   .dinb(dinb), // input [31 : 0] dinb
   .doutb(doutb) // output [31 : 0] doutb
 );

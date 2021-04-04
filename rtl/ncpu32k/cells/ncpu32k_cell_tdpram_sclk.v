@@ -1,8 +1,8 @@
 /**@file
  * Cell - True Double-port Sync RAM
  * Timing info:
- * 1. WRITE first strategy (On the same port, dout is valid immediately when din is
- *       written and dout is enabled)
+ * 1. WRITE-FIRST strategy for each port.
+ * 2. Bypass the input of port B to the output of port A, if A and B operate on the same address.
  */
 
 /***************************************************************************/
@@ -22,9 +22,9 @@
 
 module ncpu32k_cell_tdpram_sclk
 #(
-   parameter AW=-1,
-   parameter DW=-1,
-   parameter ENABLE_BYPASS_B2A=-1
+   parameter AW,
+   parameter DW,
+   parameter ENABLE_BYPASS_B2A
 )
 (
    input                         clk,
@@ -43,37 +43,37 @@ module ncpu32k_cell_tdpram_sclk
    input                         en_b
 );
 
-   reg [DW-1:0] mem_vector[(1<<AW)-1:0];
-   
-   // synthesis translate_off
-`ifndef SYNTHESIS 
-   initial begin : ini
-      integer i;
-      for(i=0; i < (1<<AW); i=i+1)
-         mem_vector[i] = {DW{1'b0}};
-   end
-`endif
-   // synthesis translate_on
-
    //
-   // Read & Write Port A
+   // TDPRAM block
    //
+   // @Type WRITE-FIRST
+   // @Input sram_en_a  Read/Write Enable A
+   // @Input we_a       Write A
+   // @Input addr_a     Address A
+   // @Input din_a      Data Input A
+   // @Output dout_a_r  Data Output A
+   // @Input en_b       Read/Write Enable B
+   // @Input we_b       Write B
+   // @Input addr_b     Address B
+   // @Input din_b      Data Input B
+   // @Output dout_b_r  Data Output B
+   //
+   wire sram_en_a;
    reg [DW-1:0] dout_a_r = 0;
+   reg [DW-1:0] dout_b_r = 0;
+   reg [DW-1:0] mem_vector[(1<<AW)-1:0];
 
+   // Read & Write Port A
    always @(posedge clk) begin
-      if (en_a & we_a) begin
+      if (sram_en_a & we_a) begin
          mem_vector[addr_a] <= din_a;
          dout_a_r <= din_a;
-      end else if (en_a) begin
+      end else if (sram_en_a) begin
          dout_a_r <= mem_vector[addr_a];
       end
    end
-   
-   //
-   // Read & Write Port B
-   //
-   reg [DW-1:0] dout_b_r = 0;
 
+   // Read & Write Port B
    always @(posedge clk) begin
       if (en_b & we_b) begin
          mem_vector[addr_b] <= din_b;
@@ -83,29 +83,36 @@ module ncpu32k_cell_tdpram_sclk
       end
    end
 
-   // Bypass
+   // synthesis translate_off
+`ifndef SYNTHESIS
+   initial begin : ini
+      integer i;
+      for(i=0; i < (1<<AW); i=i+1)
+         mem_vector[i] = {DW{1'b0}};
+   end
+`endif
+   // synthesis translate_on
+
+
+   // Bypass the writing value from port B to A
 generate
    if (ENABLE_BYPASS_B2A) begin : bypass_on
-      reg bypass;
-      reg [DW-1:0] din_b_r;
-      assign dout_a = bypass ? din_b_r : dout_a_r;
-
-      always @(posedge clk or negedge rst_n)
-         if (~rst_n)
-            din_b_r <= {DW{1'b0}};
-         else if (en_a)
-            din_b_r <= din_b;
+      wire bypass_r;
+      wire [DW-1:0] din_b_r;
+      wire conflict = (addr_a == addr_b & en_b&we_b & en_a);
 
       // Bypass FSM
-      always @(posedge clk or negedge rst_n)
-         if (~rst_n)
-            bypass <= 0;
-         else if (addr_a == addr_b & en_b&we_b & en_a)
-            bypass <= 1;
-         else if (en_a) // Keep bypass valid till the next Read
-            bypass <= 0;
-            
+      nDFF_lr #(1, 1'b0) dff_bypass_r
+        (clk,rst_n, conflict|en_a, (conflict | ~en_a), bypass_r); // Keep bypass_r valid till the next Read
+      // Latch din B
+      nDFF_l #(DW) dff_din_b_r
+        (clk, en_a, din_b[DW-1:0], din_b_r[DW-1:0]);
+
+      assign sram_en_a = en_a & ~conflict;
+      assign dout_a = bypass_r ? din_b_r : dout_a_r;
+
    end else begin : bypass_off
+      assign sram_en_a = en_a;
       assign dout_a = dout_a_r;
    end
 endgenerate
@@ -113,18 +120,25 @@ endgenerate
    assign dout_b = dout_b_r;
 
    // synthesis translate_off
-`ifndef SYNTHESIS 
-   
+`ifndef SYNTHESIS
+
    // Assertions 03060725
 `ifdef NCPU_ENABLE_ASSERT
-   always @(posedge clk) begin
-      if(en_a&we_a & en_b&we_b & addr_a==addr_b) begin
-         $fatal ("\n DPEAM accessing conflict.\n");
+   always @(posedge clk)
+      begin
+         if(en_a&we_a & en_b&we_b & addr_a==addr_b)
+            $fatal ("\n DPRAM writing conflict.\n");
+         if(en_a&we_a & en_b&~we_b & addr_a==addr_b)
+            $fatal ("\n DPRAM reading conflict A->B.\n");
+         if (!ENABLE_BYPASS_B2A)
+            begin
+               if(en_a&~we_a & en_b&we_b & addr_a==addr_b)
+                  $fatal ("\n DPRAM reading conflict B->A.\n");
+            end
       end
-   end
 `endif
-   
+
 `endif
    // synthesis translate_on
-   
+
 endmodule

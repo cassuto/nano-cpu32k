@@ -113,18 +113,18 @@ module toplevel
    // SoC Core
    soc_toplevel
    #(
-      .SDR_COL_BITS    (SDR_COL_BITS),
-      .SDR_ROW_BITS    (SDR_ROW_BITS),
-      .SDR_BA_BITS     (SDR_BA_BITS),
-      .SDR_DATA_BITS   (SDR_DATA_BITS),
-      .SDR_ADDR_BITS   (SDR_ADDR_BITS),
-      .SDR_tRP         (SDR_tRP),
-      .SDR_tMRD        (SDR_tMRD),
-      .SDR_tRCD        (SDR_tRCD),
-      .SDR_tRFC        (SDR_tRFC),
-      .SDR_tREF        (SDR_tREF),
-      .SDR_pREF        (SDR_pREF),
-      .SDR_nCAS_Latency (SDR_nCAS_Latency)
+      .CONFIG_SDR_COL_BITS    (SDR_COL_BITS),
+      .CONFIG_SDR_ROW_BITS    (SDR_ROW_BITS),
+      .CONFIG_SDR_BA_BITS     (SDR_BA_BITS),
+      .CONFIG_SDR_DATA_BITS   (SDR_DATA_BITS),
+      .CONFIG_SDR_ADDR_BITS   (SDR_ADDR_BITS),
+      .CONFIG_SDR_tRP         (SDR_tRP),
+      .CONFIG_SDR_tMRD        (SDR_tMRD),
+      .CONFIG_SDR_tRCD        (SDR_tRCD),
+      .CONFIG_SDR_tRFC        (SDR_tRFC),
+      .CONFIG_SDR_tREF        (SDR_tREF),
+      .CONFIG_SDR_pREF        (SDR_pREF),
+      .CONFIG_SDR_nCAS_Latency (SDR_nCAS_Latency)
    )
    soc
    (

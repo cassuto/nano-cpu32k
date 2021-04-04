@@ -22,54 +22,57 @@
 module ncpu32k_regfile(
    input                         clk,
    input                         rst_n,
-   input [`NCPU_REG_AW-1:0]      regf_rs1_addr, // Address for operand #1
-   input [`NCPU_REG_AW-1:0]      regf_rs2_addr, // Address for operand #2
-   input                         regf_rs1_re,   // Read Enable of operand #1
-   input                         regf_rs2_re,   // Read Enable of operand #2
-   input [`NCPU_REG_AW-1:0]      regf_din_addr,  // Write address
-   input [`NCPU_DW-1:0]          regf_din,       // Write Input value
-   input                         regf_we,    // Write Enable
-   output [`NCPU_DW-1:0]         regf_rs1_dout,      // Output value of operand #1
-   output [`NCPU_DW-1:0]         regf_rs2_dout       // Output value of operand #2
+   input [`NCPU_REG_AW-1:0]      arf_rs1_addr, // Address for operand #1
+   input [`NCPU_REG_AW-1:0]      arf_rs2_addr, // Address for operand #2
+   input                         arf_rs1_re,   // Read Enable of operand #1
+   input                         arf_rs2_re,   // Read Enable of operand #2
+   input [`NCPU_REG_AW-1:0]      arf_din_addr,  // Write address
+   input [`NCPU_DW-1:0]          arf_din,       // Write Input value
+   input                         arf_we,    // Write Enable
+   output [`NCPU_DW-1:0]         arf_rs1_dout,      // Output value of operand #1
+   output [`NCPU_DW-1:0]         arf_rs2_dout       // Output value of operand #2
 );
    ncpu32k_cell_sdpram_sclk
       #(
          .AW                           (`NCPU_REG_AW),
          .DW                           (`NCPU_DW),
-         .ENABLE_BYPASS                (1) // Bypass is necessary to get the right operand
+         // Bypass is not necessary.
+         // When operands are being committed to ARF, they are still in ROB
+         // and the bypass is handled by ROB.
+         .ENABLE_BYPASS                (0)
          )
       dpram_sclk0
          (
           // Outputs
-          .dout                        (regf_rs1_dout),
+          .dout                        (arf_rs1_dout),
           // Inputs
           .clk                         (clk),
           .rst_n                       (rst_n),
-          .raddr                       (regf_rs1_addr),
-          .re                          (regf_rs1_re),
-          .waddr                       (regf_din_addr),
-          .we                          (regf_we & (|regf_din_addr)),
-          .din                         (regf_din)
-         ); 
+          .raddr                       (arf_rs1_addr),
+          .re                          (arf_rs1_re),
+          .waddr                       (arf_din_addr),
+          .we                          (arf_we & (|arf_din_addr)),
+          .din                         (arf_din)
+         );
 
    ncpu32k_cell_sdpram_sclk
       #(
          .AW                           (`NCPU_REG_AW),
          .DW                           (`NCPU_DW),
-         .ENABLE_BYPASS                (1) // Bypass is necessary to get the right operand
+         .ENABLE_BYPASS                (0)
          )
       dpram_sclk1
          (
           // Outputs
-          .dout                        (regf_rs2_dout),
+          .dout                        (arf_rs2_dout),
           // Inputs
           .clk                         (clk),
           .rst_n                       (rst_n),
-          .raddr                       (regf_rs2_addr),
-          .re                          (regf_rs2_re),
-          .waddr                       (regf_din_addr),
-          .we                          (regf_we & (|regf_din_addr)),
-          .din                         (regf_din)
-         ); 
-         
+          .raddr                       (arf_rs2_addr),
+          .re                          (arf_rs2_re),
+          .waddr                       (arf_din_addr),
+          .we                          (arf_we & (|arf_din_addr)),
+          .din                         (arf_din)
+         );
+
 endmodule

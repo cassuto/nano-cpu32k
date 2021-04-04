@@ -1,7 +1,7 @@
 
 `include "ncpu32k_config.h"
 
-module tb_cdb_arbiter;
+module tb_byp_arbiter;
 
    localparam WAYS = 4;
    localparam TAG_WIDTH = 4;
@@ -20,7 +20,7 @@ module tb_cdb_arbiter;
    wire [TAG_WIDTH-1:0]     rob_commit_BTAG;
    wire [ID_WIDTH-1:0]      rob_commit_id;
    
-   ncpu32k_cdb_arbiter
+   ncpu32k_byp_arbiter
       #(
          .WAYS (WAYS),
          .TAG_WIDTH (TAG_WIDTH),

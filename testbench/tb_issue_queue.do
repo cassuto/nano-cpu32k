@@ -2,11 +2,11 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate /tb_issue_queue/clk
 add wave -noupdate /tb_issue_queue/rst_n
-add wave -noupdate -divider CDB
-add wave -noupdate /tb_issue_queue/cdb_BDATA
-add wave -noupdate /tb_issue_queue/cdb_BVALID
-add wave -noupdate /tb_issue_queue/cdb_rd_addr
-add wave -noupdate /tb_issue_queue/cdb_rd_we
+add wave -noupdate -divider BYP
+add wave -noupdate /tb_issue_queue/byp_BDATA
+add wave -noupdate /tb_issue_queue/byp_BVALID
+add wave -noupdate /tb_issue_queue/byp_rd_addr
+add wave -noupdate /tb_issue_queue/byp_rd_we
 add wave -noupdate -divider misc
 add wave -noupdate {/tb_issue_queue/ISSUE_QUEUE/gen_write[0]/rs1_r_bypass_rdy}
 add wave -noupdate {/tb_issue_queue/ISSUE_QUEUE/gen_write[0]/rs2_r_bypass_rdy}

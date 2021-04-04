@@ -18,21 +18,22 @@
 
 module pb_fb_bootrom
 #(
-   parameter SIZE_BYTES=-1,
-   parameter MEMH_FILE = "",
-   parameter ENABLE_BYPASS=-1
+   parameter CONFIG_BOOTROM_SIZE_BYTES,
+   parameter CONFIG_BOOTROM_MEMH_FILE,
+   parameter CONFIG_PIPEBUF_BYPASS
 )
 (
    input                      clk,
    input                      rst_n,
-   output                     cmd_ready, /* bootm is ready to accept cmd */
-   input                      cmd_valid, /* cmd is presented at bootm'input */
-   input [`NCPU_AW-1:0]       cmd_addr,
-   input [`NCPU_DW/8-1:0]     cmd_we_msk,
-   output                     valid,
-   input                      ready,
-   output [`NCPU_DW-1:0]      dout,
-   input [`NCPU_DW-1:0]       din
+   output                     AREADY, /* bootm is BREADY to accept cmd */
+   input                      AVALID, /* cmd is presented at bootm'input */
+   input [`NCPU_AW-1:0]       AADDR,
+   input [`NCPU_DW/8-1:0]     AWMSK,
+   input [`NCPU_DW-1:0]       ADATA,
+   output                     BVALID,
+   input                      BREADY,
+   output [`NCPU_DW-1:0]      BDATA
+
 );
    // important: for parameters only
 function integer clogb2 (input integer bit_depth);
@@ -42,35 +43,35 @@ function integer clogb2 (input integer bit_depth);
    end
 endfunction
    localparam WORD_BYTES = `NCPU_DW/8;
-   localparam SIZE_WORDS = SIZE_BYTES/WORD_BYTES;
+   localparam SIZE_WORDS = CONFIG_BOOTROM_SIZE_BYTES/WORD_BYTES;
    localparam ADDR_BITS = 10;
-   
-   wire push = (cmd_valid & cmd_ready);
-   wire pop = (valid & ready);
+
+   wire push = (AVALID & AREADY);
+   wire pop = (BVALID & BREADY);
    wire valid_nxt = (push | ~pop);
    nDFF_lr #(1) dff_out_valid
-                   (clk,rst_n, (push | pop), valid_nxt, valid);
+                   (clk,rst_n, (push | pop), valid_nxt, BVALID);
 
 generate
-   if (ENABLE_BYPASS) begin : enable_bypass
-      assign cmd_ready = ~valid | pop;
+   if (CONFIG_PIPEBUF_BYPASS) begin : enable_bypass
+      assign AREADY = ~BVALID | pop;
    end else
-      assign cmd_ready = ~valid;
+      assign AREADY = ~BVALID;
 endgenerate
 
    localparam N_BW = clogb2(WORD_BYTES);
 
-   wire [ADDR_BITS-1:0] mem_addr = cmd_addr[ADDR_BITS+N_BW-1:N_BW];
+   wire [ADDR_BITS-1:0] mem_addr = AADDR[ADDR_BITS+N_BW-1:N_BW];
 
 `ifdef PLATFORM_XILINX_XC6
    ramblk_bootrom mem
    (
       .clka(clk),
       .addra(mem_addr[ADDR_BITS-1:0]),
-      .dina(din[`NCPU_DW-1:0]),
+      .dina(ADATA[`NCPU_DW-1:0]),
       .ena(push),
-      .wea(cmd_we_msk[`NCPU_DW/8-1:0]),
-      .douta(dout[`NCPU_DW-1:0])
+      .wea(AWMSK[`NCPU_DW/8-1:0]),
+      .douta(BDATA[`NCPU_DW-1:0])
    );
 `else
    reg[`NCPU_DW-1:0] mem[0:SIZE_WORDS-1];
@@ -80,8 +81,8 @@ endgenerate
       for(i=0;i<SIZE_WORDS;i=i+1) begin : for_size_bytes
          mem[i] = {`NCPU_DW{1'b0}};
       end
-      if(MEMH_FILE !== "") begin :memh_file_not_emp
-         $readmemh (MEMH_FILE, mem);
+      if(CONFIG_BOOTROM_MEMH_FILE !== "") begin :memh_file_not_emp
+         $readmemh (CONFIG_BOOTROM_MEMH_FILE, mem);
       end
    end
 
@@ -89,20 +90,20 @@ endgenerate
    always @(posedge clk or negedge rst_n) begin
       if(~rst_n)
          dout_r <= {`NCPU_DW{1'b0}};
-      else if(push & ~|cmd_we_msk)
+      else if(push & ~|AWMSK)
          dout_r <= mem[mem_addr];
    end
-   assign dout = dout_r;
+   assign BDATA = dout_r;
    always @(posedge clk) begin
       if(push) begin
-         if(cmd_we_msk[3])
-            mem[mem_addr][31:24] <= din[31:24];
-         if(cmd_we_msk[2])
-            mem[mem_addr][23:16] <= din[23:16];
-         if(cmd_we_msk[1])
-            mem[mem_addr][15:8] <= din[15:8];
-         if(cmd_we_msk[0])
-            mem[mem_addr][7:0] <= din[7:0];
+         if(AWMSK[3])
+            mem[mem_addr][31:24] <= ADATA[31:24];
+         if(AWMSK[2])
+            mem[mem_addr][23:16] <= ADATA[23:16];
+         if(AWMSK[1])
+            mem[mem_addr][15:8] <= ADATA[15:8];
+         if(AWMSK[0])
+            mem[mem_addr][7:0] <= ADATA[7:0];
       end
    end
 `endif

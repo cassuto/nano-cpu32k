@@ -1,3 +1,7 @@
+/**
+ *@file Bypass Bus Arbiter
+ */
+
 /***************************************************************************/
 /*  Nano-cpu 32000 (Scalable Ultra-Low-Power Processor)                    */
 /*                                                                         */
@@ -15,7 +19,7 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_cdb_arbiter
+module ncpu32k_byp_arbiter
 #(
    parameter WAYS,
    parameter TAG_WIDTH,
@@ -24,16 +28,16 @@ module ncpu32k_cdb_arbiter
 (
    input                      clk,
    input                      rst_n,
-   input [WAYS-1:0]           fu_commit_BVALID,
-   output [WAYS-1:0]          fu_commit_BREADY,
-   input [WAYS*`NCPU_DW-1:0]  fu_commit_BDATA,
-   input [WAYS*TAG_WIDTH-1:0] fu_commit_BTAG,
-   input [WAYS*ID_WIDTH-1:0]  fu_commit_id,
-   output                     rob_commit_BVALID,
-   input                      rob_commit_BREADY,
-   output [`NCPU_DW-1:0]      rob_commit_BDATA,
-   output [TAG_WIDTH-1:0]     rob_commit_BTAG,
-   output [ID_WIDTH-1:0]      rob_commit_id
+   input [WAYS-1:0]           fu_wb_BVALID,
+   output [WAYS-1:0]          fu_wb_BREADY,
+   input [WAYS*`NCPU_DW-1:0]  fu_wb_BDATA,
+   input [WAYS*TAG_WIDTH-1:0] fu_wb_BTAG,
+   input [WAYS*ID_WIDTH-1:0]  fu_wb_id,
+   output                     rob_wb_BVALID,
+   input                      rob_wb_BREADY,
+   output [`NCPU_DW-1:0]      rob_wb_BDATA,
+   output [TAG_WIDTH-1:0]     rob_wb_BTAG,
+   output [ID_WIDTH-1:0]      rob_wb_id
 );
 
    wire [WAYS-1:0] grant;
@@ -47,7 +51,7 @@ module ncpu32k_cdb_arbiter
       )
    P_ONEHOT_ARBITER
       (
-         .DIN  (fu_commit_BVALID),
+         .DIN  (fu_wb_BVALID),
          .DOUT (grant)
       );
    
@@ -62,19 +66,19 @@ module ncpu32k_cdb_arbiter
       
       for(i=0;i<WAYS;i=i+1)
          begin : gen_sel
-            assign fu_commit_BREADY[i] = grant[i] & rob_commit_BREADY;
+            assign fu_wb_BREADY[i] = grant[i] & rob_wb_BREADY;
             
-            assign BDATA[i+1] = BDATA[i] | (fu_commit_BDATA[(i+1)*`NCPU_DW-1: i*`NCPU_DW] & {`NCPU_DW{grant[i]}});
-            assign BTAG[i+1] = BTAG[i] | (fu_commit_BTAG[(i+1)*TAG_WIDTH-1: i*TAG_WIDTH] & {TAG_WIDTH{grant[i]}});
-            assign id[i+1] = id[i] | (fu_commit_id[(i+1)*ID_WIDTH-1: i*ID_WIDTH] & {ID_WIDTH{grant[i]}});
+            assign BDATA[i+1] = BDATA[i] | (fu_wb_BDATA[(i+1)*`NCPU_DW-1: i*`NCPU_DW] & {`NCPU_DW{grant[i]}});
+            assign BTAG[i+1] = BTAG[i] | (fu_wb_BTAG[(i+1)*TAG_WIDTH-1: i*TAG_WIDTH] & {TAG_WIDTH{grant[i]}});
+            assign id[i+1] = id[i] | (fu_wb_id[(i+1)*ID_WIDTH-1: i*ID_WIDTH] & {ID_WIDTH{grant[i]}});
          end
       
-      assign rob_commit_BDATA = BDATA[WAYS];
-      assign rob_commit_BTAG = BTAG[WAYS];
-      assign rob_commit_id = id[WAYS];
+      assign rob_wb_BDATA = BDATA[WAYS];
+      assign rob_wb_BTAG = BTAG[WAYS];
+      assign rob_wb_id = id[WAYS];
    endgenerate
    
-   assign rob_commit_BVALID = |fu_commit_BVALID;
+   assign rob_wb_BVALID = |fu_wb_BVALID;
 
    
    // synthesis translate_off
@@ -85,8 +89,8 @@ module ncpu32k_cdb_arbiter
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk)
       begin
-         if (rob_commit_BVALID ^ |grant)
-            $fatal("\n Check the CDB arbiter schema\n");
+         if (rob_wb_BVALID ^ |grant)
+            $fatal("\n Check the bypass arbiter schema\n");
       end
 `endif
 

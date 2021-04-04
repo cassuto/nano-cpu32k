@@ -19,37 +19,28 @@ module ncpu32k_dcache
 (
    input                   clk,
    input                   rst_n,
-   output                  dcache_valid, /* Insn is presented at dcache's output */
-   input                   dcache_ready, /* cpu is ready to accepted Insn */
-   output [`NCPU_IW-1:0]   dcache_dout,
-   input [`NCPU_DW-1:0]    dcache_din,
-   output                  dcache_cmd_ready, /* dcache is ready to accept cmd */
-   input                   dcache_cmd_valid, /* cmd is presented at dcache's input */
-   input [`NCPU_AW-1:0]    dcache_cmd_addr,
-   input [`NCPU_DW/8-1:0]  dcache_cmd_we_msk,
-   input                   fb_dbus_valid, /* Insn is presented at dbus */
-   output                  fb_dbus_ready, /* dcache is ready to accepted Insn */
-   input [`NCPU_IW-1:0]    fb_dbus_dout,
-   output [`NCPU_DW-1:0]   fb_dbus_din,
-   input                   fb_dbus_cmd_ready, /* dbus is ready to accept cmd */
-   output                  fb_dbus_cmd_valid, /* cmd is presented at dbus's input */
-   output [`NCPU_AW-1:0]   fb_dbus_cmd_addr,
-   output [`NCPU_DW/8-1:0] fb_dbus_cmd_we_msk,
-   // PSR
-   input                   msr_psr_dcae
+   output                  dcache_BVALID,
+   input                   dcache_BREADY,
+   output [`NCPU_DW-1:0]   dcache_BDATA,
+   output [1:0]            dcache_BEXC,
+   input [`NCPU_DW-1:0]    dcache_ADATA,
+   output                  dcache_AREADY,
+   input                   dcache_AVALID,
+   input [`NCPU_AW-1:0]    dcache_AADDR,
+   input [`NCPU_DW/8-1:0]  dcache_AWMSK,
+   input [1:0]             dcache_AEXC,
+   input                   fb_dbus_BVALID,
+   output                  fb_dbus_BREADY,
+   input [`NCPU_DW-1:0]    fb_dbus_BDATA,
+   input [1:0]             fb_dbus_BEXC,
+   output [`NCPU_DW-1:0]   fb_dbus_ADATA,
+   input                   fb_dbus_AREADY,
+   output                  fb_dbus_AVALID,
+   output [`NCPU_AW-1:0]   fb_dbus_AADDR,
+   output [`NCPU_DW/8-1:0] fb_dbus_AWMSK,
+   output [1:0]            fb_dbus_AEXC
 );
 
-`ifdef NCPU_ENABLE_DCACHE
    // TODO
-`else
-   assign dcache_valid = fb_dbus_valid;
-   assign fb_dbus_ready = dcache_ready;
-   assign dcache_dout = fb_dbus_dout;
-   assign fb_dbus_din = dcache_din;
-   assign dcache_cmd_ready = fb_dbus_cmd_ready;
-   assign fb_dbus_cmd_valid = dcache_cmd_valid;
-   assign fb_dbus_cmd_addr = dcache_cmd_addr;
-   assign fb_dbus_cmd_we_msk = dcache_cmd_we_msk;
-`endif
 
 endmodule

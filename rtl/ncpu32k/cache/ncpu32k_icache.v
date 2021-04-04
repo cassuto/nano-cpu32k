@@ -16,34 +16,30 @@
 `include "ncpu32k_config.h"
 
 module ncpu32k_icache
+#(
+   parameter CONFIG_PIPEBUF_BYPASS
+)
 (
    input                   clk,
    input                   rst_n,
-   output                  icache_valid, /* Insn is presented at icache's output */
-   input                   icache_ready, /* cpu is ready to accepted Insn */
-   output [`NCPU_IW-1:0]   icache_dout,
-   output                  icache_cmd_ready, /* icache is ready to accept cmd */
-   input                   icache_cmd_valid, /* cmd is presented at icache's input */
-   input [`NCPU_AW-1:0]    icache_cmd_addr,
-   input                   fb_ibus_valid, /* Insn is presented at ibus */
-   output                  fb_ibus_ready, /* icache is ready to accepted Insn */
-   input [`NCPU_IW-1:0]    fb_ibus_dout,
-   input                   fb_ibus_cmd_ready, /* ibus is ready to accept cmd */
-   output                  fb_ibus_cmd_valid, /* cmd is presented at ibus's input */
-   output [`NCPU_AW-1:0]   fb_ibus_cmd_addr,
-   // PSR
-   input                   msr_psr_icae
+   output                  icache_AREADY,
+   input                   icache_AVALID,
+   input [`NCPU_AW-1:0]    icache_AADDR,
+   input [1:0]             icache_AEXC,
+   output                  icache_BVALID,
+   input                   icache_BREADY,
+   output [`NCPU_IW-1:0]   icache_BDATA,
+   output [1:0]            icache_BEXC,
+   input                   fb_ibus_AREADY,
+   output                  fb_ibus_AVALID,
+   output [`NCPU_AW-1:0]   fb_ibus_AADDR,
+   output [1:0]            fb_ibus_AEXC,
+   input                   fb_ibus_BVALID,
+   output                  fb_ibus_BREADY,
+   input [`NCPU_IW-1:0]    fb_ibus_BDATA,
+   input [1:0]             fb_ibus_BEXC
 );
 
-`ifdef NCPU_ENABLE_ICACHE
    // TODO
-`else
-   assign icache_valid = fb_ibus_valid;
-   assign fb_ibus_ready = icache_ready;
-   assign icache_dout = fb_ibus_dout;
-   assign icache_cmd_ready = fb_ibus_cmd_ready;
-   assign fb_ibus_cmd_valid = icache_cmd_valid;
-   assign fb_ibus_cmd_addr = icache_cmd_addr;
-`endif
 
 endmodule

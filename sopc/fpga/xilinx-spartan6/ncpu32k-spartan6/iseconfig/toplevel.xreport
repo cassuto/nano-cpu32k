@@ -1,83 +1,33 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <report-views version="2.0" >
  <header>
-  <DateModified>2021-02-03T11:09:15</DateModified>
+  <DateModified>2021-03-26T11:39:39</DateModified>
   <ModuleName>toplevel</ModuleName>
-  <SummaryTimeStamp>2021-02-03T11:06:44</SummaryTimeStamp>
-  <SavedFilePath>E:/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/iseconfig/toplevel.xreport</SavedFilePath>
+  <SummaryTimeStamp>Unknown</SummaryTimeStamp>
   <ImplementationReportsDirectory>E:/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6\</ImplementationReportsDirectory>
-  <DateInitialized>2020-04-05T15:34:24</DateInitialized>
-  <EnableMessageFiltering>true</EnableMessageFiltering>
+  <DateInitialized>2021-02-09T14:16:19</DateInitialized>
+  <SavedFilePath>E:/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/iseconfig/toplevel.xreport</SavedFilePath>
+  <EnableMessageFiltering>false</EnableMessageFiltering>
  </header>
  <body>
   <viewgroup label="Design Overview" >
-   <view inputState="Unknown" program="implementation" ExpandErrors="true" ShowPartitionData="false" ExpandConstraints="true" type="FPGASummary" file="ncpu32k_core_summary.html" label="Summary" ExpandClockNets="true" ExpandWarnings="true" >
+   <view inputState="Unknown" program="implementation" ShowPartitionData="false" type="FPGASummary" file="toplevel_summary.html" label="Summary" >
     <toc-item title="Design Overview" target="Design Overview" />
     <toc-item title="Design Utilization Summary" target="Design Utilization Summary" />
     <toc-item title="Performance Summary" target="Performance Summary" />
     <toc-item title="Failing Constraints" target="Failing Constraints" />
     <toc-item title="Detailed Reports" target="Detailed Reports" />
-    <table-item tableState="ExpandedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
-    <table-item tableState="CollapsedTable" tableKey="DeviceUtilizationSummary" />
    </view>
-   <view inputState="Unknown" program="implementation" contextTags="FPGA_ONLY" hidden="true" type="HTML" file="ncpu32k_core_envsettings.html" label="System Settings" />
-   <view inputState="Translated" program="map" locator="MAP_IOB_TABLE" contextTags="FPGA_ONLY" type="IOBProperties" file="ncpu32k_core_map.xrpt" label="IOB Properties" />
-   <view inputState="Translated" program="map" contextTags="FPGA_ONLY" hidden="true" type="Control_Sets" file="ncpu32k_core_map.xrpt" label="Control Set Information" />
-   <view inputState="Translated" program="map" locator="MAP_MODULE_HIERARCHY" contextTags="FPGA_ONLY" type="Module_Utilization" file="ncpu32k_core_map.xrpt" label="Module Level Utilization" />
-   <view inputState="Mapped" program="par" locator="CONSTRAINT_TABLE" contextTags="FPGA_ONLY" type="ConstraintsData" file="ncpu32k_core.ptwx" label="Timing Constraints" translator="ptwxToTableXML.xslt" />
-   <view inputState="Mapped" program="par" locator="PAR_PINOUT_BY_PIN_NUMBER" contextTags="FPGA_ONLY" type="PinoutData" file="ncpu32k_core_par.xrpt" label="Pinout Report" />
-   <view inputState="Mapped" program="par" locator="PAR_CLOCK_TABLE" contextTags="FPGA_ONLY" type="ClocksData" file="ncpu32k_core_par.xrpt" label="Clock Report" />
-   <view inputState="Mapped" program="par" contextTags="FPGA_ONLY,EDK_OFF" type="Timing_Analyzer" file="ncpu32k_core.twx" label="Static Timing" />
-   <view inputState="Translated" program="cpldfit" contextTags="CPLD_ONLY,EDK_OFF" hidden="true" type="EXTERNAL_HTML" file="ncpu32k_core_html/fit/report.htm" label="CPLD Fitter Report" />
-   <view inputState="Fitted" program="taengine" contextTags="CPLD_ONLY,EDK_OFF" hidden="true" type="EXTERNAL_HTML" file="ncpu32k_core_html/tim/report.htm" label="CPLD Timing Report" />
+   <view inputState="Unknown" program="implementation" contextTags="FPGA_ONLY" hidden="true" type="HTML" file="toplevel_envsettings.html" label="System Settings" />
+   <view inputState="Translated" program="map" locator="MAP_IOB_TABLE" contextTags="FPGA_ONLY" type="IOBProperties" file="toplevel_map.xrpt" showConstraints="0" label="IOB Properties" />
+   <view inputState="Translated" program="map" contextTags="FPGA_ONLY" hidden="true" type="Control_Sets" file="toplevel_map.xrpt" label="Control Set Information" />
+   <view inputState="Translated" program="map" locator="MAP_MODULE_HIERARCHY" contextTags="FPGA_ONLY" type="Module_Utilization" file="toplevel_map.xrpt" label="Module Level Utilization" />
+   <view inputState="Mapped" program="par" locator="CONSTRAINT_TABLE" contextTags="FPGA_ONLY" type="ConstraintsData" file="toplevel.ptwx" showConstraints="0" label="Timing Constraints" translator="ptwxToTableXML.xslt" />
+   <view inputState="Mapped" program="par" locator="PAR_PINOUT_BY_PIN_NUMBER" contextTags="FPGA_ONLY" type="PinoutData" file="toplevel_par.xrpt" showConstraints="0" label="Pinout Report" />
+   <view inputState="Mapped" program="par" locator="PAR_CLOCK_TABLE" contextTags="FPGA_ONLY" type="ClocksData" file="toplevel_par.xrpt" showConstraints="0" label="Clock Report" />
+   <view inputState="Mapped" program="par" contextTags="FPGA_ONLY,EDK_OFF" type="Timing_Analyzer" file="toplevel.twx" label="Static Timing" />
+   <view inputState="Translated" program="cpldfit" contextTags="CPLD_ONLY,EDK_OFF" hidden="true" type="EXTERNAL_HTML" file="toplevel_html/fit/report.htm" label="CPLD Fitter Report" />
+   <view inputState="Fitted" program="taengine" contextTags="CPLD_ONLY,EDK_OFF" hidden="true" type="EXTERNAL_HTML" file="toplevel_html/tim/report.htm" label="CPLD Timing Report" />
   </viewgroup>
   <viewgroup label="XPS Errors and Warnings" >
    <view program="platgen" WrapMessages="true" contextTags="EDK_ON" hidden="true" type="MessageList" hideColumns="Filtered" file="__xps/ise/_xmsgs/platgen.xmsgs" label="Platgen Messages" />
@@ -88,7 +38,7 @@
    <view inputState="PreSynthesized" program="platgen" contextTags="EDK_ON" hidden="true" type="Secondary_Report" file="platgen.log" label="Platgen Log File" />
    <view inputState="PreSynthesized" program="simgen" contextTags="EDK_ON" hidden="true" type="Secondary_Report" file="simgen.log" label="Simgen Log File" />
    <view inputState="PreSynthesized" program="bitinit" contextTags="EDK_ON" hidden="true" type="Secondary_Report" file="bitinit.log" label="BitInit Log File" />
-   <view inputState="PreSynthesized" program="system" contextTags="EDK_ON" hidden="true" type="Secondary_Report" file="ncpu32k_core.log" label="System Log File" />
+   <view inputState="PreSynthesized" program="system" contextTags="EDK_ON" hidden="true" type="Secondary_Report" file="toplevel.log" label="System Log File" />
   </viewgroup>
   <viewgroup label="Errors and Warnings" >
    <view program="pn" WrapMessages="true" contextTags="EDK_OFF" type="MessageList" hideColumns="Filtered, New" file="_xmsgs/pn_parser.xmsgs" label="Parser Messages" />
@@ -100,11 +50,11 @@
    <view inputState="Routed" program="xpwr" WrapMessages="true" contextTags="EDK_OFF" hidden="true" type="MessageList" hideColumns="Filtered" file="_xmsgs/xpwr.xmsgs" label="Power Messages" />
    <view inputState="Routed" program="bitgen" WrapMessages="true" contextTags="FPGA_ONLY" type="MessageList" hideColumns="Filtered" file="_xmsgs/bitgen.xmsgs" label="Bitgen Messages" />
    <view inputState="Translated" program="cpldfit" WrapMessages="true" contextTags="CPLD_ONLY,EDK_OFF" hidden="true" type="MessageList" hideColumns="Filtered" file="_xmsgs/cpldfit.xmsgs" label="Fitter Messages" />
-   <view inputState="Current" program="implementation" WrapMessages="true" fileList="_xmsgs/xst.xmsgs,_xmsgs/ngdbuild.xmsgs,_xmsgs/map.xmsgs,_xmsgs/par.xmsgs,_xmsgs/trce.xmsgs,_xmsgs/xpwr.xmsgs,_xmsgs/bitgen.xmsgs" contextTags="FPGA_ONLY" type="MessageList" hideColumns="Filtered" collate="0" file="_xmsgs/*.xmsgs" label="All Implementation Messages" />
+   <view inputState="Current" program="implementation" WrapMessages="true" fileList="_xmsgs/xst.xmsgs,_xmsgs/ngdbuild.xmsgs,_xmsgs/map.xmsgs,_xmsgs/par.xmsgs,_xmsgs/trce.xmsgs,_xmsgs/xpwr.xmsgs,_xmsgs/bitgen.xmsgs" contextTags="FPGA_ONLY" type="MessageList" hideColumns="Filtered" file="_xmsgs/*.xmsgs" label="All Implementation Messages" />
    <view inputState="Current" program="fitting" WrapMessages="true" fileList="_xmsgs/xst.xmsgs,_xmsgs/ngdbuild.xmsgs,_xmsgs/cpldfit.xmsgs,_xmsgs/xpwr.xmsgs" contextTags="CPLD_ONLY,EDK_OFF" hidden="true" type="CPLD_MessageList" hideColumns="Filtered" file="_xmsgs/*.xmsgs" label="All Implementation Messages (CPLD)" />
   </viewgroup>
   <viewgroup label="Detailed Reports" >
-   <view program="xst" contextTags="XST_ONLY,EDK_OFF" hidden="false" type="Report" file="ncpu32k_core.syr" label="Synthesis Report" >
+   <view program="xst" contextTags="XST_ONLY,EDK_OFF" hidden="false" type="Report" file="toplevel.syr" label="Synthesis Report" >
     <toc-item title="Top of Report" target="Copyright " searchDir="Forward" />
     <toc-item title="Synthesis Options Summary" target="   Synthesis Options Summary   " />
     <toc-item title="HDL Compilation" target="   HDL Compilation   " />
@@ -130,15 +80,15 @@
     <toc-item title="Timing Details" target="Timing Details" subItemLevel="2" />
     <toc-item title="Cross Clock Domains Report" target="Cross Clock Domains Report:" subItemLevel="2" />
    </view>
-   <view program="synplify" contextTags="SYNPLIFY_ONLY,EDK_OFF" hidden="true" type="Report" file="ncpu32k_core.srr" label="Synplify Report" />
-   <view program="precision" contextTags="PRECISION_ONLY,EDK_OFF" hidden="true" type="Report" file="ncpu32k_core.prec_log" label="Precision Report" />
-   <view inputState="Synthesized" program="ngdbuild" type="Report" file="ncpu32k_core.bld" label="Translation Report" >
+   <view program="synplify" contextTags="SYNPLIFY_ONLY,EDK_OFF" hidden="true" type="Report" file="toplevel.srr" label="Synplify Report" />
+   <view program="precision" contextTags="PRECISION_ONLY,EDK_OFF" hidden="true" type="Report" file="toplevel.prec_log" label="Precision Report" />
+   <view inputState="Synthesized" program="ngdbuild" type="Report" file="toplevel.bld" label="Translation Report" >
     <toc-item title="Top of Report" target="Copyright (c)" searchDir="Forward" />
     <toc-item title="Command Line" target="Command Line:" />
     <toc-item title="Partition Status" target="Partition Implementation Status" />
     <toc-item title="Final Summary" target="NGDBUILD Design Results Summary:" />
    </view>
-   <view inputState="Translated" program="map" contextTags="FPGA_ONLY" type="Report" file="ncpu32k_core_map.mrp" label="Map Report" >
+   <view inputState="Translated" program="map" contextTags="FPGA_ONLY" type="Report" file="toplevel_map.mrp" label="Map Report" >
     <toc-item title="Top of Report" target="Release" searchDir="Forward" />
     <toc-item title="Section 1: Errors" target="Section 1 -" searchDir="Backward" />
     <toc-item title="Section 2: Warnings" target="Section 2 -" searchDir="Backward" />
@@ -154,7 +104,7 @@
     <toc-item title="Section 12: Control Set Information" target="Section 12 -" searchDir="Backward" />
     <toc-item title="Section 13: Utilization by Hierarchy" target="Section 13 -" searchDir="Backward" />
    </view>
-   <view inputState="Mapped" program="par" contextTags="FPGA_ONLY" type="Report" file="ncpu32k_core.par" label="Place and Route Report" >
+   <view inputState="Mapped" program="par" contextTags="FPGA_ONLY" type="Report" file="toplevel.par" label="Place and Route Report" >
     <toc-item title="Top of Report" target="Copyright (c)" searchDir="Forward" />
     <toc-item title="Device Utilization" target="Device Utilization Summary:" />
     <toc-item title="Router Information" target="Starting Router" />
@@ -163,7 +113,7 @@
     <toc-item title="Timing Results" target="Timing Score:" />
     <toc-item title="Final Summary" target="Peak Memory Usage:" />
    </view>
-   <view inputState="Routed" program="trce" contextTags="FPGA_ONLY" type="Report" file="ncpu32k_core.twr" label="Post-PAR Static Timing Report" >
+   <view inputState="Routed" program="trce" contextTags="FPGA_ONLY" type="Report" file="toplevel.twr" label="Post-PAR Static Timing Report" >
     <toc-item title="Top of Report" target="Copyright (c)" searchDir="Forward" />
     <toc-item title="Timing Report Description" target="Device,package,speed:" />
     <toc-item title="Informational Messages" target="INFO:" />
@@ -174,22 +124,22 @@
     <toc-item title="Timing Summary" target="Timing summary:" />
     <toc-item title="Trace Settings" target="Trace Settings:" />
    </view>
-   <view inputState="Translated" program="cpldfit" contextTags="CPLD_ONLY,EDK_OFF" hidden="true" type="Report" file="ncpu32k_core.rpt" label="CPLD Fitter Report (Text)" >
+   <view inputState="Translated" program="cpldfit" contextTags="CPLD_ONLY,EDK_OFF" hidden="true" type="Report" file="toplevel.rpt" label="CPLD Fitter Report (Text)" >
     <toc-item title="Top of Report" target="cpldfit:" searchDir="Forward" />
     <toc-item title="Resources Summary" target="**  Mapped Resource Summary  **" />
     <toc-item title="Pin Resources" target="** Pin Resources **" />
     <toc-item title="Global Resources" target="** Global Control Resources **" />
    </view>
-   <view inputState="Fitted" program="taengine" contextTags="CPLD_ONLY,EDK_OFF" hidden="true" type="Report" file="ncpu32k_core.tim" label="CPLD Timing Report (Text)" >
+   <view inputState="Fitted" program="taengine" contextTags="CPLD_ONLY,EDK_OFF" hidden="true" type="Report" file="toplevel.tim" label="CPLD Timing Report (Text)" >
     <toc-item title="Top of Report" target="Performance Summary Report" searchDir="Forward" />
     <toc-item title="Performance Summary" target="Performance Summary:" />
    </view>
-   <view inputState="Routed" program="xpwr" contextTags="EDK_OFF" type="Report" file="ncpu32k_core.pwr" label="Power Report" >
+   <view inputState="Routed" program="xpwr" contextTags="EDK_OFF" type="Report" file="toplevel.pwr" label="Power Report" >
     <toc-item title="Top of Report" target="Copyright (c)" searchDir="Forward" />
     <toc-item title="Power summary" target="Power summary" />
     <toc-item title="Thermal summary" target="Thermal summary" />
    </view>
-   <view inputState="Routed" program="bitgen" contextTags="FPGA_ONLY" type="Report" file="ncpu32k_core.bgn" label="Bitgen Report" >
+   <view inputState="Routed" program="bitgen" contextTags="FPGA_ONLY" type="Report" file="toplevel.bgn" label="Bitgen Report" >
     <toc-item title="Top of Report" target="Copyright (c)" searchDir="Forward" />
     <toc-item title="Bitgen Options" target="Summary of Bitgen Options:" />
     <toc-item title="Final Summary" target="DRC detected" />
@@ -197,20 +147,20 @@
   </viewgroup>
   <viewgroup label="Secondary Reports" >
    <view inputState="PreSynthesized" program="isim" hidden="if_missing" type="Secondary_Report" file="isim.log" label="ISIM Simulator Log" />
-   <view inputState="Synthesized" program="netgen" hidden="if_missing" type="Secondary_Report" file="netgen/synthesis/ncpu32k_core_synthesis.nlf" label="Post-Synthesis Simulation Model Report" >
+   <view inputState="Synthesized" program="netgen" hidden="if_missing" type="Secondary_Report" file="netgen/synthesis/toplevel_synthesis.nlf" label="Post-Synthesis Simulation Model Report" >
     <toc-item title="Top of Report" target="Release" searchDir="Forward" />
    </view>
-   <view inputState="Translated" program="netgen" hidden="if_missing" type="Secondary_Report" file="netgen/translate/ncpu32k_core_translate.nlf" label="Post-Translate Simulation Model Report" >
+   <view inputState="Translated" program="netgen" hidden="if_missing" type="Secondary_Report" file="netgen/translate/toplevel_translate.nlf" label="Post-Translate Simulation Model Report" >
     <toc-item title="Top of Report" target="Release" searchDir="Forward" />
    </view>
-   <view inputState="Translated" program="netgen" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core_tran_fecn.nlf" label="Post-Translate Formality Netlist Report" />
-   <view inputState="Translated" program="map" contextTags="FPGA_ONLY" hidden="true" type="Secondary_Report" file="ncpu32k_core_map.map" label="Map Log File" >
+   <view inputState="Translated" program="netgen" hidden="if_missing" type="Secondary_Report" file="toplevel_tran_fecn.nlf" label="Post-Translate Formality Netlist Report" />
+   <view inputState="Translated" program="map" contextTags="FPGA_ONLY" hidden="true" type="Secondary_Report" file="toplevel_map.map" label="Map Log File" >
     <toc-item title="Top of Report" target="Release" searchDir="Forward" />
     <toc-item title="Design Information" target="Design Information" />
     <toc-item title="Design Summary" target="Design Summary" />
    </view>
    <view inputState="Routed" program="smartxplorer" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="smartxplorer_results/smartxplorer.txt" label="SmartXplorer Report" />
-   <view inputState="Mapped" program="trce" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core_preroute.twr" label="Post-Map Static Timing Report" >
+   <view inputState="Mapped" program="trce" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="toplevel_preroute.twr" label="Post-Map Static Timing Report" >
     <toc-item title="Top of Report" target="Copyright (c)" searchDir="Forward" />
     <toc-item title="Timing Report Description" target="Device,package,speed:" />
     <toc-item title="Informational Messages" target="INFO:" />
@@ -221,43 +171,43 @@
     <toc-item title="Timing Summary" target="Timing summary:" />
     <toc-item title="Trace Settings" target="Trace Settings:" />
    </view>
-   <view inputState="Mapped" program="netgen" hidden="if_missing" type="Secondary_Report" file="netgen/map/ncpu32k_core_map.nlf" label="Post-Map Simulation Model Report" />
-   <view inputState="Mapped" program="map" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core_map.psr" label="Physical Synthesis Report" >
+   <view inputState="Mapped" program="netgen" hidden="if_missing" type="Secondary_Report" file="netgen/map/toplevel_map.nlf" label="Post-Map Simulation Model Report" />
+   <view inputState="Mapped" program="map" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="toplevel_map.psr" label="Physical Synthesis Report" >
     <toc-item title="Top of Report" target="Copyright (c)" searchDir="Forward" />
    </view>
-   <view inputState="Mapped" program="par" contextTags="FPGA_ONLY" hidden="true" type="Pad_Report" file="ncpu32k_core_pad.txt" label="Pad Report" >
+   <view inputState="Mapped" program="par" contextTags="FPGA_ONLY" hidden="true" type="Pad_Report" file="toplevel_pad.txt" label="Pad Report" >
     <toc-item title="Top of Report" target="Copyright (c)" searchDir="Forward" />
    </view>
-   <view inputState="Mapped" program="par" contextTags="FPGA_ONLY" hidden="true" type="Secondary_Report" file="ncpu32k_core.unroutes" label="Unroutes Report" >
+   <view inputState="Mapped" program="par" contextTags="FPGA_ONLY" hidden="true" type="Secondary_Report" file="toplevel.unroutes" label="Unroutes Report" >
     <toc-item title="Top of Report" target="Copyright (c)" searchDir="Forward" />
    </view>
-   <view inputState="Mapped" program="map" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core_preroute.tsi" label="Post-Map Constraints Interaction Report" >
+   <view inputState="Mapped" program="map" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="toplevel_preroute.tsi" label="Post-Map Constraints Interaction Report" >
     <toc-item title="Top of Report" target="Release" searchDir="Forward" />
    </view>
-   <view inputState="Mapped" program="par" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core.grf" label="Guide Results Report" />
-   <view inputState="Routed" program="par" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core.dly" label="Asynchronous Delay Report" />
-   <view inputState="Routed" program="par" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core.clk_rgn" label="Clock Region Report" />
-   <view inputState="Routed" program="par" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core.tsi" label="Post-Place and Route Constraints Interaction Report" >
+   <view inputState="Mapped" program="par" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="toplevel.grf" label="Guide Results Report" />
+   <view inputState="Routed" program="par" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="toplevel.dly" label="Asynchronous Delay Report" />
+   <view inputState="Routed" program="par" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="toplevel.clk_rgn" label="Clock Region Report" />
+   <view inputState="Routed" program="par" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="toplevel.tsi" label="Post-Place and Route Constraints Interaction Report" >
     <toc-item title="Top of Report" target="Copyright (c)" searchDir="Forward" />
    </view>
-   <view inputState="Routed" program="netgen" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core_par_fecn.nlf" label="Post-Place and Route Formality Netlist Report" />
-   <view inputState="Routed" program="netgen" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="netgen/par/ncpu32k_core_timesim.nlf" label="Post-Place and Route Simulation Model Report" />
-   <view inputState="Routed" program="netgen" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core_sta.nlf" label="Primetime Netlist Report" >
+   <view inputState="Routed" program="netgen" hidden="if_missing" type="Secondary_Report" file="toplevel_par_fecn.nlf" label="Post-Place and Route Formality Netlist Report" />
+   <view inputState="Routed" program="netgen" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="netgen/par/toplevel_timesim.nlf" label="Post-Place and Route Simulation Model Report" />
+   <view inputState="Routed" program="netgen" hidden="if_missing" type="Secondary_Report" file="toplevel_sta.nlf" label="Primetime Netlist Report" >
     <toc-item title="Top of Report" target="Release" searchDir="Forward" />
    </view>
-   <view inputState="Routed" program="ibiswriter" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core.ibs" label="IBIS Model" >
+   <view inputState="Routed" program="ibiswriter" hidden="if_missing" type="Secondary_Report" file="toplevel.ibs" label="IBIS Model" >
     <toc-item title="Top of Report" target="IBIS Models for" searchDir="Forward" />
     <toc-item title="Component" target="Component " />
    </view>
-   <view inputState="Routed" program="pin2ucf" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core.lck" label="Back-annotate Pin Report" >
+   <view inputState="Routed" program="pin2ucf" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="toplevel.lck" label="Back-annotate Pin Report" >
     <toc-item title="Top of Report" target="pin2ucf Report File" searchDir="Forward" />
     <toc-item title="Constraint Conflicts Information" target="Constraint Conflicts Information" />
    </view>
-   <view inputState="Routed" program="pin2ucf" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="ncpu32k_core.lpc" label="Locked Pin Constraints" >
+   <view inputState="Routed" program="pin2ucf" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="toplevel.lpc" label="Locked Pin Constraints" >
     <toc-item title="Top of Report" target="top.lpc" searchDir="Forward" />
     <toc-item title="Newly Added Constraints" target="The following constraints were newly added" />
    </view>
-   <view inputState="Translated" program="netgen" contextTags="CPLD_ONLY,EDK_OFF" hidden="if_missing" type="Secondary_Report" file="netgen/fit/ncpu32k_core_timesim.nlf" label="Post-Fit Simulation Model Report" />
+   <view inputState="Translated" program="netgen" contextTags="CPLD_ONLY,EDK_OFF" hidden="if_missing" type="Secondary_Report" file="netgen/fit/toplevel_timesim.nlf" label="Post-Fit Simulation Model Report" />
    <view inputState="Routed" program="bitgen" contextTags="FPGA_ONLY" hidden="if_missing" type="HTML" file="usage_statistics_webtalk.html" label="WebTalk Report" />
    <view inputState="Routed" program="bitgen" contextTags="FPGA_ONLY" hidden="if_missing" type="Secondary_Report" file="webtalk.log" label="WebTalk Log File" />
   </viewgroup>

@@ -1,5 +1,5 @@
-/**
- *@file ROB - ReOrder Buffer
+/**@file
+ * ROB - ReOrder Buffer
  */
 
 /***************************************************************************/
@@ -27,31 +27,38 @@ module ncpu32k_rob
 (
    input                            clk,
    input                            rst_n,
-   input                            i_flush_req,
-   input                            i_issue_AVALID,
-   output                           o_issue_AREADY,
-   input                            i_issue_rd_we,
-   input [`NCPU_REG_AW-1:0]         i_issue_rd_addr,
-   input [`NCPU_REG_AW-1:0]         i_issue_rs1_addr,
-   input [`NCPU_REG_AW-1:0]         i_issue_rs2_addr,
-   output                           o_issue_rs1_from_ROB,
-   output                           o_issue_rs1_in_ARF,
-   output [`NCPU_DW-1:0]            o_issue_rs1_dat,
-   output                           o_issue_rs2_from_ROB,
-   output                           o_issue_rs2_in_ARF,
-   output [`NCPU_DW-1:0]            o_issue_rs2_dat,
-   output [DEPTH_WIDTH-1:0]         o_issue_id,
-   output                           o_commit_BREADY,
-   input                            i_commit_BVALID,
-   input [`NCPU_DW-1:0]             i_commit_BDATA,
-   input [TAG_WIDTH-1:0]            i_commit_BTAG,
-   input [DEPTH_WIDTH-1:0]          i_commit_id,
-   output                           o_retire_BVALID,
-   input                            i_retire_BREADY,
-   output                           o_retire_rd_we,
-   output [`NCPU_REG_AW-1:0]        o_retire_rd_addr,
-   output [`NCPU_DW-1:0]            o_retire_BDATA,
-   output [TAG_WIDTH-1:0]           o_retire_BTAG
+   input                            flush,
+   input                            rob_disp_AVALID,
+   output                           rob_disp_AREADY,
+   input [`NCPU_AW-3:0]             rob_disp_pc,
+   input [`NCPU_AW-3:0]             rob_disp_pred_tgt,
+   input                            rob_disp_rd_we,
+   input [`NCPU_REG_AW-1:0]         rob_disp_rd_addr,
+   input [`NCPU_REG_AW-1:0]         rob_disp_rs1_addr,
+   input [`NCPU_REG_AW-1:0]         rob_disp_rs2_addr,
+   output                           rob_disp_rs1_in_ROB,
+   output                           rob_disp_rs1_in_ARF,
+   output [`NCPU_DW-1:0]            rob_disp_rs1_dat,
+   output                           rob_disp_rs2_in_ROB,
+   output                           rob_disp_rs2_in_ARF,
+   output [`NCPU_DW-1:0]            rob_disp_rs2_dat,
+   output [DEPTH_WIDTH-1:0]         rob_disp_id,
+   output                           rob_wb_BREADY,
+   input                            rob_wb_BVALID,
+   input [`NCPU_DW-1:0]             rob_wb_BDATA,
+   input [TAG_WIDTH-1:0]            rob_wb_BTAG,
+   input [DEPTH_WIDTH-1:0]          rob_wb_id,
+   output                           byp_rd_we,
+   output [`NCPU_REG_AW-1:0]        byp_rd_addr,
+   output                           rob_commit_BVALID,
+   input                            rob_commit_BREADY,
+   output [`NCPU_AW-3:0]            rob_commit_pc,
+   output [`NCPU_AW-3:0]            rob_commit_pred_tgt,
+   output                           rob_commit_rd_we,
+   output [`NCPU_REG_AW-1:0]        rob_commit_rd_addr,
+   output [`NCPU_DW-1:0]            rob_commit_BDATA,
+   output [TAG_WIDTH-1:0]           rob_commit_BTAG,
+   output [DEPTH_WIDTH-1:0]         rob_commit_ptr
 );
 
    localparam DEPTH = (1<<DEPTH_WIDTH);
@@ -65,6 +72,8 @@ module ncpu32k_rob
    wire [DEPTH_WIDTH:0]             r_ptr_r;
    wire [DEPTH_WIDTH:0]             r_ptr_nxt;
    wire                             que_valid_r [DEPTH-1:0];
+   wire [`NCPU_AW-3:0]              que_pc_r [DEPTH-1:0];
+   wire [`NCPU_AW-3:0]              que_pred_tgt_r [DEPTH-1:0];
    wire                             que_rd_ready_r [DEPTH-1:0];
    wire                             que_rd_we_r [DEPTH-1:0];
    wire [`NCPU_REG_AW-1:0]          que_rd_addr_r [DEPTH-1:0];
@@ -78,43 +87,47 @@ module ncpu32k_rob
    wire [DEPTH-2:0]                 rs1_prec_ready, rs2_prec_ready;
    wire [`NCPU_DW-1:0]              prec_dat [DEPTH-2:0];
    wire [DEPTH-2:0]                 rs1_prec_in_ARF, rs2_prec_in_ARF;
-   wire [DEPTH-2:0]                 rs1_prec_from_ROB, rs2_prec_from_ROB;
+   wire [DEPTH-2:0]                 rs1_prec_in_ROB, rs2_prec_in_ROB;
    wire [DEPTH-2:0]                 rs1_first_match, rs2_first_match;
 
    genvar i;
 
-   assign rob_push = (i_issue_AVALID & o_issue_AREADY);
-   assign rob_pop = (i_retire_BREADY & o_retire_BVALID);
+   assign rob_push = (rob_disp_AVALID & rob_disp_AREADY);
+   assign rob_pop = (rob_commit_BREADY & rob_commit_BVALID);
    
    assign w_ptr_nxt = w_ptr_r + 1'd1;
    assign r_ptr_nxt = r_ptr_r + 1'd1;
 
    nDFF_lr #(DEPTH_WIDTH + 1) dff_w_ptr_r
-     (clk,rst_n, (rob_push|i_flush_req), (w_ptr_nxt & {DEPTH_WIDTH+1{~i_flush_req}}), w_ptr_r);
+     (clk,rst_n, (rob_push|flush), (w_ptr_nxt & {DEPTH_WIDTH+1{~flush}}), w_ptr_r);
    nDFF_lr #(DEPTH_WIDTH + 1) dff_r_ptr_r
-     (clk,rst_n, (rob_pop|i_flush_req), (r_ptr_nxt & {DEPTH_WIDTH+1{~i_flush_req}}), r_ptr_r);
+     (clk,rst_n, (rob_pop|flush), (r_ptr_nxt & {DEPTH_WIDTH+1{~flush}}), r_ptr_r);
 
    generate
       for (i=0;i<DEPTH;i=i+1)
          begin : gen_DFFs
-            wire this_issue, this_retire;
+            wire this_disp, this_commit;
 
-            assign this_issue = (i[DEPTH_WIDTH-1:0]==o_issue_id) & rob_push;
-            assign this_commit = (i[DEPTH_WIDTH-1:0]==i_commit_id) & i_commit_BVALID & o_commit_BREADY;
-            assign this_retire = (i[DEPTH_WIDTH-1:0]==r_ptr_r[DEPTH_WIDTH-1:0]) & rob_pop;
+            assign this_disp = (i[DEPTH_WIDTH-1:0]==rob_disp_id) & rob_push;
+            assign this_wb = (i[DEPTH_WIDTH-1:0]==rob_wb_id) & rob_wb_BVALID & rob_wb_BREADY;
+            assign this_commit = (i[DEPTH_WIDTH-1:0]==r_ptr_r[DEPTH_WIDTH-1:0]) & rob_pop;
 
             nDFF_lr #(1) dff_que_valid_r
-              (clk,rst_n, (this_issue|this_retire|i_flush_req), (this_issue|~this_retire)&~i_flush_req, que_valid_r[i]);
+              (clk,rst_n, (this_disp|this_commit|flush), (this_disp|~this_commit)&~flush, que_valid_r[i]);
             nDFF_lr #(1) dff_que_rd_ready_r
-              (clk,rst_n, (this_issue|this_commit), (~this_issue|this_commit), que_rd_ready_r[i]);
-            nDFF_lr #(1) dff_que_rd_we_r
-              (clk,rst_n, this_issue, i_issue_rd_we, que_rd_we_r[i]);
+              (clk,rst_n, (this_disp|this_wb), (~this_disp|this_wb), que_rd_ready_r[i]);
+            nDFF_l #(`NCPU_AW-2) dff_que_pc_r
+              (clk, this_disp, rob_disp_pc, que_pc_r[i]);
+            nDFF_l #(`NCPU_AW-2) dff_que_pred_tgt_r
+              (clk, this_disp, rob_disp_pred_tgt, que_pred_tgt_r[i]);
+            nDFF_l #(1) dff_que_rd_we_r
+              (clk, this_disp, rob_disp_rd_we, que_rd_we_r[i]);
             nDFF_lr #(`NCPU_REG_AW) dff_que_rd_addr_r
-              (clk,rst_n, this_issue, i_issue_rd_addr, que_rd_addr_r[i]);
-            nDFF_lr #(`NCPU_DW) dff_que_dat_r
-              (clk,rst_n, this_commit, i_commit_BDATA, que_dat_r[i]);
-            nDFF_lr #(TAG_WIDTH) dff_que_tag_r
-              (clk,rst_n, this_commit, i_commit_BTAG, que_tag_r[i]);
+              (clk,rst_n, this_disp, rob_disp_rd_addr, que_rd_addr_r[i]);
+            nDFF_l #(`NCPU_DW) dff_que_dat_r
+              (clk, this_wb, rob_wb_BDATA, que_dat_r[i]);
+            nDFF_l #(TAG_WIDTH) dff_que_tag_r
+              (clk, this_wb, rob_wb_BTAG, que_tag_r[i]);
          end
    endgenerate
 
@@ -122,18 +135,24 @@ module ncpu32k_rob
                      (w_ptr_r[DEPTH_WIDTH-1:0] == r_ptr_r[DEPTH_WIDTH-1:0]);
    assign rob_empty = (w_ptr_r == r_ptr_r);
 
-   assign o_issue_id = w_ptr_r[DEPTH_WIDTH-1:0];
+   assign rob_disp_id = w_ptr_r[DEPTH_WIDTH-1:0];
 
-   assign o_commit_BREADY = 1'b1;
+   assign rob_wb_BREADY = 1'b1;
    
-   assign o_issue_AREADY = ~rob_full;
-   assign o_retire_BVALID = ~rob_empty & que_rd_ready_r[r_ptr_r[DEPTH_WIDTH-1:0]];
+   assign rob_disp_AREADY = ~rob_full;
+   assign rob_commit_BVALID = ~rob_empty & que_rd_ready_r[r_ptr_r[DEPTH_WIDTH-1:0]];
+
+   assign byp_rd_we = que_rd_we_r[rob_wb_id];
+   assign byp_rd_addr = que_rd_addr_r[rob_wb_id];
    
-   // Output MUX for retire channel
-   assign o_retire_rd_we = que_rd_we_r[r_ptr_r[DEPTH_WIDTH-1:0]];
-   assign o_retire_rd_addr = que_rd_addr_r[r_ptr_r[DEPTH_WIDTH-1:0]];
-   assign o_retire_BDATA = que_dat_r[r_ptr_r[DEPTH_WIDTH-1:0]];
-   assign o_retire_BTAG = que_tag_r[r_ptr_r[DEPTH_WIDTH-1:0]];
+   // Output MUX for commit channel
+   assign rob_commit_pc = que_pc_r[r_ptr_r[DEPTH_WIDTH-1:0]];
+   assign rob_commit_pred_tgt = que_pred_tgt_r[r_ptr_r[DEPTH_WIDTH-1:0]];
+   assign rob_commit_rd_we = que_rd_we_r[r_ptr_r[DEPTH_WIDTH-1:0]];
+   assign rob_commit_rd_addr = que_rd_addr_r[r_ptr_r[DEPTH_WIDTH-1:0]];
+   assign rob_commit_BDATA = que_dat_r[r_ptr_r[DEPTH_WIDTH-1:0]];
+   assign rob_commit_BTAG = que_tag_r[r_ptr_r[DEPTH_WIDTH-1:0]];
+   assign rob_commit_ptr = r_ptr_r[DEPTH_WIDTH-1:0];
 
    // Read operands from ROB.
    // Note that ROB can be regarded as an extension of ARF.
@@ -141,16 +160,16 @@ module ncpu32k_rob
       for(i=0;i<DEPTH;i=i+1)
          begin : gen_matches
             // If an entry matches the address of operand.
-            assign rs1_ROB_match[i] = (que_valid_r[i] & que_rd_we_r[i] & (i_issue_rs1_addr==que_rd_addr_r[i]));
-            assign rs2_ROB_match[i] = (que_valid_r[i] & que_rd_we_r[i] & (i_issue_rs2_addr==que_rd_addr_r[i]));
+            assign rs1_ROB_match[i] = (que_valid_r[i] & que_rd_we_r[i] & (rob_disp_rs1_addr==que_rd_addr_r[i]));
+            assign rs2_ROB_match[i] = (que_valid_r[i] & que_rd_we_r[i] & (rob_disp_rs2_addr==que_rd_addr_r[i]));
 
             // If the matched entry is ready
             assign rs1_ROB_match_ready[i] = (rs1_ROB_match[i] & que_rd_ready_r[i]);
             assign rs2_ROB_match_ready[i] = (rs2_ROB_match[i] & que_rd_ready_r[i]);
 
-            // If the operand is being committed to the matched entry. (bypass)
-            assign rs1_ROB_match_bypass[i] = (rs1_ROB_match[i] & o_commit_BREADY & i_commit_BVALID & (i_commit_id==i[DEPTH_WIDTH-1:0]));
-            assign rs2_ROB_match_bypass[i] = (rs2_ROB_match[i] & o_commit_BREADY & i_commit_BVALID & (i_commit_id==i[DEPTH_WIDTH-1:0]));
+            // If the operand is being wbted to the matched entry. (bypass)
+            assign rs1_ROB_match_bypass[i] = (rs1_ROB_match[i] & rob_wb_BREADY & rob_wb_BVALID & (rob_wb_id==i[DEPTH_WIDTH-1:0]));
+            assign rs2_ROB_match_bypass[i] = (rs2_ROB_match[i] & rob_wb_BREADY & rob_wb_BVALID & (rob_wb_id==i[DEPTH_WIDTH-1:0]));
             
             // synthesis translate_off
 `ifndef SYNTHESIS
@@ -159,10 +178,10 @@ module ncpu32k_rob
 `ifdef NCPU_ENABLE_ASSERT
             always @(posedge clk)
                begin
-                  if (o_commit_BREADY & i_commit_BVALID & (i_commit_id==i[DEPTH_WIDTH-1:0]) & ~que_valid_r[i])
+                  if (rob_wb_BREADY & rob_wb_BVALID & (rob_wb_id==i[DEPTH_WIDTH-1:0]) & ~que_valid_r[i])
                      $fatal("\n Commit to a invalid entry of ROB. Please check ISSUE unit, DISPATCH unit or FU.\n");
-                  if (o_commit_BREADY & i_commit_BVALID & (i_commit_id==i[DEPTH_WIDTH-1:0]) & que_rd_ready_r[i])
-                     $fatal("\n Do not commit to the same entry once again. Please check ISSUE unit, DISPATCH unit or FU.\n");
+                  if (rob_wb_BREADY & rob_wb_BVALID & (rob_wb_id==i[DEPTH_WIDTH-1:0]) & que_rd_ready_r[i])
+                     $fatal("\n Do not wb to the same entry once again. Please check ISSUE unit, DISPATCH unit or FU.\n");
                end
 `endif
 
@@ -177,7 +196,7 @@ module ncpu32k_rob
             wire [DEPTH_WIDTH-1:0] id;
 
             // Look ahead N-1 insns.
-            assign id = (o_issue_id - i[DEPTH_WIDTH-1:0]);
+            assign id = (rob_disp_id - i[DEPTH_WIDTH-1:0]);
 
             assign rs1_prec_match[i-1] = rs1_ROB_match[id];
             assign rs2_prec_match[i-1] = rs2_ROB_match[id];
@@ -188,8 +207,8 @@ module ncpu32k_rob
             
             assign prec_dat[i-1] = que_dat_r[id];
 
-            assign rs1_prec_from_ROB[i-1] = rs1_prec_bypass[i-1] | rs1_prec_ready[i-1];
-            assign rs2_prec_from_ROB[i-1] = rs2_prec_bypass[i-1] | rs2_prec_ready[i-1];
+            assign rs1_prec_in_ROB[i-1] = rs1_prec_bypass[i-1] | rs1_prec_ready[i-1];
+            assign rs2_prec_in_ROB[i-1] = rs2_prec_bypass[i-1] | rs2_prec_ready[i-1];
 
             // The address of operand is not presented in ROB, so the operand is in ARF.
             assign rs1_prec_in_ARF[i-1] = ~rs1_ROB_match[id];
@@ -203,12 +222,12 @@ module ncpu32k_rob
             always @(posedge clk)
                begin
                   if (rs1_prec_ready[i-1] & rs1_prec_bypass[i-1])
-                     $fatal("\n The operand should not be committed once more\n");
+                     $fatal("\n The operand should not be wbted once more\n");
                   if (rs2_prec_ready[i-1] & rs2_prec_bypass[i-1])
-                     $fatal("\n The operand should not be committed once more\n");
-                  if (rs1_prec_from_ROB[i-1] & rs1_prec_in_ARF[i-1])
+                     $fatal("\n The operand should not be wbted once more\n");
+                  if (rs1_prec_in_ROB[i-1] & rs1_prec_in_ARF[i-1])
                      $fatal("\n Operands cannot be both in ARF and ROB.\n");
-                  if (rs2_prec_from_ROB[i-1] & rs2_prec_in_ARF[i-1])
+                  if (rs2_prec_in_ROB[i-1] & rs2_prec_in_ARF[i-1])
                      $fatal("\n Operands cannot be both in ARF and ROB.\n");
                end
 `endif
@@ -219,7 +238,7 @@ module ncpu32k_rob
          end
    endgenerate
    
-   // Priority MUX
+   // Priority Arbiter
    // Get the latest value of the operand,
    // which is corresponding to the oldest insn.
    ncpu32k_priority_onehot
@@ -245,14 +264,14 @@ module ncpu32k_rob
          .DOUT (rs2_first_match)
       );
 
-   // Output MUX for issue channel
+   // Output MUX for dispatch channel
    generate
       wire [`NCPU_DW-1:0] t_rs1_dat [DEPTH-1:0];
       wire [`NCPU_DW-1:0] t_rs2_dat [DEPTH-1:0];
 
-      // Bypass from commit channel.
-      assign t_rs1_dat[0] = ({`NCPU_DW{|(rs1_first_match & rs1_prec_bypass)}} & i_commit_BDATA);
-      assign t_rs2_dat[0] = ({`NCPU_DW{|(rs2_first_match & rs2_prec_bypass)}} & i_commit_BDATA);
+      // Bypass from wb channel.
+      assign t_rs1_dat[0] = ({`NCPU_DW{|(rs1_first_match & rs1_prec_bypass)}} & rob_wb_BDATA);
+      assign t_rs2_dat[0] = ({`NCPU_DW{|(rs2_first_match & rs2_prec_bypass)}} & rob_wb_BDATA);
       
       // Get from ROB
       for(i=1;i<DEPTH;i=i+1)
@@ -261,14 +280,14 @@ module ncpu32k_rob
             assign t_rs2_dat[i] = t_rs2_dat[i-1] | ({`NCPU_DW{rs2_first_match[i-1] & rs2_prec_ready[i-1]}} & prec_dat[i-1]);
          end
 
-      assign o_issue_rs1_dat = t_rs1_dat[DEPTH-1];
-      assign o_issue_rs2_dat = t_rs2_dat[DEPTH-1];
+      assign rob_disp_rs1_dat = t_rs1_dat[DEPTH-1];
+      assign rob_disp_rs2_dat = t_rs2_dat[DEPTH-1];
    endgenerate
 
-   assign o_issue_rs1_from_ROB = |(rs1_first_match & rs1_prec_from_ROB);
-   assign o_issue_rs2_from_ROB = |(rs2_first_match & rs2_prec_from_ROB);
-   assign o_issue_rs1_in_ARF = &rs1_prec_in_ARF;
-   assign o_issue_rs2_in_ARF = &rs2_prec_in_ARF;
+   assign rob_disp_rs1_in_ROB = |(rs1_first_match & rs1_prec_in_ROB);
+   assign rob_disp_rs2_in_ROB = |(rs2_first_match & rs2_prec_in_ROB);
+   assign rob_disp_rs1_in_ARF = &rs1_prec_in_ARF;
+   assign rob_disp_rs2_in_ARF = &rs2_prec_in_ARF;
 
 
    // synthesis translate_off
@@ -283,7 +302,7 @@ module ncpu32k_rob
             $fatal("\n `rs1_first_match` should be mutex\n");
          if(count_1({rs2_first_match})>1)
             $fatal("\n `rs2_first_match` should be mutex\n");
-         // The following 4 assertions hold if there is only one commit channel.
+         // The following 4 assertions hold if there is only one wb channel.
          if(count_1({rs1_ROB_match_bypass})>1)
             $fatal("\n `rs1_ROB_match_bypass` should be mutex\n");
          if(count_1({rs2_ROB_match_bypass})>1)
@@ -302,8 +321,8 @@ module ncpu32k_rob
    reg assert_flush_req = 1'b0;
    always @(posedge clk)
       begin
-         assert_flush_req <= i_flush_req;
-         if (assert_flush_req & i_flush_req) $fatal("\n It's likely a bug?? 'i_flush_req' was not a 1-clk pulse\n");
+         assert_flush_req <= flush;
+         if (assert_flush_req & flush) $fatal("\n It's likely a bug?? 'flush' was not a 1-clk pulse\n");
       end
 `endif
 

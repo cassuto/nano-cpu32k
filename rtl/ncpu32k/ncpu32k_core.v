@@ -15,30 +15,56 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_core(
+module ncpu32k_core
+#(
+   parameter CONFIG_ENABLE_IMMU,
+   parameter CONFIG_ENABLE_DMMU,
+   parameter CONFIG_ENABLE_ICACHE,
+   parameter CONFIG_ENABLE_DCACHE,
+   parameter CONFIG_IBUS_OUTSTANTING_LOG2,
+   parameter [`NCPU_AW-1:0] CONFIG_ERST_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EDTM_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EDPF_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EALIGN_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EITM_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EIPF_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_ESYSCALL_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EINSN_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EIRQ_VECTOR,
+   parameter CONFIG_ENABLE_MUL,
+   parameter CONFIG_ENABLE_DIV,
+   parameter CONFIG_ENABLE_DIVU,
+   parameter CONFIG_ENABLE_MOD,
+   parameter CONFIG_ENABLE_MODU,
+   parameter CONFIG_ENABLE_FPU,
+   parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH,
+   parameter CONFIG_ALU_INSERT_REG,
+   parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH,
+   parameter CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2,
+   parameter CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2,
+   parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH,
+   parameter CONFIG_ROB_DEPTH_LOG2,
+   parameter CONFIG_PIPEBUF_BYPASS
+)
+(
    input                   clk,
    input                   rst_n,
-   input                   dbus_cmd_ready,
-   output                  dbus_cmd_valid,
-   output [`NCPU_AW-1:0]   dbus_cmd_addr,
-   output [`NCPU_DW/8-1:0] dbus_cmd_we_msk,
-   input [`NCPU_DW-1:0]    dbus_dout,
-   input                   dbus_valid,
-   output                  dbus_ready,
-   output [`NCPU_DW-1:0]   dbus_din,
-   input                   exp_dmm_tlb_miss,
-   input                   exp_dmm_page_fault,
-   input                   ibus_cmd_ready, /* ibus is ready to accept cmd */
-   output                  ibus_cmd_valid, /* cmd is presented at ibus'input */
-   output [`NCPU_AW-1:0]   ibus_cmd_addr, /* IMPORTANT! changing after cmd handshaked */
-   input                   ibus_valid,
-   output                  ibus_ready,
-   input [`NCPU_IW-1:0]    ibus_dout,
-   input [`NCPU_AW-1:0]    ibus_out_id,
-   input [`NCPU_AW-1:0]    ibus_out_id_nxt,
-   output                  ibus_flush_req,
-   input                   exp_imm_tlb_miss,
-   input                   exp_imm_page_fault,
+   input                   dbus_AREADY,
+   output                  dbus_AVALID,
+   output [`NCPU_AW-1:0]   dbus_AADDR,
+   output [`NCPU_DW/8-1:0] dbus_AWMSK,
+   output [`NCPU_DW-1:0]   dbus_ADATA,
+   input [`NCPU_DW-1:0]    dbus_BDATA,
+   input                   dbus_BVALID,
+   output                  dbus_BREADY,
+   input [1:0]             dbus_BEXC,
+   input                   ibus_AREADY,
+   output                  ibus_AVALID,
+   output [`NCPU_AW-1:0]   ibus_AADDR,
+   input                   ibus_BVALID,
+   output                  ibus_BREADY,
+   input [`NCPU_IW-1:0]    ibus_BDATA,
+   input [1:0]             ibus_BEXC,
    input                   irqc_intr_sync,
    output                  msr_psr_imme,
    output                  msr_psr_dmme,
@@ -75,133 +101,184 @@ module ncpu32k_core(
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [`NCPU_AW-3:0]  bpu_insn_pc;            // From ifu of ncpu32k_ifu.v
-   wire [`NCPU_AW-3:0]  bpu_jmp_tgt;            // From bpu of ncpu32k_bpu.v
-   wire                 bpu_jmprel;             // From ifu of ncpu32k_ifu.v
-   wire [`NCPU_AW-3:0]  bpu_jmprel_offset;      // From ifu of ncpu32k_ifu.v
-   wire                 bpu_jmprel_taken;       // From bpu of ncpu32k_bpu.v
-   wire [`NCPU_DW-1:0]  bpu_msr_epc;            // From bpu of ncpu32k_bpu.v
-   wire                 bpu_rd;                 // From ifu of ncpu32k_ifu.v
-   wire                 bpu_wb;                 // From ieu of ncpu32k_ieu.v
-   wire                 bpu_wb_hit;             // From ieu of ncpu32k_ieu.v
-   wire [`NCPU_AW-3:0]  bpu_wb_insn_pc;         // From ieu of ncpu32k_ieu.v
-   wire                 bpu_wb_jmprel;          // From ieu of ncpu32k_ieu.v
-   wire                 idu_in_ready;           // From idu of ncpu32k_idu.v
-   wire                 idu_in_valid;           // From ifu of ncpu32k_ifu.v
-   wire [`NCPU_IW-1:0]  idu_insn;               // From ifu of ncpu32k_ifu.v
-   wire [`NCPU_AW-3:0]  idu_insn_pc;            // From ifu of ncpu32k_ifu.v
-   wire                 idu_jmprel_link;        // From ifu of ncpu32k_ifu.v
-   wire                 idu_let_lsa_pc;         // From ifu of ncpu32k_ifu.v
-   wire                 idu_op_jmpfar;          // From ifu of ncpu32k_ifu.v
-   wire                 idu_op_jmprel;          // From ifu of ncpu32k_ifu.v
-   wire                 idu_op_ret;             // From ifu of ncpu32k_ifu.v
-   wire                 idu_op_syscall;         // From ifu of ncpu32k_ifu.v
-   wire                 idu_specul_bcc;         // From ifu of ncpu32k_ifu.v
-   wire                 idu_specul_extexp;      // From ifu of ncpu32k_ifu.v
-   wire                 idu_specul_jmpfar;      // From ifu of ncpu32k_ifu.v
-   wire                 idu_specul_jmprel;      // From ifu of ncpu32k_ifu.v
-   wire [`NCPU_AW-3:0]  idu_specul_tgt;         // From ifu of ncpu32k_ifu.v
-   wire                 ieu_au_cmp_eq;          // From idu of ncpu32k_idu.v
-   wire                 ieu_au_cmp_signed;      // From idu of ncpu32k_idu.v
-   wire [`NCPU_AU_IOPW-1:0] ieu_au_opc_bus;     // From idu of ncpu32k_idu.v
-   wire                 ieu_emu_insn;           // From idu of ncpu32k_idu.v
-   wire [`NCPU_EU_IOPW-1:0] ieu_eu_opc_bus;     // From idu of ncpu32k_idu.v
-   wire                 ieu_in_ready;           // From ieu of ncpu32k_ieu.v
-   wire                 ieu_in_valid;           // From idu of ncpu32k_idu.v
-   wire [`NCPU_AW-3:0]  ieu_insn_pc;            // From idu of ncpu32k_idu.v
-   wire                 ieu_jmplink;            // From idu of ncpu32k_idu.v
-   wire                 ieu_let_lsa_pc;         // From idu of ncpu32k_idu.v
-   wire [`NCPU_LU_IOPW-1:0] ieu_lu_opc_bus;     // From idu of ncpu32k_idu.v
-   wire                 ieu_mu_barr;            // From idu of ncpu32k_idu.v
-   wire                 ieu_mu_load;            // From idu of ncpu32k_idu.v
-   wire [2:0]           ieu_mu_load_size;       // From idu of ncpu32k_idu.v
-   wire                 ieu_mu_sign_ext;        // From idu of ncpu32k_idu.v
-   wire                 ieu_mu_store;           // From idu of ncpu32k_idu.v
-   wire [2:0]           ieu_mu_store_size;      // From idu of ncpu32k_idu.v
-   wire [`NCPU_DW-1:0]  ieu_operand_1;          // From idu of ncpu32k_idu.v
-   wire [`NCPU_DW-1:0]  ieu_operand_2;          // From idu of ncpu32k_idu.v
-   wire [`NCPU_DW-1:0]  ieu_operand_3;          // From idu of ncpu32k_idu.v
-   wire                 ieu_ret;                // From idu of ncpu32k_idu.v
-   wire                 ieu_specul_bcc;         // From idu of ncpu32k_idu.v
-   wire                 ieu_specul_extexp;      // From idu of ncpu32k_idu.v
-   wire                 ieu_specul_jmpfar;      // From idu of ncpu32k_idu.v
-   wire                 ieu_specul_jmprel;      // From idu of ncpu32k_idu.v
-   wire [`NCPU_AW-3:0]  ieu_specul_tgt;         // From idu of ncpu32k_idu.v
-   wire                 ieu_syscall;            // From idu of ncpu32k_idu.v
-   wire [`NCPU_REG_AW-1:0] ieu_wb_reg_addr;     // From idu of ncpu32k_idu.v
-   wire                 ieu_wb_regf;            // From idu of ncpu32k_idu.v
-   wire [`NCPU_AW-3:0]  ifu_flush_jmp_tgt;      // From ieu of ncpu32k_ieu.v
-   wire [`NCPU_DW-1:0]  msr_coreid;             // From psr of ncpu32k_psr.v
-   wire [`NCPU_DW-1:0]  msr_cpuid;              // From psr of ncpu32k_psr.v
-   wire [`NCPU_DW-1:0]  msr_elsa;               // From psr of ncpu32k_psr.v
-   wire [`NCPU_DW-1:0]  msr_elsa_nxt;           // From ieu of ncpu32k_ieu.v
-   wire                 msr_elsa_we;            // From ieu of ncpu32k_ieu.v
-   wire [`NCPU_DW-1:0]  msr_epc;                // From psr of ncpu32k_psr.v
-   wire [`NCPU_DW-1:0]  msr_epc_nxt;            // From ieu of ncpu32k_ieu.v
-   wire                 msr_epc_we;             // From ieu of ncpu32k_ieu.v
-   wire [`NCPU_PSR_DW-1:0] msr_epsr;            // From psr of ncpu32k_psr.v
-   wire [`NCPU_PSR_DW-1:0] msr_epsr_nxt;        // From ieu of ncpu32k_ieu.v
-   wire                 msr_epsr_we;            // From ieu of ncpu32k_ieu.v
-   wire                 msr_exp_ent;            // From ieu of ncpu32k_ieu.v
-   wire [`NCPU_PSR_DW-1:0] msr_psr;             // From psr of ncpu32k_psr.v
-   wire                 msr_psr_cc;             // From psr of ncpu32k_psr.v
-   wire                 msr_psr_cc_nxt;         // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_cc_we;          // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_dmme_nxt;       // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_dmme_we;        // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_imme_nxt;       // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_imme_we;        // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_ire_nxt;        // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_ire_we;         // From ieu of ncpu32k_ieu.v
-   wire [`NCPU_PSR_DW-1:0] msr_psr_nold;        // From psr of ncpu32k_psr.v
-   wire                 msr_psr_rm_nxt;         // From ieu of ncpu32k_ieu.v
-   wire                 msr_psr_rm_we;          // From ieu of ncpu32k_ieu.v
-   wire [`NCPU_DW-1:0]  regf_din;               // From ieu of ncpu32k_ieu.v
-   wire [`NCPU_REG_AW-1:0] regf_din_addr;       // From ieu of ncpu32k_ieu.v
-   wire [`NCPU_REG_AW-1:0] regf_rs1_addr;       // From idu of ncpu32k_idu.v
-   wire [`NCPU_DW-1:0]  regf_rs1_dout;          // From regfile0 of ncpu32k_regfile.v
-   wire                 regf_rs1_re;            // From idu of ncpu32k_idu.v
-   wire [`NCPU_REG_AW-1:0] regf_rs2_addr;       // From idu of ncpu32k_idu.v
-   wire [`NCPU_DW-1:0]  regf_rs2_dout;          // From regfile0 of ncpu32k_regfile.v
-   wire                 regf_rs2_re;            // From idu of ncpu32k_idu.v
-   wire                 regf_we;                // From ieu of ncpu32k_ieu.v
-   wire                 specul_flush;           // From ieu of ncpu32k_ieu.v
+   wire [`NCPU_DW-1:0]  arf_din;                // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_REG_AW-1:0] arf_din_addr;        // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_REG_AW-1:0] arf_rs1_addr;        // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_DW-1:0]  arf_rs1_dout;           // From ARF of ncpu32k_regfile.v
+   wire                 arf_rs1_re;             // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_REG_AW-1:0] arf_rs2_addr;        // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_DW-1:0]  arf_rs2_dout;           // From ARF of ncpu32k_regfile.v
+   wire                 arf_rs2_re;             // From DISP of ncpu32k_dispatch.v
+   wire                 arf_we;                 // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_AW-3:0]  bpu_insn_pc;            // From IFU of ncpu32k_ifu.v
+   wire                 bpu_pred_taken;         // From bpu of ncpu32k_bpu.v
+   wire [`NCPU_AW-3:0]  bpu_pred_tgt;           // From bpu of ncpu32k_bpu.v
+   wire                 bpu_wb;                 // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_AW-3:0]  bpu_wb_insn_pc;         // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 bpu_wb_taken;           // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_AW-3:0]  bpu_wb_tgt;             // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_DW-1:0]  byp_BDATA;              // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 byp_BVALID;             // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_REG_AW-1:0] byp_rd_addr;         // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 byp_rd_we;              // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 disp_AREADY;            // From DISP of ncpu32k_dispatch.v
+   wire                 disp_AVALID;            // From IDU of ncpu32k_idu.v
+   wire                 disp_agu_barr;          // From IDU of ncpu32k_idu.v
+   wire                 disp_agu_load;          // From IDU of ncpu32k_idu.v
+   wire [2:0]           disp_agu_load_size;     // From IDU of ncpu32k_idu.v
+   wire                 disp_agu_sign_ext;      // From IDU of ncpu32k_idu.v
+   wire                 disp_agu_store;         // From IDU of ncpu32k_idu.v
+   wire [2:0]           disp_agu_store_size;    // From IDU of ncpu32k_idu.v
+   wire [`NCPU_ALU_IOPW-1:0] disp_alu_opc_bus;  // From IDU of ncpu32k_idu.v
+   wire [`NCPU_EPU_IOPW-1:0] disp_epu_opc_bus;  // From IDU of ncpu32k_idu.v
+   wire [`NCPU_DW-1:0]  disp_imm32;             // From IDU of ncpu32k_idu.v
+   wire [`NCPU_LPU_IOPW-1:0] disp_lpu_opc_bus;  // From IDU of ncpu32k_idu.v
+   wire [`NCPU_AW-3:0]  disp_pc;                // From IDU of ncpu32k_idu.v
+   wire                 disp_pred_branch;       // From IDU of ncpu32k_idu.v
+   wire [`NCPU_AW-3:0]  disp_pred_tgt;          // From IDU of ncpu32k_idu.v
+   wire [`NCPU_REG_AW-1:0] disp_rd_addr;        // From IDU of ncpu32k_idu.v
+   wire                 disp_rd_we;             // From IDU of ncpu32k_idu.v
+   wire [14:0]          disp_rel15;             // From IDU of ncpu32k_idu.v
+   wire [`NCPU_REG_AW-1:0] disp_rs1_addr;       // From IDU of ncpu32k_idu.v
+   wire                 disp_rs1_re;            // From IDU of ncpu32k_idu.v
+   wire [`NCPU_REG_AW-1:0] disp_rs2_addr;       // From IDU of ncpu32k_idu.v
+   wire                 disp_rs2_re;            // From IDU of ncpu32k_idu.v
+   wire                 epu_commit_EALIGN;      // From AGU of ncpu32k_pipeline_agu.v
+   wire                 epu_commit_EDPF;        // From AGU of ncpu32k_pipeline_agu.v
+   wire                 epu_commit_EDTM;        // From AGU of ncpu32k_pipeline_agu.v
+   wire [`NCPU_AW-1:0]  epu_commit_LSA;         // From AGU of ncpu32k_pipeline_agu.v
+   wire                 flush;                  // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_AW-3:0]  flush_tgt;              // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 idu_AREADY;             // From IDU of ncpu32k_idu.v
+   wire                 idu_AVALID;             // From IFU of ncpu32k_ifu.v
+   wire [2:0]           idu_exc;                // From IFU of ncpu32k_ifu.v
+   wire [`NCPU_IW-1:0]  idu_insn;               // From IFU of ncpu32k_ifu.v
+   wire [`NCPU_AW-3:0]  idu_pc;                 // From IFU of ncpu32k_ifu.v
+   wire                 idu_pred_branch;        // From IFU of ncpu32k_ifu.v
+   wire [`NCPU_AW-3:0]  idu_pred_tgt;           // From IFU of ncpu32k_ifu.v
+   wire                 issue_agu_AREADY;       // From AGU of ncpu32k_pipeline_agu.v
+   wire                 issue_agu_AVALID;       // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_AGU_UOPW-1:0] issue_agu_uop;     // From DISP of ncpu32k_dispatch.v
+   wire                 issue_alu_AREADY;       // From ALU of ncpu32k_pipeline_alu.v
+   wire                 issue_alu_AVALID;       // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_ALU_UOPW-1:0] issue_alu_uop;     // From DISP of ncpu32k_dispatch.v
+   wire                 issue_epu_AREADY;       // From EPU of ncpu32k_pipeline_epu.v
+   wire                 issue_epu_AVALID;       // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_EPU_UOPW-1:0] issue_epu_uop;     // From DISP of ncpu32k_dispatch.v
+   wire                 issue_fpu_AREADY;       // From FPU of ncpu32k_pipeline_fpu.v
+   wire                 issue_fpu_AVALID;       // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_FPU_UOPW-1:0] issue_fpu_uop;     // From DISP of ncpu32k_dispatch.v
+   wire [CONFIG_ROB_DEPTH_LOG2-1:0] issue_id;   // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_DW-1:0]  issue_imm32;            // From DISP of ncpu32k_dispatch.v
+   wire                 issue_lpu_AREADY;       // From LPU of ncpu32k_pipeline_lpu.v
+   wire                 issue_lpu_AVALID;       // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_LPU_UOPW-1:0] issue_lpu_uop;     // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_REG_AW-1:0] issue_rs1_addr;      // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_DW-1:0]  issue_rs1_dat;          // From DISP of ncpu32k_dispatch.v
+   wire                 issue_rs1_rdy;          // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_REG_AW-1:0] issue_rs2_addr;      // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_DW-1:0]  issue_rs2_dat;          // From DISP of ncpu32k_dispatch.v
+   wire                 issue_rs2_rdy;          // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_DW-1:0]  msr_coreid;             // From PSR of ncpu32k_psr.v
+   wire [`NCPU_DW-1:0]  msr_cpuid;              // From PSR of ncpu32k_psr.v
+   wire [`NCPU_DW-1:0]  msr_elsa;               // From PSR of ncpu32k_psr.v
+   wire [`NCPU_DW-1:0]  msr_elsa_nxt;           // From EPU of ncpu32k_pipeline_epu.v
+   wire                 msr_elsa_we;            // From EPU of ncpu32k_pipeline_epu.v
+   wire [`NCPU_DW-1:0]  msr_epc;                // From PSR of ncpu32k_psr.v
+   wire [`NCPU_DW-1:0]  msr_epc_nxt;            // From EPU of ncpu32k_pipeline_epu.v
+   wire                 msr_epc_we;             // From EPU of ncpu32k_pipeline_epu.v
+   wire [`NCPU_PSR_DW-1:0] msr_epsr;            // From PSR of ncpu32k_psr.v
+   wire [`NCPU_PSR_DW-1:0] msr_epsr_nxt;        // From EPU of ncpu32k_pipeline_epu.v
+   wire                 msr_epsr_we;            // From EPU of ncpu32k_pipeline_epu.v
+   wire                 msr_exc_ent;            // From EPU of ncpu32k_pipeline_epu.v
+   wire [`NCPU_PSR_DW-1:0] msr_psr;             // From PSR of ncpu32k_psr.v
+   wire                 msr_psr_dmme_nxt;       // From EPU of ncpu32k_pipeline_epu.v
+   wire                 msr_psr_dmme_we;        // From EPU of ncpu32k_pipeline_epu.v
+   wire                 msr_psr_imme_nxt;       // From EPU of ncpu32k_pipeline_epu.v
+   wire                 msr_psr_imme_we;        // From EPU of ncpu32k_pipeline_epu.v
+   wire                 msr_psr_ire_nxt;        // From EPU of ncpu32k_pipeline_epu.v
+   wire                 msr_psr_ire_we;         // From EPU of ncpu32k_pipeline_epu.v
+   wire [`NCPU_PSR_DW-1:0] msr_psr_nold;        // From PSR of ncpu32k_psr.v
+   wire                 msr_psr_rm_nxt;         // From EPU of ncpu32k_pipeline_epu.v
+   wire                 msr_psr_rm_we;          // From EPU of ncpu32k_pipeline_epu.v
+   wire [`NCPU_AW-3:0]  rob_commit_pc;          // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [CONFIG_ROB_DEPTH_LOG2-1:0] rob_commit_ptr;// From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 rob_disp_AREADY;        // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 rob_disp_AVALID;        // From DISP of ncpu32k_dispatch.v
+   wire [CONFIG_ROB_DEPTH_LOG2-1:0] rob_disp_id;// From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_AW-3:0]  rob_disp_pc;            // From DISP of ncpu32k_dispatch.v
+   wire                 rob_disp_pred_branch;   // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_AW-3:0]  rob_disp_pred_tgt;      // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_REG_AW-1:0] rob_disp_rd_addr;    // From DISP of ncpu32k_dispatch.v
+   wire                 rob_disp_rd_we;         // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_REG_AW-1:0] rob_disp_rs1_addr;   // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_DW-1:0]  rob_disp_rs1_dat;       // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 rob_disp_rs1_in_ARF;    // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 rob_disp_rs1_in_ROB;    // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_REG_AW-1:0] rob_disp_rs2_addr;   // From DISP of ncpu32k_dispatch.v
+   wire [`NCPU_DW-1:0]  rob_disp_rs2_dat;       // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 rob_disp_rs2_in_ARF;    // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 rob_disp_rs2_in_ROB;    // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire [`NCPU_DW-1:0]  wb_agu_BDATA;           // From AGU of ncpu32k_pipeline_agu.v
+   wire                 wb_agu_BEALIGN;         // From AGU of ncpu32k_pipeline_agu.v
+   wire                 wb_agu_BEDPF;           // From AGU of ncpu32k_pipeline_agu.v
+   wire                 wb_agu_BEDTM;           // From AGU of ncpu32k_pipeline_agu.v
+   wire [CONFIG_ROB_DEPTH_LOG2-1:0] wb_agu_BID; // From AGU of ncpu32k_pipeline_agu.v
+   wire [`NCPU_AW-1:0]  wb_agu_BLSA;            // From AGU of ncpu32k_pipeline_agu.v
+   wire                 wb_agu_BREADY;          // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 wb_agu_BVALID;          // From AGU of ncpu32k_pipeline_agu.v
+   wire                 wb_alu_BBRANCH_OP;      // From ALU of ncpu32k_pipeline_alu.v
+   wire                 wb_alu_BBRANCH_REG_TAKEN;// From ALU of ncpu32k_pipeline_alu.v
+   wire                 wb_alu_BBRANCH_REL_TAKEN;// From ALU of ncpu32k_pipeline_alu.v
+   wire [`NCPU_DW-1:0]  wb_alu_BDATA;           // From ALU of ncpu32k_pipeline_alu.v
+   wire [CONFIG_ROB_DEPTH_LOG2-1:0] wb_alu_BID; // From ALU of ncpu32k_pipeline_alu.v
+   wire                 wb_alu_BREADY;          // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 wb_alu_BVALID;          // From ALU of ncpu32k_pipeline_alu.v
+   wire [`NCPU_DW-1:0]  wb_epu_BDATA;           // From EPU of ncpu32k_pipeline_epu.v
+   wire                 wb_epu_BEINSN;          // From EPU of ncpu32k_pipeline_epu.v
+   wire                 wb_epu_BEIPF;           // From EPU of ncpu32k_pipeline_epu.v
+   wire                 wb_epu_BEIRQ;           // From EPU of ncpu32k_pipeline_epu.v
+   wire                 wb_epu_BEITM;           // From EPU of ncpu32k_pipeline_epu.v
+   wire                 wb_epu_BERET;           // From EPU of ncpu32k_pipeline_epu.v
+   wire                 wb_epu_BESYSCALL;       // From EPU of ncpu32k_pipeline_epu.v
+   wire [CONFIG_ROB_DEPTH_LOG2-1:0] wb_epu_BID; // From EPU of ncpu32k_pipeline_epu.v
+   wire                 wb_epu_BREADY;          // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 wb_epu_BVALID;          // From EPU of ncpu32k_pipeline_epu.v
+   wire [`NCPU_DW-1:0]  wb_fpu_BDATA;           // From FPU of ncpu32k_pipeline_fpu.v
+   wire [CONFIG_ROB_DEPTH_LOG2-1:0] wb_fpu_BID; // From FPU of ncpu32k_pipeline_fpu.v
+   wire                 wb_fpu_BREADY;          // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 wb_fpu_BVALID;          // From FPU of ncpu32k_pipeline_fpu.v
+   wire [`NCPU_DW-1:0]  wb_lpu_BDATA;           // From LPU of ncpu32k_pipeline_lpu.v
+   wire [CONFIG_ROB_DEPTH_LOG2-1:0] wb_lpu_BID; // From LPU of ncpu32k_pipeline_lpu.v
+   wire                 wb_lpu_BREADY;          // From WB_COMMIT of ncpu32k_wb_commit.v
+   wire                 wb_lpu_BVALID;          // From LPU of ncpu32k_pipeline_lpu.v
    // End of automatics
-   
+
    /////////////////////////////////////////////////////////////////////////////
    // Regfile
    /////////////////////////////////////////////////////////////////////////////
-   
-   wire [`NCPU_REG_AW-1:0] regf_rs1_addr_i;
-   wire [`NCPU_REG_AW-1:0] regf_rs2_addr_i;
-   wire                    regf_rs1_re_i;
-   wire                    regf_rs2_re_i;
-   wire [`NCPU_REG_AW-1:0] regf_rd_addr_i;
-   wire [`NCPU_DW-1:0]     regf_rd_i;
-   wire                    regf_rd_we_i;
-   
-   ncpu32k_regfile regfile0
+
+   ncpu32k_regfile ARF
       (/*AUTOINST*/
        // Outputs
-       .regf_rs1_dout                   (regf_rs1_dout[`NCPU_DW-1:0]),
-       .regf_rs2_dout                   (regf_rs2_dout[`NCPU_DW-1:0]),
+       .arf_rs1_dout                    (arf_rs1_dout[`NCPU_DW-1:0]),
+       .arf_rs2_dout                    (arf_rs2_dout[`NCPU_DW-1:0]),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .regf_rs1_addr                   (regf_rs1_addr[`NCPU_REG_AW-1:0]),
-       .regf_rs2_addr                   (regf_rs2_addr[`NCPU_REG_AW-1:0]),
-       .regf_rs1_re                     (regf_rs1_re),
-       .regf_rs2_re                     (regf_rs2_re),
-       .regf_din_addr                   (regf_din_addr[`NCPU_REG_AW-1:0]),
-       .regf_din                        (regf_din[`NCPU_DW-1:0]),
-       .regf_we                         (regf_we));
-   
-   ncpu32k_psr psr
+       .arf_rs1_addr                    (arf_rs1_addr[`NCPU_REG_AW-1:0]),
+       .arf_rs2_addr                    (arf_rs2_addr[`NCPU_REG_AW-1:0]),
+       .arf_rs1_re                      (arf_rs1_re),
+       .arf_rs2_re                      (arf_rs2_re),
+       .arf_din_addr                    (arf_din_addr[`NCPU_REG_AW-1:0]),
+       .arf_din                         (arf_din[`NCPU_DW-1:0]),
+       .arf_we                          (arf_we));
+
+   ncpu32k_psr PSR
       (/*AUTOINST*/
        // Outputs
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
        .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
-       .msr_psr_cc                      (msr_psr_cc),
        .msr_psr_rm                      (msr_psr_rm),
        .msr_psr_ire                     (msr_psr_ire),
        .msr_psr_imme                    (msr_psr_imme),
@@ -214,9 +291,7 @@ module ncpu32k_core(
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .msr_exp_ent                     (msr_exp_ent),
-       .msr_psr_cc_nxt                  (msr_psr_cc_nxt),
-       .msr_psr_cc_we                   (msr_psr_cc_we),
+       .msr_exc_ent                     (msr_exc_ent),
        .msr_psr_rm_nxt                  (msr_psr_rm_nxt),
        .msr_psr_rm_we                   (msr_psr_rm_we),
        .msr_psr_ire_nxt                 (msr_psr_ire_nxt),
@@ -231,154 +306,293 @@ module ncpu32k_core(
        .msr_epc_we                      (msr_epc_we),
        .msr_elsa_nxt                    (msr_elsa_nxt[`NCPU_DW-1:0]),
        .msr_elsa_we                     (msr_elsa_we));
-   
+
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 1: Fetch
    /////////////////////////////////////////////////////////////////////////////
-   
-   ncpu32k_ifu ifu
+
+   ncpu32k_ifu
+      #(
+         .CONFIG_ERST_VECTOR           (CONFIG_ERST_VECTOR),
+         .CONFIG_EDTM_VECTOR           (CONFIG_EDTM_VECTOR),
+         .CONFIG_EDPF_VECTOR           (CONFIG_EDPF_VECTOR),
+         .CONFIG_EALIGN_VECTOR         (CONFIG_EALIGN_VECTOR),
+         .CONFIG_EITM_VECTOR           (CONFIG_EITM_VECTOR),
+         .CONFIG_EIPF_VECTOR           (CONFIG_EIPF_VECTOR),
+         .CONFIG_ESYSCALL_VECTOR       (CONFIG_ESYSCALL_VECTOR),
+         .CONFIG_EINSN_VECTOR          (CONFIG_EINSN_VECTOR),
+         .CONFIG_EIRQ_VECTOR           (CONFIG_EIRQ_VECTOR),
+         .CONFIG_IBUS_OUTSTANTING_LOG2 (CONFIG_IBUS_OUTSTANTING_LOG2)
+      )
+   IFU
       (/*AUTOINST*/
        // Outputs
-       .ibus_ready                      (ibus_ready),
-       .ibus_cmd_valid                  (ibus_cmd_valid),
-       .ibus_cmd_addr                   (ibus_cmd_addr[`NCPU_AW-1:0]),
-       .ibus_flush_req                  (ibus_flush_req),
-       .idu_in_valid                    (idu_in_valid),
+       .ibus_AVALID                     (ibus_AVALID),
+       .ibus_AADDR                      (ibus_AADDR[`NCPU_AW-1:0]),
+       .ibus_BREADY                     (ibus_BREADY),
+       .idu_AVALID                      (idu_AVALID),
        .idu_insn                        (idu_insn[`NCPU_IW-1:0]),
-       .idu_insn_pc                     (idu_insn_pc[`NCPU_AW-3:0]),
-       .idu_jmprel_link                 (idu_jmprel_link),
-       .idu_op_jmprel                   (idu_op_jmprel),
-       .idu_op_jmpfar                   (idu_op_jmpfar),
-       .idu_op_syscall                  (idu_op_syscall),
-       .idu_op_ret                      (idu_op_ret),
-       .idu_specul_jmpfar               (idu_specul_jmpfar),
-       .idu_specul_tgt                  (idu_specul_tgt[`NCPU_AW-3:0]),
-       .idu_specul_jmprel               (idu_specul_jmprel),
-       .idu_specul_bcc                  (idu_specul_bcc),
-       .idu_specul_extexp               (idu_specul_extexp),
-       .idu_let_lsa_pc                  (idu_let_lsa_pc),
-       .bpu_rd                          (bpu_rd),
-       .bpu_jmprel                      (bpu_jmprel),
+       .idu_pc                          (idu_pc[`NCPU_AW-3:0]),
+       .idu_exc                         (idu_exc[2:0]),
+       .idu_pred_branch                 (idu_pred_branch),
+       .idu_pred_tgt                    (idu_pred_tgt[`NCPU_AW-3:0]),
        .bpu_insn_pc                     (bpu_insn_pc[`NCPU_AW-3:0]),
-       .bpu_jmprel_offset               (bpu_jmprel_offset[`NCPU_AW-3:0]),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .ibus_valid                      (ibus_valid),
-       .ibus_dout                       (ibus_dout[`NCPU_IW-1:0]),
-       .ibus_cmd_ready                  (ibus_cmd_ready),
-       .ibus_out_id                     (ibus_out_id[`NCPU_AW-1:0]),
-       .ibus_out_id_nxt                 (ibus_out_id_nxt[`NCPU_AW-1:0]),
-       .exp_imm_tlb_miss                (exp_imm_tlb_miss),
-       .exp_imm_page_fault              (exp_imm_page_fault),
+       .ibus_AREADY                     (ibus_AREADY),
+       .ibus_BVALID                     (ibus_BVALID),
+       .ibus_BDATA                      (ibus_BDATA[`NCPU_IW-1:0]),
+       .ibus_BEXC                       (ibus_BEXC[1:0]),
        .irqc_intr_sync                  (irqc_intr_sync),
-       .bpu_msr_epc                     (bpu_msr_epc[`NCPU_DW-1:0]),
-       .ifu_flush_jmp_tgt               (ifu_flush_jmp_tgt[`NCPU_AW-3:0]),
-       .specul_flush                    (specul_flush),
-       .idu_in_ready                    (idu_in_ready),
-       .bpu_jmp_tgt                     (bpu_jmp_tgt[`NCPU_AW-3:0]),
-       .bpu_jmprel_taken                (bpu_jmprel_taken));
-   
+       .flush                           (flush),
+       .flush_tgt                       (flush_tgt[`NCPU_AW-3:0]),
+       .idu_AREADY                      (idu_AREADY),
+       .bpu_pred_taken                  (bpu_pred_taken),
+       .bpu_pred_tgt                    (bpu_pred_tgt[`NCPU_AW-3:0]));
+
    ncpu32k_bpu bpu
       (/*AUTOINST*/
        // Outputs
-       .bpu_jmp_tgt                     (bpu_jmp_tgt[`NCPU_AW-3:0]),
-       .bpu_jmprel_taken                (bpu_jmprel_taken),
-       .bpu_msr_epc                     (bpu_msr_epc[`NCPU_DW-1:0]),
+       .bpu_pred_taken                  (bpu_pred_taken),
+       .bpu_pred_tgt                    (bpu_pred_tgt[`NCPU_AW-3:0]),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
        .bpu_insn_pc                     (bpu_insn_pc[`NCPU_AW-3:0]),
-       .bpu_rd                          (bpu_rd),
-       .bpu_jmprel                      (bpu_jmprel),
-       .bpu_jmprel_offset               (bpu_jmprel_offset[`NCPU_AW-3:0]),
        .bpu_wb                          (bpu_wb),
-       .bpu_wb_jmprel                   (bpu_wb_jmprel),
        .bpu_wb_insn_pc                  (bpu_wb_insn_pc[`NCPU_AW-3:0]),
-       .bpu_wb_hit                      (bpu_wb_hit));
-   
+       .bpu_wb_taken                    (bpu_wb_taken),
+       .bpu_wb_tgt                      (bpu_wb_tgt[`NCPU_AW-3:0]));
+
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 2: Decode
    /////////////////////////////////////////////////////////////////////////////
-   
-   ncpu32k_idu idu
+
+   ncpu32k_idu
+      #(
+         .CONFIG_ENABLE_MUL            (CONFIG_ENABLE_MUL),
+         .CONFIG_ENABLE_DIV            (CONFIG_ENABLE_DIV),
+         .CONFIG_ENABLE_DIVU           (CONFIG_ENABLE_DIVU),
+         .CONFIG_ENABLE_MOD            (CONFIG_ENABLE_MOD),
+         .CONFIG_ENABLE_MODU           (CONFIG_ENABLE_MODU),
+         .CONFIG_PIPEBUF_BYPASS        (CONFIG_PIPEBUF_BYPASS)
+      )
+   IDU
       (/*AUTOINST*/
        // Outputs
-       .idu_in_ready                    (idu_in_ready),
-       .regf_rs1_re                     (regf_rs1_re),
-       .regf_rs1_addr                   (regf_rs1_addr[`NCPU_REG_AW-1:0]),
-       .regf_rs2_re                     (regf_rs2_re),
-       .regf_rs2_addr                   (regf_rs2_addr[`NCPU_REG_AW-1:0]),
-       .ieu_in_valid                    (ieu_in_valid),
-       .ieu_operand_1                   (ieu_operand_1[`NCPU_DW-1:0]),
-       .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),
-       .ieu_operand_3                   (ieu_operand_3[`NCPU_DW-1:0]),
-       .ieu_lu_opc_bus                  (ieu_lu_opc_bus[`NCPU_LU_IOPW-1:0]),
-       .ieu_au_opc_bus                  (ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]),
-       .ieu_au_cmp_eq                   (ieu_au_cmp_eq),
-       .ieu_au_cmp_signed               (ieu_au_cmp_signed),
-       .ieu_eu_opc_bus                  (ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]),
-       .ieu_emu_insn                    (ieu_emu_insn),
-       .ieu_mu_load                     (ieu_mu_load),
-       .ieu_mu_store                    (ieu_mu_store),
-       .ieu_mu_sign_ext                 (ieu_mu_sign_ext),
-       .ieu_mu_barr                     (ieu_mu_barr),
-       .ieu_mu_store_size               (ieu_mu_store_size[2:0]),
-       .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
-       .ieu_wb_regf                     (ieu_wb_regf),
-       .ieu_wb_reg_addr                 (ieu_wb_reg_addr[`NCPU_REG_AW-1:0]),
-       .ieu_insn_pc                     (ieu_insn_pc[`NCPU_AW-3:0]),
-       .ieu_jmplink                     (ieu_jmplink),
-       .ieu_syscall                     (ieu_syscall),
-       .ieu_ret                         (ieu_ret),
-       .ieu_specul_jmpfar               (ieu_specul_jmpfar),
-       .ieu_specul_tgt                  (ieu_specul_tgt[`NCPU_AW-3:0]),
-       .ieu_specul_jmprel               (ieu_specul_jmprel),
-       .ieu_specul_bcc                  (ieu_specul_bcc),
-       .ieu_specul_extexp               (ieu_specul_extexp),
-       .ieu_let_lsa_pc                  (ieu_let_lsa_pc),
+       .idu_AREADY                      (idu_AREADY),
+       .disp_AVALID                     (disp_AVALID),
+       .disp_pc                         (disp_pc[`NCPU_AW-3:0]),
+       .disp_pred_branch                (disp_pred_branch),
+       .disp_pred_tgt                   (disp_pred_tgt[`NCPU_AW-3:0]),
+       .disp_alu_opc_bus                (disp_alu_opc_bus[`NCPU_ALU_IOPW-1:0]),
+       .disp_lpu_opc_bus                (disp_lpu_opc_bus[`NCPU_LPU_IOPW-1:0]),
+       .disp_epu_opc_bus                (disp_epu_opc_bus[`NCPU_EPU_IOPW-1:0]),
+       .disp_agu_load                   (disp_agu_load),
+       .disp_agu_store                  (disp_agu_store),
+       .disp_agu_sign_ext               (disp_agu_sign_ext),
+       .disp_agu_barr                   (disp_agu_barr),
+       .disp_agu_store_size             (disp_agu_store_size[2:0]),
+       .disp_agu_load_size              (disp_agu_load_size[2:0]),
+       .disp_rs1_re                     (disp_rs1_re),
+       .disp_rs1_addr                   (disp_rs1_addr[`NCPU_REG_AW-1:0]),
+       .disp_rs2_re                     (disp_rs2_re),
+       .disp_rs2_addr                   (disp_rs2_addr[`NCPU_REG_AW-1:0]),
+       .disp_imm32                      (disp_imm32[`NCPU_DW-1:0]),
+       .disp_rel15                      (disp_rel15[14:0]),
+       .disp_rd_we                      (disp_rd_we),
+       .disp_rd_addr                    (disp_rd_addr[`NCPU_REG_AW-1:0]),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .idu_in_valid                    (idu_in_valid),
+       .idu_AVALID                      (idu_AVALID),
        .idu_insn                        (idu_insn[`NCPU_IW-1:0]),
-       .idu_insn_pc                     (idu_insn_pc[`NCPU_AW-3:0]),
-       .idu_op_jmprel                   (idu_op_jmprel),
-       .idu_op_jmpfar                   (idu_op_jmpfar),
-       .idu_op_syscall                  (idu_op_syscall),
-       .idu_op_ret                      (idu_op_ret),
-       .idu_jmprel_link                 (idu_jmprel_link),
-       .idu_specul_jmpfar               (idu_specul_jmpfar),
-       .idu_specul_tgt                  (idu_specul_tgt[`NCPU_AW-3:0]),
-       .idu_specul_jmprel               (idu_specul_jmprel),
-       .idu_specul_bcc                  (idu_specul_bcc),
-       .idu_specul_extexp               (idu_specul_extexp),
-       .idu_let_lsa_pc                  (idu_let_lsa_pc),
-       .specul_flush                    (specul_flush),
-       .regf_rs1_dout                   (regf_rs1_dout[`NCPU_DW-1:0]),
-       .regf_rs2_dout                   (regf_rs2_dout[`NCPU_DW-1:0]),
-       .ieu_in_ready                    (ieu_in_ready));
-   
+       .idu_pc                          (idu_pc[`NCPU_AW-3:0]),
+       .idu_exc                         (idu_exc[2:0]),
+       .idu_pred_branch                 (idu_pred_branch),
+       .idu_pred_tgt                    (idu_pred_tgt[`NCPU_AW-3:0]),
+       .disp_AREADY                     (disp_AREADY));
+
 
    /////////////////////////////////////////////////////////////////////////////
-   // Pipeline Stage 3: Execution && Load/Store
+   // Pipeline Stage 3: Rename and Dispatch
    /////////////////////////////////////////////////////////////////////////////
-   
-   ncpu32k_ieu ieu
+
+   ncpu32k_dispatch
+      #(
+         .CONFIG_ROB_DEPTH_LOG2        (CONFIG_ROB_DEPTH_LOG2)
+      )
+   DISP
       (/*AUTOINST*/
        // Outputs
-       .dbus_cmd_valid                  (dbus_cmd_valid),
-       .dbus_cmd_addr                   (dbus_cmd_addr[`NCPU_AW-1:0]),
-       .dbus_cmd_we_msk                 (dbus_cmd_we_msk[`NCPU_DW/8-1:0]),
-       .dbus_din                        (dbus_din[`NCPU_DW-1:0]),
-       .dbus_ready                      (dbus_ready),
-       .ieu_in_ready                    (ieu_in_ready),
-       .regf_din_addr                   (regf_din_addr[`NCPU_REG_AW-1:0]),
-       .regf_din                        (regf_din[`NCPU_DW-1:0]),
-       .regf_we                         (regf_we),
-       .msr_exp_ent                     (msr_exp_ent),
-       .msr_psr_cc_nxt                  (msr_psr_cc_nxt),
-       .msr_psr_cc_we                   (msr_psr_cc_we),
+       .disp_AREADY                     (disp_AREADY),
+       .rob_disp_AVALID                 (rob_disp_AVALID),
+       .rob_disp_pc                     (rob_disp_pc[`NCPU_AW-3:0]),
+       .rob_disp_pred_branch            (rob_disp_pred_branch),
+       .rob_disp_pred_tgt               (rob_disp_pred_tgt[`NCPU_AW-3:0]),
+       .rob_disp_rd_we                  (rob_disp_rd_we),
+       .rob_disp_rd_addr                (rob_disp_rd_addr[`NCPU_REG_AW-1:0]),
+       .rob_disp_rs1_addr               (rob_disp_rs1_addr[`NCPU_REG_AW-1:0]),
+       .rob_disp_rs2_addr               (rob_disp_rs2_addr[`NCPU_REG_AW-1:0]),
+       .arf_rs1_re                      (arf_rs1_re),
+       .arf_rs1_addr                    (arf_rs1_addr[`NCPU_REG_AW-1:0]),
+       .arf_rs2_re                      (arf_rs2_re),
+       .arf_rs2_addr                    (arf_rs2_addr[`NCPU_REG_AW-1:0]),
+       .issue_alu_AVALID                (issue_alu_AVALID),
+       .issue_alu_uop                   (issue_alu_uop[`NCPU_ALU_UOPW-1:0]),
+       .issue_lpu_AVALID                (issue_lpu_AVALID),
+       .issue_lpu_uop                   (issue_lpu_uop[`NCPU_LPU_UOPW-1:0]),
+       .issue_agu_AVALID                (issue_agu_AVALID),
+       .issue_agu_uop                   (issue_agu_uop[`NCPU_AGU_UOPW-1:0]),
+       .issue_fpu_AVALID                (issue_fpu_AVALID),
+       .issue_fpu_uop                   (issue_fpu_uop[`NCPU_FPU_UOPW-1:0]),
+       .issue_epu_AVALID                (issue_epu_AVALID),
+       .issue_epu_uop                   (issue_epu_uop[`NCPU_EPU_UOPW-1:0]),
+       .issue_id                        (issue_id[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .issue_rs1_rdy                   (issue_rs1_rdy),
+       .issue_rs1_dat                   (issue_rs1_dat[`NCPU_DW-1:0]),
+       .issue_rs1_addr                  (issue_rs1_addr[`NCPU_REG_AW-1:0]),
+       .issue_rs2_rdy                   (issue_rs2_rdy),
+       .issue_rs2_dat                   (issue_rs2_dat[`NCPU_DW-1:0]),
+       .issue_rs2_addr                  (issue_rs2_addr[`NCPU_REG_AW-1:0]),
+       .issue_imm32                     (issue_imm32[`NCPU_DW-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .rst_n                           (rst_n),
+       .disp_AVALID                     (disp_AVALID),
+       .disp_pc                         (disp_pc[`NCPU_AW-3:0]),
+       .disp_pred_branch                (disp_pred_branch),
+       .disp_pred_tgt                   (disp_pred_tgt[`NCPU_AW-3:0]),
+       .disp_alu_opc_bus                (disp_alu_opc_bus[`NCPU_ALU_IOPW-1:0]),
+       .disp_lpu_opc_bus                (disp_lpu_opc_bus[`NCPU_LPU_IOPW-1:0]),
+       .disp_epu_opc_bus                (disp_epu_opc_bus[`NCPU_EPU_IOPW-1:0]),
+       .disp_agu_load                   (disp_agu_load),
+       .disp_agu_store                  (disp_agu_store),
+       .disp_agu_sign_ext               (disp_agu_sign_ext),
+       .disp_agu_barr                   (disp_agu_barr),
+       .disp_agu_store_size             (disp_agu_store_size[2:0]),
+       .disp_agu_load_size              (disp_agu_load_size[2:0]),
+       .disp_rs1_re                     (disp_rs1_re),
+       .disp_rs1_addr                   (disp_rs1_addr[`NCPU_REG_AW-1:0]),
+       .disp_rs2_re                     (disp_rs2_re),
+       .disp_rs2_addr                   (disp_rs2_addr[`NCPU_REG_AW-1:0]),
+       .disp_imm32                      (disp_imm32[`NCPU_DW-1:0]),
+       .disp_rel15                      (disp_rel15[14:0]),
+       .disp_rd_we                      (disp_rd_we),
+       .disp_rd_addr                    (disp_rd_addr[`NCPU_REG_AW-1:0]),
+       .rob_disp_AREADY                 (rob_disp_AREADY),
+       .rob_disp_rs1_in_ROB             (rob_disp_rs1_in_ROB),
+       .rob_disp_rs1_in_ARF             (rob_disp_rs1_in_ARF),
+       .rob_disp_rs1_dat                (rob_disp_rs1_dat[`NCPU_DW-1:0]),
+       .rob_disp_rs2_in_ROB             (rob_disp_rs2_in_ROB),
+       .rob_disp_rs2_in_ARF             (rob_disp_rs2_in_ARF),
+       .rob_disp_rs2_dat                (rob_disp_rs2_dat[`NCPU_DW-1:0]),
+       .rob_disp_id                     (rob_disp_id[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .arf_rs1_dout                    (arf_rs1_dout[`NCPU_DW-1:0]),
+       .arf_rs2_dout                    (arf_rs2_dout[`NCPU_DW-1:0]),
+       .issue_alu_AREADY                (issue_alu_AREADY),
+       .issue_lpu_AREADY                (issue_lpu_AREADY),
+       .issue_agu_AREADY                (issue_agu_AREADY),
+       .issue_fpu_AREADY                (issue_fpu_AREADY),
+       .issue_epu_AREADY                (issue_epu_AREADY));
+
+   /////////////////////////////////////////////////////////////////////////////
+   // Pipeline Stage 4-5: Issue and Execute
+   /////////////////////////////////////////////////////////////////////////////
+
+   ncpu32k_pipeline_alu
+      #(
+         .CONFIG_ALU_ISSUE_QUEUE_DEPTH (CONFIG_ALU_ISSUE_QUEUE_DEPTH),
+         .CONFIG_ALU_INSERT_REG  (CONFIG_ALU_INSERT_REG),
+         .CONFIG_PIPEBUF_BYPASS  (CONFIG_PIPEBUF_BYPASS),
+         .CONFIG_ROB_DEPTH_LOG2  (CONFIG_ROB_DEPTH_LOG2)
+      )
+   ALU
+      (/*AUTOINST*/
+       // Outputs
+       .issue_alu_AREADY                (issue_alu_AREADY),
+       .wb_alu_BVALID                   (wb_alu_BVALID),
+       .wb_alu_BDATA                    (wb_alu_BDATA[`NCPU_DW-1:0]),
+       .wb_alu_BID                      (wb_alu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .wb_alu_BBRANCH_REG_TAKEN        (wb_alu_BBRANCH_REG_TAKEN),
+       .wb_alu_BBRANCH_REL_TAKEN        (wb_alu_BBRANCH_REL_TAKEN),
+       .wb_alu_BBRANCH_OP               (wb_alu_BBRANCH_OP),
+       // Inputs
+       .clk                             (clk),
+       .rst_n                           (rst_n),
+       .flush                           (flush),
+       .issue_alu_AVALID                (issue_alu_AVALID),
+       .issue_alu_uop                   (issue_alu_uop[`NCPU_ALU_UOPW-1:0]),
+       .issue_id                        (issue_id[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .issue_rs1_rdy                   (issue_rs1_rdy),
+       .issue_rs1_dat                   (issue_rs1_dat[`NCPU_DW-1:0]),
+       .issue_rs1_addr                  (issue_rs1_addr[`NCPU_REG_AW-1:0]),
+       .issue_rs2_rdy                   (issue_rs2_rdy),
+       .issue_rs2_dat                   (issue_rs2_dat[`NCPU_DW-1:0]),
+       .issue_rs2_addr                  (issue_rs2_addr[`NCPU_REG_AW-1:0]),
+       .byp_BVALID                      (byp_BVALID),
+       .byp_BDATA                       (byp_BDATA[`NCPU_DW-1:0]),
+       .byp_rd_we                       (byp_rd_we),
+       .byp_rd_addr                     (byp_rd_addr[`NCPU_REG_AW-1:0]),
+       .wb_alu_BREADY                   (wb_alu_BREADY));
+
+   ncpu32k_pipeline_lpu
+      #(
+         .CONFIG_LPU_ISSUE_QUEUE_DEPTH (CONFIG_LPU_ISSUE_QUEUE_DEPTH),
+         .CONFIG_ENABLE_MUL   (CONFIG_ENABLE_MUL),
+         .CONFIG_ENABLE_DIV   (CONFIG_ENABLE_DIV),
+         .CONFIG_ENABLE_DIVU  (CONFIG_ENABLE_DIVU),
+         .CONFIG_ENABLE_MOD   (CONFIG_ENABLE_MOD),
+         .CONFIG_ENABLE_MODU  (CONFIG_ENABLE_MODU),
+         .CONFIG_PIPEBUF_BYPASS  (CONFIG_PIPEBUF_BYPASS),
+         .CONFIG_ROB_DEPTH_LOG2  (CONFIG_ROB_DEPTH_LOG2)
+      )
+   LPU
+      (/*AUTOINST*/
+       // Outputs
+       .issue_lpu_AREADY                (issue_lpu_AREADY),
+       .wb_lpu_BVALID                   (wb_lpu_BVALID),
+       .wb_lpu_BDATA                    (wb_lpu_BDATA[`NCPU_DW-1:0]),
+       .wb_lpu_BID                      (wb_lpu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .rst_n                           (rst_n),
+       .flush                           (flush),
+       .issue_lpu_AVALID                (issue_lpu_AVALID),
+       .issue_lpu_uop                   (issue_lpu_uop[`NCPU_LPU_UOPW-1:0]),
+       .issue_id                        (issue_id[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .issue_rs1_rdy                   (issue_rs1_rdy),
+       .issue_rs1_dat                   (issue_rs1_dat[`NCPU_DW-1:0]),
+       .issue_rs1_addr                  (issue_rs1_addr[`NCPU_REG_AW-1:0]),
+       .issue_rs2_rdy                   (issue_rs2_rdy),
+       .issue_rs2_dat                   (issue_rs2_dat[`NCPU_DW-1:0]),
+       .issue_rs2_addr                  (issue_rs2_addr[`NCPU_REG_AW-1:0]),
+       .byp_BVALID                      (byp_BVALID),
+       .byp_BDATA                       (byp_BDATA[`NCPU_DW-1:0]),
+       .byp_rd_we                       (byp_rd_we),
+       .byp_rd_addr                     (byp_rd_addr[`NCPU_REG_AW-1:0]),
+       .wb_lpu_BREADY                   (wb_lpu_BREADY));
+
+   ncpu32k_pipeline_epu
+      #(
+         .CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2  (CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2),
+         .CONFIG_PIPEBUF_BYPASS  (CONFIG_PIPEBUF_BYPASS),
+         .CONFIG_ROB_DEPTH_LOG2  (CONFIG_ROB_DEPTH_LOG2)
+      )
+   EPU
+      (/*AUTOINST*/
+       // Outputs
+       .issue_epu_AREADY                (issue_epu_AREADY),
+       .wb_epu_BVALID                   (wb_epu_BVALID),
+       .wb_epu_BDATA                    (wb_epu_BDATA[`NCPU_DW-1:0]),
+       .wb_epu_BID                      (wb_epu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .wb_epu_BERET                    (wb_epu_BERET),
+       .wb_epu_BESYSCALL                (wb_epu_BESYSCALL),
+       .wb_epu_BEINSN                   (wb_epu_BEINSN),
+       .wb_epu_BEIPF                    (wb_epu_BEIPF),
+       .wb_epu_BEITM                    (wb_epu_BEITM),
+       .wb_epu_BEIRQ                    (wb_epu_BEIRQ),
        .msr_psr_rm_nxt                  (msr_psr_rm_nxt),
        .msr_psr_rm_we                   (msr_psr_rm_we),
        .msr_psr_imme_nxt                (msr_psr_imme_nxt),
@@ -387,6 +601,7 @@ module ncpu32k_core(
        .msr_psr_dmme_we                 (msr_psr_dmme_we),
        .msr_psr_ire_nxt                 (msr_psr_ire_nxt),
        .msr_psr_ire_we                  (msr_psr_ire_we),
+       .msr_exc_ent                     (msr_exc_ent),
        .msr_epc_nxt                     (msr_epc_nxt[`NCPU_DW-1:0]),
        .msr_epc_we                      (msr_epc_we),
        .msr_epsr_nxt                    (msr_epsr_nxt[`NCPU_PSR_DW-1:0]),
@@ -411,55 +626,37 @@ module ncpu32k_core(
        .msr_tsc_tsr_we                  (msr_tsc_tsr_we),
        .msr_tsc_tcr_nxt                 (msr_tsc_tcr_nxt[`NCPU_DW-1:0]),
        .msr_tsc_tcr_we                  (msr_tsc_tcr_we),
-       .specul_flush                    (specul_flush),
-       .ifu_flush_jmp_tgt               (ifu_flush_jmp_tgt[`NCPU_AW-3:0]),
-       .bpu_wb                          (bpu_wb),
-       .bpu_wb_jmprel                   (bpu_wb_jmprel),
-       .bpu_wb_insn_pc                  (bpu_wb_insn_pc[`NCPU_AW-3:0]),
-       .bpu_wb_hit                      (bpu_wb_hit),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .dbus_cmd_ready                  (dbus_cmd_ready),
-       .dbus_valid                      (dbus_valid),
-       .dbus_dout                       (dbus_dout[`NCPU_DW-1:0]),
-       .exp_dmm_tlb_miss                (exp_dmm_tlb_miss),
-       .exp_dmm_page_fault              (exp_dmm_page_fault),
-       .ieu_in_valid                    (ieu_in_valid),
-       .ieu_operand_1                   (ieu_operand_1[`NCPU_DW-1:0]),
-       .ieu_operand_2                   (ieu_operand_2[`NCPU_DW-1:0]),
-       .ieu_operand_3                   (ieu_operand_3[`NCPU_DW-1:0]),
-       .ieu_au_opc_bus                  (ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]),
-       .ieu_au_cmp_eq                   (ieu_au_cmp_eq),
-       .ieu_au_cmp_signed               (ieu_au_cmp_signed),
-       .ieu_lu_opc_bus                  (ieu_lu_opc_bus[`NCPU_LU_IOPW-1:0]),
-       .ieu_eu_opc_bus                  (ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]),
-       .ieu_emu_insn                    (ieu_emu_insn),
-       .ieu_mu_load                     (ieu_mu_load),
-       .ieu_mu_store                    (ieu_mu_store),
-       .ieu_mu_sign_ext                 (ieu_mu_sign_ext),
-       .ieu_mu_barr                     (ieu_mu_barr),
-       .ieu_mu_store_size               (ieu_mu_store_size[2:0]),
-       .ieu_mu_load_size                (ieu_mu_load_size[2:0]),
-       .ieu_wb_regf                     (ieu_wb_regf),
-       .ieu_wb_reg_addr                 (ieu_wb_reg_addr[`NCPU_REG_AW-1:0]),
-       .ieu_insn_pc                     (ieu_insn_pc[`NCPU_AW-3:0]),
-       .ieu_jmplink                     (ieu_jmplink),
-       .ieu_syscall                     (ieu_syscall),
-       .ieu_ret                         (ieu_ret),
-       .ieu_specul_jmpfar               (ieu_specul_jmpfar),
-       .ieu_specul_tgt                  (ieu_specul_tgt[`NCPU_AW-3:0]),
-       .ieu_specul_jmprel               (ieu_specul_jmprel),
-       .ieu_specul_bcc                  (ieu_specul_bcc),
-       .ieu_specul_extexp               (ieu_specul_extexp),
-       .ieu_let_lsa_pc                  (ieu_let_lsa_pc),
+       .flush                           (flush),
+       .issue_epu_AVALID                (issue_epu_AVALID),
+       .issue_epu_uop                   (issue_epu_uop[`NCPU_EPU_UOPW-1:0]),
+       .issue_id                        (issue_id[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .issue_rs1_rdy                   (issue_rs1_rdy),
+       .issue_rs1_dat                   (issue_rs1_dat[`NCPU_DW-1:0]),
+       .issue_rs1_addr                  (issue_rs1_addr[`NCPU_REG_AW-1:0]),
+       .issue_rs2_rdy                   (issue_rs2_rdy),
+       .issue_rs2_dat                   (issue_rs2_dat[`NCPU_DW-1:0]),
+       .issue_rs2_addr                  (issue_rs2_addr[`NCPU_REG_AW-1:0]),
+       .issue_imm32                     (issue_imm32[`NCPU_DW-1:0]),
+       .rob_commit_ptr                  (rob_commit_ptr[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .rob_commit_pc                   (rob_commit_pc[`NCPU_AW-3:0]),
+       .epu_commit_EDTM                 (epu_commit_EDTM),
+       .epu_commit_EDPF                 (epu_commit_EDPF),
+       .epu_commit_EALIGN               (epu_commit_EALIGN),
+       .epu_commit_LSA                  (epu_commit_LSA[`NCPU_AW-1:0]),
+       .byp_BVALID                      (byp_BVALID),
+       .byp_BDATA                       (byp_BDATA[`NCPU_DW-1:0]),
+       .byp_rd_we                       (byp_rd_we),
+       .byp_rd_addr                     (byp_rd_addr[`NCPU_REG_AW-1:0]),
+       .wb_epu_BREADY                   (wb_epu_BREADY),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
        .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
-       .msr_psr_cc                      (msr_psr_cc),
+       .msr_cpuid                       (msr_cpuid[`NCPU_DW-1:0]),
        .msr_epc                         (msr_epc[`NCPU_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
        .msr_elsa                        (msr_elsa[`NCPU_DW-1:0]),
-       .msr_cpuid                       (msr_cpuid[`NCPU_DW-1:0]),
        .msr_coreid                      (msr_coreid[`NCPU_DW-1:0]),
        .msr_immid                       (msr_immid[`NCPU_DW-1:0]),
        .msr_imm_tlbl                    (msr_imm_tlbl[`NCPU_DW-1:0]),
@@ -471,6 +668,168 @@ module ncpu32k_core(
        .msr_irqc_irr                    (msr_irqc_irr[`NCPU_DW-1:0]),
        .msr_tsc_tsr                     (msr_tsc_tsr[`NCPU_DW-1:0]),
        .msr_tsc_tcr                     (msr_tsc_tcr[`NCPU_DW-1:0]));
-   
-   
+
+   ncpu32k_pipeline_agu
+      #(
+         .CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2  (CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2),
+         .CONFIG_PIPEBUF_BYPASS  (CONFIG_PIPEBUF_BYPASS),
+         .CONFIG_ROB_DEPTH_LOG2  (CONFIG_ROB_DEPTH_LOG2)
+      )
+   AGU
+      (/*AUTOINST*/
+       // Outputs
+       .issue_agu_AREADY                (issue_agu_AREADY),
+       .dbus_AVALID                     (dbus_AVALID),
+       .dbus_AADDR                      (dbus_AADDR[`NCPU_AW-1:0]),
+       .dbus_AWMSK                      (dbus_AWMSK[`NCPU_DW/8-1:0]),
+       .dbus_ADATA                      (dbus_ADATA[`NCPU_DW-1:0]),
+       .dbus_BREADY                     (dbus_BREADY),
+       .wb_agu_BVALID                   (wb_agu_BVALID),
+       .wb_agu_BDATA                    (wb_agu_BDATA[`NCPU_DW-1:0]),
+       .wb_agu_BID                      (wb_agu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .wb_agu_BEDTM                    (wb_agu_BEDTM),
+       .wb_agu_BEDPF                    (wb_agu_BEDPF),
+       .wb_agu_BEALIGN                  (wb_agu_BEALIGN),
+       .wb_agu_BLSA                     (wb_agu_BLSA[`NCPU_AW-1:0]),
+       .epu_commit_EDTM                 (epu_commit_EDTM),
+       .epu_commit_EDPF                 (epu_commit_EDPF),
+       .epu_commit_EALIGN               (epu_commit_EALIGN),
+       .epu_commit_LSA                  (epu_commit_LSA[`NCPU_AW-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .rst_n                           (rst_n),
+       .flush                           (flush),
+       .issue_agu_AVALID                (issue_agu_AVALID),
+       .issue_agu_uop                   (issue_agu_uop[`NCPU_AGU_UOPW-1:0]),
+       .issue_id                        (issue_id[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .issue_rs1_rdy                   (issue_rs1_rdy),
+       .issue_rs1_dat                   (issue_rs1_dat[`NCPU_DW-1:0]),
+       .issue_rs1_addr                  (issue_rs1_addr[`NCPU_REG_AW-1:0]),
+       .issue_rs2_rdy                   (issue_rs2_rdy),
+       .issue_rs2_dat                   (issue_rs2_dat[`NCPU_DW-1:0]),
+       .issue_rs2_addr                  (issue_rs2_addr[`NCPU_REG_AW-1:0]),
+       .issue_imm32                     (issue_imm32[`NCPU_DW-1:0]),
+       .dbus_AREADY                     (dbus_AREADY),
+       .dbus_BVALID                     (dbus_BVALID),
+       .dbus_BDATA                      (dbus_BDATA[`NCPU_DW-1:0]),
+       .dbus_BEXC                       (dbus_BEXC[1:0]),
+       .rob_commit_ptr                  (rob_commit_ptr[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .byp_BVALID                      (byp_BVALID),
+       .byp_BDATA                       (byp_BDATA[`NCPU_DW-1:0]),
+       .byp_rd_we                       (byp_rd_we),
+       .byp_rd_addr                     (byp_rd_addr[`NCPU_REG_AW-1:0]),
+       .wb_agu_BREADY                   (wb_agu_BREADY));
+
+   ncpu32k_pipeline_fpu
+      #(
+         .CONFIG_FPU_ISSUE_QUEUE_DEPTH (CONFIG_FPU_ISSUE_QUEUE_DEPTH),
+         .CONFIG_ENABLE_FPU      (CONFIG_ENABLE_FPU),
+         .CONFIG_PIPEBUF_BYPASS  (CONFIG_PIPEBUF_BYPASS),
+         .CONFIG_ROB_DEPTH_LOG2  (CONFIG_ROB_DEPTH_LOG2)
+      )
+   FPU
+      (/*AUTOINST*/
+       // Outputs
+       .issue_fpu_AREADY                (issue_fpu_AREADY),
+       .wb_fpu_BVALID                   (wb_fpu_BVALID),
+       .wb_fpu_BDATA                    (wb_fpu_BDATA[`NCPU_DW-1:0]),
+       .wb_fpu_BID                      (wb_fpu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .rst_n                           (rst_n),
+       .flush                           (flush),
+       .issue_fpu_AVALID                (issue_fpu_AVALID),
+       .issue_fpu_uop                   (issue_fpu_uop[`NCPU_FPU_UOPW-1:0]),
+       .issue_id                        (issue_id[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .issue_rs1_rdy                   (issue_rs1_rdy),
+       .issue_rs1_dat                   (issue_rs1_dat[`NCPU_DW-1:0]),
+       .issue_rs1_addr                  (issue_rs1_addr[`NCPU_REG_AW-1:0]),
+       .issue_rs2_rdy                   (issue_rs2_rdy),
+       .issue_rs2_dat                   (issue_rs2_dat[`NCPU_DW-1:0]),
+       .issue_rs2_addr                  (issue_rs2_addr[`NCPU_REG_AW-1:0]),
+       .byp_BVALID                      (byp_BVALID),
+       .byp_BDATA                       (byp_BDATA[`NCPU_DW-1:0]),
+       .byp_rd_we                       (byp_rd_we),
+       .byp_rd_addr                     (byp_rd_addr[`NCPU_REG_AW-1:0]),
+       .wb_fpu_BREADY                   (wb_fpu_BREADY));
+
+   /////////////////////////////////////////////////////////////////////////////
+   // Pipeline Stage 6-7: Writeback and Commit
+   /////////////////////////////////////////////////////////////////////////////
+
+   ncpu32k_wb_commit
+      #(
+         .CONFIG_ROB_DEPTH_LOG2 (CONFIG_ROB_DEPTH_LOG2)
+      )
+   WB_COMMIT
+      (/*AUTOINST*/
+       // Outputs
+       .wb_alu_BREADY                   (wb_alu_BREADY),
+       .wb_lpu_BREADY                   (wb_lpu_BREADY),
+       .wb_fpu_BREADY                   (wb_fpu_BREADY),
+       .wb_agu_BREADY                   (wb_agu_BREADY),
+       .wb_epu_BREADY                   (wb_epu_BREADY),
+       .rob_commit_ptr                  (rob_commit_ptr[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .rob_commit_pc                   (rob_commit_pc[`NCPU_AW-3:0]),
+       .arf_din_addr                    (arf_din_addr[`NCPU_REG_AW-1:0]),
+       .arf_din                         (arf_din[`NCPU_DW-1:0]),
+       .arf_we                          (arf_we),
+       .byp_BVALID                      (byp_BVALID),
+       .byp_BDATA                       (byp_BDATA[`NCPU_DW-1:0]),
+       .byp_rd_we                       (byp_rd_we),
+       .byp_rd_addr                     (byp_rd_addr[`NCPU_REG_AW-1:0]),
+       .flush                           (flush),
+       .flush_tgt                       (flush_tgt[`NCPU_AW-3:0]),
+       .rob_disp_AREADY                 (rob_disp_AREADY),
+       .rob_disp_rs1_in_ROB             (rob_disp_rs1_in_ROB),
+       .rob_disp_rs1_in_ARF             (rob_disp_rs1_in_ARF),
+       .rob_disp_rs1_dat                (rob_disp_rs1_dat[`NCPU_DW-1:0]),
+       .rob_disp_rs2_in_ROB             (rob_disp_rs2_in_ROB),
+       .rob_disp_rs2_in_ARF             (rob_disp_rs2_in_ARF),
+       .rob_disp_rs2_dat                (rob_disp_rs2_dat[`NCPU_DW-1:0]),
+       .rob_disp_id                     (rob_disp_id[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .bpu_wb                          (bpu_wb),
+       .bpu_wb_insn_pc                  (bpu_wb_insn_pc[`NCPU_AW-3:0]),
+       .bpu_wb_taken                    (bpu_wb_taken),
+       .bpu_wb_tgt                      (bpu_wb_tgt[`NCPU_AW-3:0]),
+       // Inputs
+       .clk                             (clk),
+       .rst_n                           (rst_n),
+       .wb_alu_BVALID                   (wb_alu_BVALID),
+       .wb_alu_BDATA                    (wb_alu_BDATA[`NCPU_DW-1:0]),
+       .wb_alu_BID                      (wb_alu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .wb_alu_BBRANCH_REG_TAKEN        (wb_alu_BBRANCH_REG_TAKEN),
+       .wb_alu_BBRANCH_REL_TAKEN        (wb_alu_BBRANCH_REL_TAKEN),
+       .wb_alu_BBRANCH_OP               (wb_alu_BBRANCH_OP),
+       .wb_lpu_BVALID                   (wb_lpu_BVALID),
+       .wb_lpu_BDATA                    (wb_lpu_BDATA[`NCPU_DW-1:0]),
+       .wb_lpu_BID                      (wb_lpu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .wb_fpu_BVALID                   (wb_fpu_BVALID),
+       .wb_fpu_BDATA                    (wb_fpu_BDATA[`NCPU_DW-1:0]),
+       .wb_fpu_BID                      (wb_fpu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .wb_agu_BVALID                   (wb_agu_BVALID),
+       .wb_agu_BDATA                    (wb_agu_BDATA[`NCPU_DW-1:0]),
+       .wb_agu_BID                      (wb_agu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .wb_agu_BEDTM                    (wb_agu_BEDTM),
+       .wb_agu_BEDPF                    (wb_agu_BEDPF),
+       .wb_agu_BEALIGN                  (wb_agu_BEALIGN),
+       .wb_agu_BLSA                     (wb_agu_BLSA[`NCPU_AW-1:0]),
+       .wb_epu_BVALID                   (wb_epu_BVALID),
+       .wb_epu_BDATA                    (wb_epu_BDATA[`NCPU_DW-1:0]),
+       .wb_epu_BID                      (wb_epu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
+       .wb_epu_BERET                    (wb_epu_BERET),
+       .wb_epu_BESYSCALL                (wb_epu_BESYSCALL),
+       .wb_epu_BEINSN                   (wb_epu_BEINSN),
+       .wb_epu_BEIPF                    (wb_epu_BEIPF),
+       .wb_epu_BEITM                    (wb_epu_BEITM),
+       .wb_epu_BEIRQ                    (wb_epu_BEIRQ),
+       .rob_disp_AVALID                 (rob_disp_AVALID),
+       .rob_disp_pc                     (rob_disp_pc[`NCPU_AW-3:0]),
+       .rob_disp_pred_branch            (rob_disp_pred_branch),
+       .rob_disp_pred_tgt               (rob_disp_pred_tgt[`NCPU_AW-3:0]),
+       .rob_disp_rd_we                  (rob_disp_rd_we),
+       .rob_disp_rd_addr                (rob_disp_rd_addr[`NCPU_REG_AW-1:0]),
+       .rob_disp_rs1_addr               (rob_disp_rs1_addr[`NCPU_REG_AW-1:0]),
+       .rob_disp_rs2_addr               (rob_disp_rs2_addr[`NCPU_REG_AW-1:0]));
+
 endmodule

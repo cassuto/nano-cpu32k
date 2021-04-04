@@ -33,7 +33,7 @@ module sco_fifo_asclk
 
    reg [AW:0] rptr_b, wptr_b;
    reg [AW:0] rptr_g, wptr_g;
-   
+
    // Generate read pointer
    wire [AW:0] rptr_b_nxt = ~empty ? rptr_b + pop : rptr_b;
    wire [AW:0] rptr_g_nxt = {1'b0,rptr_b_nxt[AW:1]} ^ rptr_b_nxt; // binary-to-gray encoder
@@ -49,7 +49,7 @@ module sco_fifo_asclk
       else {wptr_b, wptr_g} <= {wptr_b_nxt, wptr_g_nxt};
 
    reg [AW:0] rptr_g_r [1:0], wptr_g_r [1:0];
-   
+
    // Sync read poiner
    always @(posedge rclk or negedge rrst_n)
       if(~rrst_n) {wptr_g_r[1],wptr_g_r[0]} <= 0;
@@ -82,7 +82,7 @@ module sco_fifo_asclk
          mem[wptr_b[AW-1:0]] <= din;
 
    // synthesis translate_off
-`ifndef SYNTHESIS 
+`ifndef SYNTHESIS
    initial begin : ini
       integer i;
       for(i=0; i < (1<<AW); i=i+1)
@@ -90,5 +90,5 @@ module sco_fifo_asclk
    end
 `endif
    // synthesis translate_on
-         
+
 endmodule

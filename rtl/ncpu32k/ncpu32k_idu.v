@@ -15,195 +15,254 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_idu(         
+module ncpu32k_idu
+#(
+   parameter CONFIG_ENABLE_MUL,
+   parameter CONFIG_ENABLE_DIV,
+   parameter CONFIG_ENABLE_DIVU,
+   parameter CONFIG_ENABLE_MOD,
+   parameter CONFIG_ENABLE_MODU,
+   parameter CONFIG_PIPEBUF_BYPASS
+)
+(
    input                      clk,
    input                      rst_n,
-   output                     idu_in_ready, /* idu is ready to accepted Insn */
-   input                      idu_in_valid, /* Insn is prestented at idu's input */
+   output                     idu_AREADY,
+   input                      idu_AVALID,
    input [`NCPU_IW-1:0]       idu_insn,
-   input [`NCPU_AW-3:0]       idu_insn_pc,
-   input                      idu_op_jmprel,
-   input                      idu_op_jmpfar,
-   input                      idu_op_syscall,
-   input                      idu_op_ret,
-   input                      idu_jmprel_link,
-   input                      idu_specul_jmpfar,
-   input [`NCPU_AW-3:0]       idu_specul_tgt,
-   input                      idu_specul_jmprel,
-   input                      idu_specul_bcc,
-   input                      idu_specul_extexp,
-   input                      idu_let_lsa_pc,
-   input                      specul_flush,
-   output                     regf_rs1_re,
-   output [`NCPU_REG_AW-1:0]  regf_rs1_addr,
-   input [`NCPU_DW-1:0]       regf_rs1_dout,
-   output                     regf_rs2_re,
-   output [`NCPU_REG_AW-1:0]  regf_rs2_addr,
-   input [`NCPU_DW-1:0]       regf_rs2_dout,
-   input                      ieu_in_ready, /* ieu is ready to accepted ops  */
-   output                     ieu_in_valid, /* ops is presented at ieu's input */
-   output [`NCPU_DW-1:0]      ieu_operand_1,
-   output [`NCPU_DW-1:0]      ieu_operand_2,
-   output [`NCPU_DW-1:0]      ieu_operand_3,
-   output [`NCPU_LU_IOPW-1:0] ieu_lu_opc_bus,
-   output [`NCPU_AU_IOPW-1:0] ieu_au_opc_bus,
-   output                     ieu_au_cmp_eq,/* otherwise gt */
-   output                     ieu_au_cmp_signed,
-   output [`NCPU_EU_IOPW-1:0] ieu_eu_opc_bus,
-   output                     ieu_emu_insn,
-   output                     ieu_mu_load,
-   output                     ieu_mu_store,
-   output                     ieu_mu_sign_ext,
-   output                     ieu_mu_barr,
-   output [2:0]               ieu_mu_store_size,
-   output [2:0]               ieu_mu_load_size,
-   output                     ieu_wb_regf,
-   output [`NCPU_REG_AW-1:0]  ieu_wb_reg_addr,
-   output [`NCPU_AW-3:0]      ieu_insn_pc,
-   output                     ieu_jmplink,
-   output                     ieu_syscall,
-   output                     ieu_ret,
-   output                     ieu_specul_jmpfar,
-   output [`NCPU_AW-3:0]      ieu_specul_tgt,
-   output                     ieu_specul_jmprel,
-   output                     ieu_specul_bcc,
-   output                     ieu_specul_extexp,
-   output                     ieu_let_lsa_pc
+   input [`NCPU_AW-3:0]       idu_pc,
+   input [2:0]                idu_exc,
+   input                      idu_pred_branch,
+   input [`NCPU_AW-3:0]       idu_pred_tgt,
+   input                      disp_AREADY,
+   output                     disp_AVALID,
+   output [`NCPU_AW-3:0]      disp_pc,
+   output                     disp_pred_branch,
+   output [`NCPU_AW-3:0]      disp_pred_tgt,
+   output [`NCPU_ALU_IOPW-1:0] disp_alu_opc_bus,
+   output [`NCPU_LPU_IOPW-1:0] disp_lpu_opc_bus,
+   output [`NCPU_EPU_IOPW-1:0] disp_epu_opc_bus,
+   output                     disp_agu_load,
+   output                     disp_agu_store,
+   output                     disp_agu_sign_ext,
+   output                     disp_agu_barr,
+   output [2:0]               disp_agu_store_size,
+   output [2:0]               disp_agu_load_size,
+   output                     disp_rs1_re,
+   output [`NCPU_REG_AW-1:0]  disp_rs1_addr,
+   output                     disp_rs2_re,
+   output [`NCPU_REG_AW-1:0]  disp_rs2_addr,
+   output [`NCPU_DW-1:0]      disp_imm32,
+   output [14:0]              disp_rel15,
+   output                     disp_rd_we,
+   output [`NCPU_REG_AW-1:0]  disp_rd_addr
 );
 
-   wire [6:0] f_opcode = idu_insn[6:0];
-   wire [4:0] f_rd = idu_insn[11:7];
-   wire [4:0] f_rs1 = idu_insn[16:12];
-   wire [4:0] f_rs2 = idu_insn[21:17];
-   wire [3:0] f_cond = idu_insn[25:22];
-   wire [14:0] f_imm15 = idu_insn[31:17];
-   wire [16:0] f_imm17 = idu_insn[28:12];
-   wire [24:0] f_rel25 = idu_insn[31:7];
+   wire [6:0]                 f_opcode;
+   wire [4:0]                 f_rd;
+   wire [4:0]                 f_rs1;
+   wire [4:0]                 f_rs2;
+   wire [3:0]                 f_cond;
+   wire [14:0]                f_imm15;
+   wire [16:0]                f_imm17;
+   wire [24:0]                f_rel25;
+   wire                       enable_asr;
+   wire                       enable_asr_i;
+   wire                       enable_mul;
+   wire                       enable_div;
+   wire                       enable_divu;
+   wire                       enable_mod;
+   wire                       enable_modu;
+   wire                       op_ldb;
+   wire                       op_ldbu;
+   wire                       op_ldh;
+   wire                       op_ldhu;
+   wire                       op_ldwu;
+   wire                       op_stb;
+   wire                       op_sth;
+   wire                       op_stw;
+   wire                       op_and;
+   wire                       op_and_i;
+   wire                       op_or;
+   wire                       op_or_i;
+   wire                       op_xor;
+   wire                       op_xor_i;
+   wire                       op_lsl;
+   wire                       op_lsl_i;
+   wire                       op_lsr;
+   wire                       op_lsr_i;
+   wire                       op_asr;
+   wire                       op_asr_i;
+   wire                       op_add;
+   wire                       op_add_i;
+   wire                       op_sub;
+   wire                       op_mul;
+   wire                       op_div;
+   wire                       op_divu;
+   wire                       op_mod;
+   wire                       op_modu;
+   wire                       op_mhi;
+   wire                       op_jmp_i;
+   wire                       op_jmp_lnk_i;
+   wire                       op_jmpreg;
+   wire                       op_beq;
+   wire                       op_bne;
+   wire                       op_blt;
+   wire                       op_bltu;
+   wire                       op_bge;
+   wire                       op_bgeu;
+   wire                       op_syscall;
+   wire                       op_ret;
+   wire                       op_wmsr;
+   wire                       op_rmsr;
+   wire                       pipe_cke;
+   wire                       emu_insn;
+   wire                       insn_rs1_imm15;
+   wire                       insn_rd_rs1_imm15;
+   wire                       insn_rd_uimm17;
+   wire                       imm15_signed;
+   wire                       insn_no_rops;
+   wire                       insn_not_wb;
+   wire                       read_rd_as_rs2;
+   wire                       wb_regf;
+   wire [`NCPU_REG_AW-1:0]    wb_reg_addr;
+   wire                       jmp_link;
+   wire                       rs1_re_nxt;
+   wire [`NCPU_REG_AW-1:0]    rs1_addr_nxt;
+   wire                       rs2_re_nxt;
+   wire [`NCPU_REG_AW-1:0]    rs2_addr_nxt;
+   wire [`NCPU_DW-1:0]        simm15;
+   wire [`NCPU_DW-1:0]        uimm15;
+   wire [`NCPU_DW-1:0]        uimm17;
+   wire [`NCPU_DW-1:0]        imm32_nxt;
+   wire [`NCPU_ALU_IOPW-1:0]  alu_opc_bus;
+   wire [`NCPU_LPU_IOPW-1:0]  lpu_opc_bus;
+   wire [`NCPU_EPU_IOPW-1:0]  epu_opc_bus;
+   wire [`NCPU_AW-3:0]        jmprel_offset;
+   wire [2:0]                 agu_store_size;
+   wire [2:0]                 agu_load_size;
+   wire                       agu_sign_ext;
+   wire                       bcc;
+   wire                       op_agu_load;
+   wire                       op_agu_store;
+   wire                       op_agu_barr;
+
+   // If IMMU exceptions raised, displace the insn with NOP.
+   assign f_opcode = idu_insn[6:0] & {7{~|idu_exc}};
+   assign f_rd = idu_insn[11:7];
+   assign f_rs1 = idu_insn[16:12];
+   assign f_rs2 = idu_insn[21:17];
+   assign f_cond = idu_insn[25:22] & {4{~|idu_exc}};
+   assign f_imm15 = idu_insn[31:17];
+   assign f_imm17 = idu_insn[28:12];
+   assign f_rel25 = idu_insn[31:7];
+
+   // TODO: Dynamically power on or off functional units to optimize consumption
+   assign enable_asr = 1'b1;
+   assign enable_asr_i = 1'b1;
+   assign enable_mul = 1'b1;
+   assign enable_div = 1'b1;
+   assign enable_divu = 1'b1;
+   assign enable_mod = 1'b1;
+   assign enable_modu = 1'b1;
+
+   assign op_ldb = (f_opcode == `NCPU_OP_LDB);
+   assign op_ldbu = (f_opcode == `NCPU_OP_LDBU);
+   assign op_ldh = (f_opcode == `NCPU_OP_LDH);
+   assign op_ldhu = (f_opcode == `NCPU_OP_LDHU);
+   assign op_ldwu = (f_opcode == `NCPU_OP_LDWU);
+   assign op_stb = (f_opcode == `NCPU_OP_STB);
+   assign op_sth = (f_opcode == `NCPU_OP_STH);
+   assign op_stw = (f_opcode == `NCPU_OP_STW);
+
+   assign op_and = (f_opcode == `NCPU_OP_AND);
+   assign op_and_i = (f_opcode == `NCPU_OP_AND_I);
+   assign op_or = (f_opcode == `NCPU_OP_OR);
+   assign op_or_i = (f_opcode == `NCPU_OP_OR_I);
+   assign op_xor = (f_opcode == `NCPU_OP_XOR);
+   assign op_xor_i = (f_opcode == `NCPU_OP_XOR_I);
+   assign op_lsl = (f_opcode == `NCPU_OP_LSL);
+   assign op_lsl_i = (f_opcode == `NCPU_OP_LSL_I);
+   assign op_lsr = (f_opcode == `NCPU_OP_LSR);
+   assign op_lsr_i = (f_opcode == `NCPU_OP_LSR_I);
+   assign op_asr = (f_opcode == `NCPU_OP_ASR) & enable_asr;
+   assign op_asr_i = (f_opcode == `NCPU_OP_ASR_I) & enable_asr_i;
+
+   assign op_add = (f_opcode == `NCPU_OP_ADD);
+   assign op_add_i = (f_opcode == `NCPU_OP_ADD_I);
+   assign op_sub = (f_opcode == `NCPU_OP_SUB);
+
+   generate
+      if (CONFIG_ENABLE_MUL)
+         assign op_mul = (f_opcode == `NCPU_OP_MUL) & enable_mul;
+      else
+         assign op_mul = 1'b0;
+      if (CONFIG_ENABLE_DIV)
+         assign op_div = (f_opcode == `NCPU_OP_DIV) & enable_div;
+      else
+         assign op_div = 1'b0;
+      if (CONFIG_ENABLE_DIVU)
+         assign op_divu = (f_opcode == `NCPU_OP_DIVU) & enable_divu;
+      else
+         assign op_divu = 1'b0;
+      if (CONFIG_ENABLE_MOD)
+         assign op_mod = (f_opcode == `NCPU_OP_MOD) & enable_mod;
+      else
+         assign op_mod = 1'b0;
+      if (CONFIG_ENABLE_MODU)
+         assign op_modu = (f_opcode == `NCPU_OP_MODU) & enable_modu;
+      else
+         assign op_modu = 1'b0;
+   endgenerate
    
-   // VIRT insns
-   // Please Reserve `ifdef...`else...`endif block for runtime switching
-   // to be implemented in future.
-`ifdef ENABLE_ASR
-   wire enable_asr = 1'b1;
-   wire enable_asr_i = 1'b1;
-`else
-   wire enable_asr = 1'b0;
-   wire enable_asr_i = 1'b0;
-`endif
-`ifdef ENABLE_ADD
-   wire enable_add = 1'b1;
-   wire enable_add_i = 1'b1;
-`else
-   wire enable_add = 1'b0;
-   wire enable_add_i = 1'b0;
-`endif
-`ifdef ENABLE_SUB
-   wire enable_sub = 1'b1;
-`else
-   wire enable_sub = 1'b0;
-`endif
-`ifdef ENABLE_MUL
-   wire enable_mul = 1'b1;
-`else
-   wire enable_mul = 1'b0;
-`endif
-`ifdef ENABLE_DIV
-   wire enable_div = 1'b1;
-`else
-   wire enable_div = 1'b0;
-`endif
-`ifdef ENABLE_DIVU
-   wire enable_divu = 1'b1;
-`else
-   wire enable_divu = 1'b0;
-`endif
-`ifdef ENABLE_MOD
-   wire enable_mod = 1'b1;
-`else
-   wire enable_mod = 1'b0;
-`endif
-`ifdef ENABLE_MODU
-   wire enable_modu = 1'b1;
-`else
-   wire enable_modu = 1'b0;
-`endif
-`ifdef ENABLE_LDB
-   wire enable_ldb = 1'b1;
-`else
-   wire enable_ldb = 1'b0;
-`endif
-`ifdef ENABLE_LDBU
-   wire enable_ldbu = 1'b1;
-`else
-   wire enable_ldbu = 1'b0;
-`endif
-`ifdef ENABLE_LDH
-   wire enable_ldh = 1'b1;
-`else
-   wire enable_ldh = 1'b0;
-`endif
-`ifdef ENABLE_LDHU
-   wire enable_ldhu = 1'b1;
-`else
-   wire enable_ldhu = 1'b0;
-`endif
-`ifdef ENABLE_STB
-   wire enable_stb = 1'b1;
-`else
-   wire enable_stb = 1'b0;
-`endif
-`ifdef ENABLE_STH
-   wire enable_sth = 1'b1;
-`else
-   wire enable_sth = 1'b0;
-`endif
-`ifdef ENABLE_MHI
-   wire enable_mhi = 1'b1;
-`else
-   wire enable_mhi = 1'b0;
-`endif
+   assign op_mhi = (f_opcode == `NCPU_OP_MHI);
+
+   assign op_jmp_i = (f_opcode == `NCPU_OP_JMP_I);
+   assign op_jmp_lnk_i = (f_opcode == `NCPU_OP_JMP_LNK_I);
+   assign op_jmpreg = (f_opcode == `NCPU_OP_JMP);
+   assign op_beq = (f_opcode == `NCPU_OP_BEQ);
+   assign op_bne = (f_opcode == `NCPU_OP_BNE);
+   assign op_blt = (f_opcode == `NCPU_OP_BLT);
+   assign op_bltu = (f_opcode == `NCPU_OP_BLTU);
+   assign op_bge = (f_opcode == `NCPU_OP_BGE);
+   assign op_bgeu = (f_opcode == `NCPU_OP_BGEU);
+
+   assign op_syscall = (f_opcode == `NCPU_OP_SYSCALL);
+   assign op_ret = (f_opcode == `NCPU_OP_RET);
+
+   assign op_wmsr = (f_opcode == `NCPU_OP_WMSR);
+   assign op_rmsr = (f_opcode == `NCPU_OP_RMSR);
+
+   // ALU opcodes
+   assign alu_opc_bus[`NCPU_ALU_AND] = (op_and | op_and_i);
+   assign alu_opc_bus[`NCPU_ALU_OR] = (op_or | op_or_i);
+   assign alu_opc_bus[`NCPU_ALU_XOR] = (op_xor | op_xor_i);
+   assign alu_opc_bus[`NCPU_ALU_LSL] = (op_lsl | op_lsl_i);
+   assign alu_opc_bus[`NCPU_ALU_LSR] = (op_lsr | op_lsr_i);
+   assign alu_opc_bus[`NCPU_ALU_ASR] = (op_asr | op_asr_i);
+
+   assign alu_opc_bus[`NCPU_ALU_ADD] = (op_add | op_add_i);
+   assign alu_opc_bus[`NCPU_ALU_SUB] = (op_sub);
+   assign alu_opc_bus[`NCPU_ALU_MHI] = (op_mhi);
+
+   assign alu_opc_bus[`NCPU_ALU_BEQ] = (op_beq);
+   assign alu_opc_bus[`NCPU_ALU_BNE] = (op_bne);
+   assign alu_opc_bus[`NCPU_ALU_BLT] = (op_blt);
+   assign alu_opc_bus[`NCPU_ALU_BLTU] = (op_bltu);
+   assign alu_opc_bus[`NCPU_ALU_BGE] = (op_bge);
+   assign alu_opc_bus[`NCPU_ALU_BGEU] = (op_bgeu);
+   assign alu_opc_bus[`NCPU_ALU_JMPREL] = op_jmp_lnk_i | op_jmp_i;
+   assign alu_opc_bus[`NCPU_ALU_JMPREG] = op_jmpreg;
+   assign bcc = (op_beq | op_bne | op_blt | op_bltu | op_bge | op_bgeu);
    
-   wire op_ldb = (f_opcode == `NCPU_OP_LDB) & enable_ldb;
-   wire op_ldbu = (f_opcode == `NCPU_OP_LDBU) & enable_ldbu;
-   wire op_ldh = (f_opcode == `NCPU_OP_LDH) & enable_ldh;
-   wire op_ldhu = (f_opcode == `NCPU_OP_LDHU) & enable_ldhu;
-   wire op_ldwu = (f_opcode == `NCPU_OP_LDWU);
-   wire op_stb = (f_opcode == `NCPU_OP_STB) & enable_stb;
-   wire op_sth = (f_opcode == `NCPU_OP_STH) & enable_sth;
-   wire op_stw = (f_opcode == `NCPU_OP_STW);
+   // LPU opcodes
+   assign lpu_opc_bus[`NCPU_LPU_MUL] = op_mul;
+   assign lpu_opc_bus[`NCPU_LPU_DIV] = op_div;
+   assign lpu_opc_bus[`NCPU_LPU_DIVU] = op_divu;
+   assign lpu_opc_bus[`NCPU_LPU_MOD] = op_mod;
+   assign lpu_opc_bus[`NCPU_LPU_MODU] = op_modu;
    
-   wire op_and = (f_opcode == `NCPU_OP_AND);
-   wire op_and_i = (f_opcode == `NCPU_OP_AND_I);
-   wire op_or = (f_opcode == `NCPU_OP_OR);
-   wire op_or_i = (f_opcode == `NCPU_OP_OR_I);
-   wire op_xor = (f_opcode == `NCPU_OP_XOR);
-   wire op_xor_i = (f_opcode == `NCPU_OP_XOR_I);
-   wire op_lsl = (f_opcode == `NCPU_OP_LSL);
-   wire op_lsl_i = (f_opcode == `NCPU_OP_LSL_I);
-   wire op_lsr = (f_opcode == `NCPU_OP_LSR);
-   wire op_lsr_i = (f_opcode == `NCPU_OP_LSR_I);
-   wire op_asr = (f_opcode == `NCPU_OP_ASR) & enable_asr;
-   wire op_asr_i = (f_opcode == `NCPU_OP_ASR_I) & enable_asr_i;
-   
-   wire op_cmp = (f_opcode == `NCPU_OP_CMP);
-   wire op_add = (f_opcode == `NCPU_OP_ADD) & enable_add;
-   wire op_add_i = (f_opcode == `NCPU_OP_ADD_I);
-   wire op_sub = (f_opcode == `NCPU_OP_SUB) & enable_sub;
-   wire op_mul = (f_opcode == `NCPU_OP_MUL) & enable_mul;
-   wire op_div = (f_opcode == `NCPU_OP_DIV) & enable_div;
-   wire op_divu = (f_opcode == `NCPU_OP_DIVU) & enable_divu;
-   wire op_mod = (f_opcode == `NCPU_OP_MOD) & enable_mod;
-   wire op_modu = (f_opcode == `NCPU_OP_MODU) & enable_modu;
-   wire op_mhi = (f_opcode == `NCPU_OP_MHI) & enable_mhi;
-   
-   wire op_wmsr = (f_opcode == `NCPU_OP_WMSR);
-   wire op_rmsr = (f_opcode == `NCPU_OP_RMSR);
-   
-   wire au_cmp_eq;
-   wire au_cmp_signed;
-   wire [`NCPU_LU_IOPW-1:0] lu_opc_bus;
-   wire [`NCPU_AU_IOPW-1:0] au_opc_bus;
-   wire [`NCPU_EU_IOPW-1:0] eu_opc_bus;
+   // AGU opcodes
    
    //
    // Target Size of Memory Access.
@@ -212,196 +271,176 @@ module ncpu32k_idu(
    // 2 = 16bit
    // 3 = 32bit
    // 4 = 64bit
-   wire [2:0] mu_store_size = op_stb ? 3'd1 : op_sth ? 3'd2 : op_stw ? 3'd3 : 3'd0;
-   wire [2:0] mu_load_size = (op_ldb|op_ldbu) ? 3'd1 : (op_ldh|op_ldhu) ? 3'd2 : (op_ldwu) ? 3'd3 : 3'd0;
-   
-   assign mu_sign_ext = op_ldb | op_ldh;
-   
-   wire op_mu_load = |mu_load_size;
-   wire op_mu_store = |mu_store_size;
-   wire op_mu_barr = (f_opcode == `NCPU_OP_MBARR);
-   
-   assign lu_opc_bus[`NCPU_LU_AND] = (op_and | op_and_i);
-   assign lu_opc_bus[`NCPU_LU_OR] = (op_or | op_or_i);
-   assign lu_opc_bus[`NCPU_LU_XOR] = (op_xor | op_xor_i);
-   assign lu_opc_bus[`NCPU_LU_LSL] = (op_lsl | op_lsl_i);
-   assign lu_opc_bus[`NCPU_LU_LSR] = (op_lsr | op_lsr_i);
-   assign lu_opc_bus[`NCPU_LU_ASR] = (op_asr | op_asr_i);
-   
-   assign au_opc_bus[`NCPU_AU_CMP] = (op_cmp);
-   assign au_opc_bus[`NCPU_AU_ADD] = (op_add | op_add_i);
-   assign au_opc_bus[`NCPU_AU_SUB] = (op_sub);
-   assign au_opc_bus[`NCPU_AU_MUL] = (op_mul);
-   assign au_opc_bus[`NCPU_AU_DIV] = (op_div);
-   assign au_opc_bus[`NCPU_AU_DIVU] = (op_divu);
-   assign au_opc_bus[`NCPU_AU_MOD] = (op_mod);
-   assign au_opc_bus[`NCPU_AU_MODU] = (op_modu);
-   assign au_opc_bus[`NCPU_AU_MHI] = (op_mhi);
-   
-   assign au_cmp_eq = op_cmp & f_cond==`NCPU_COND_EQ;
-   assign au_cmp_signed = op_cmp & f_cond==`NCPU_COND_GT;
-   
-   assign eu_opc_bus[`NCPU_EU_WMSR] = (op_wmsr);
-   assign eu_opc_bus[`NCPU_EU_RMSR] = (op_rmsr);
+   assign agu_store_size = op_stb ? 3'd1 : op_sth ? 3'd2 : op_stw ? 3'd3 : 3'd0;
+   assign agu_load_size = (op_ldb|op_ldbu) ? 3'd1 : (op_ldh|op_ldhu) ? 3'd2 : (op_ldwu) ? 3'd3 : 3'd0;
 
+   assign agu_sign_ext = (op_ldb | op_ldh);
+
+   assign op_agu_load = |agu_load_size;
+   assign op_agu_store = |agu_store_size;
+   assign op_agu_barr = (f_opcode == `NCPU_OP_MBARR);
+
+   // EPU opcodes
+   assign epu_opc_bus[`NCPU_EPU_WMSR] = op_wmsr;
+   assign epu_opc_bus[`NCPU_EPU_RMSR] = op_rmsr;
+   assign epu_opc_bus[`NCPU_EPU_ESYSCALL] = op_syscall;
+   assign epu_opc_bus[`NCPU_EPU_ERET] = op_ret;
+   assign epu_opc_bus[`NCPU_EPU_EITM] = idu_exc[0];
+   assign epu_opc_bus[`NCPU_EPU_EIPF] = idu_exc[1];
+   assign epu_opc_bus[`NCPU_EPU_EIRQ] = idu_exc[2];
    // Insn is to be emulated
-   // This must covers all known insns
-   wire emu_insn = ~(
-                     // OPC Bus opcodes
-                     (|lu_opc_bus) | (|au_opc_bus) | (|eu_opc_bus) |
-                     // Branch insns
-                     idu_op_jmpfar|idu_op_jmprel |
-                     // MU insns
-                     op_mu_load | op_mu_store | op_mu_barr |
-                     // Exception insns
-                     idu_op_syscall | idu_op_ret);
-   
-   // Wrtie PC to ELSA when emu_insn exception raised
-   wire let_lsa_pc_nxt = idu_let_lsa_pc | emu_insn;
-   
-   // Insn presents rs1 and imm as operand.
-   wire insn_imm15 = (op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |
-                     op_add_i |
-                     op_mu_load | op_mu_store |
-                     op_wmsr | op_rmsr);
-   wire insn_imm17 = op_mhi;
-   wire insn_imm = insn_imm15 | insn_imm17;
-   // Insn requires Signed imm.
-   wire imm15_signed = (op_xor_i | op_add_i | op_mu_load | op_mu_store);
-   // Insn presents no operand.
-   wire insn_non_op = (op_mu_barr | idu_op_syscall | idu_op_ret | idu_op_jmprel);
-   
-   // Insn writeback register file
-   wire wb_regf = ~(idu_op_syscall | idu_op_ret | op_mu_barr | idu_op_jmprel | op_cmp | emu_insn | op_mu_store | op_wmsr) | idu_jmprel_link;
-   wire [`NCPU_REG_AW-1:0] wb_reg_addr = idu_jmprel_link ? `NCPU_REGNO_LNK : f_rd;
-   
-   // Link address ?
-   wire jmp_link = (idu_op_jmpfar | idu_jmprel_link);
-   
-   // Pipeline
-   wire                 pipebuf_cke;
-   wire [`NCPU_DW-1:0]  imm_oper_r;
-
-   ncpu32k_cell_pipebuf pipebuf_ifu
-      (
-         .clk        (clk),
-         .rst_n      (rst_n),
-         .a_en       (1'b1),
-         .a_valid    (idu_in_valid),
-         .a_ready    (idu_in_ready),
-         .b_en       (1'b1),
-         .b_valid    (ieu_in_valid),
-         .b_ready    (ieu_in_ready),
-         .cke        (pipebuf_cke),
-         .pending    ()
+   // Must filter out all the known insns, excluding EINSN itself.
+   assign epu_opc_bus[`NCPU_EPU_EINSN] =
+      ~(
+         // ALU opcodes
+         (|alu_opc_bus) |
+         // LPU opcodes
+         (|lpu_opc_bus) |
+         // AGU insns
+         op_agu_load | op_agu_store | op_agu_barr |
+         // EPU opcodes
+         (|epu_opc_bus[`NCPU_EPU_EINSN-1:0])
       );
 
-   wire rs1_frm_regf_r;
-   wire rs2_frm_regf_r;
-   wire rs2_frm_regf_nxt = regf_rs2_re & (~insn_imm & ~insn_non_op); // op_mu_store and op_wmsr are special cases
-   wire rd_readas_rs2_r;
-   wire rd_readas_rs2_nxt;
+   // Insn that uses rs1 and imm15 as operand.
+   assign insn_rs1_imm15 =
+      (
+         op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |
+         op_add_i |
+         op_agu_load |
+         op_rmsr
+      );
+   // Insn that uses rs1, rs2 and imm15 as operand
+   assign insn_rd_rs1_imm15 =
+      (
+         op_agu_store |
+         op_wmsr
+      );
+   // Insn that uses rd and imm17 as operand.
+   assign insn_rd_uimm17 = op_mhi;
+   // Insn that uses rel25 as operand
+   assign insn_rel25 = (op_jmp_i | op_jmp_lnk_i);
+   // Insn that requires signed imm15.
+   assign imm15_signed = (op_xor_i | op_add_i | op_agu_load | op_agu_store);
+   // Insns that have no register operands.
+   assign insn_no_rops = (op_agu_barr | op_syscall | op_ret | op_jmp_i | op_jmp_lnk_i);
+   // Insns that do not writeback ARF
+   assign insn_not_wb = (op_jmp_i | bcc | 
+                        op_agu_store | op_agu_barr |
+                        op_wmsr | epu_opc_bus[`NCPU_EPU_ESYSCALL] | epu_opc_bus[`NCPU_EPU_ERET] |
+                        epu_opc_bus[`NCPU_EPU_EITM] | epu_opc_bus[`NCPU_EPU_EIPF] |
+                        epu_opc_bus[`NCPU_EPU_EINSN] |
+                        epu_opc_bus[`NCPU_EPU_EIRQ]);
    
-   nDFF_lr #(1) dff_rs1_dout_valid_r
-                   (clk,rst_n, pipebuf_cke, regf_rs1_re, rs1_frm_regf_r);
-   nDFF_lr #(1) dff_rs2_dout_valid_r
-                   (clk,rst_n, pipebuf_cke, rs2_frm_regf_nxt, rs2_frm_regf_r);
-   nDFF_lr #(1) dff_rd_readas_rs2_r
-                   (clk,rst_n, pipebuf_cke, rd_readas_rs2_nxt, rd_readas_rs2_r);
-   
-   // Request operand(s) from Regfile when needed
-   // Note that op_mu_store and op_wmsr are special cases 
-   assign rd_readas_rs2_nxt = op_mu_store | op_wmsr;
-   assign regf_rs1_re = (~insn_non_op) & pipebuf_cke;
-   assign regf_rs1_addr = f_rs1;
-   assign regf_rs2_re = ((~insn_imm & ~insn_non_op) | rd_readas_rs2_nxt) & pipebuf_cke;
-   assign regf_rs2_addr = rd_readas_rs2_nxt ? f_rd : f_rs2;
-   
+   // Do not write r0 (nil)
+   assign wb_regf = ~insn_not_wb & (|wb_reg_addr);
+   assign wb_reg_addr = op_jmp_lnk_i ? `NCPU_REGNO_LNK : f_rd;
+
+   // Pipeline
+   ncpu32k_cell_pipebuf
+      #(
+         .CONFIG_PIPEBUF_BYPASS (CONFIG_PIPEBUF_BYPASS)
+      )
+   pipebuf_ifu
+      (
+         .clk     (clk),
+         .rst_n   (rst_n),
+         .A_en    (1'b1),
+         .AVALID  (idu_AVALID),
+         .AREADY  (idu_AREADY),
+         .B_en    (1'b1),
+         .BVALID  (disp_AVALID),
+         .BREADY  (disp_AREADY),
+         .cke     (pipe_cke),
+         .pending ()
+      );
+
+   assign read_rd_as_rs2 = (op_agu_store | op_wmsr | bcc | insn_rd_uimm17);
+
+   // Request operand(s) from regfile when needed
+   assign rs1_re_nxt = ~insn_no_rops & ~insn_rd_uimm17;
+   assign rs1_addr_nxt = f_rs1;
+   assign rs2_re_nxt = (~insn_rs1_imm15 & ~insn_rel25 & ~insn_no_rops) | read_rd_as_rs2;
+   assign rs2_addr_nxt = read_rd_as_rs2 ? f_rd : f_rs2;
+
    // Sign-extended 15bit Integer
-   wire [`NCPU_DW-1:0] simm15 = {{`NCPU_DW-15{f_imm15[14]}}, f_imm15[14:0]};
+   assign simm15 = {{`NCPU_DW-15{f_imm15[14]}}, f_imm15[14:0]};
    // Zero-extended 15bit Integer
-   wire [`NCPU_DW-1:0] uimm15 = {{`NCPU_DW-15{1'b0}}, f_imm15[14:0]};
+   assign uimm15 = {{`NCPU_DW-15{1'b0}}, f_imm15[14:0]};
    // Zero-extended 17bit Integer
-   wire [`NCPU_DW-1:0] uimm17 = {{`NCPU_DW-17{1'b0}}, f_imm17[16:0]};
-   // Immediate Operand
-   wire [`NCPU_DW-1:0] imm_oper_nxt = insn_imm15
-                           ? (imm15_signed ? simm15 : uimm15)
-                           : uimm17;
+   assign uimm17 = {{`NCPU_DW-17{1'b0}}, f_imm17[16:0]};
+   // PC-Relative address (sign-extended)
+   assign jmprel_offset = {{`NCPU_AW-2-25{f_rel25[24]}}, f_rel25[24:0]};
+   // Immediate Operand Assert (2103281412)
+   assign imm32_nxt = ({`NCPU_DW{insn_rs1_imm15|insn_rd_rs1_imm15}} & (imm15_signed ? simm15 : uimm15)) |
+                        ({`NCPU_DW{insn_rd_uimm17}} & uimm17) |
+                        ({`NCPU_DW{insn_rel25}} & jmprel_offset);
 
-   nDFF_lr #(`NCPU_DW) dff_imm_oper_r
-                   (clk,rst_n, pipebuf_cke, imm_oper_nxt, imm_oper_r);
+   // Data path
+   nDFF_l #(`NCPU_REG_AW) dff_disp_rs1_addr
+      (clk, pipe_cke, rs1_addr_nxt, disp_rs1_addr);
+   nDFF_l #(`NCPU_REG_AW) dff_disp_rs2_addr
+      (clk, pipe_cke, rs2_addr_nxt, disp_rs2_addr);
+   nDFF_l #(`NCPU_DW) dff_disp_imm32
+      (clk, pipe_cke, imm32_nxt, disp_imm32);
+   nDFF_l #(15) dff_disp_rel15
+      (clk, pipe_cke, f_imm15, disp_rel15);
 
-   // Final Operands
-   assign ieu_operand_1 = rs1_frm_regf_r ? regf_rs1_dout : imm_oper_r;
-   assign ieu_operand_2 = rs2_frm_regf_r ? regf_rs2_dout : imm_oper_r;
-   assign ieu_operand_3 = (rd_readas_rs2_r ? regf_rs2_dout : {`NCPU_DW{1'b0}});
+   nDFF_l #(3) dff_disp_agu_store_size
+     (clk, pipe_cke, agu_store_size[2:0], disp_agu_store_size[2:0]);
+   nDFF_l #(3) dff_disp_agu_load_size
+     (clk, pipe_cke, agu_load_size[2:0], disp_agu_load_size[2:0]);
 
-   wire not_flushing = ~specul_flush;
-
-   wire pipeflow = pipebuf_cke | specul_flush;
-
-   // Data path: no need to flush
-   // Note: opc_bus won't be here. Merely flushing 'wb_regf' can we ensure that
-   // LU/AU/EU (single-clk-op) insns not write back, although 'opc_bus' is not flushed. 
-   nDFF_lr #(`NCPU_LU_IOPW) dff_ieu_lu_opc_bus
-                   (clk,rst_n, pipeflow, lu_opc_bus[`NCPU_LU_IOPW-1:0], ieu_lu_opc_bus[`NCPU_LU_IOPW-1:0]);
-   nDFF_lr #(`NCPU_AU_IOPW) dff_ieu_au_opc_bus
-                   (clk,rst_n, pipeflow, au_opc_bus[`NCPU_AU_IOPW-1:0], ieu_au_opc_bus[`NCPU_AU_IOPW-1:0]);
-   nDFF_lr #(`NCPU_EU_IOPW) dff_ieu_eu_opc_bus
-                   (clk,rst_n, pipeflow, eu_opc_bus[`NCPU_EU_IOPW-1:0], ieu_eu_opc_bus[`NCPU_EU_IOPW-1:0]);
-                   
-   nDFF_lr #(1) dff_ieu_au_cmp_eq
-                   (clk,rst_n, pipeflow, au_cmp_eq, ieu_au_cmp_eq);
-   nDFF_lr #(1) dff_ieu_au_cmp_signed
-                   (clk,rst_n, pipeflow, au_cmp_signed, ieu_au_cmp_signed);
-                   
-   nDFF_lr #(3) dff_ieu_mu_store_size
-                   (clk,rst_n, pipeflow, mu_store_size[2:0], ieu_mu_store_size[2:0]);
-   nDFF_lr #(3) dff_ieu_mu_load_size
-                   (clk,rst_n, pipeflow, mu_load_size[2:0], ieu_mu_load_size[2:0]);
-
-   nDFF_lr #(`NCPU_REG_AW) dff_ieu_wb_reg_addr
-                   (clk,rst_n, pipeflow, wb_reg_addr[`NCPU_REG_AW-1:0], ieu_wb_reg_addr[`NCPU_REG_AW-1:0]);
-
-   nDFF_lr #(`NCPU_AW-2) dff_ieu_insn_pc
-               (clk, rst_n, pipeflow, idu_insn_pc[`NCPU_AW-3:0], ieu_insn_pc[`NCPU_AW-3:0]);
-                   
-   nDFF_lr #(`NCPU_AW-2) dff_ieu_specul_tgt
-                   (clk,rst_n, pipeflow, idu_specul_tgt[`NCPU_AW-3:0], ieu_specul_tgt[`NCPU_AW-3:0]);
-                   
-   // Control path
-   nDFF_lr #(1) dff_ieu_emu_insn
-                   (clk,rst_n, pipeflow, emu_insn & not_flushing, ieu_emu_insn);
-                   
-   nDFF_lr #(1) dff_ieu_mu_load
-                   (clk,rst_n, pipeflow, op_mu_load & not_flushing, ieu_mu_load);
-   nDFF_lr #(1) dff_ieu_mu_store
-                   (clk,rst_n, pipeflow, op_mu_store & not_flushing, ieu_mu_store);
-   nDFF_lr #(1) dff_ieu_mu_barr
-                   (clk,rst_n, pipeflow, op_mu_barr & not_flushing, ieu_mu_barr);
-   nDFF_lr #(1) dff_ieu_mu_sign_ext
-                   (clk,rst_n, pipeflow, mu_sign_ext & not_flushing, ieu_mu_sign_ext);
-                   
-   nDFF_lr #(1) dff_ieu_wb_regf
-                   (clk,rst_n, pipeflow, wb_regf & not_flushing, ieu_wb_regf);
+   nDFF_l #(`NCPU_AW-2) dff_disp_pc
+      (clk, pipe_cke, idu_pc, disp_pc);
+   nDFF_l #(`NCPU_AW-2) dff_disp_pred_tgt
+      (clk, pipe_cke, idu_pred_tgt, disp_pred_tgt);
+     
+   nDFF_l #(`NCPU_REG_AW) dff_disp_rd_addr
+     (clk, pipe_cke, wb_reg_addr[`NCPU_REG_AW-1:0], disp_rd_addr[`NCPU_REG_AW-1:0]);
    
-   nDFF_lr #(1) dff_ieu_jmp_link
-                   (clk,rst_n, pipeflow, jmp_link & not_flushing, ieu_jmplink);
-   nDFF_lr #(1) dff_ieu_syscall
-                   (clk,rst_n, pipeflow, idu_op_syscall & not_flushing, ieu_syscall);
-   nDFF_lr #(1) dff_ieu_ret
-                   (clk,rst_n, pipeflow, idu_op_ret & not_flushing, ieu_ret);
-                   
-   nDFF_lr #(1) dff_ieu_specul_jmpfar
-                   (clk,rst_n, pipeflow, idu_specul_jmpfar & not_flushing, ieu_specul_jmpfar);
-   nDFF_lr #(1) dff_ieu_specul_jmprel
-                   (clk,rst_n, pipeflow, idu_specul_jmprel & not_flushing, ieu_specul_jmprel);
+   // Control path
+   nDFF_lr #(`NCPU_ALU_IOPW) dff_disp_alu_opc_bus
+     (clk,rst_n, pipe_cke, alu_opc_bus[`NCPU_ALU_IOPW-1:0], disp_alu_opc_bus[`NCPU_ALU_IOPW-1:0]);
+   nDFF_lr #(`NCPU_LPU_IOPW) dff_disp_lpu_opc_bus
+     (clk,rst_n, pipe_cke, lpu_opc_bus[`NCPU_LPU_IOPW-1:0], disp_lpu_opc_bus[`NCPU_LPU_IOPW-1:0]);
+   nDFF_lr #(`NCPU_EPU_IOPW) dff_disp_epu_opc_bus
+     (clk,rst_n, pipe_cke, epu_opc_bus[`NCPU_EPU_IOPW-1:0], disp_epu_opc_bus[`NCPU_EPU_IOPW-1:0]);
 
-   nDFF_lr #(1) dff_ieu_specul_bcc
-                   (clk,rst_n, pipeflow, idu_specul_bcc & not_flushing, ieu_specul_bcc);
-   nDFF_lr #(1) dff_ieu_specul_exp
-                   (clk,rst_n, pipeflow, idu_specul_extexp & not_flushing, ieu_specul_extexp);
-   nDFF_lr #(1) dff_ieu_let_lsa_pc
-                   (clk,rst_n, pipeflow, let_lsa_pc_nxt & not_flushing, ieu_let_lsa_pc);
+   nDFF_lr #(1) dff_disp_agu_load
+     (clk,rst_n, pipe_cke, op_agu_load, disp_agu_load);
+   nDFF_lr #(1) dff_disp_agu_store
+     (clk,rst_n, pipe_cke, op_agu_store, disp_agu_store);
+   nDFF_lr #(1) dff_disp_agu_barr
+     (clk,rst_n, pipe_cke, op_agu_barr, disp_agu_barr);
+   nDFF_lr #(1) dff_disp_agu_sign_ext
+     (clk,rst_n, pipe_cke, agu_sign_ext, disp_agu_sign_ext);
 
+   nDFF_lr #(1) dff_disp_pred_branch
+      (clk,rst_n, pipe_cke, idu_pred_branch, disp_pred_branch);
+
+   nDFF_lr #(1) dff_disp_rs1_re
+      (clk,rst_n, pipe_cke, rs1_re_nxt, disp_rs1_re);
+   nDFF_lr #(1) dff_disp_rs2_re
+      (clk,rst_n, pipe_cke, rs2_re_nxt, disp_rs2_re);
+
+   nDFF_lr #(1) dff_disp_wb_regf
+     (clk,rst_n, pipe_cke, wb_regf, disp_rd_we);
+
+   // synthesis translate_off
+`ifndef SYNTHESIS
+   `include "ncpu32k_assert.h"
+
+   // Assertions
+`ifdef NCPU_ENABLE_ASSERT
+   always @(posedge clk)
+      begin
+         // Assertion 2103281412
+         if (count_1({insn_rs1_imm15, insn_rd_rs1_imm15, insn_rd_uimm17, insn_rel25})>1)
+            $fatal("\n Bugs on insn type decoder\n");
+      end
+`endif
+
+`endif
+   // synthesis translate_on
 endmodule

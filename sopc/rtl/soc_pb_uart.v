@@ -47,31 +47,31 @@ module soc_pb_uart
    input                      clk_baud,
    input                      rst_n,
    input                      rst_baud_n,
-   input                      pb_uart_cmd_valid,
-   output                     pb_uart_cmd_ready,
-   input [`NCPU_AW-1:0]       pb_uart_cmd_addr,
-   input [3:0]                pb_uart_cmd_we_msk,
-   input [31:0]               pb_uart_din,
-   output reg [31:0]          pb_uart_dout,
-   output reg                 pb_uart_valid,
-   input                      pb_uart_ready,
+   input                      pb_uart_AVALID,
+   output                     pb_uart_AREADY,
+   input [`NCPU_AW-1:0]       pb_uart_AADDR,
+   input [3:0]                pb_uart_AWMSK,
+   input [31:0]               pb_uart_ADATA,
+   output reg [31:0]          pb_uart_BDATA,
+   output reg                 pb_uart_BVALID,
+   input                      pb_uart_BREADY,
    output                     pb_uart_irq,
    // TTL UART Interface
    output                     UART_TX_L,
    input                      UART_RX_L
 );
 
-   wire hds_cmd = pb_uart_cmd_valid & pb_uart_cmd_ready;
-   wire hds_dout = pb_uart_valid & pb_uart_ready;
+   wire hds_cmd = pb_uart_AVALID & pb_uart_AREADY;
+   wire hds_dout = pb_uart_BVALID & pb_uart_BREADY;
 
    always @(posedge clk or negedge rst_n)
       if(~rst_n)
-         pb_uart_valid <= 1'b0;
+         pb_uart_BVALID <= 1'b0;
       else if (hds_cmd | hds_dout)
-         pb_uart_valid <= (hds_cmd | ~hds_dout);
+         pb_uart_BVALID <= (hds_cmd | ~hds_dout);
 
-   assign pb_uart_cmd_ready = ~pb_uart_valid;
-   
+   assign pb_uart_AREADY = ~pb_uart_BVALID;
+
    // PHY transceiver interface
    wire phy_cmd_rd_vld;
    wire phy_cmd_we_vld;
@@ -207,7 +207,7 @@ module soc_pb_uart
                   endcase
             end
          endcase
-         
+
          // RX cmd
          if(phy_cmd_rd_vld & phy_cmd_rd_rdy) begin
             // cmd handshaked
@@ -243,14 +243,14 @@ module soc_pb_uart
    assign phy_cmd_rd_vld = rx_status;
    assign phy_cmd_we_vld = tx_status == 2'b01;
 
-   wire cmd_we = |pb_uart_cmd_we_msk;
-   wire rd_RBR = hds_cmd & ~cmd_we & (pb_uart_cmd_addr[2:0] == 3'b000) & ~DLAB; // Read RBR
-   wire we_RBR = hds_cmd & cmd_we & (pb_uart_cmd_addr[2:0] == 3'b000) & ~DLAB; // Write RBR
-   
+   wire cmd_we = |pb_uart_AWMSK;
+   wire rd_RBR = hds_cmd & ~cmd_we & (pb_uart_AADDR[2:0] == 3'b000) & ~DLAB; // Read RBR
+   wire we_RBR = hds_cmd & cmd_we & (pb_uart_AADDR[2:0] == 3'b000) & ~DLAB; // Write RBR
+
    always @(posedge clk)
       if (hds_cmd) begin
          cmd_we_r <= cmd_we;
-         cmd_addr_r <= pb_uart_cmd_addr[2:0];
+         cmd_addr_r <= pb_uart_AADDR[2:0];
       end
 
    sco_fifo_asclk
@@ -264,7 +264,7 @@ module soc_pb_uart
       .wrst_n (rst_n),
       .rclk (clk_baud),
       .rrst_n (rst_baud_n),
-      .din (pb_uart_din[7:0]),
+      .din (pb_uart_ADATA[7:0]),
       .push (we_RBR),
       .pop (&tx_status),
       .dout (phy_din[7:0]),
@@ -310,7 +310,7 @@ module soc_pb_uart
       if(~rx_full | rx_status)
          rx_status <= phy_cmd_rd_rdy;
    end
-   
+
    // Is data ready in RBR ?
    always @(posedge clk) begin
       if(~dat_ready)
@@ -325,52 +325,52 @@ module soc_pb_uart
       phy_cmd_we_rdy_sr <= {phy_cmd_we_rdy_sr[0], phy_cmd_we_rdy};
       phy_dout_overun_sr <= {phy_dout_overun_sr[0], phy_dout_overun};
    end
-   
+
    // Readout registers
    always @(*) begin
       case(cmd_addr_r)
          // RBR (DLAB = 0)
          // DLL (DLAB = 1)
-         3'b000: pb_uart_dout = {24'b0, DLAB ? DLR[7:0] : RBR};
+         3'b000: pb_uart_BDATA = {24'b0, DLAB ? DLR[7:0] : RBR};
          // IER (DLAB = 0) TODO: EM EL
          // DLM (DLAB = 1)
-         3'b001: pb_uart_dout = {16'b0, DLAB ? DLR[15:8] : {4'b0000, IER}, 8'b0};
+         3'b001: pb_uart_BDATA = {16'b0, DLAB ? DLR[15:8] : {4'b0000, IER}, 8'b0};
          // FCR TODO
-         3'b010: pb_uart_dout = {8'b0, {5'b0000, IIR}, 16'b0};
+         3'b010: pb_uart_BDATA = {8'b0, {5'b0000, IIR}, 16'b0};
          // LCR TODO: Data bits / Stop bit/ parity / set break
-         3'b011: pb_uart_dout = {{LCR[7], 7'b0000011}, 24'b0};
+         3'b011: pb_uart_BDATA = {{LCR[7], 7'b0000011}, 24'b0};
          // MCR TODO: DTR RTS OUT1 OUT2 LOOP
-         3'b100: pb_uart_dout = 32'h0;
+         3'b100: pb_uart_BDATA = 32'h0;
          // LSR TODO: Parity and errors
-         3'b101: pb_uart_dout = {{16'b0, phy_cmd_we_rdy_sr[1], ~tx_full, 3'b000, phy_dout_overun_sr[1], dat_ready}, 8'b0};
+         3'b101: pb_uart_BDATA = {{16'b0, phy_cmd_we_rdy_sr[1], ~tx_full, 3'b000, phy_dout_overun_sr[1], dat_ready}, 8'b0};
          // MSR TODO
-         3'b110: pb_uart_dout = {8'b0, 8'b10000000, 16'b0};
+         3'b110: pb_uart_BDATA = {8'b0, 8'b10000000, 16'b0};
          // SCR TODO
-         3'b111: pb_uart_dout = 32'h0;
+         3'b111: pb_uart_BDATA = 32'h0;
       endcase
    end
 
    reg RBR_written = 1'b0;
-   
+
    always @(posedge clk) begin
       // Writeback registers
       if(hds_cmd & cmd_we) begin
-         case(pb_uart_cmd_addr[2:0])
+         case(pb_uart_AADDR[2:0])
             3'b000:
                if(DLAB)
-                  DLR[7:0] <= pb_uart_din[7:0];
+                  DLR[7:0] <= pb_uart_ADATA[7:0];
                else
                   RBR_written <= 1'b1;
             3'b001:
                if(DLAB)
-                  DLR[15:8] <= pb_uart_din[15:8];
+                  DLR[15:8] <= pb_uart_ADATA[15:8];
                else
-                  IER <= pb_uart_din[3+8:0+8];
+                  IER <= pb_uart_ADATA[3+8:0+8];
             3'b011:
-               LCR[7] <= pb_uart_din[7+24];
+               LCR[7] <= pb_uart_ADATA[7+24];
          endcase
       end
-      
+
       // IRQ FSM
       if(IIR[0]) begin
          if(dat_ready & IER[0]) begin
@@ -396,7 +396,7 @@ module soc_pb_uart
    // Monitor TX
    always @(posedge clk) begin
       if(we_RBR) begin
-         //$write("%c", pb_uart_din);
+         //$write("%c", pb_uart_ADATA);
       end
    end
 

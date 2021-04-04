@@ -23,30 +23,19 @@ module ncpu32k_bpu
    input                   clk,
    input                   rst_n,
    input [`NCPU_AW-3:0]    bpu_insn_pc,
-   input                   bpu_rd,
-   input                   bpu_jmprel,
-   input [`NCPU_AW-3:0]    bpu_jmprel_offset,
-   output [`NCPU_AW-3:0]   bpu_jmp_tgt,
-   output                  bpu_jmprel_taken,
-   output [`NCPU_DW-1:0]   bpu_msr_epc,
+   output                  bpu_pred_taken,
+   output [`NCPU_AW-3:0]   bpu_pred_tgt,
    input                   bpu_wb,
-   input                   bpu_wb_jmprel,
    input [`NCPU_AW-3:0]    bpu_wb_insn_pc,
-   input                   bpu_wb_hit
+   input                   bpu_wb_taken,
+   input [`NCPU_AW-3:0]    bpu_wb_tgt
 );
-   
+
    generate
-      if(BPU_JMPREL_STRATEGY=="always_taken") begin : strategy_always_taken
-         assign bpu_jmprel_taken = 1'b1;
-      end else if(BPU_JMPREL_STRATEGY=="always_not_taken") begin : strategy_always_not_taken
-         assign bpu_jmprel_taken = 1'b0;
-      end else if(BPU_JMPREL_STRATEGY=="direction") begin : strategy_always_taken
-         assign bpu_jmprel_taken = bpu_jmprel_offset[`NCPU_AW-3];
+      if(BPU_JMPREL_STRATEGY=="always_not_taken") begin : strategy_always_not_taken
+         assign bpu_pred_taken = 1'b0;
+         assign bpu_pred_tgt = {`NCPU_AW-2{1'b0}};
       end
    endgenerate
-   
-   assign bpu_jmp_tgt = {`NCPU_AW-2{1'b0}};
-   
-   assign bpu_msr_epc = {`NCPU_DW{1'b0}};
-   
+
 endmodule

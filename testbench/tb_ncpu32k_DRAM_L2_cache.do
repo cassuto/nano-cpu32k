@@ -1,5 +1,18 @@
 onerror {resume}
 quietly WaveActivateNextPane {} 0
+add wave -noupdate -divider mbus
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/clk
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_cmd_addr
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_cmd_ready
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_cmd_valid
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_cmd_we_msk
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_din
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_dout
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_ready
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_valid
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_arbi/status_nxt
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_arbi/status_r
+add wave -noupdate -divider dbus
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/clk
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_dbus_cmd_addr
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_dbus_cmd_ready
@@ -10,21 +23,24 @@ add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_dbus_dout
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_dbus_ready
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_dbus_valid
 add wave -noupdate -divider ibus
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/clk
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_ibus_cmd_addr
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_ibus_cmd_ready
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_ibus_cmd_valid
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_ibus_dout
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_ibus_ready
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_ibus_valid
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/pipe_en
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/s1_cke
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/s2_cke
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/pipebuf_2/a_en
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/pipebuf_2/a_ready
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/pipebuf_2/a_valid
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/pipebuf_2/b_en
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/pipebuf_2/b_ready
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/pipebuf_2/b_valid
+add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/pipebuf_2/pending
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_irqs
-add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_cmd_addr
-add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_cmd_ready
-add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_cmd_valid
-add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_cmd_we_msk
-add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_din
-add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_dout
-add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_ready
-add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/fb_mbus_valid
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/l2_ch_cmd_addr
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/l2_ch_cmd_ready
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/l2_ch_cmd_valid
@@ -41,7 +57,6 @@ add wave -noupdate -radix binary /tb_ncpu32k_DRAM_L2_cache/L2_cache/status_r
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/s1i_entry_idx
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/s1o_tag_addr
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/s1o_tag_v
-add wave -noupdate {/tb_ncpu32k_DRAM_L2_cache/L2_cache/genblk1[0]/s2i_entry_idx}
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/s2i_tag_addr
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/s2i_tag_v
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/L2_cache/wb_idle_r
@@ -66,9 +81,9 @@ add wave -noupdate -divider ifu
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/ncpu32k/core/ifu/idu_insn
 add wave -noupdate /tb_ncpu32k_DRAM_L2_cache/ncpu32k/core/ifu/idu_insn_pc_w
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {335168875 ps} 0}
+WaveRestoreCursors {{Cursor 1} {334728547 ps} 0}
 quietly wave cursor active 1
-configure wave -namecolwidth 175
+configure wave -namecolwidth 197
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
@@ -82,4 +97,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {334946103 ps} {335193627 ps}
+WaveRestoreZoom {334392186 ps} {334872314 ps}

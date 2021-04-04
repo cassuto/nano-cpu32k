@@ -20,104 +20,116 @@ module pb_fb_arbiter
    input                   clk,
    input                   rst_n,
    // Frontend I-Bus
-   output                  fb_ibus_valid,
-   input                   fb_ibus_ready,
-   output [`NCPU_IW-1:0]   fb_ibus_dout,
-   output                  fb_ibus_cmd_ready,
-   input                   fb_ibus_cmd_valid,
-   input [`NCPU_AW-1:0]    fb_ibus_cmd_addr,
+   output                  fb_ibus_BVALID,
+   input                   fb_ibus_BREADY,
+   output [`NCPU_IW-1:0]   fb_ibus_BDATA,
+   output [1:0]            fb_ibus_BEXC,
+   output                  fb_ibus_AREADY,
+   input                   fb_ibus_AVALID,
+   input [`NCPU_AW-1:0]    fb_ibus_AADDR,
+   input [1:0]             fb_ibus_AEXC,
    // Frontend D-Bus
-   output                  fb_dbus_valid,
-   input                   fb_dbus_ready,
-   output [`NCPU_IW-1:0]   fb_dbus_dout,
-   input [`NCPU_DW-1:0]    fb_dbus_din,
-   output                  fb_dbus_cmd_ready,
-   input                   fb_dbus_cmd_valid,
-   input [`NCPU_AW-1:0]    fb_dbus_cmd_addr,
-   input [`NCPU_DW/8-1:0]  fb_dbus_cmd_we_msk,
+   output                  fb_dbus_BVALID,
+   input                   fb_dbus_BREADY,
+   output [`NCPU_IW-1:0]   fb_dbus_BDATA,
+   output [1:0]            fb_dbus_BEXC,
+   input [`NCPU_DW-1:0]    fb_dbus_ADATA,
+   output                  fb_dbus_AREADY,
+   input                   fb_dbus_AVALID,
+   input [`NCPU_AW-1:0]    fb_dbus_AADDR,
+   input [`NCPU_DW/8-1:0]  fb_dbus_AWMSK,
+   input [1:0]             fb_dbus_AEXC,
    // Frontend M-Bus
-   input                   fb_mbus_valid,
-   output                  fb_mbus_ready,
-   input [`NCPU_IW-1:0]    fb_mbus_dout,
-   output [`NCPU_DW-1:0]   fb_mbus_din,
-   input                   fb_mbus_cmd_ready,
-   output                  fb_mbus_cmd_valid,
-   output [`NCPU_AW-1:0]   fb_mbus_cmd_addr,
-   output [`NCPU_DW/8-1:0] fb_mbus_cmd_we_msk
+   input                   fb_mbus_BVALID,
+   output                  fb_mbus_BREADY,
+   input [`NCPU_IW-1:0]    fb_mbus_BDATA,
+   input [1:0]             fb_mbus_BEXC,
+   output [`NCPU_DW-1:0]   fb_mbus_ADATA,
+   input                   fb_mbus_AREADY,
+   output                  fb_mbus_AVALID,
+   output [`NCPU_AW-1:0]   fb_mbus_AADDR,
+   output [`NCPU_DW/8-1:0] fb_mbus_AWMSK,
+   output [1:0]            fb_mbus_AEXC
 );
-  
-   // Priority scheme
-   // Assert (03112048)
-   wire dbus_cmd_sel = fb_dbus_cmd_valid;
-   wire ibus_cmd_sel = ~dbus_cmd_sel;
-   
-   // Bus cycle FSM
-   // Assert (03112057)
-   wire dbus_dout_sel;
-   wire dbus_dout_sel_nxt;
-   wire ibus_dout_sel;
-   wire ibus_dout_sel_nxt;
-   
-   wire hds_dbus_cmd = fb_dbus_cmd_ready & fb_dbus_cmd_valid;
-   wire hds_dbus_dout = fb_dbus_ready & fb_dbus_valid;
-   wire hds_ibus_cmd = fb_ibus_cmd_ready & fb_ibus_cmd_valid;
-   wire hds_ibus_dout = fb_ibus_ready & fb_ibus_valid;
-   
-   assign dbus_dout_sel_nxt = hds_dbus_cmd | ~hds_dbus_dout;
-   assign ibus_dout_sel_nxt = hds_ibus_cmd | ~hds_ibus_dout;
-   
-   nDFF_lr #(1) dff_dbus_dout_sel
-                   (clk,rst_n, (hds_dbus_cmd | hds_dbus_dout), dbus_dout_sel_nxt, dbus_dout_sel);
-   nDFF_lr #(1) dff_ibus_dout_sel
-                   (clk,rst_n, (hds_ibus_cmd | hds_ibus_dout), ibus_dout_sel_nxt, ibus_dout_sel);
+   wire tlb_cke = fb_dbus_AREADY & fb_dbus_AVALID;
+   wire hds_dbus_b = fb_dbus_BREADY & fb_dbus_BVALID;
+   wire hds_ibus_a = fb_ibus_AREADY & fb_ibus_AVALID;
+   wire hds_ibus_b = fb_ibus_BREADY & fb_ibus_BVALID;
 
-   // Send cmd
-   assign fb_dbus_cmd_ready = dbus_cmd_sel & fb_mbus_cmd_ready;
-   assign fb_ibus_cmd_ready = ibus_cmd_sel & fb_mbus_cmd_ready;
-   assign fb_mbus_cmd_valid = dbus_cmd_sel ? fb_dbus_cmd_valid : fb_ibus_cmd_valid;
-   assign fb_mbus_cmd_addr = dbus_cmd_sel ? fb_dbus_cmd_addr : fb_ibus_cmd_addr;
-   assign fb_mbus_cmd_we_msk = dbus_cmd_sel ? fb_dbus_cmd_we_msk : {`NCPU_DW/8{1'b0}};
-   assign fb_mbus_din = fb_dbus_din;
-   
-   // Transmit dout
-   assign fb_dbus_valid = dbus_dout_sel & fb_mbus_valid;
-   assign fb_ibus_valid = ibus_dout_sel & fb_mbus_valid;
-   
-   assign fb_mbus_ready = dbus_dout_sel ? fb_dbus_ready : fb_ibus_ready;
-   assign fb_dbus_dout = {`NCPU_DW{dbus_dout_sel}} & fb_mbus_dout;
-   assign fb_ibus_dout = {`NCPU_IW{ibus_dout_sel}} & fb_mbus_dout;
-   
+   wire [1:0] status_r;
+   reg [1:0] status_nxt;
+
+   localparam [1:0] STATUS_IDLE = 2'b00;
+   localparam [1:0] STATUS_IBUS_CYC = 2'b01;
+   localparam [1:0] STATUS_DBUS_CYC = 2'b11;
+
+   // Priority scheme (dbus > ibus)
+   always @(*)
+      case (status_r)
+         STATUS_IDLE:
+            if (fb_dbus_AVALID)
+               status_nxt = STATUS_DBUS_CYC;
+            else if (fb_ibus_AVALID)
+               status_nxt = STATUS_IBUS_CYC;
+            else
+               status_nxt = status_r;
+
+         STATUS_DBUS_CYC:
+            status_nxt = hds_dbus_b ?
+                           (fb_dbus_AVALID ? STATUS_DBUS_CYC :
+                            fb_ibus_AVALID ? STATUS_IBUS_CYC : STATUS_IDLE) : status_r;
+         STATUS_IBUS_CYC:
+            status_nxt = hds_ibus_b ?
+                           (fb_dbus_AVALID ? STATUS_DBUS_CYC :
+                            fb_ibus_AVALID ? STATUS_IBUS_CYC : STATUS_IDLE) : status_r;
+      endcase
+
+   nDFF_r #(2, STATUS_IDLE) dff_status_r
+                   (clk,rst_n, status_nxt, status_r);
+
+   // Assert (03112048)
+   wire dbus_sel_a = (status_r == STATUS_DBUS_CYC);
+   wire ibus_sel_a = (status_r == STATUS_IBUS_CYC);
+   wire dbus_sel_b = dbus_sel_a;
+   wire ibus_sel_b = ibus_sel_a;
+
+   // A-channel switch
+   assign fb_dbus_AREADY = dbus_sel_a & fb_mbus_AREADY;
+   assign fb_ibus_AREADY = ibus_sel_a & fb_mbus_AREADY;
+   assign fb_mbus_AVALID = (dbus_sel_a & fb_dbus_AVALID) |
+                              (ibus_sel_a & fb_ibus_AVALID);
+   assign fb_mbus_AADDR = dbus_sel_a ? fb_dbus_AADDR : fb_ibus_AADDR;
+   assign fb_mbus_AWMSK = dbus_sel_a ? fb_dbus_AWMSK : {`NCPU_DW/8{1'b0}};
+   assign fb_mbus_AEXC = dbus_sel_a ? fb_dbus_AEXC : fb_ibus_AEXC;
+   assign fb_mbus_ADATA = fb_dbus_ADATA;
+
+   // B-channel switch
+   assign fb_dbus_BVALID = dbus_sel_b & fb_mbus_BVALID;
+   assign fb_ibus_BVALID = ibus_sel_b & fb_mbus_BVALID;
+
+   assign fb_mbus_BREADY = (dbus_sel_b & fb_dbus_BREADY) |
+                          (ibus_sel_b & fb_ibus_BREADY);
+   assign fb_dbus_BDATA = fb_mbus_BDATA;
+   assign fb_ibus_BDATA = fb_mbus_BDATA;
+   assign fb_dbus_BEXC = fb_mbus_BEXC;
+   assign fb_ibus_BEXC = fb_mbus_BEXC;
+
    // synthesis translate_off
 `ifndef SYNTHESIS
-   
+
    // Assertions (03112048)
 `ifdef NCPU_ENABLE_ASSERT
-   always @(posedge clk) begin
-      if ((dbus_cmd_sel|ibus_cmd_sel) & ~(dbus_cmd_sel^ibus_cmd_sel))
-         $fatal ("\n conflicting cmd scheme\n");
-      if ((dbus_dout_sel|ibus_dout_sel) & ~(dbus_dout_sel^ibus_dout_sel))
-         $fatal ("\n conflicting dout scheme\n");
-   end
-`endif
-
-   // Assertions (03112057)
-`ifdef NCPU_ENABLE_ASSERT
-   always @(posedge clk) begin
-      if ((dbus_dout_sel|ibus_dout_sel) & ~(dbus_dout_sel^ibus_dout_sel))
-         $fatal ("\n conflicting bus cycle\n");
-   end
-`endif
-
-   // Assertions
-`ifdef NCPU_ENABLE_ASSERT
-   always @(posedge clk) begin
-      if (fb_dbus_cmd_valid & (ibus_dout_sel&ibus_dout_sel_nxt) & ~fb_ibus_ready)
-         $fatal ("\n TODO bus retry\n");
-   end
+   always @(posedge clk)
+      begin
+         if (dbus_sel_a & ibus_sel_a)
+            $fatal ("\n conflicting cmd scheme\n");
+         if (dbus_sel_b & ibus_sel_b)
+            $fatal ("\n conflicting dout scheme\n");
+      end
 `endif
 
 `endif
    // synthesis translate_on
 
-   
+
 endmodule

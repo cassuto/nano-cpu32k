@@ -32,9 +32,9 @@ module nDFF_l # (
      if (LOAD)
        Q <= #1 D;
    end
-   
+
    // synthesis translate_off
-`ifndef SYNTHESIS                   
+`ifndef SYNTHESIS
 
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT

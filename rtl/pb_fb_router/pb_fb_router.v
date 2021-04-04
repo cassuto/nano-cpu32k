@@ -24,30 +24,34 @@ module pb_fb_router
    input                      clk,
    input                      rst_n,
    // Frontend M-Bus
-   output                     fb_mbus_valid,
-   input                      fb_mbus_ready,
-   output [`NCPU_DW-1:0]      fb_mbus_dout,
-   input [`NCPU_DW-1:0]       fb_mbus_din,
-   output                     fb_mbus_cmd_ready,
-   input                      fb_mbus_cmd_valid,
-   input [`NCPU_AW-1:0]       fb_mbus_cmd_addr,
-   input [`NCPU_DW/8-1:0]     fb_mbus_cmd_we_msk,
+   output                     fb_mbus_BVALID,
+   input                      fb_mbus_BREADY,
+   output [`NCPU_DW-1:0]      fb_mbus_BDATA,
+   output [1:0]               fb_mbus_BEXC,
+   input [`NCPU_DW-1:0]       fb_mbus_ADATA,
+   output                     fb_mbus_AREADY,
+   input                      fb_mbus_AVALID,
+   input [`NCPU_AW-1:0]       fb_mbus_AADDR,
+   input [`NCPU_DW/8-1:0]     fb_mbus_AWMSK,
+   input [1:0]                fb_mbus_AEXC,
    // Address Mapping input
    input [NBUS-1:0]           fb_bus_sel,
    // Buses
-   input [NBUS-1:0]           fb_bus_valid,
-   output [NBUS-1:0]          fb_bus_ready,
-   input [NBUS*`NCPU_DW-1:0]  fb_bus_dout,
-   output [NBUS*`NCPU_DW-1:0] fb_bus_din,
-   input [NBUS-1:0]           fb_bus_cmd_ready,
-   output [NBUS-1:0]          fb_bus_cmd_valid,
-   output [NBUS*`NCPU_AW-1:0] fb_bus_cmd_addr,
-   output [NBUS*`NCPU_DW/8-1:0] fb_bus_cmd_we_msk
+   input [NBUS-1:0]           fb_bus_BVALID,
+   output [NBUS-1:0]          fb_bus_BREADY,
+   input [NBUS*`NCPU_DW-1:0]  fb_bus_BDATA,
+   input [NBUS*2-1:0]         fb_bus_BEXC,
+   output [NBUS*`NCPU_DW-1:0] fb_bus_ADATA,
+   input [NBUS-1:0]           fb_bus_AREADY,
+   output [NBUS-1:0]          fb_bus_AVALID,
+   output [NBUS*`NCPU_AW-1:0] fb_bus_AADDR,
+   output [NBUS*`NCPU_DW/8-1:0] fb_bus_AWMSK,
+   output [NBUS*2-1:0]        fb_bus_AEXC
 );
 
    localparam AW = `NCPU_AW;
    localparam DW = `NCPU_DW;
-   
+
    genvar i,j,k,x,y;
 
    wire [NBUS-1:0] bus_pending;
@@ -57,79 +61,91 @@ module pb_fb_router
 
    // Bus cycle FSM
    // Assert (03181514)
-generate
-   for(i=0;i<NBUS;i=i+1) begin
-      assign hds_bus_cmd[i] = fb_bus_cmd_ready[i] & fb_bus_cmd_valid[i];
-      assign hds_bus_dout[i] = fb_bus_ready[i] & fb_bus_valid[i];
-      
-      assign bus_pending_nxt[i] = hds_bus_cmd[i] | ~hds_bus_dout[i];
+   generate
+      for(i=0;i<NBUS;i=i+1)
+         begin
+            assign hds_bus_cmd[i] = fb_bus_AREADY[i] & fb_bus_AVALID[i];
+            assign hds_bus_dout[i] = fb_bus_BREADY[i] & fb_bus_BVALID[i];
 
-      nDFF_lr #(1) dff_bus_dout_sel
-                      (clk,rst_n, (hds_bus_cmd[i] | hds_bus_dout[i]), bus_pending_nxt[i], bus_pending[i]);
-   end
-endgenerate
-   
+            assign bus_pending_nxt[i] = hds_bus_cmd[i] | ~hds_bus_dout[i];
+
+            nDFF_lr #(1) dff_bus_dout_sel
+                            (clk,rst_n, (hds_bus_cmd[i] | hds_bus_dout[i]), bus_pending_nxt[i], bus_pending[i]);
+         end
+   endgenerate
+
    // Cmd Routing
-   wire [NBUS-1:0] cmd_ready;
-generate
-   for(j=0;j<NBUS;j=j+1) begin
-      // Exclusive bus channel
-      // If there is not any bus taking the time slice,
-      // or this is the bus being occupied, we can accept new cmd.
-      wire accept_cmd = ~|bus_pending | bus_pending[j];
-      
-      assign cmd_ready[j] = fb_bus_sel[j] & accept_cmd & fb_bus_cmd_ready[j];
-      assign fb_bus_cmd_valid[j] = fb_bus_sel[j] & accept_cmd & fb_mbus_cmd_valid;
-   end
-endgenerate
-   assign fb_mbus_cmd_ready = |cmd_ready;
-   
+   wire [NBUS-1:0] AREADY;
+   generate
+      for(j=0;j<NBUS;j=j+1)
+         begin
+            // Exclusive bus channel
+            // If there is not any bus taking the time slice,
+            // or this is the bus being occupied, we can accept new cmd.
+            wire accept_cmd = ~|bus_pending | bus_pending[j];
+
+            assign AREADY[j] = fb_bus_sel[j] & accept_cmd & fb_bus_AREADY[j];
+            assign fb_bus_AVALID[j] = fb_bus_sel[j] & accept_cmd & fb_mbus_AVALID;
+         end
+   endgenerate
+   assign fb_mbus_AREADY = |AREADY;
+
    // Direct route
-generate
-   for(k=0;k<NBUS;k=k+1) begin
-      assign fb_bus_cmd_addr[AW*(k+1)-1:AW*k]         = fb_mbus_cmd_addr;
-      assign fb_bus_cmd_we_msk[DW/8*(k+1)-1:DW/8*k]   = fb_mbus_cmd_we_msk;
-      assign fb_bus_din[DW*(k+1)-1:DW*k]              = fb_mbus_din;
-   end
-endgenerate
+   generate
+      for(k=0;k<NBUS;k=k+1) begin
+         assign fb_bus_AADDR[AW*(k+1)-1:AW*k]      = fb_mbus_AADDR;
+         assign fb_bus_AWMSK[DW/8*(k+1)-1:DW/8*k]  = fb_mbus_AWMSK;
+         assign fb_bus_AEXC[2*(k+1)-1:2*k]         = fb_mbus_AEXC;
+         assign fb_bus_ADATA[DW*(k+1)-1:DW*k]      = fb_mbus_ADATA;
+      end
+   endgenerate
 
    // Data Routing
    wire [NBUS-1:0] dout_valid;
    wire [DW-1:0] dout[NBUS-1:0];
-generate
-   for(x=0;x<NBUS;x=x+1) begin
-      assign dout_valid[x] = bus_pending[x] & fb_bus_valid[x];
-      if (x==0)
-         assign dout[x] = {DW{bus_pending[x]}} & fb_bus_dout[DW*(x+1)-1:DW*x];
-      else
-         assign dout[x] = dout[x-1] | ({DW{bus_pending[x]}} & fb_bus_dout[DW*(x+1)-1:DW*x]);
-   end
-endgenerate
-   assign fb_mbus_valid = |dout_valid;
-   assign fb_mbus_dout = dout[NBUS-1];
-   
+   wire [1:0] exc[NBUS-1:0];
+   generate
+      for(x=0;x<NBUS;x=x+1)
+         begin
+            assign dout_valid[x] = bus_pending[x] & fb_bus_BVALID[x];
+            if (x==0)
+               begin
+                  assign dout[x] = {DW{bus_pending[x]}} & fb_bus_BDATA[DW*(x+1)-1:DW*x];
+                  assign exc[x] = {2{bus_pending[x]}} & fb_bus_BEXC[2*(x+1)-1:2*x];
+               end
+            else
+               begin
+                  assign dout[x] = dout[x-1] | ({DW{bus_pending[x]}} & fb_bus_BDATA[DW*(x+1)-1:DW*x]);
+                  assign exc[x] = exc[x-1] | ({2{bus_pending[x]}} & fb_bus_BEXC[2*(x+1)-1:2*x]);
+               end
+         end
+   endgenerate
+   assign fb_mbus_BVALID = |dout_valid;
+   assign fb_mbus_BDATA = dout[NBUS-1];
+   assign fb_mbus_BEXC = exc[NBUS-1];
+
    // Direct route
-generate
-   for(i=0;i<NBUS;i=i+1) begin
-      assign fb_bus_ready[i] = fb_mbus_ready & bus_pending[i];
-   end
-endgenerate
+   generate
+      for(i=0;i<NBUS;i=i+1)
+         begin
+            assign fb_bus_BREADY[i] = fb_mbus_BREADY & bus_pending[i];
+         end
+   endgenerate
 
    // synthesis translate_off
 `ifndef SYNTHESIS
-   
+
    `include "ncpu32k_assert.h"
-   
-   // Assertions (03181514)
+
+   // Assertions
 `ifdef NCPU_ENABLE_ASSERT
+   // Assertions (03181514)
    always @(posedge clk) begin
       if (count_1(bus_pending) > 1)
          $fatal ("\n conflicting bus cycle\n");
    end
-`endif
 
-   // Assertions
-`ifdef NCPU_ENABLE_ASSERT
+   // Assertion
    always @(posedge clk) begin
       if (count_1(fb_bus_sel) > 1)
          $fatal ("\n conflicting cmd scheme\n");

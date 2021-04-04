@@ -45,9 +45,9 @@ module nDFF_r # (
        Q <= #1 D;
    end
 `endif
-   
+
    // synthesis translate_off
-`ifndef SYNTHESIS                   
+`ifndef SYNTHESIS
 
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT

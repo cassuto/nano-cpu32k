@@ -21,80 +21,92 @@ module tb_ncpu32k_sep_sram();
       #10 rst_n= 1'b1;
       //#450 $stop;
    end
-   
-   wire                    fb_ibus_valid;
-   wire                    fb_ibus_ready;
-   wire [`NCPU_IW-1:0]     fb_ibus_dout;
-   wire                    fb_ibus_cmd_ready;
-   wire                    fb_ibus_cmd_valid;
-   wire [`NCPU_AW-1:0]     fb_ibus_cmd_addr;
 
-   wire                    fb_dbus_valid;
-   wire                    fb_dbus_ready;
-   wire [`NCPU_IW-1:0]     fb_dbus_dout;
-   wire [`NCPU_DW-1:0]     fb_dbus_din;
-   wire                    fb_dbus_cmd_ready;
-   wire                    fb_dbus_cmd_valid;
-   wire [`NCPU_AW-1:0]     fb_dbus_cmd_addr;
-   wire [`NCPU_DW/8-1:0]   fb_dbus_cmd_we_msk;
+   wire                    fb_ibus_BVALID;
+   wire                    fb_ibus_BREADY;
+   wire [`NCPU_IW-1:0]     fb_ibus_BDATA;
+   wire [1:0]              fb_ibus_BEXC;
+   wire                    fb_ibus_AREADY;
+   wire                    fb_ibus_AVALID;
+   wire [`NCPU_AW-1:0]     fb_ibus_AADDR;
+   wire [1:0]              fb_ibus_AEXC;
+
+   wire                    fb_dbus_BVALID;
+   wire                    fb_dbus_BREADY;
+   wire [`NCPU_IW-1:0]     fb_dbus_BDATA;
+   wire [1:0]              fb_dbus_BEXC;
+   wire [`NCPU_DW-1:0]     fb_dbus_ADATA;
+   wire                    fb_dbus_AREADY;
+   wire                    fb_dbus_AVALID;
+   wire [`NCPU_AW-1:0]     fb_dbus_AADDR;
+   wire [`NCPU_DW/8-1:0]   fb_dbus_AWMSK;
+   wire [1:0]              fb_dbus_AEXC;
    wire [`NCPU_NIRQ-1:0]   fb_irqs;
-   
+
    handshake_cmd_sram #(
       .MEMH_FILE("insn.mem"),
       .DELAY   (1)
    ) d_ram
    (
-      .clk     (clk),
-      .rst_n   (rst_n),
-      .din        (fb_dbus_din),
-      .valid      (fb_dbus_valid),
-      .ready      (fb_dbus_ready),
-      .dout       (fb_dbus_dout),
-      .cmd_ready  (fb_dbus_cmd_ready),
-      .cmd_valid  (fb_dbus_cmd_valid),
-      .cmd_addr   (fb_dbus_cmd_addr),
-      .cmd_we_msk (fb_dbus_cmd_we_msk)
+      .clk                 (clk),
+      .rst_n               (rst_n),
+      .ADATA               (fb_dbus_ADATA),
+      .BVALID              (fb_dbus_BVALID),
+      .BREADY              (fb_dbus_BREADY),
+      .BDATA               (fb_dbus_BDATA),
+      .BEXC                (fb_dbus_BEXC),
+      .AREADY              (fb_dbus_AREADY),
+      .AVALID              (fb_dbus_AVALID),
+      .AADDR               (fb_dbus_AADDR),
+      .AWMSK               (fb_dbus_AWMSK),
+      .AEXC                (fb_dbus_AEXC)
    );
-   
-   
+
+
    handshake_cmd_sram #(
       .MEMH_FILE("insn.mem"),
       .DELAY (1)
    ) i_ram
    (
-      .clk     (clk),
-      .rst_n   (rst_n),
-      .din        (),
-      .valid   (fb_ibus_valid),
-      .ready   (fb_ibus_ready),
-      .dout    (fb_ibus_dout),
-      .cmd_ready  (fb_ibus_cmd_ready),
-      .cmd_valid  (fb_ibus_cmd_valid),
-      .cmd_addr   (fb_ibus_cmd_addr),
-      .cmd_we_msk (4'b0)
+      .clk                 (clk),
+      .rst_n               (rst_n),
+      .ADATA               (),
+      .BVALID              (fb_ibus_BVALID),
+      .BREADY              (fb_ibus_BREADY),
+      .BDATA               (fb_ibus_BDATA),
+      .BEXC                (fb_dbus_BEXC),
+      .AREADY              (fb_ibus_AREADY),
+      .AVALID              (fb_ibus_AVALID),
+      .AADDR               (fb_ibus_AADDR),
+      .AWMSK               (4'b0),
+      .AEXC                (fb_dbus_AEXC)
    );
-   
+
    assign fb_irqs = {`NCPU_NIRQ{1'b0}};
-   
+
    ncpu32k ncpu32k
    (
       .clk                 (clk),
       .rst_n               (rst_n),
-      .fb_ibus_valid       (fb_ibus_valid),
-      .fb_ibus_ready       (fb_ibus_ready),
-      .fb_ibus_dout        (fb_ibus_dout),
-      .fb_ibus_cmd_ready   (fb_ibus_cmd_ready),
-      .fb_ibus_cmd_valid   (fb_ibus_cmd_valid),
-      .fb_ibus_cmd_addr    (fb_ibus_cmd_addr),
-      .fb_dbus_valid       (fb_dbus_valid),
-      .fb_dbus_ready       (fb_dbus_ready),
-      .fb_dbus_dout        (fb_dbus_dout),
-      .fb_dbus_din         (fb_dbus_din),
-      .fb_dbus_cmd_ready   (fb_dbus_cmd_ready),
-      .fb_dbus_cmd_valid   (fb_dbus_cmd_valid),
-      .fb_dbus_cmd_addr    (fb_dbus_cmd_addr),
-      .fb_dbus_cmd_we_msk  (fb_dbus_cmd_we_msk),
+      .fb_ibus_BVALID      (fb_ibus_BVALID),
+      .fb_ibus_BREADY      (fb_ibus_BREADY),
+      .fb_ibus_BDATA       (fb_ibus_BDATA),
+      .fb_ibus_BEXC        (fb_ibus_BEXC),
+      .fb_ibus_AREADY      (fb_ibus_AREADY),
+      .fb_ibus_AVALID      (fb_ibus_AVALID),
+      .fb_ibus_AADDR       (fb_ibus_AADDR),
+      .fb_ibus_AEXC        (fb_ibus_AEXC),
+      .fb_dbus_BVALID      (fb_dbus_BVALID),
+      .fb_dbus_BREADY      (fb_dbus_BREADY),
+      .fb_dbus_BDATA       (fb_dbus_BDATA),
+      .fb_dbus_BEXC        (fb_dbus_BEXC),
+      .fb_dbus_ADATA       (fb_dbus_ADATA),
+      .fb_dbus_AREADY      (fb_dbus_AREADY),
+      .fb_dbus_AVALID      (fb_dbus_AVALID),
+      .fb_dbus_AADDR       (fb_dbus_AADDR),
+      .fb_dbus_AWMSK       (fb_dbus_AWMSK),
+      .fb_dbus_AEXC        (fb_dbus_AEXC),
       .fb_irqs             (fb_irqs)
    );
-   
+
 endmodule

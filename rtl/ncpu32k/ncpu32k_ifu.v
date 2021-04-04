@@ -15,268 +15,176 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_ifu(         
-   input                   clk,
-   input                   rst_n,
-   input                   ibus_valid, /* Insn is presented at immu's output */
-   output                  ibus_ready, /* ifu is ready to accepted Insn */
-   input [`NCPU_IW-1:0]    ibus_dout,
-   input                   ibus_cmd_ready, /* ibus is ready to accept cmd */
-   output                  ibus_cmd_valid, /* cmd is presented at ibus'input */
-   output [`NCPU_AW-1:0]   ibus_cmd_addr,
-   input [`NCPU_AW-1:0]    ibus_out_id, /* address of data preseted at ibus_dout */
-   input [`NCPU_AW-1:0]    ibus_out_id_nxt,
-   output                  ibus_flush_req,
-   input                   exp_imm_tlb_miss,
-   input                   exp_imm_page_fault,
-   input                   irqc_intr_sync,
-   input [`NCPU_DW-1:0]    bpu_msr_epc,
-   input [`NCPU_AW-3:0]    ifu_flush_jmp_tgt,
-   input                   specul_flush,
-   input                   idu_in_ready, /* idu is ready to accepted Insn */
-   output                  idu_in_valid, /* Insn is prestented at idu's input */
-   output [`NCPU_IW-1:0]   idu_insn,
-   output [`NCPU_AW-3:0]   idu_insn_pc,
-   output                  idu_jmprel_link,
-   output                  idu_op_jmprel,
-   output                  idu_op_jmpfar,
-   output                  idu_op_syscall,
-   output                  idu_op_ret,
-   output                  idu_specul_jmpfar,
-   output [`NCPU_AW-3:0]   idu_specul_tgt,
-   output                  idu_specul_jmprel,
-   output                  idu_specul_bcc, /* = MSR.PSR.CC in prediction. not taken */
-   output                  idu_specul_extexp,
-   output                  idu_let_lsa_pc,
-   output                  bpu_rd,
-   output                  bpu_jmprel,
-   output [`NCPU_AW-3:0]   bpu_insn_pc,
-   output [`NCPU_AW-3:0]   bpu_jmprel_offset,
-   input [`NCPU_AW-3:0]    bpu_jmp_tgt,
-   input                   bpu_jmprel_taken
-);
+module ncpu32k_ifu
+   #(
+      parameter [`NCPU_AW-1:0] CONFIG_ERST_VECTOR,
+      parameter CONFIG_IBUS_OUTSTANTING_LOG2
+   )
+   (
+      input                      clk,
+      input                      rst_n,
+      // I-Bus Master
+      input                      ibus_AREADY,
+      output                     ibus_AVALID,
+      output [`NCPU_AW-1:0]      ibus_AADDR,
+      output                     ibus_BREADY,
+      input                      ibus_BVALID,
+      input [`NCPU_IW-1:0]       ibus_BDATA,
+      input [1:0]                ibus_BEXC,
+      // IRQ
+      input                      irqc_intr_sync,
+      // Flush
+      input                      flush,
+      input [`NCPU_AW-3:0]       flush_tgt,
+      // to DISPATCH
+      input                      idu_AREADY,
+      output                     idu_AVALID,
+      output [`NCPU_IW-1:0]      idu_insn,
+      output [`NCPU_AW-3:0]      idu_pc,
+      output [2:0]               idu_exc, // 0: D-TLB Miss; 1: Data Page Fault; 2: IRQ
+      output                     idu_pred_branch,
+      output [`NCPU_AW-3:0]      idu_pred_tgt,
+      // BPU
+      output [`NCPU_AW-3:0]      bpu_insn_pc,
+      input                      bpu_pred_taken,
+      input [`NCPU_AW-3:0]       bpu_pred_tgt
+   );
 
-   wire [`NCPU_AW-3:0]     pc_addr_nxt;
-   wire [`NCPU_IW-1:0]     insn;
-   wire                    jmprel_taken;
-   wire [`NCPU_AW-3:0]     jmprel_offset;
-   wire                    jmprel_link_nxt;
-   wire                    op_bcc;
-   wire                    op_bt;
-   wire                    op_jmprel_nxt;
-   wire                    op_jmpfar_nxt;
-   wire                    op_syscall;
-   wire                    op_ret;
-   wire                    specul_jmp;
-   
-   wire extexp_taken;
-   wire hds_ibus_dout = ibus_valid & ibus_ready;
-   wire hds_idu = (idu_in_valid & idu_in_ready);
-   
-   // Predecoder
-   ncpu32k_ipdu predecoder
+   localparam OUTST_DW = `NCPU_AW-2 + `NCPU_AW-2;
+   localparam FLS_IDLE = 2'b00;
+   localparam FLS_PENDING = 2'b01;
+   localparam FLS_BLOCKING = 2'b11;
+
+   wire                          outst_push;
+   wire                          outst_pop;
+   wire                          outst_full;
+   wire [OUTST_DW-1:0]           outst_din;
+   wire [OUTST_DW-1:0]           outst_dout;
+   wire                          outst_empty;
+   wire                          outst_almost_empty;
+   wire [`NCPU_AW-3:0]           fnt_PC_r;
+   wire [`NCPU_AW-3:0]           fnt_PC_nxt;
+   wire [`NCPU_AW-3:0]           fnt_fetch_PC;
+   wire [`NCPU_AW-3:0]           fnt_pred_tgt;
+   wire [`NCPU_AW-3:0]           bck_pc;
+   wire [`NCPU_AW-3:0]           bck_pred_tgt;
+   wire [1:0]                    flush_state_r;
+   wire [1:0]                    flush_state_nxt;
+   wire                          flush_tgt_en;
+   wire [`NCPU_AW-3:0]           flush_tgt_r;
+   wire                          discard_B;
+
+   // Outstanding buffer
+   ncpu32k_fifo_sclk
+      #(
+         .DW           (OUTST_DW),
+         .DEPTH_WIDTH  (CONFIG_IBUS_OUTSTANTING_LOG2),
+         .FWFT         (1),
+         .N_PROG_EMPTY (2)
+      )
+   FIFO_OUTSTANDING
       (
-         .clk           (clk),
-         .rst_n         (rst_n),
-         .ipdu_insn     (insn),
-         .bpu_taken     (bpu_jmprel_taken),
-         .valid         (hds_ibus_dout & ~extexp_taken),
-         .jmprel_taken  (jmprel_taken),
-         .jmprel_offset (jmprel_offset),
-         .jmprel_link   (jmprel_link_nxt),
-         .op_bcc        (op_bcc),
-         .op_bt         (op_bt),
-         .op_jmpfar     (op_jmpfar_nxt),
-         .op_jmprel     (op_jmprel_nxt),
-         .op_syscall    (op_syscall),
-         .op_ret        (op_ret)
-       );
-   
-   // Reset control
-   wire[2:0] reset_cnt;
-   wire[2:0] reset_cnt_nxt;
-   wire reset_cnt_ld;
-   nDFF_lr #(3) dff_reset_cnt
-                   (clk,rst_n, reset_cnt_ld, reset_cnt_nxt[2:0], reset_cnt[2:0]);
-   
-   assign reset_cnt_ld = ~reset_cnt[1];
-   assign reset_cnt_nxt = reset_cnt + 1'b1;
-   
-   
-   // The folowing signals are for flush only
-   wire [`NCPU_AW-3:0] flush_insn_pc = ibus_out_id[`NCPU_AW-1:2];
-   wire [`NCPU_AW-3:0] flush_next_tgt = ibus_out_id[`NCPU_AW-1:2] + 1'b1;
-   
-   // Branching target
-   wire [`NCPU_AW-3:0] flush_jmpfar_tgt;
-   wire [`NCPU_AW-3:0] flush_jmprel_tgt_org;
-   wire [`NCPU_AW-3:0] flush_jmprel_tgt;
-   
-   // Extrnal Exceptions
-   assign extexp_taken = (exp_imm_tlb_miss | exp_imm_page_fault | irqc_intr_sync) & hds_ibus_dout;
-   // Internal and Extrnal Exceptions. Assert (03071429)
-   wire exp_taken = op_syscall | extexp_taken;
-   // Let ELSA = PC(Virtual Address)
-   wire let_lsa_pc_nxt = (exp_imm_tlb_miss | exp_imm_page_fault);
-   // MUX (03060653)
-   wire [`NCPU_VECT_DW-1:0] exp_vector_tlb =
-      ({`NCPU_VECT_DW{exp_imm_tlb_miss}} & `NCPU_EITM_VECTOR) |
-      ({`NCPU_VECT_DW{exp_imm_page_fault}} & `NCPU_EIPF_VECTOR);
-   wire [`NCPU_VECT_DW-1:0] exp_vector =
-      (
-         ({`NCPU_VECT_DW{op_syscall}} & `NCPU_ESYSCALL_VECTOR) |
-         // IRQ takes precedence over TLB
-         (irqc_intr_sync ? `NCPU_EIRQ_VECTOR : exp_vector_tlb)
+         .CLK           (clk),
+         .RST_N         (rst_n),
+         // Push port
+         .PUSH          (outst_push),
+         .DIN           (outst_din),
+         .FULL          (outst_full),
+         // Pop port
+         .POP           (outst_pop),
+         .DOUT          (outst_dout),
+         .EMPTY         (outst_empty),
+         .PROG_EMPTY    (outst_almost_empty)
       );
-      
-   wire [`NCPU_AW-3:0] flush_exp_vect_tgt = {{`NCPU_AW-2-`NCPU_VECT_DW{1'b0}}, exp_vector[`NCPU_VECT_DW-1:2]};
-   
-   // Speculative execution
-   assign specul_jmp = bpu_jmprel | op_jmpfar_nxt;
-   assign bpu_rd = specul_jmp;
-   assign bpu_jmprel = op_bcc;
-   assign bpu_jmprel_offset = jmprel_offset;
-   assign bpu_insn_pc = flush_insn_pc;
-   
-   wire [`NCPU_AW-3:0] specul_tgt_nxt =
-      (
-           bpu_jmprel ?
-            // for jmprel, this is alternate target for failed SE
-            // if prediction is _not taken_ , then use the contrary target
-            (bpu_jmprel_taken ? flush_next_tgt : flush_jmprel_tgt_org)
-         : op_jmpfar_nxt ?
-            // for jmpfar, this is the predicated target,
-            // consistent with BPU result
-            flush_jmpfar_tgt
-         : exp_taken ?
-            // for exception call, this is vector address
-            flush_exp_vect_tgt
-         : op_ret ?
-            // for ret, this is the predicated target,
-            // consistent with BPU result
-            bpu_msr_epc[`NCPU_AW-1:2]
-         : {`NCPU_AW-2{1'b0}}
-      );
-   // calc out predicted CC flag
-   wire specul_bcc_nxt = (bpu_jmprel_taken & op_bt | (~bpu_jmprel_taken & op_bcc & ~op_bt));
-   
-   // Pipeline
-   localparam ENABLE_BYPASS = `NCPU_PIPEBUF_BYPASS;
-   wire fetch_ready;
-   
-   //
-   // Equivalent to 1-slot FIFO
-   //
-   wire valid_nxt = (hds_ibus_dout | ~hds_idu);
-   
-   nDFF_lr #(1) dff_out_valid
-                   (clk,rst_n, (hds_ibus_dout | hds_idu), valid_nxt, idu_in_valid);
-   
-   generate
-      if (ENABLE_BYPASS) begin :enable_bypass
-         assign fetch_ready = ~idu_in_valid | hds_idu;
-      end else begin
-         assign fetch_ready = ~idu_in_valid;
-      end
-   endgenerate
-   
-   wire pipebuf_cas = hds_ibus_dout;
-   
-   assign flush_jmpfar_tgt = bpu_jmp_tgt;
-   assign flush_jmprel_tgt_org = flush_insn_pc + jmprel_offset;
-   assign flush_jmprel_tgt = (jmprel_taken ? flush_jmprel_tgt_org : flush_next_tgt);
-   
-   // Program Counter Register
-   // priority MUX
-   // Note that _nxt and flush_ are reusing the same port 
-   assign pc_addr_nxt = specul_flush ? ifu_flush_jmp_tgt
-                           : op_syscall ? flush_exp_vect_tgt
-                           : op_ret ? bpu_msr_epc[`NCPU_AW-1:2]
-                           : op_jmpfar_nxt ? flush_jmpfar_tgt
-                           : op_jmprel_nxt ? flush_jmprel_tgt
-                           : ibus_out_id_nxt[`NCPU_AW-1:2] + 1'b1; /* Non flush */
 
-   assign ibus_flush_req = specul_flush | op_syscall | op_ret | op_jmpfar_nxt | op_jmprel_nxt;
-   
-   assign ibus_cmd_addr = {pc_addr_nxt[`NCPU_AW-3:0], 2'b00};
-   assign ibus_cmd_valid = reset_cnt[1];
-   assign ibus_ready = fetch_ready & reset_cnt[1];
-   
-   assign insn = ibus_dout;
-   
-   // If extrnal exception raised, then ignore any instruction.
-   // Because if we issued the insn that not only _writes MSR_ but also _raises exception_
-   // even the insn was in speculative exception, both of these aspects would set
-   // WriteEnable signal of MSR at _IEU stage_ and make conflict.
-   // Note that 'ret' is a special exception.
-   wire not_flushing = ~(specul_flush | extexp_taken);
-   wire not_flushing_extexp = ~(specul_flush);
+   assign outst_push = ibus_AREADY & ibus_AVALID;
+   assign outst_din = {ibus_AADDR[`NCPU_AW-1:2], fnt_pred_tgt};
 
-   wire pipeflow = pipebuf_cas | specul_flush;
-   
-   // Data path: no need to flush
-   nDFF_lr #(`NCPU_AW-2) dff_idu_insn_pc
-                   (clk,rst_n, pipeflow, flush_insn_pc[`NCPU_AW-3:0], idu_insn_pc[`NCPU_AW-3:0]);
-   nDFF_lr #(`NCPU_AW-2) dff_idu_specul_tgt
-                   (clk,rst_n, pipeflow, specul_tgt_nxt, idu_specul_tgt[`NCPU_AW-3:0]);
-  
-   // Control path
-   nDFF_lr #(`NCPU_IW) dff_idu_insn
-                   (clk,rst_n, pipeflow, insn & {`NCPU_IW{not_flushing}}, idu_insn);
-   nDFF_lr #(1) dff_idu_op_jmprel
-                   (clk,rst_n, pipeflow, op_jmprel_nxt & not_flushing, idu_op_jmprel);
-   nDFF_lr #(1) dff_idu_jmprel_link
-                   (clk,rst_n, pipeflow, jmprel_link_nxt & not_flushing, idu_jmprel_link);
-   nDFF_lr #(1) dff_idu_op_jmpfar
-                   (clk,rst_n, pipeflow, op_jmpfar_nxt & not_flushing, idu_op_jmpfar);
-   nDFF_lr #(1) dff_idu_op_ret
-                   (clk,rst_n, pipeflow, op_ret & not_flushing, idu_op_ret);
-   nDFF_lr #(1) dff_idu_op_syscall
-                   (clk,rst_n, pipeflow, op_syscall & not_flushing, idu_op_syscall);
-   nDFF_lr #(1) dff_idu_specul_jmpfar
-                   (clk,rst_n, pipeflow, specul_jmp & op_jmpfar_nxt & not_flushing, idu_specul_jmpfar);
-   nDFF_lr #(1) dff_idu_specul_jmprel
-                   (clk,rst_n, pipeflow, specul_jmp & op_jmprel_nxt & not_flushing, idu_specul_jmprel);
-   nDFF_lr #(1) dff_idu_specul_bcc
-                   (clk,rst_n, pipeflow, specul_bcc_nxt & not_flushing, idu_specul_bcc);
-      // Yes, even external exceptions could be flushed
-   nDFF_lr #(1) dff_idu_specul_extexp
-                   (clk,rst_n, pipeflow, extexp_taken & not_flushing_extexp, idu_specul_extexp);
-   nDFF_lr #(1) dff_idu_set_lsa_pc
-                   (clk,rst_n, pipeflow, let_lsa_pc_nxt & not_flushing_extexp, idu_let_lsa_pc);
+   assign ibus_AVALID = ~outst_full & (flush_state_r != FLS_BLOCKING);
+   assign ibus_AADDR = {fnt_fetch_PC[`NCPU_AW-3:0], 2'b00};
+   assign bpu_insn_pc = fnt_fetch_PC;
+
+   assign outst_pop = ibus_BVALID & ibus_BREADY;
+   assign {bck_pc[`NCPU_AW-3:0], bck_pred_tgt} = outst_dout;
+
+   // Discard incoming B-packets when flushing
+   assign discard_B = flush | (flush_state_r != FLS_IDLE);
+
+   // Forward the handshake signals to the upstream module.
+   assign ibus_BREADY = idu_AREADY | discard_B;
+   assign idu_AVALID = ibus_BVALID & ~discard_B;
+
+   assign idu_insn = ibus_BDATA;
+   assign idu_pc = bck_pc;
+   assign idu_exc = {irqc_intr_sync, ibus_BEXC[1:0]};
+   assign idu_pred_tgt = bck_pred_tgt;
+
+   // FSM for flushing
+   assign flush_state_nxt = (flush_state_r == FLS_IDLE) ?
+                              // A flush strobe is issued. The slave module has accepted the A-packet,
+                              // but there are previous transactions staying in outstanding FIFO,
+                              // So we need to discard them one by one (Drain Out)
+                              (flush & outst_push & ~outst_empty) ? FLS_BLOCKING
+                              // A flush strobe is issued. No response from the slave module, waiting for it.
+                              : (flush & ~outst_push) ? FLS_PENDING
+                              : flush_state_r
+
+                           : (flush_state_r == FLS_PENDING) ?
+                              // The slave module has accepted the A-packet, and there are no any previous transactions.
+                              (outst_push & outst_empty) ? FLS_IDLE
+                              // The slave module has accepted the A-packet but there are previous transactions to discard.
+                              : outst_push & ~outst_empty ? FLS_BLOCKING
+                              // No response from the slave module, waiting for it.
+                              : flush_state_r
+
+                           : (flush_state_r == FLS_BLOCKING) ?
+                              // Merely 2 elements remained in the FIFO. In the next beat, there will be only one left,
+                              // which is corresponding to our expected B-packet response.
+                              outst_almost_empty & outst_pop ? FLS_IDLE
+                              : flush_state_r
+                           : flush_state_r
+                           ;
+
+   assign flush_tgt_en = (flush_state_r==FLS_IDLE) & (flush_state_nxt==FLS_PENDING);
+
+   assign fnt_fetch_PC = (flush_state_r == FLS_PENDING) ? flush_tgt_r
+                  : flush ? flush_tgt
+                  // Speculative execution
+                  : bpu_pred_taken ? bpu_pred_tgt
+                  // Normally fetch the next insn
+                  : fnt_PC_r;
+
+   assign fnt_PC_nxt = fnt_fetch_PC + 1'b1;
+
+   // Maintain the next value of PC for speculative execution
+   assign fnt_pred_tgt = ((flush_state_r == FLS_PENDING) | flush | ~bpu_pred_taken) ? fnt_PC_nxt
+                           : bpu_pred_tgt;
+
+   // D Flip flops
+   nDFF_r #(2, FLS_IDLE) dff_bck_flush_state_r
+     (clk,rst_n, flush_state_nxt, flush_state_r);
+   nDFF_lr #(`NCPU_AW-2) dff_bck_flush_tgt_r
+     (clk,rst_n, flush_tgt_en, flush_tgt, flush_tgt_r);
+   nDFF_lr #(`NCPU_AW-2, CONFIG_ERST_VECTOR[`NCPU_AW-3:2]) dff_fnt_PC_r
+     (clk,rst_n, outst_push, fnt_PC_nxt, fnt_PC_r);
 
    // synthesis translate_off
-`ifndef SYNTHESIS                   
-   `include "ncpu32k_assert.h"
-   
+`ifndef SYNTHESIS
+ `include "ncpu32k_assert.h"
+
    // Assertions
-`ifdef NCPU_ENABLE_ASSERT
-   always @(posedge clk) begin
-      if(ibus_ready & op_jmpfar_nxt & op_jmprel_nxt)
-         $fatal ("\n 'op_jmpfar_nxt' and 'jmprel_taken' should be mutex\n");
-   end
-`endif
+ `ifdef NCPU_ENABLE_ASSERT
 
-   // Assertions 03060653
-`ifdef NCPU_ENABLE_ASSERT
-   always @(posedge clk) begin
-      if(exp_taken & count_1({op_syscall,exp_imm_tlb_miss,exp_imm_page_fault})>1)
-         $fatal ("\n ctrls of 'exp_vector' should be mutex\n");
-   end
-`endif
+   always @(posedge clk)
+      begin
+         // This assertion will fail if another exception raised while we're in flushing.
+         if(flush & (flush_state_r != FLS_IDLE))
+            $fatal("\n While IFU is in the state of unfinished flushing, it received a new flushing request. The request will not be accepted\n");
+      end
 
-   // Assertions 03071429
-`ifdef NCPU_ENABLE_ASSERT
-   always @(posedge clk) begin
-      if (op_syscall&extexp_taken)
-         $fatal ("\n ctrls of 'exp_taken' should be mutex\n");
-   end
-`endif
-
-   // For Debugging only
-   wire [`NCPU_AW-1:0] idu_insn_pc_w = {idu_insn_pc[`NCPU_AW-3:0],2'b0};
+ `endif
 
 `endif
-   // synthesis translate_on
-   
+// synthesis translate_on
+
 endmodule

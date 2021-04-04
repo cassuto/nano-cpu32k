@@ -30,7 +30,7 @@ module rs232_debugger
    reg baud_clk = 0;
 
    initial forever #((1000000000/(BAUD*8))/2) baud_clk = ~baud_clk;
-   
+
    reg [1:0] rx_status_r = 2'b0;
    reg [6:0] rx_smpl_cnt = 7'h00;
    reg uart_rx_r;
@@ -91,5 +91,5 @@ module rs232_debugger
          end
       endcase
    end
-   
+
 endmodule

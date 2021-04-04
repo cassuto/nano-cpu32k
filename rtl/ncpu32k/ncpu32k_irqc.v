@@ -15,10 +15,10 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_irqc(         
+module ncpu32k_irqc(
    input                      clk,
    input                      rst_n,
-   input [`NCPU_NIRQ-1:0]     irqs_lvl_i, /* Level-triggered IRQs input (allow async) */
+   input [`NCPU_NIRQ-1:0]     irqs_lvl_i, // Level-triggered IRQs input (allow async)
    output                     irqc_intr_sync,
    input                      msr_psr_ire,
    // IMR
@@ -30,26 +30,27 @@ module ncpu32k_irqc(
 );
    wire [`NCPU_DW-1:0] imr_r;
    wire [`NCPU_NIRQ-1:0] msr_irqc_irr_0;
-   
+   wire [`NCPU_NIRQ-1:0] irq_masked;
+
    // Synchronize IRQs
    nDFF_r #(`NCPU_NIRQ) dff_msr_irqc_irr_0
-                   (clk,rst_n, irqs_lvl_i[`NCPU_NIRQ-1:0], msr_irqc_irr_0[`NCPU_NIRQ-1:0]);
+     (clk,rst_n, irqs_lvl_i[`NCPU_NIRQ-1:0], msr_irqc_irr_0[`NCPU_NIRQ-1:0]);
    nDFF_r #(`NCPU_NIRQ) dff_msr_irqc_irr
-                   (clk,rst_n, msr_irqc_irr_0[`NCPU_NIRQ-1:0], msr_irqc_irr[`NCPU_NIRQ-1:0]);
-                   
+     (clk,rst_n, msr_irqc_irr_0[`NCPU_NIRQ-1:0], msr_irqc_irr[`NCPU_NIRQ-1:0]);
+
    // IMR Register
    nDFF_lr #(`NCPU_DW, {`NCPU_DW{1'b1}}) dff_imr_r
-                   (clk,rst_n, msr_irqc_imr_we, msr_irqc_imr_nxt[`NCPU_DW-1:0], imr_r[`NCPU_DW-1:0]);
+     (clk,rst_n, msr_irqc_imr_we, msr_irqc_imr_nxt[`NCPU_DW-1:0], imr_r[`NCPU_DW-1:0]);
 
    // Bypass IMR write
    assign msr_irqc_imr = msr_irqc_imr_we ? msr_irqc_imr_nxt : imr_r;
 
-   wire [`NCPU_NIRQ-1:0] irq_masked = msr_irqc_irr & ~msr_irqc_imr[`NCPU_NIRQ-1:0];
+   assign irq_masked = msr_irqc_irr & ~msr_irqc_imr[`NCPU_NIRQ-1:0];
    assign irqc_intr_sync = |irq_masked & msr_psr_ire;
 
    // synthesis translate_off
 `ifndef SYNTHESIS
-   
+
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    initial begin

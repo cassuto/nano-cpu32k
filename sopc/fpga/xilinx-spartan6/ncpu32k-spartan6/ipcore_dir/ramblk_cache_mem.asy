@@ -4,7 +4,7 @@ TEXT 32 32 LEFT 4 ramblk_cache_mem
 RECTANGLE Normal 32 32 544 1376
 LINE Wide 0 80 32 80
 PIN 0 80 LEFT 36
-PINATTR PinName addra[11:0]
+PINATTR PinName addra[9:0]
 PINATTR Polarity IN
 LINE Wide 0 112 32 112
 PIN 0 112 LEFT 36
@@ -24,7 +24,7 @@ PINATTR PinName clka
 PINATTR Polarity IN
 LINE Wide 0 432 32 432
 PIN 0 432 LEFT 36
-PINATTR PinName addrb[11:0]
+PINATTR PinName addrb[9:0]
 PINATTR Polarity IN
 LINE Wide 0 464 32 464
 PIN 0 464 LEFT 36

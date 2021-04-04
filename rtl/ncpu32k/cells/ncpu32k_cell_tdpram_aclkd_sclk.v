@@ -20,8 +20,8 @@
 
 module ncpu32k_cell_tdpram_aclkd_sclk
 #(
-   parameter AW=-1,
-   parameter DW=-1
+   parameter AW,
+   parameter DW
 )
 (
    // Port A
@@ -41,9 +41,9 @@ module ncpu32k_cell_tdpram_aclkd_sclk
 );
    genvar i,j;
    reg [DW-1:0] mem_vector[(1<<AW)-1:0];
-   
+
    // synthesis translate_off
-`ifndef SYNTHESIS 
+`ifndef SYNTHESIS
    initial begin : ini
       integer k;
       for(k=0; k<(1<<AW); k=k+1) begin
@@ -69,7 +69,7 @@ endgenerate
          dout_a_r <= din_a;
       else if(en_a)
          dout_a_r <= mem_vector[addr_a];
-   
+
    //
    // Read & Write Port B
    //
@@ -86,7 +86,7 @@ endgenerate
          dout_b_r <= din_b;
       else if(en_b)
          dout_b_r <= mem_vector[addr_b];
-   
+
    assign dout_a = dout_a_r;
    assign dout_b = dout_b_r;
 

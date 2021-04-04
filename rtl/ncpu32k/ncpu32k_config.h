@@ -1,7 +1,7 @@
 /***************************************************************************/
 /*  Nano-cpu 32000 (Scalable Ultra-Low-Power Processor)                    */
 /*                                                                         */
-/*  Copyright (C) 2019 cassuto <psc-system@outlook.com>, China.            */
+/*  Copyright (C) 2019-2021 cassuto <psc-system@outlook.com>, China.       */
 /*  This project is free edition; you can redistribute it and/or           */
 /*  modify it under the terms of the GNU Lesser General Public             */
 /*  License(GPL) as published by the Free Software Foundation; either      */
@@ -26,54 +26,18 @@
 `define PLATFORM_XILINX_XC6
 `endif
 
-// For FPGA, define this macro to disable rst_n port of DFFs, 
-// which reduces routing resources, however, reliable reset is not guaranteed!
+// For FPGA, define this macro to disable `RST_N` port of DFF,
+// which reduces routing overheads. However, once when the system is powered on,
+// it cannot be reset again!
 `define NCPU_NO_RST
-
-/////////////////////////////////////////////////////////////////////////////
-// Configure VIRT Instructions
-/////////////////////////////////////////////////////////////////////////////
-
-`define ENABLE_ASR
-`define ENABLE_ADD
-`define ENABLE_SUB
-//`define ENABLE_MUL
-//`define ENABLE_DIV
-//`define ENABLE_DIVU
-//`define ENABLE_MOD
-//`define ENABLE_MODU
-`define ENABLE_LDB
-`define ENABLE_LDBU
-`define ENABLE_LDH
-`define ENABLE_LDHU
-`define ENABLE_STB
-`define ENABLE_STH
-`define ENABLE_MHI
-
-
-/////////////////////////////////////////////////////////////////////////////
-// Configure I/D Cache
-/////////////////////////////////////////////////////////////////////////////
-
-//`define NCPU_ENABLE_ICACHE
-//`define NCPU_ENABLE_DCACHE
 
 /////////////////////////////////////////////////////////////////////////////
 // Configure Asertions
 /////////////////////////////////////////////////////////////////////////////
 
+// Take it easy, assertions are automatically ignored during synthesis.
+// If you want to speed up the simulation, comment this macro out.
 `define NCPU_ENABLE_ASSERT
-
-/////////////////////////////////////////////////////////////////////////////
-// Configure Pipeline
-/////////////////////////////////////////////////////////////////////////////
-
-// bypass handshake signal of Pipeline buffer
-// 1 = Enabled
-// 0 = Disabled : This will insert a register between the long ready-valid chain,
-//                which is helpful for timing optimization.
-`define NCPU_PIPEBUF_BYPASS 1
-
 
 /////////////////////////////////////////////////////////////////////////////
 // Design Constants
@@ -105,7 +69,7 @@
 `define NCPU_TLB_AW 7
 
 `define NCPU_MSR_BANK_OFF_AW 9
-`define NCPU_MSR_BANK_AW (14-9) // 14 is imm14 bitwidth
+`define NCPU_MSR_BANK_AW (14-9) // 14 is the bitwidth of imm14
 
 // MSR Banks
 `define NCPU_MSR_BANK_PS	0
@@ -171,20 +135,18 @@
 `define NCPU_MSR_TSC_TCR_RB1 31
 
 /////////////////////////////////////////////////////////////////////////////
-// Exception Vector Table
+// Exception Vector Table (default values!)
 /////////////////////////////////////////////////////////////////////////////
-`define NCPU_ERST_VECTOR 8'h0
-`define NCPU_EINSN_VECTOR 8'h4
-`define NCPU_EIRQ_VECTOR 8'h8
-`define NCPU_ESYSCALL_VECTOR 8'hc
-`define NCPU_EBUS_VECTOR 8'h10
-`define NCPU_EIPF_VECTOR 8'h14
-`define NCPU_EDPF_VECTOR 8'h18
-`define NCPU_EITM_VECTOR 8'h1c
-`define NCPU_EDTM_VECTOR 8'h20
-`define NCPU_EALIGN_VECTOR 8'h24
-
-`define NCPU_VECT_DW 8
+`define NCPU_ERST_VECTOR 32'h0
+`define NCPU_EINSN_VECTOR 32'h4
+`define NCPU_EIRQ_VECTOR 32'h8
+`define NCPU_ESYSCALL_VECTOR 32'hc
+`define NCPU_EBUS_VECTOR 32'h10
+`define NCPU_EIPF_VECTOR 32'h14
+`define NCPU_EDPF_VECTOR 32'h18
+`define NCPU_EITM_VECTOR 32'h1c
+`define NCPU_EDTM_VECTOR 32'h20
+`define NCPU_EALIGN_VECTOR 32'h24
 
 /////////////////////////////////////////////////////////////////////////////
 // ISA GROUP - BASE
@@ -199,82 +161,112 @@
 `define NCPU_OP_LSL_I 7'h7
 `define NCPU_OP_LSR 7'h8
 `define NCPU_OP_LSR_I 7'h9
-`define NCPU_OP_JMP 7'ha
-`define NCPU_OP_JMP_I 7'hb
-`define NCPU_OP_CMP 7'hc
-`define NCPU_OP_BT 7'hd
-`define NCPU_OP_BF 7'he
-`define NCPU_OP_LDWU 7'hf
-`define NCPU_OP_STW 7'h10
-`define NCPU_OP_MBARR 7'h11
-`define NCPU_OP_SYSCALL 7'h12
-`define NCPU_OP_RET 7'h13
-`define NCPU_OP_WMSR 7'h14
-`define NCPU_OP_RMSR 7'h15
-`define NCPU_OP_VENTER 7'h16
-`define NCPU_OP_VLEAVE 7'h17
-`define NCPU_OP_JMP_LNK_I 7'h18
+`define NCPU_OP_ADD 7'ha
+`define NCPU_OP_ADD_I 7'hb
+`define NCPU_OP_SUB 7'hc
+`define NCPU_OP_JMP 7'hd
+`define NCPU_OP_JMP_I 7'he
+`define NCPU_OP_JMP_LNK_I 7'hf
+`define NCPU_OP_BEQ 7'h10
+`define NCPU_OP_BNE 7'h11
+`define NCPU_OP_BLT 7'h12
+`define NCPU_OP_BLTU 7'h13
+`define NCPU_OP_BGE 7'h14
+`define NCPU_OP_BGEU 7'h15
+
+`define NCPU_OP_LDWU 7'h17
+`define NCPU_OP_STW 7'h18
+`define NCPU_OP_LDHU 7'h19
+`define NCPU_OP_LDH 7'h1a
+`define NCPU_OP_STH 7'h1b
+`define NCPU_OP_LDBU 7'h1c
+`define NCPU_OP_LDB 7'h1d
+`define NCPU_OP_STB 7'h1e
+
+`define NCPU_OP_MBARR 7'h20
+`define NCPU_OP_SYSCALL 7'h21
+`define NCPU_OP_RET 7'h22
+`define NCPU_OP_WMSR 7'h23
+`define NCPU_OP_RMSR 7'h24
+
 
 /////////////////////////////////////////////////////////////////////////////
 // ISA GROUP - VIRT:
 /////////////////////////////////////////////////////////////////////////////
-`define NCPU_OP_ASR 7'h1a
-`define NCPU_OP_ASR_I 7'h1b
-`define NCPU_OP_ADD 7'h1c
-`define NCPU_OP_ADD_I 7'h1d
-`define NCPU_OP_SUB 7'h1e
-`define NCPU_OP_MUL 7'h1f
-`define NCPU_OP_DIV 7'h20
-`define NCPU_OP_DIVU 7'h21
-`define NCPU_OP_MOD 7'h22
-`define NCPU_OP_MODU 7'h23
-`define NCPU_OP_LDB 7'h24
-`define NCPU_OP_LDBU 7'h25
-`define NCPU_OP_LDH 7'h26
-`define NCPU_OP_LDHU 7'h27
-`define NCPU_OP_STB 7'h28
-`define NCPU_OP_STH 7'h29
-`define NCPU_OP_MHI 7'h2a
-`define NCPU_OP_FADDS 7'h2b
-`define NCPU_OP_FSUBS 7'h2c
-`define NCPU_OP_FMULS 7'h2d
-`define NCPU_OP_FDIVS 7'h2e
-`define NCPU_OP_FCMPS 7'h2f
-`define NCPU_OP_FITFS 7'h30
-`define NCPU_OP_FFTIS 7'h31
+`define NCPU_OP_ASR 7'h30
+`define NCPU_OP_ASR_I 7'h31
+`define NCPU_OP_MUL 7'h32
+`define NCPU_OP_DIV 7'h33
+`define NCPU_OP_DIVU 7'h34
+`define NCPU_OP_MOD 7'h35
+`define NCPU_OP_MODU 7'h36
+`define NCPU_OP_MHI 7'h37
 
-`define NCPU_COND_EQ 4'd0
-`define NCPU_COND_GT 4'd1
-`define NCPU_COND_GTU 4'd2
+`define NCPU_OP_FADDS 7'h40
+`define NCPU_OP_FSUBS 7'h41
+`define NCPU_OP_FMULS 7'h42
+`define NCPU_OP_FDIVS 7'h43
+`define NCPU_OP_FCMPS 7'h44
+`define NCPU_OP_FITFS 7'h45
+`define NCPU_OP_FFTIS 7'h46
 
 /////////////////////////////////////////////////////////////////////////////
 // Internal OPC
 /////////////////////////////////////////////////////////////////////////////
 
-`define NCPU_LU_IOPW 6 // One-hot Insn Opocde Bitwidth
-`define NCPU_LU_AND 0
-`define NCPU_LU_OR 1
-`define NCPU_LU_XOR 2
-`define NCPU_LU_LSL 3
-`define NCPU_LU_LSR 4
-`define NCPU_LU_ASR 5
+// 1-clk-latency operations
+`define NCPU_ALU_IOPW 17 // One-hot Insn Opocde Bitwidth
+`define NCPU_ALU_ADD 0
+`define NCPU_ALU_SUB 1
+`define NCPU_ALU_MHI 2
+`define NCPU_ALU_AND 3
+`define NCPU_ALU_OR 4
+`define NCPU_ALU_XOR 5
+`define NCPU_ALU_LSL 6
+`define NCPU_ALU_LSR 7
+`define NCPU_ALU_ASR 8
+`define NCPU_ALU_BEQ 9
+`define NCPU_ALU_BNE 10
+`define NCPU_ALU_BLT 11
+`define NCPU_ALU_BLTU 12
+`define NCPU_ALU_BGE 13
+`define NCPU_ALU_BGEU 14
+`define NCPU_ALU_JMPREG 15
+`define NCPU_ALU_JMPREL 16
 
-`define NCPU_AU_IOPW 9 // One-hot Insn Opocde Bitwidth
-`define NCPU_AU_CMP 0
-`define NCPU_AU_ADD 1
-`define NCPU_AU_SUB 2
-`define NCPU_AU_MUL 3
-`define NCPU_AU_DIV 4
-`define NCPU_AU_DIVU 5
-`define NCPU_AU_MOD 6
-`define NCPU_AU_MODU 7
-`define NCPU_AU_MHI 8
+// Multi-clks-latency operations
+`define NCPU_LPU_IOPW 5 // One-hot Insn Opocde Bitwidth
+`define NCPU_LPU_MUL 0
+`define NCPU_LPU_DIV 1
+`define NCPU_LPU_DIVU 2
+`define NCPU_LPU_MOD 3
+`define NCPU_LPU_MODU 4
 
-`define NCPU_EU_IOPW 2 // One-hot Insn Opocde Bitwidth
-`define NCPU_EU_WMSR 0
-`define NCPU_EU_RMSR 1
+// FPU
+`define NCPU_FPU_IOPW 1
+
+// EPU (Exception and Extended Processor Unit)
+`define NCPU_EPU_IOPW 8
+`define NCPU_EPU_WMSR 0
+`define NCPU_EPU_RMSR 1
+`define NCPU_EPU_ESYSCALL 2
+`define NCPU_EPU_ERET 3
+`define NCPU_EPU_EITM 4
+`define NCPU_EPU_EIPF 5
+`define NCPU_EPU_EIRQ 6
+`define NCPU_EPU_EINSN (`NCPU_EPU_IOPW-1)
 
 `define NCPU_REGNO_LNK 1 // the only one machine-dependent register
 
+/////////////////////////////////////////////////////////////////////////////
+// uOP
+/////////////////////////////////////////////////////////////////////////////
+
+`define NCPU_EPU_UOPW 3
+`define NCPU_ALU_UOPW_OPC 5
+`define NCPU_ALU_UOPW (`NCPU_ALU_UOPW_OPC + 15) /* uOP with rel15 operand */
+`define NCPU_LPU_UOPW 3
+`define NCPU_AGU_UOPW 7
+`define NCPU_FPU_UOPW 1
 
 `endif // _NCPU32K_CONFIG_H

@@ -24,14 +24,14 @@ module soc_pb_spi_master
 (
    input                      clk,
    input                      rst_n,
-   input                      pb_spi_cmd_valid,
-   output                     pb_spi_cmd_ready,
-   input [`NCPU_AW-1:0]       pb_spi_cmd_addr,
-   input [3:0]                pb_spi_cmd_we_msk,
-   input [31:0]               pb_spi_din,
-   output [31:0]              pb_spi_dout,
-   output reg                 pb_spi_valid,
-   input                      pb_spi_ready,
+   input                      pb_spi_AVALID,
+   output                     pb_spi_AREADY,
+   input [`NCPU_AW-1:0]       pb_spi_AADDR,
+   input [3:0]                pb_spi_AWMSK,
+   input [31:0]               pb_spi_ADATA,
+   output [31:0]              pb_spi_BDATA,
+   output reg                 pb_spi_BVALID,
+   input                      pb_spi_BREADY,
    // SPI Interface
    output reg                 SPI_SCK,
    output reg                 SPI_CS_L,
@@ -39,12 +39,12 @@ module soc_pb_spi_master
    input                      SPI_MISO
 );
 
-   wire hds_cmd = pb_spi_cmd_valid & pb_spi_cmd_ready;
-   wire hds_dout = pb_spi_valid & pb_spi_ready;
+   wire hds_cmd = pb_spi_AVALID & pb_spi_AREADY;
+   wire hds_dout = pb_spi_BVALID & pb_spi_BREADY;
 
-   wire we_CR = pb_spi_cmd_we_msk==4'b0011;
-   wire we_DR = pb_spi_cmd_we_msk==4'b0001;
-   
+   wire we_CR = pb_spi_AWMSK==4'b0011;
+   wire we_DR = pb_spi_AWMSK==4'b0001;
+
    // CLK Generator
    always @(posedge clk or negedge rst_n) begin
       if(~rst_n)
@@ -52,33 +52,33 @@ module soc_pb_spi_master
       else
          SPI_SCK <= hds_cmd & we_DR;
    end
-   
-   assign SPI_MOSI = pb_spi_din[7];
-   
+
+   assign SPI_MOSI = pb_spi_ADATA[7];
+
    reg [7:0] sh_reg;
-   
+
    always @(posedge clk or negedge rst_n) begin
       if(~rst_n)
          SPI_CS_L <= 1'b1;
       else if(hds_cmd) begin
          if(we_CR) begin
             // Generate Chip sel
-            SPI_CS_L <= ~pb_spi_din[8];
+            SPI_CS_L <= ~pb_spi_ADATA[8];
          end else if(we_DR) begin
             // Read out a bit from slaver
             sh_reg <= {sh_reg[6:0], SPI_MISO};
          end
       end
    end
-   
-   assign pb_spi_dout = {24'b0, sh_reg[7:0]};
-   
+
+   assign pb_spi_BDATA = {24'b0, sh_reg[7:0]};
+
    always @(posedge clk or negedge rst_n)
       if(~rst_n)
-         pb_spi_valid <= 1'b0;
+         pb_spi_BVALID <= 1'b0;
       else if (hds_cmd | hds_dout)
-         pb_spi_valid <= (hds_cmd | ~hds_dout);
+         pb_spi_BVALID <= (hds_cmd | ~hds_dout);
 
-   assign pb_spi_cmd_ready = ~pb_spi_valid;
-         
+   assign pb_spi_AREADY = ~pb_spi_BVALID;
+
 endmodule

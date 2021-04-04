@@ -22,7 +22,7 @@
 *     devices, or systems.  Use in such applications are expressly             *
 *     prohibited.                                                              *
 *                                                                              *
-*     (c) Copyright 1995-2020 Xilinx, Inc.                                     *
+*     (c) Copyright 1995-2021 Xilinx, Inc.                                     *
 *     All rights reserved.                                                     *
 *******************************************************************************/
 // You must compile the wrapper file ramblk_cache_mem.v when simulating
@@ -54,21 +54,21 @@ module ramblk_cache_mem(
 input clka;
 input ena;
 input [3 : 0] wea;
-input [11 : 0] addra;
+input [9 : 0] addra;
 input [31 : 0] dina;
 output [31 : 0] douta;
 input clkb;
 input enb;
 input [3 : 0] web;
-input [11 : 0] addrb;
+input [9 : 0] addrb;
 input [31 : 0] dinb;
 output [31 : 0] doutb;
 
 // synthesis translate_off
 
   BLK_MEM_GEN_V7_3 #(
-    .C_ADDRA_WIDTH(12),
-    .C_ADDRB_WIDTH(12),
+    .C_ADDRA_WIDTH(10),
+    .C_ADDRB_WIDTH(10),
     .C_ALGORITHM(1),
     .C_AXI_ID_WIDTH(4),
     .C_AXI_SLAVE_TYPE(0),
@@ -103,8 +103,8 @@ output [31 : 0] doutb;
     .C_MEM_TYPE(2),
     .C_MUX_PIPELINE_STAGES(0),
     .C_PRIM_TYPE(1),
-    .C_READ_DEPTH_A(4096),
-    .C_READ_DEPTH_B(4096),
+    .C_READ_DEPTH_A(1024),
+    .C_READ_DEPTH_B(1024),
     .C_READ_WIDTH_A(32),
     .C_READ_WIDTH_B(32),
     .C_RST_PRIORITY_A("CE"),
@@ -121,8 +121,8 @@ output [31 : 0] doutb;
     .C_USE_SOFTECC(0),
     .C_WEA_WIDTH(4),
     .C_WEB_WIDTH(4),
-    .C_WRITE_DEPTH_A(4096),
-    .C_WRITE_DEPTH_B(4096),
+    .C_WRITE_DEPTH_A(1024),
+    .C_WRITE_DEPTH_B(1024),
     .C_WRITE_MODE_A("WRITE_FIRST"),
     .C_WRITE_MODE_B("WRITE_FIRST"),
     .C_WRITE_WIDTH_A(32),
