@@ -17,7 +17,7 @@
 
 module ncpu32k_icache
 #(
-   parameter CONFIG_PIPEBUF_BYPASS
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED
 )
 (
    input                   clk,

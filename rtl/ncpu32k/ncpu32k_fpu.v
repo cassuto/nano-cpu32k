@@ -17,8 +17,8 @@
 
 module ncpu32k_fpu
 #(
-   parameter CONFIG_ROB_DEPTH_LOG2,
-   parameter CONFIG_PIPEBUF_BYPASS
+   parameter CONFIG_ROB_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,

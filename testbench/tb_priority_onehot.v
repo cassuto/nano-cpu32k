@@ -77,25 +77,25 @@ module tb_priority_onehot;
                P_P_din = randint[DW-1:0];
                @(posedge clk);
                if (P_P_dout !== expected)
-                  $fatal("Bugs on P-P. Expected = ", expected, " Got = ", P_P_dout);
+                  $fatal(1, "Bugs on P-P. Expected = ", expected, " Got = ", P_P_dout);
 
                expected = ~(randint[DW-1:0] & (~randint[DW-1:0]+1'b1)); // Find the first 1 in its binary format
                P_N_din = randint[DW-1:0];
                @(posedge clk);
                if (P_N_dout !== expected)
-                  $fatal("Bugs on P-N. Expected = ", expected, " Got = ", P_P_dout);
+                  $fatal(1, "Bugs on P-N. Expected = ", expected, " Got = ", P_P_dout);
 
                expected = (randint[DW-1:0] & (~randint[DW-1:0]+1'b1)); // Find the first 1 in its binary format
                N_P_din = ~randint[DW-1:0];
                @(posedge clk);
                if (N_P_dout !== expected)
-                  $fatal("Bugs on N-P. Expected = ", expected, " Got = ", P_P_dout);
+                  $fatal(1, "Bugs on N-P. Expected = ", expected, " Got = ", P_P_dout);
 
                expected = ~(randint[DW-1:0] & (~randint[DW-1:0]+1'b1)); // Find the first 1 in its binary format
                N_N_din = ~randint[DW-1:0];
                @(posedge clk);
                if (N_N_dout !== expected)
-                  $fatal("Bugs on N-N. Expected = ", expected, " Got = ", P_P_dout);
+                  $fatal(1, "Bugs on N-N. Expected = ", expected, " Got = ", P_P_dout);
             end
          
          @(posedge clk);

@@ -17,13 +17,13 @@
 
 module ncpu32k_lpu
 #(
-   parameter CONFIG_ENABLE_MUL,
-   parameter CONFIG_ENABLE_DIV,
-   parameter CONFIG_ENABLE_DIVU,
-   parameter CONFIG_ENABLE_MOD,
-   parameter CONFIG_ENABLE_MODU,
-   parameter CONFIG_PIPEBUF_BYPASS,
-   parameter CONFIG_ROB_DEPTH_LOG2
+   parameter CONFIG_ENABLE_MUL `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_DIV `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_DIVU `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_MOD `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_MODU `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ROB_DEPTH_LOG2 `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,

@@ -50,6 +50,7 @@ module soc_toplevel
    parameter CONFIG_CORE_1_DTLB_NSETS_LOG2 = 7,
    parameter CONFIG_CORE_1_ENABLE_ICACHE = 0,
    parameter CONFIG_CORE_1_ENABLE_DCACHE = 0,
+   parameter CONFIG_CORE_1_BPU_STRATEGY = 0,
 
    parameter CONFIG_PIPEBUF_BYPASS = 1,
    parameter CONFIG_IBUS_OUTSTANTING_LOG2 = 2,
@@ -530,7 +531,8 @@ module soc_toplevel
       .CONFIG_PIPEBUF_BYPASS           (CONFIG_PIPEBUF_BYPASS),
       .CONFIG_IBUS_OUTSTANTING_LOG2    (CONFIG_IBUS_OUTSTANTING_LOG2),
       .CONFIG_IRQ_LINENO_TSC           (0), // IRQ Line number of TSC
-      .CONFIG_ERST_VECTOR              (CONFIG_CORE_1_ERST_VECTOR)
+      .CONFIG_ERST_VECTOR              (CONFIG_CORE_1_ERST_VECTOR),
+      .CONFIG_BPU_STRATEGY             (CONFIG_CORE_1_BPU_STRATEGY)
      )
    ncpu32k
      (/*AUTOINST*/

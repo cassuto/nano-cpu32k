@@ -22,7 +22,7 @@ TESTBENCH_SRCS := \
 TOPLEVEL := soc_toplevel
 WARNS = -Wno-EOFNEWLINE -Wno-PINCONNECTEMPTY -Wno-UNUSED
 INCS = +incdir+rtl/ncpu32k/
-DEFS = +define+IN_SIM=1+SYNTHESIS=1
+DEFS = +define+IN_SIM=1+SYNTHESIS=1+IN_LINT=1
 FLAGS := --top-module $(TOPLEVEL) $(DEFS) $(INCS) $(WARNS)
 
 lint:
@@ -32,7 +32,7 @@ lint:
 	-verilator --lint-only -Wall $(FLAGS) $(SRCS)
 
 TESTBENCH_INCS = +incdir+rtl/ncpu32k/ +incdir+testbench +incdir+testbench/model-SPI-FLASH
-TESTBENCH_DEFS = +define+IN_SIM=1
+TESTBENCH_DEFS = +define+IN_SIM=1+IN_LINT=1
 TESTBENCH_FLAGS := $(TESTBENCH_DEFS) $(TESTBENCH_INCS) $(WARNS) -Wno-MULTITOP
 
 lint_testbench:

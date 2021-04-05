@@ -22,7 +22,7 @@ module pb_fb_L2_cache
    parameter P_LINE	= 6, // 2^P_LINE bytes per line (= busrt length of DRAM)
    parameter L2_CH_AW = 25,
    parameter L2_CH_DW = 32,
-   parameter CONFIG_PIPEBUF_BYPASS,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED,
    parameter CONFIG_CDC_STAGES = 2
 )
 (
@@ -572,9 +572,9 @@ endgenerate
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
       if (s1o_valid & count_1(s1o_match)>1)
-         $fatal(0, "math should be mutex.");
+         $fatal(1, "math should be mutex.");
       if (s1o_valid & count_1(s1o_free)>1)
-         $fatal(0, "s1o_free should be mutex.");
+         $fatal(1, "s1o_free should be mutex.");
    end
 `endif
 

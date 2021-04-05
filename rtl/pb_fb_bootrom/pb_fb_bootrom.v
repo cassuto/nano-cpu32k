@@ -18,9 +18,9 @@
 
 module pb_fb_bootrom
 #(
-   parameter CONFIG_BOOTROM_SIZE_BYTES,
-   parameter CONFIG_BOOTROM_MEMH_FILE,
-   parameter CONFIG_PIPEBUF_BYPASS
+   parameter CONFIG_BOOTROM_SIZE_BYTES `PARAM_NOT_SPECIFIED,
+   parameter CONFIG_BOOTROM_MEMH_FILE `PARAM_NOT_SPECIFIED,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,

@@ -17,10 +17,10 @@
 
 module ncpu32k_pipeline_fpu
 #(
-   parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2,
-   parameter CONFIG_ENABLE_FPU,
-   parameter CONFIG_PIPEBUF_BYPASS,
-   parameter CONFIG_ROB_DEPTH_LOG2
+   parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_FPU `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ROB_DEPTH_LOG2 `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,

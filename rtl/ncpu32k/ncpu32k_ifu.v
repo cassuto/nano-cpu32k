@@ -17,8 +17,8 @@
 
 module ncpu32k_ifu
    #(
-      parameter [`NCPU_AW-1:0] CONFIG_ERST_VECTOR,
-      parameter CONFIG_IBUS_OUTSTANTING_LOG2
+      parameter [`NCPU_AW-1:0] CONFIG_ERST_VECTOR `PARAM_NOT_SPECIFIED ,
+      parameter CONFIG_IBUS_OUTSTANTING_LOG2 `PARAM_NOT_SPECIFIED
    )
    (
       input                      clk,
@@ -178,7 +178,7 @@ module ncpu32k_ifu
       begin
          // This assertion will fail if another exception raised while we're in flushing.
          if(flush & (flush_state_r != FLS_IDLE))
-            $fatal("\n While IFU is in the state of unfinished flushing, it received a new flushing request. The request will not be accepted\n");
+            $fatal(1, "\n While IFU is in the state of unfinished flushing, it received a new flushing request. The request will not be accepted\n");
       end
 
  `endif

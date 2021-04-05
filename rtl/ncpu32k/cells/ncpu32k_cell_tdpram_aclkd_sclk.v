@@ -18,10 +18,12 @@
 /*  Lesser General Public License for more details.                        */
 /***************************************************************************/
 
+`include "ncpu32k_config.h"
+
 module ncpu32k_cell_tdpram_aclkd_sclk
 #(
-   parameter AW,
-   parameter DW
+   parameter AW `PARAM_NOT_SPECIFIED ,
+   parameter DW `PARAM_NOT_SPECIFIED
 )
 (
    // Port A
@@ -95,7 +97,7 @@ endgenerate
 
 `else
    initial
-      $fatal("\n Bugs: module `ncpu32k_cell_tdpram_aclkd_sclk` is not available for synthesis\n");
+      $fatal(1, "\n Bugs: module `ncpu32k_cell_tdpram_aclkd_sclk` is not available for synthesis\n");
 
    assign dout_a = {DW{1'bx}};
    assign dout_b = {DW{1'bx}};

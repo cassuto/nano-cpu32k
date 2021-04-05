@@ -17,12 +17,12 @@
 
 module ncpu32k_idu
 #(
-   parameter CONFIG_ENABLE_MUL,
-   parameter CONFIG_ENABLE_DIV,
-   parameter CONFIG_ENABLE_DIVU,
-   parameter CONFIG_ENABLE_MOD,
-   parameter CONFIG_ENABLE_MODU,
-   parameter CONFIG_PIPEBUF_BYPASS
+   parameter CONFIG_ENABLE_MUL `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_DIV `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_DIVU `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_MOD `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_MODU `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,
@@ -343,7 +343,7 @@ module ncpu32k_idu
       #(
          .CONFIG_PIPEBUF_BYPASS (CONFIG_PIPEBUF_BYPASS)
       )
-   pipebuf_ifu
+   PIPE_IDU
       (
          .clk     (clk),
          .rst_n   (rst_n),
@@ -437,13 +437,13 @@ module ncpu32k_idu
       begin
          // Assertion 2103281412
          if (count_1({insn_rs1_imm15, insn_rd_rs1_imm15, insn_uimm17, insn_rel25})>1)
-            $fatal("\n Bugs on insn type decoder\n");
+            $fatal(1, "\n Bugs on insn type decoder\n");
       end
    initial
       begin
          // Assertion 2104051343
          if (`NCPU_EPU_EINSN != `NCPU_EPU_IOPW-1)
-            $fatal("\n Check `NCPU_EPU_EINSN, a particular value\n");
+            $fatal(1, "\n Check `NCPU_EPU_EINSN, a particular value\n");
       end
 `endif
 

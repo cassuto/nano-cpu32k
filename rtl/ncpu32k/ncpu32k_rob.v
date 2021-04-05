@@ -21,8 +21,8 @@
 
 module ncpu32k_rob
 #(
-   parameter DEPTH_WIDTH,
-   parameter TAG_WIDTH
+   parameter DEPTH_WIDTH `PARAM_NOT_SPECIFIED ,
+   parameter TAG_WIDTH `PARAM_NOT_SPECIFIED
 )
 (
    input                            clk,
@@ -180,9 +180,9 @@ module ncpu32k_rob
             always @(posedge clk)
                begin
                   if (rob_wb_BREADY & rob_wb_BVALID & (rob_wb_id==i[DEPTH_WIDTH-1:0]) & ~que_valid_r[i])
-                     $fatal("\n Commit to a invalid entry of ROB. Please check ISSUE unit, DISPATCH unit or FU.\n");
+                     $fatal(1, "\n Commit to a invalid entry of ROB. Please check ISSUE unit, DISPATCH unit or FU.\n");
                   if (rob_wb_BREADY & rob_wb_BVALID & (rob_wb_id==i[DEPTH_WIDTH-1:0]) & que_rd_ready_r[i])
-                     $fatal("\n Do not wb to the same entry once again. Please check ISSUE unit, DISPATCH unit or FU.\n");
+                     $fatal(1, "\n Do not wb to the same entry once again. Please check ISSUE unit, DISPATCH unit or FU.\n");
                end
 `endif
 
@@ -223,13 +223,13 @@ module ncpu32k_rob
             always @(posedge clk)
                begin
                   if (rs1_prec_ready[i-1] & rs1_prec_bypass[i-1])
-                     $fatal("\n The operand should not be wbted once more\n");
+                     $fatal(1, "\n The operand should not be wbted once more\n");
                   if (rs2_prec_ready[i-1] & rs2_prec_bypass[i-1])
-                     $fatal("\n The operand should not be wbted once more\n");
+                     $fatal(1, "\n The operand should not be wbted once more\n");
                   if (rs1_prec_in_ROB[i-1] & rs1_prec_in_ARF[i-1])
-                     $fatal("\n Operands cannot be both in ARF and ROB.\n");
+                     $fatal(1, "\n Operands cannot be both in ARF and ROB.\n");
                   if (rs2_prec_in_ROB[i-1] & rs2_prec_in_ARF[i-1])
-                     $fatal("\n Operands cannot be both in ARF and ROB.\n");
+                     $fatal(1, "\n Operands cannot be both in ARF and ROB.\n");
                end
 `endif
 
@@ -302,30 +302,30 @@ module ncpu32k_rob
    always @(posedge clk)
       begin
          if(count_1({rs1_first_match})>1)
-            $fatal("\n `rs1_first_match` should be mutex\n");
+            $fatal(1, "\n `rs1_first_match` should be mutex\n");
          if(count_1({rs2_first_match})>1)
-            $fatal("\n `rs2_first_match` should be mutex\n");
+            $fatal(1, "\n `rs2_first_match` should be mutex\n");
          // The following 4 assertions hold if there is only one wb channel.
          if(count_1({rs1_ROB_match_bypass})>1)
-            $fatal("\n `rs1_ROB_match_bypass` should be mutex\n");
+            $fatal(1, "\n `rs1_ROB_match_bypass` should be mutex\n");
          if(count_1({rs2_ROB_match_bypass})>1)
-            $fatal("\n `rs2_ROB_match_bypass` should be mutex\n");
+            $fatal(1, "\n `rs2_ROB_match_bypass` should be mutex\n");
          if(count_1({rs1_prec_bypass})>1)
-            $fatal("\n `rs1_prec_bypass` should be mutex\n");
+            $fatal(1, "\n `rs1_prec_bypass` should be mutex\n");
          if(count_1({rs2_prec_bypass})>1)
-            $fatal("\n `rs2_prec_bypass` should be mutex\n");
+            $fatal(1, "\n `rs2_prec_bypass` should be mutex\n");
             
          if( |(rs1_first_match & rs1_prec_bypass) & |(rs1_first_match & rs1_prec_ready) )
-            $fatal("\n Commit to the matched entry once more\n");
+            $fatal(1, "\n Commit to the matched entry once more\n");
          if( |(rs2_first_match & rs2_prec_bypass) & |(rs2_first_match & rs2_prec_ready) )
-            $fatal("\n Commit to the matched entry once more\n");
+            $fatal(1, "\n Commit to the matched entry once more\n");
       end
       
    reg assert_flush_req = 1'b0;
    always @(posedge clk)
       begin
          assert_flush_req <= flush;
-         if (assert_flush_req & flush) $fatal("\n It's likely a bug?? 'flush' was not a 1-clk pulse\n");
+         if (assert_flush_req & flush) $fatal(1, "\n It's likely a bug?? 'flush' was not a 1-clk pulse\n");
       end
 `endif
 

@@ -17,8 +17,8 @@
 
 module ncpu32k_dmmu
 #(
-   parameter CONFIG_DTLB_NSETS_LOG2 = 7, // (2^CONFIG_DTLB_NSETS_LOG2) entries
-   parameter CONFIG_PIPEBUF_BYPASS = 1
+   parameter CONFIG_DTLB_NSETS_LOG2 `PARAM_NOT_SPECIFIED , // (2^CONFIG_DTLB_NSETS_LOG2) entries
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED
 )
 (
    input                   clk,

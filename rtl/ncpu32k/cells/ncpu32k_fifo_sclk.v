@@ -20,10 +20,10 @@
 `include "ncpu32k_config.h"
 
 module ncpu32k_fifo_sclk # (
-   parameter DW, // Data Width in bits
-   parameter DEPTH_WIDTH, // Width of depth
-   parameter FWFT, // FWFT (First Word Fall Through) mode
-   parameter N_PROG_EMPTY // The number of remaining elements when the PROG_EMPTY is issued
+   parameter DW = 8, // Data Width in bits
+   parameter DEPTH_WIDTH = 4, // Width of depth
+   parameter FWFT = 1, // FWFT (First Word Fall Through) mode
+   parameter N_PROG_EMPTY = 1 // The number of remaining elements when the PROG_EMPTY is issued
 )
 (
    input CLK,

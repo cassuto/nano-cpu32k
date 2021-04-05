@@ -21,9 +21,9 @@
 
 module ncpu32k_byp_arbiter
 #(
-   parameter WAYS,
-   parameter TAG_WIDTH,
-   parameter ID_WIDTH
+   parameter WAYS `PARAM_NOT_SPECIFIED ,
+   parameter TAG_WIDTH `PARAM_NOT_SPECIFIED ,
+   parameter ID_WIDTH `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,
@@ -96,7 +96,7 @@ module ncpu32k_byp_arbiter
    always @(posedge clk)
       begin
          if (rob_wb_BVALID ^ |grant)
-            $fatal("\n Check the bypass arbiter schema\n");
+            $fatal(1, "\n Check the bypass arbiter schema\n");
       end
 `endif
 

@@ -17,36 +17,37 @@
 
 module ncpu32k_core
 #(
-   parameter CONFIG_HAVE_IMMU,
-   parameter CONFIG_HAVE_DMMU,
-   parameter CONFIG_HAVE_ICACHE,
-   parameter CONFIG_HAVE_DCACHE,
-   parameter CONFIG_HAVE_IRQC,
-   parameter CONFIG_HAVE_TSC,
-   parameter CONFIG_IBUS_OUTSTANTING_LOG2,
-   parameter [`NCPU_AW-1:0] CONFIG_ERST_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EDTM_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EDPF_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EALIGN_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EITM_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EIPF_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_ESYSCALL_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EINSN_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EIRQ_VECTOR,
-   parameter CONFIG_ENABLE_MUL,
-   parameter CONFIG_ENABLE_DIV,
-   parameter CONFIG_ENABLE_DIVU,
-   parameter CONFIG_ENABLE_MOD,
-   parameter CONFIG_ENABLE_MODU,
-   parameter CONFIG_ENABLE_FPU,
-   parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2,
-   parameter CONFIG_ALU_INSERT_REG,
-   parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2,
-   parameter CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2,
-   parameter CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2,
-   parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2,
-   parameter CONFIG_ROB_DEPTH_LOG2,
-   parameter CONFIG_PIPEBUF_BYPASS
+   parameter CONFIG_HAVE_IMMU `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_HAVE_DMMU `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_HAVE_ICACHE `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_HAVE_DCACHE `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_HAVE_IRQC `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_HAVE_TSC `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_IBUS_OUTSTANTING_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_ERST_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EDTM_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EDPF_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EALIGN_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EITM_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EIPF_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_ESYSCALL_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EINSN_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EIRQ_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_MUL `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_DIV `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_DIVU `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_MOD `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_MODU `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_FPU `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ALU_INSERT_REG `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ROB_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_BPU_STRATEGY `PARAM_NOT_SPECIFIED
 )
 (
    input                   clk,
@@ -351,7 +352,11 @@ module ncpu32k_core
        .bpu_pred_taken                  (bpu_pred_taken),
        .bpu_pred_tgt                    (bpu_pred_tgt[`NCPU_AW-3:0]));
 
-   ncpu32k_bpu bpu
+   ncpu32k_bpu
+      #(
+         .CONFIG_BPU_STRATEGY          (CONFIG_BPU_STRATEGY)
+      )
+   BPU
       (/*AUTOINST*/
        // Outputs
        .bpu_pred_taken                  (bpu_pred_taken),
@@ -420,7 +425,8 @@ module ncpu32k_core
 
    ncpu32k_dispatch
       #(
-         .CONFIG_ROB_DEPTH_LOG2        (CONFIG_ROB_DEPTH_LOG2)
+         .CONFIG_ROB_DEPTH_LOG2        (CONFIG_ROB_DEPTH_LOG2),
+         .CONFIG_PIPEBUF_BYPASS        (CONFIG_PIPEBUF_BYPASS)
       )
    DISP
       (/*AUTOINST*/
@@ -458,6 +464,7 @@ module ncpu32k_core
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
+       .flush                           (flush),
        .disp_AVALID                     (disp_AVALID),
        .disp_pc                         (disp_pc[`NCPU_AW-3:0]),
        .disp_pred_tgt                   (disp_pred_tgt[`NCPU_AW-3:0]),

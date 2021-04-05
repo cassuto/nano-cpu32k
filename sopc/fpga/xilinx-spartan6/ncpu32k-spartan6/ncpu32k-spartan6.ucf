@@ -145,10 +145,6 @@ INST "soc/fb_DRAM_ctrl/DRAM_CS_WE_RAS_CAS_L_3" IOB = TRUE;
 INST "soc/fb_DRAM_ctrl/DRAM_DQM_0" IOB = TRUE;
 #Created by Constraints Editor (xc6slx16-ftg256-2) - 2020/04/24
 #Created by Constraints Editor (xc6slx16-ftg256-2) - 2020/04/24
-INST "soc/L2_cache/sdr_rd_sr_0" ASYNC_REG = TRUE;
-INST "soc/L2_cache/sdr_rd_sr_1" ASYNC_REG = TRUE;
-INST "soc/L2_cache/sdr_we_sr_0" ASYNC_REG = TRUE;
-INST "soc/L2_cache/sdr_we_sr_1" ASYNC_REG = TRUE;
 INST "soc/pb_uart/phy_din_sr_0" ASYNC_REG = TRUE;
 INST "soc/pb_uart/phy_din_sr_1" ASYNC_REG = TRUE;
 INST "soc/pb_uart/phy_din_sr_2" ASYNC_REG = TRUE;
@@ -159,9 +155,12 @@ INST "soc/pb_uart/phy_din_sr_6" ASYNC_REG = TRUE;
 INST "soc/pb_uart/phy_din_sr_7" ASYNC_REG = TRUE;
 INST "soc/pb_uart/uart_rx_sr" ASYNC_REG = TRUE;
 INST "soc/pb_uart/we_vld_sr" ASYNC_REG = TRUE;
-INST "soc/L2_cache/line_adr_cnt_msb_sr" ASYNC_REG = TRUE;
 #Created by Constraints Editor (xc6slx16-ftg256-2) - 2020/04/24
 TIMESPEC TS_01 = FROM "dcm_clkt_clkout0" TO "dcm_clkt_clkout1" TIG;
 TIMESPEC TS_10 = FROM "dcm_clkt_clkout1" TO "dcm_clkt_clkout0" TIG;
 TIMESPEC TS_03 = FROM "dcm_clkt_clkout0" TO "dcm_clkt_clkout3" TIG;
 TIMESPEC TS_30 = FROM "dcm_clkt_clkout3" TO "dcm_clkt_clkout0" TIG;
+#Created by Constraints Editor (xc6slx16-ftg256-2) - 2021/04/05
+INST "soc/L2_cache/CDC_SDR_WE/gen_cdc.dff_stage_r/Q_1" ASYNC_REG = TRUE;
+INST "soc/L2_cache/CDC_LINE_ADR_CNT_MSB/gen_cdc.dff_stage_r/Q_0" ASYNC_REG = TRUE;
+INST "soc/L2_cache/CDC_SDR_RD/gen_cdc.dff_stage_r/Q_1" ASYNC_REG = TRUE;

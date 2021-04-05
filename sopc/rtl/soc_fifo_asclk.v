@@ -13,10 +13,12 @@
 /*  Lesser General Public License for more details.                        */
 /***************************************************************************/
 
+`include "ncpu32k_config.h"
+
 module soc_fifo_asclk
 #(
-   parameter DW, // Data bits
-   parameter AW  // Address bits
+   parameter DW `PARAM_NOT_SPECIFIED , // Data bits
+   parameter AW `PARAM_NOT_SPECIFIED  // Address bits
 )
 (
    input wclk,

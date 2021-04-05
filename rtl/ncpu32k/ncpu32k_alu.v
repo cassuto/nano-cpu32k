@@ -17,9 +17,9 @@
 
 module ncpu32k_alu
 #(
-   parameter CONFIG_ALU_INSERT_REG,
-   parameter CONFIG_PIPEBUF_BYPASS,
-   parameter CONFIG_ROB_DEPTH_LOG2
+   parameter CONFIG_ALU_INSERT_REG `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ROB_DEPTH_LOG2 `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,
@@ -117,11 +117,12 @@ module ncpu32k_alu
                            alu_opc_bus[`NCPU_ALU_JMPREG] |
                            alu_opc_bus[`NCPU_ALU_JMPREL]);
 
-   assign dat_branch = (// For PC-relative addressing, the output is sign-extended offset
-                        branch_rel_taken_nxt ? {{`NCPU_DW-2-15{alu_rel15[14]}}, alu_rel15[14:0], 2'b0} :
-                        // Operand #1 holds the absolute address
-                        // No alignment check
-                        alu_operand_1);
+   assign dat_branch = (alu_opc_bus[`NCPU_ALU_JMPREL] ? alu_operand_2
+                          // For PC-relative 15b addressing, the output is sign-extended offset
+                        : bcc_taken ? {{`NCPU_DW-2-15{alu_rel15[14]}}, alu_rel15[14:0], 2'b00}
+                          // Operand #1 holds the absolute address
+                          // No alignment check
+                        : alu_operand_1);
 
    assign sel_branch = (branch_reg_taken_nxt | branch_rel_taken_nxt);
 
@@ -243,7 +244,7 @@ module ncpu32k_alu
    always @(posedge clk)
       begin
          if (count_1({sel_adder,sel_and,sel_or,sel_xor,sel_shifter,sel_move,sel_branch})>1)
-            $fatal("\n Bugs on ALU output MUX\n");
+            $fatal(1, "\n Bugs on ALU output MUX\n");
       end
 
  `endif

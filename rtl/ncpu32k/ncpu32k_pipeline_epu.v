@@ -17,9 +17,9 @@
 
 module ncpu32k_pipeline_epu
 #(
-   parameter CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2,
-   parameter CONFIG_PIPEBUF_BYPASS,
-   parameter CONFIG_ROB_DEPTH_LOG2
+   parameter CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ROB_DEPTH_LOG2 `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,

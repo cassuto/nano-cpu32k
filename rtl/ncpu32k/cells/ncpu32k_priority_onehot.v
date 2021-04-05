@@ -17,11 +17,13 @@
 /*  Lesser General Public License for more details.                        */
 /***************************************************************************/
 
+`include "ncpu32k_config.h"
+
 module ncpu32k_priority_onehot
 #(
-   parameter DW,
-   parameter POLARITY_DIN, // Not zero = High level active, 0 = Low level active
-   parameter POLARITY_DOUT // Not zero = High level active, 0 = Low level active
+   parameter DW `PARAM_NOT_SPECIFIED ,
+   parameter POLARITY_DIN `PARAM_NOT_SPECIFIED , // Not zero = High level active, 0 = Low level active
+   parameter POLARITY_DOUT `PARAM_NOT_SPECIFIED // Not zero = High level active, 0 = Low level active
 )
 (
    input [DW-1:0] DIN, // LSB (0) has the highest priority, MSB (DW-1) has the lowest priority.

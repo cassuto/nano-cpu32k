@@ -17,9 +17,9 @@
 
 module ncpu32k_pipeline_agu
 #(
-   parameter CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2,
-   parameter CONFIG_PIPEBUF_BYPASS,
-   parameter CONFIG_ROB_DEPTH_LOG2
+   parameter CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ROB_DEPTH_LOG2 `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,
@@ -290,13 +290,13 @@ module ncpu32k_pipeline_agu
       begin
          // Assertion 2104021913
          if ((dbus_AVALID & dbus_AREADY) ^ (fire_AVALID & ~fire_misalign & fire_AREADY))
-            $fatal("\n Bugs on handshake between dbus and issue queue\n");
+            $fatal(1, "\n Bugs on handshake between dbus and issue queue\n");
          if (fire_AVALID & fire_misalign & commit & ~fire_AREADY)
-            $fatal("\n Bugs on handshake between dbus and issue queue with exception\n");
+            $fatal(1, "\n Bugs on handshake between dbus and issue queue with exception\n");
 
          // Assertion 2104022032
          if (count_1({wb_agu_BEDTM, wb_agu_BEDPF, wb_agu_BEALIGN})>1)
-            $fatal("\n Bugs on exceptions of DMMU\n");
+            $fatal(1, "\n Bugs on exceptions of DMMU\n");
       end
 `endif
 

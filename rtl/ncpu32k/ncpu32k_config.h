@@ -272,4 +272,15 @@
 `define NCPU_AGU_UOPW 7
 `define NCPU_FPU_UOPW 1
 
+// Work around for ISE initial parameter bug
+`ifndef IN_LINT
+   `ifdef PLATFORM_XILINX_XC6
+      `define PARAM_NOT_SPECIFIED = -1
+   `else
+      `define PARAM_NOT_SPECIFIED
+   `endif
+`else
+   `define PARAM_NOT_SPECIFIED
+`endif
+
 `endif // _NCPU32K_CONFIG_H

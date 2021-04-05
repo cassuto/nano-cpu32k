@@ -21,9 +21,9 @@
 
 module ncpu32k_cell_sdpram_sclk
 #(
-   parameter AW,
-   parameter DW,
-   parameter ENABLE_BYPASS
+   parameter AW `PARAM_NOT_SPECIFIED ,
+   parameter DW `PARAM_NOT_SPECIFIED ,
+   parameter ENABLE_BYPASS `PARAM_NOT_SPECIFIED
 )
 (
    input                         clk,

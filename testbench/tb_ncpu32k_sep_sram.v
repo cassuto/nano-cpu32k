@@ -44,7 +44,8 @@ module tb_ncpu32k_sep_sram();
    wire [`NCPU_NIRQ-1:0]   fb_irqs;
 
    handshake_cmd_sram #(
-      .MEMH_FILE("insn.mem"),
+      .SIZE_BYTES (64*1024),
+      .MEMH_FILE ("insn.mem"),
       .DELAY   (1)
    ) d_ram
    (
@@ -64,7 +65,8 @@ module tb_ncpu32k_sep_sram();
 
 
    handshake_cmd_sram #(
-      .MEMH_FILE("insn.mem"),
+      .SIZE_BYTES (64*1024),
+      .MEMH_FILE ("insn.mem"),
       .DELAY (1)
    ) i_ram
    (
@@ -74,12 +76,12 @@ module tb_ncpu32k_sep_sram();
       .BVALID              (fb_ibus_BVALID),
       .BREADY              (fb_ibus_BREADY),
       .BDATA               (fb_ibus_BDATA),
-      .BEXC                (fb_dbus_BEXC),
+      .BEXC                (fb_ibus_BEXC),
       .AREADY              (fb_ibus_AREADY),
       .AVALID              (fb_ibus_AVALID),
       .AADDR               (fb_ibus_AADDR),
       .AWMSK               (4'b0),
-      .AEXC                (fb_dbus_AEXC)
+      .AEXC                (fb_ibus_AEXC)
    );
 
    assign fb_irqs = {`NCPU_NIRQ{1'b0}};

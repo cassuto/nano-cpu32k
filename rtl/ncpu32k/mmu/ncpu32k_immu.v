@@ -17,10 +17,10 @@
 
 module ncpu32k_immu
 #(
-   parameter CONFIG_ITLB_NSETS_LOG2, // (2^CONFIG_ITLB_NSETS_LOG2) entries
-   parameter CONFIG_PIPEBUF_BYPASS,
-   parameter [`NCPU_AW-1:0] CONFIG_EITM_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EIPF_VECTOR
+   parameter CONFIG_ITLB_NSETS_LOG2 `PARAM_NOT_SPECIFIED , // (2^CONFIG_ITLB_NSETS_LOG2) entries
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EITM_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EIPF_VECTOR `PARAM_NOT_SPECIFIED
 )
 (
    input                   clk,

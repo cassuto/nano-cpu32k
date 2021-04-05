@@ -21,7 +21,7 @@
 
 module ncpu32k_cell_pipebuf
 # (
-   parameter CONFIG_PIPEBUF_BYPASS
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,

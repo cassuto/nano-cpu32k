@@ -21,11 +21,11 @@
 
 module ncpu32k_issue_queue
 #(
-   parameter DEPTH,
-   parameter DEPTH_WIDTH,
-   parameter UOP_WIDTH,
-   parameter ALGORITHM = 0, // 0 = Fully Out of Order, 1 = FIFO
-   parameter CONFIG_ROB_DEPTH_LOG2
+   parameter DEPTH `PARAM_NOT_SPECIFIED ,
+   parameter DEPTH_WIDTH `PARAM_NOT_SPECIFIED ,
+   parameter UOP_WIDTH `PARAM_NOT_SPECIFIED ,
+   parameter ALGORITHM `PARAM_NOT_SPECIFIED , // 0 = Fully Out of Order, 1 = FIFO
+   parameter CONFIG_ROB_DEPTH_LOG2 `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,
@@ -156,9 +156,9 @@ module ncpu32k_issue_queue
                   // (the address of nil register).
                   // As nil register can be never written back, bypass from BYP will never be ready.
                   if ((que_rs1_rdy_r[i] & rs1_r_bypass_rdy) | (que_rs2_rdy_r[i] & rs2_r_bypass_rdy))
-                     $fatal("\n Check the implement of issuing queue, BYP or others.\n");
+                     $fatal(1, "\n Check the implement of issuing queue, BYP or others.\n");
                   if (this_push & ((i_rs1_rdy & rs1_i_bypass_rdy) | (i_rs2_rdy & rs2_i_bypass_rdy)))
-                     $fatal("\n Check the implement of ISSUE unit, issuing queue, BYP or others.\n");
+                     $fatal(1, "\n Check the implement of ISSUE unit, issuing queue, BYP or others.\n");
                end
 `endif
 `endif
@@ -283,16 +283,16 @@ module ncpu32k_issue_queue
    initial
       begin
          if (DEPTH > (1<<DEPTH_WIDTH))
-            $fatal("\n Check parameters. DEPTH and DEPTH_WIDTH mismatch.");
+            $fatal(1, "\n Check parameters. DEPTH and DEPTH_WIDTH mismatch.");
          if (`NCPU_REG_AW > `NCPU_DW)
-            $fatal("\n Check parameters. Address width of regfile is larger than the `NCPU_DW\n");
+            $fatal(1, "\n Check parameters. Address width of regfile is larger than the `NCPU_DW\n");
       end
    always @(posedge clk)
       begin
          if (count_1({free}) > 1)
-            $fatal("\n Bugs on allocator algoritgm\n");
+            $fatal(1, "\n Bugs on allocator algoritgm\n");
          if (count_1({select}) > 1)
-            $fatal("\n Bugs on selector algorithm\n");
+            $fatal(1, "\n Bugs on selector algorithm\n");
       end
 `endif
 

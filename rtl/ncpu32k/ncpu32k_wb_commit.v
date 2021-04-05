@@ -17,15 +17,15 @@
 
 module ncpu32k_wb_commit
 #(
-   parameter CONFIG_ROB_DEPTH_LOG2,
-   parameter [`NCPU_AW-1:0] CONFIG_EDTM_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EDPF_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EALIGN_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EITM_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EIPF_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_ESYSCALL_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EINSN_VECTOR,
-   parameter [`NCPU_AW-1:0] CONFIG_EIRQ_VECTOR
+   parameter CONFIG_ROB_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EDTM_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EDPF_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EALIGN_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EITM_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EIPF_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_ESYSCALL_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EINSN_VECTOR `PARAM_NOT_SPECIFIED ,
+   parameter [`NCPU_AW-1:0] CONFIG_EIRQ_VECTOR `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,
@@ -145,7 +145,7 @@ module ncpu32k_wb_commit
    wire [`NCPU_AW-3:0]        pc_nxt;
    wire                       branch_taken;
    wire                       exc_taken;
-   wire                       se_taken;
+   wire                       sef_taken;
 
    // Encode exceptions
    // Assert (2104022034)
@@ -271,13 +271,12 @@ module ncpu32k_wb_commit
    assign branch_taken = (commit_exc==EXC_BRANCH_REG_TAKEN) | (commit_exc==EXC_BRANCH_REL_TAKEN);
    // Tell if an exception raised.
    assign exc_taken = (|commit_exc) & ~branch_taken;
-   // Check speculative execution (SE)
-   assign se_taken = ~exc_taken & (rob_commit_pred_tgt != pc_nxt);
+   // Check if speculative execution (SE) failed
+   assign sef_taken = ~exc_taken & (rob_commit_pred_tgt != pc_nxt);
 
    // Assert (2104032354)
-   assign flush = rob_commit_BVALID & (exc_taken | se_taken);
-   assign flush_tgt = se_taken ? rob_commit_pred_tgt // Go to the right addresss
-                        : pc_nxt;
+   assign flush = rob_commit_BVALID & (exc_taken | sef_taken);
+   assign flush_tgt = pc_nxt;
 
 
    //
@@ -312,10 +311,10 @@ module ncpu32k_wb_commit
             count_1({wb_alu_BBRANCH_REG_TAKEN, wb_alu_BBRANCH_REL_TAKEN}) > 1 ||
             count_1({wb_agu_BEDTM, wb_agu_BEDPF, wb_agu_BEALIGN}) > 1
          )
-            $fatal("\n Bugs on exception sources (IMMU, IDU, AGU and DMMU)\n");
+            $fatal(1, "\n Bugs on exception sources (IMMU, IDU, AGU and DMMU)\n");
          // Assertion 2104032354
-         if (se_taken & exc_taken)
-            $fatal("\n Bugs on SE and exception\n");
+         if (sef_taken & exc_taken)
+            $fatal(1, "\n Bugs on SE and exception\n");
       end
 `endif
 

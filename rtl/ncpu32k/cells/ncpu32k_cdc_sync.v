@@ -27,16 +27,16 @@ module ncpu32k_cdc_sync #(
    input RST_N_B,
    output B
 );
-   generate;
+   generate
       if (CONFIG_CDC_STAGES == 1)
-         begin
+         begin : gen_cdc
             wire stage_r;
             nDFF_r #(1, RST_VALUE) dff_stage_r
               (CLK_B,RST_N_B, A, stage_r);
             assign B = stage_r;
          end
       else
-         begin
+         begin : gen_cdc
             wire [CONFIG_CDC_STAGES-1:0] stage_r;
             nDFF_r #(CONFIG_CDC_STAGES, {CONFIG_CDC_STAGES{RST_VALUE}}) dff_stage_r
               (CLK_B,RST_N_B, {stage_r[CONFIG_CDC_STAGES-2:0], A}, stage_r);

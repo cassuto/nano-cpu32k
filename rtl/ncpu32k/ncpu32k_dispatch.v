@@ -21,11 +21,13 @@
 
 module ncpu32k_dispatch
 #(
-   parameter CONFIG_ROB_DEPTH_LOG2
+   parameter CONFIG_ROB_DEPTH_LOG2 `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_PIPEBUF_BYPASS `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,
    input                      rst_n,
+   input                      flush,
    output                     disp_AREADY,
    input                      disp_AVALID,
    input [`NCPU_AW-3:0]       disp_pc,
@@ -95,13 +97,16 @@ module ncpu32k_dispatch
    output [`NCPU_REG_AW-1:0]  issue_rs2_addr,
    output [`NCPU_DW-1:0]      issue_imm32
 );
-   wire pipe_cke;
-   wire issue_alu;
-   wire issue_lpu;
-   wire issue_agu;
-   wire issue_fpu;
-   wire issue_epu;
-   wire issue_ready;
+   wire pipe_issue_AREADY;
+   wire pipe_issue_AVALID;
+   wire pipe_issue_BREADY;
+   wire pipe_issue_BVALID;
+   wire pipe_issue_cke;
+   wire issue_alu_r;
+   wire issue_lpu_r;
+   wire issue_agu_r;
+   wire issue_fpu_r;
+   wire issue_epu_r;
    reg [`NCPU_EPU_UOPW-1:0] epu_uop_nxt;
    reg [`NCPU_ALU_UOPW_OPC-1:0] alu_uop_opc_nxt;
    wire [`NCPU_ALU_UOPW-1:0] alu_uop_nxt;
@@ -116,30 +121,10 @@ module ncpu32k_dispatch
    wire [`NCPU_DW-1:0] rob_rs1_dat_r, rob_rs2_dat_r;
    wire [`NCPU_DW-1:0] ARF_ROB_rs1_dout, ARF_ROB_rs2_dout;
    
-   // Handshake logics
-   assign pipe_cke = (disp_AREADY & disp_AVALID);
-   
-   assign issue_alu = |alu_uop_opc_nxt;
-   assign issue_lpu = |lpu_uop_nxt;
-   assign issue_agu = |agu_uop_nxt;
-   assign issue_fpu = |fpu_uop_nxt;
-   assign issue_epu = |epu_uop_nxt;
-   
-   // Assert (2103281331)
-   assign issue_ready = (~issue_alu | issue_alu_AREADY) &
-                        (~issue_lpu | issue_lpu_AREADY) &
-                        (~issue_agu | issue_agu_AREADY) &
-                        (~issue_epu | issue_epu_AREADY) &
-                        (~issue_fpu | issue_fpu_AREADY);
-   
    // Assert (2103281250)
-   assign disp_AREADY = rob_disp_AREADY & issue_ready;
-   assign rob_disp_AVALID = disp_AVALID & issue_ready;
-   assign issue_alu_AVALID = disp_AVALID & rob_disp_AREADY & issue_alu;
-   assign issue_lpu_AVALID = disp_AVALID & rob_disp_AREADY & issue_lpu;
-   assign issue_agu_AVALID = disp_AVALID & rob_disp_AREADY & issue_agu;
-   assign issue_fpu_AVALID = disp_AVALID & rob_disp_AREADY & issue_fpu;
-   assign issue_epu_AVALID = disp_AVALID & rob_disp_AREADY & issue_epu;
+   assign disp_AREADY = rob_disp_AREADY & pipe_issue_AREADY;
+   assign rob_disp_AVALID = disp_AVALID & pipe_issue_AREADY;
+   assign pipe_issue_AVALID = disp_AVALID & rob_disp_AREADY;
    
    always @(*)
       casez(disp_alu_opc_bus)
@@ -196,9 +181,9 @@ module ncpu32k_dispatch
    // Read operands from ARF
    // ARF can be consider as a DFF in the pipeline stage,
    // so the clock-enable signal should be applied to it.
-   assign arf_rs1_re = disp_rs1_re & pipe_cke;
+   assign arf_rs1_re = disp_rs1_re & pipe_issue_cke;
    assign arf_rs1_addr = disp_rs1_addr;
-   assign arf_rs2_re = disp_rs2_re & pipe_cke;
+   assign arf_rs2_re = disp_rs2_re & pipe_issue_cke;
    assign arf_rs2_addr = disp_rs2_addr;
    
    // Read operands from ROB
@@ -211,47 +196,90 @@ module ncpu32k_dispatch
    assign rob_disp_rd_we = disp_rd_we;
    assign rob_disp_rd_addr = disp_rd_addr;
 
+   // Pipeline stage
+   ncpu32k_cell_pipebuf
+      #(
+         .CONFIG_PIPEBUF_BYPASS (CONFIG_PIPEBUF_BYPASS)
+      )
+   PIPE_DISPATCH
+      (
+         .clk     (clk),
+         .rst_n   (rst_n),
+         .flush   (flush),
+         .A_en    (1'b1),
+         .AVALID  (pipe_issue_AVALID),
+         .AREADY  (pipe_issue_AREADY),
+         .B_en    (1'b1),
+         .BVALID  (pipe_issue_BVALID),
+         .BREADY  (pipe_issue_BREADY),
+         .cke     (pipe_issue_cke),
+         .pending ()
+      );
+
+   // Assert (2103281331)
+   assign issue_alu_AVALID = pipe_issue_BVALID & issue_alu_r;
+   assign issue_lpu_AVALID = pipe_issue_BVALID & issue_lpu_r;
+   assign issue_agu_AVALID = pipe_issue_BVALID & issue_agu_r;
+   assign issue_fpu_AVALID = pipe_issue_BVALID & issue_fpu_r;
+   assign issue_epu_AVALID = pipe_issue_BVALID & issue_epu_r;
+
+   assign pipe_issue_BREADY = (~issue_alu_r | issue_alu_AREADY) &
+                        (~issue_lpu_r | issue_lpu_AREADY) &
+                        (~issue_agu_r | issue_agu_AREADY) &
+                        (~issue_epu_r | issue_epu_AREADY) &
+                        (~issue_fpu_r | issue_fpu_AREADY);
+
    // DFFs for pipeline stage
+   nDFF_lr #(1) dff_issue_alu_r
+     (clk,rst_n, pipe_issue_cke, |alu_uop_opc_nxt, issue_alu_r);
+   nDFF_lr #(1) dff_issue_lpu_r
+     (clk,rst_n, pipe_issue_cke, |lpu_uop_nxt, issue_lpu_r);
+   nDFF_lr #(1) dff_issue_agu_r
+     (clk,rst_n, pipe_issue_cke, |agu_uop_nxt, issue_agu_r);
+   nDFF_lr #(1) dff_issue_fpu_r
+     (clk,rst_n, pipe_issue_cke, |fpu_uop_nxt, issue_fpu_r);
+   nDFF_lr #(1) dff_issue_epu_r
+     (clk,rst_n, pipe_issue_cke, |epu_uop_nxt, issue_epu_r);
    nDFF_lr #(CONFIG_ROB_DEPTH_LOG2) dff_issue_id
-     (clk,rst_n, pipe_cke, rob_disp_id, issue_id);
+     (clk,rst_n, pipe_issue_cke, rob_disp_id, issue_id);
    nDFF_lr #(`NCPU_EPU_UOPW) dff_issue_epu_uop
-     (clk,rst_n, pipe_cke, epu_uop_nxt, issue_epu_uop);
+     (clk,rst_n, pipe_issue_cke, epu_uop_nxt, issue_epu_uop);
    nDFF_lr #(`NCPU_ALU_UOPW) dff_issue_alu_uop
-     (clk,rst_n, pipe_cke, alu_uop_nxt, issue_alu_uop);
+     (clk,rst_n, pipe_issue_cke, alu_uop_nxt, issue_alu_uop);
    nDFF_lr #(`NCPU_LPU_UOPW) dff_issue_lpu_uop
-     (clk,rst_n, pipe_cke, lpu_uop_nxt, issue_lpu_uop);
+     (clk,rst_n, pipe_issue_cke, lpu_uop_nxt, issue_lpu_uop);
    nDFF_lr #(`NCPU_AGU_UOPW) dff_issue_agu_uop
-     (clk,rst_n, pipe_cke, agu_uop_nxt, issue_agu_uop);
+     (clk,rst_n, pipe_issue_cke, agu_uop_nxt, issue_agu_uop);
    nDFF_lr #(`NCPU_FPU_UOPW) dff_issue_fpu_uop
-     (clk,rst_n, pipe_cke, fpu_uop_nxt, issue_fpu_uop);
+     (clk,rst_n, pipe_issue_cke, fpu_uop_nxt, issue_fpu_uop);
 
    nDFF_lr #(1) dff_rs1_re_r
-     (clk,rst_n, pipe_cke, disp_rs1_re, rs1_re_r);
+     (clk,rst_n, pipe_issue_cke, disp_rs1_re, rs1_re_r);
    nDFF_lr #(1) dff_rs2_re_r
-     (clk,rst_n, pipe_cke, disp_rs2_re, rs2_re_r);
+     (clk,rst_n, pipe_issue_cke, disp_rs2_re, rs2_re_r);
      
    nDFF_lr #(1) dff_rs1_in_ROB_r
-     (clk,rst_n, pipe_cke, rob_disp_rs1_in_ROB, rs1_in_ROB_r);
+     (clk,rst_n, pipe_issue_cke, rob_disp_rs1_in_ROB, rs1_in_ROB_r);
    nDFF_lr #(1) dff_rs2_in_ROB_r
-     (clk,rst_n, pipe_cke, rob_disp_rs2_in_ROB, rs2_in_ROB_r);
+     (clk,rst_n, pipe_issue_cke, rob_disp_rs2_in_ROB, rs2_in_ROB_r);
    nDFF_lr #(1) dff_rs1_in_ARF_r
-     (clk,rst_n, pipe_cke, rob_disp_rs1_in_ARF, rs1_in_ARF_r);
+     (clk,rst_n, pipe_issue_cke, rob_disp_rs1_in_ARF, rs1_in_ARF_r);
    nDFF_lr #(1) dff_rs2_in_ARF_r
-     (clk,rst_n, pipe_cke, rob_disp_rs2_in_ARF, rs2_in_ARF_r);
+     (clk,rst_n, pipe_issue_cke, rob_disp_rs2_in_ARF, rs2_in_ARF_r);
 
    // Data path: no need to reset
    nDFF_l #(`NCPU_DW) dff_imm32_r
-     (clk, pipe_cke, disp_imm32, issue_imm32);
+     (clk, pipe_issue_cke, disp_imm32, issue_imm32);
 
    nDFF_l #(`NCPU_REG_AW) dff_issue_rs1_addr
-     (clk, pipe_cke, disp_rs1_addr, issue_rs1_addr);
+     (clk, pipe_issue_cke, disp_rs1_addr, issue_rs1_addr);
    nDFF_l #(`NCPU_REG_AW) dff_issue_rs2_addr
-     (clk, pipe_cke, disp_rs2_addr, issue_rs2_addr);
+     (clk, pipe_issue_cke, disp_rs2_addr, issue_rs2_addr);
      
    nDFF_l #(`NCPU_DW) dff_rob_rs1_dar_r
-     (clk, pipe_cke, rob_disp_rs1_dat, rob_rs1_dat_r);
+     (clk, pipe_issue_cke, rob_disp_rs1_dat, rob_rs1_dat_r);
    nDFF_l #(`NCPU_DW) dff_rob_rs2_dar_r
-     (clk, pipe_cke, rob_disp_rs2_dat, rob_rs2_dat_r);
+     (clk, pipe_issue_cke, rob_disp_rs2_dat, rob_rs2_dat_r);
      
    
    // Final operands
@@ -285,7 +313,7 @@ module ncpu32k_dispatch
             (`NCPU_LPU_IOPW != 5) |
             (`NCPU_LPU_UOPW != 3)
             )
-            $fatal("\n Please update this module.\n");
+            $fatal(1, "\n Please update this module.\n");
       end
       
    always @(posedge clk)
@@ -293,18 +321,10 @@ module ncpu32k_dispatch
          // Assertion 2103281250
          if ((disp_AREADY & disp_AVALID) ^ (rob_disp_AREADY & rob_disp_AVALID))
             $fatal("\n Bugs on handshake logic between the upstream module and ROB\n");
-         if ((disp_AREADY & disp_AVALID & issue_alu) ^ (issue_alu_AREADY & issue_alu_AVALID))
-            $fatal("\n Bugs on handshake logic between the upstream module and ALU\n");
-         if ((disp_AREADY & disp_AVALID & issue_lpu) ^ (issue_lpu_AREADY & issue_lpu_AVALID))
-            $fatal("\n Bugs on handshake logic between the upstream module and LPU\n");
-         if ((disp_AREADY & disp_AVALID & issue_agu) ^ (issue_agu_AREADY & issue_agu_AVALID))
-            $fatal("\n Bugs on handshake logic between the upstream module and AGU\n");
-         if ((disp_AREADY & disp_AVALID & issue_fpu) ^ (issue_fpu_AREADY & issue_fpu_AVALID))
-            $fatal("\n Bugs on handshake logic between the upstream module and FPU\n");
-         if ((disp_AREADY & disp_AVALID & issue_epu) ^ (issue_epu_AREADY & issue_epu_AVALID))
-            $fatal("\n Bugs on handshake logic between the upstream module and EPU\n");
+         if ((disp_AREADY & disp_AVALID) ^ (pipe_issue_AREADY & pipe_issue_AVALID))
+            $fatal("\n Bugs on handshake logic between the upstream module and PIPE_ISSUE\n");
          // Assertion 2103281331
-         if (~(issue_alu | issue_lpu | issue_agu | issue_fpu | issue_epu))
+         if (pipe_issue_BVALID & ~(issue_alu_r | issue_lpu_r | issue_agu_r | issue_fpu_r | issue_epu_r))
             $fatal("\n Bugs on DISPATCH. Some insns are unhandled. \n");
          // Assertion 2103280032
          if ((rs1_in_ARF_r & rs1_in_ROB_r) | (rs2_in_ARF_r & rs2_in_ROB_r))

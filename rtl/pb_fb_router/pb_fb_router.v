@@ -18,7 +18,7 @@
 
 module pb_fb_router
 #(
-   parameter NBUS
+   parameter NBUS `PARAM_NOT_SPECIFIED
 )
 (
    input                      clk,
