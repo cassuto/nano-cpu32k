@@ -1,4 +1,4 @@
-
+`include "timescale.v"
 `timescale 1ns / 1ps
 
 module tb_pb_fb_DRAM_ctrl();

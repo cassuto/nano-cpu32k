@@ -35,13 +35,14 @@ module ncpu32k_byp_arbiter
    input [WAYS*ID_WIDTH-1:0]  fu_wb_id,
    output                     rob_wb_BVALID,
    input                      rob_wb_BREADY,
-   output [`NCPU_DW-1:0]      rob_wb_BDATA,
-   output [TAG_WIDTH-1:0]     rob_wb_BTAG,
-   output [ID_WIDTH-1:0]      rob_wb_id
+   output reg [`NCPU_DW-1:0]  rob_wb_BDATA,
+   output reg [TAG_WIDTH-1:0] rob_wb_BTAG,
+   output reg [ID_WIDTH-1:0]  rob_wb_id
 );
 
    wire [WAYS-1:0] grant;
    genvar i;
+   integer x;
    
    ncpu32k_priority_onehot
       #(
@@ -56,26 +57,31 @@ module ncpu32k_byp_arbiter
       );
    
    generate
-      wire [`NCPU_DW-1:0]  BDATA [WAYS:0];
-      wire [TAG_WIDTH-1:0] BTAG  [WAYS:0];
-      wire [ID_WIDTH-1:0]  id    [WAYS:0];
-      
-      assign BDATA[0] = {`NCPU_DW{1'b0}};
-      assign BTAG[0] = {TAG_WIDTH{1'b0}};
-      assign id[0] = {ID_WIDTH{1'b0}};
+      wire [`NCPU_DW-1:0]  e_fu_wb_BDATA [WAYS:0];
+      wire [TAG_WIDTH-1:0] e_fu_wb_BTAG  [WAYS:0];
+      wire [ID_WIDTH-1:0]  e_fu_wb_id    [WAYS:0];
       
       for(i=0;i<WAYS;i=i+1)
-         begin : gen_sel
+         begin
+            assign e_fu_wb_BDATA[i] = fu_wb_BDATA[(i+1)*`NCPU_DW-1: i*`NCPU_DW];
+            assign e_fu_wb_BTAG[i] = fu_wb_BTAG[(i+1)*TAG_WIDTH-1: i*TAG_WIDTH];
+            assign e_fu_wb_id[i] = fu_wb_id[(i+1)*ID_WIDTH-1: i*ID_WIDTH];
             assign fu_wb_BREADY[i] = grant[i] & rob_wb_BREADY;
-            
-            assign BDATA[i+1] = BDATA[i] | (fu_wb_BDATA[(i+1)*`NCPU_DW-1: i*`NCPU_DW] & {`NCPU_DW{grant[i]}});
-            assign BTAG[i+1] = BTAG[i] | (fu_wb_BTAG[(i+1)*TAG_WIDTH-1: i*TAG_WIDTH] & {TAG_WIDTH{grant[i]}});
-            assign id[i+1] = id[i] | (fu_wb_id[(i+1)*ID_WIDTH-1: i*ID_WIDTH] & {ID_WIDTH{grant[i]}});
          end
-      
-      assign rob_wb_BDATA = BDATA[WAYS];
-      assign rob_wb_BTAG = BTAG[WAYS];
-      assign rob_wb_id = id[WAYS];
+
+      always @(*)
+         begin
+            rob_wb_BDATA = {`NCPU_DW{1'b0}};
+            rob_wb_BTAG = {TAG_WIDTH{1'b0}};
+            rob_wb_id = {ID_WIDTH{1'b0}};
+            
+            for(x=0;x<WAYS;x=x+1)
+               begin : gen_sel
+                  rob_wb_BDATA = rob_wb_BDATA | (e_fu_wb_BDATA[x] & {`NCPU_DW{grant[x]}});
+                  rob_wb_BTAG = rob_wb_BTAG | (e_fu_wb_BTAG[x] & {TAG_WIDTH{grant[x]}});
+                  rob_wb_id = rob_wb_id | (e_fu_wb_id[x] & {ID_WIDTH{grant[x]}});
+               end
+         end
    endgenerate
    
    assign rob_wb_BVALID = |fu_wb_BVALID;

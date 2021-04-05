@@ -25,31 +25,30 @@ module ncpu32k_priority_onehot
 )
 (
    input [DW-1:0] DIN, // LSB (0) has the highest priority, MSB (DW-1) has the lowest priority.
-   output [DW-1:0] DOUT // one-hot code
+   output reg [DW-1:0] DOUT // one-hot code
 );
-   genvar i;
+   integer i;
 
+   reg prefixsum;
    generate
-      wire [DW-1:0] prefixsum;
-      assign prefixsum[0] = POLARITY_DIN ? 1'b0 : 1'b1;
-      for(i=1;i<DW;i=i+1)
-         begin : gen_prefixsum
-            if (POLARITY_DIN)
-               assign prefixsum[i] = prefixsum[i-1] | DIN[i-1];
-            else
-               assign prefixsum[i] = prefixsum[i-1] & DIN[i-1];
-         end
-      for(i=0;i<DW;i=i+1)
-         begin : gen_dout
-            if (POLARITY_DIN && POLARITY_DOUT)
-               assign DOUT[i] = ~prefixsum[i] & DIN[i];
-            else if (!POLARITY_DIN && POLARITY_DOUT)
-               assign DOUT[i] = prefixsum[i] & ~DIN[i];
-            else if (POLARITY_DIN && !POLARITY_DOUT)
-               assign DOUT[i] = prefixsum[i] | ~DIN[i];
-            else if (!POLARITY_DIN && !POLARITY_DOUT)
-               assign DOUT[i] = ~prefixsum[i] | DIN[i];
-         end
+      always @(*)
+         for(i=0;i<DW;i=i+1)
+            begin : gen_prefixsum
+               if (i==0)
+                  prefixsum = POLARITY_DIN ? 1'b0 : 1'b1;
+               else if (POLARITY_DIN)
+                  prefixsum = prefixsum | DIN[i-1];
+               else
+                  prefixsum = prefixsum & DIN[i-1];
+               if (POLARITY_DIN && POLARITY_DOUT)
+                  DOUT[i] = ~prefixsum & DIN[i];
+               else if (!POLARITY_DIN && POLARITY_DOUT)
+                  DOUT[i] = prefixsum & ~DIN[i];
+               else if (POLARITY_DIN && !POLARITY_DOUT)
+                  DOUT[i] = prefixsum | ~DIN[i];
+               else if (!POLARITY_DIN && !POLARITY_DOUT)
+                  DOUT[i] = ~prefixsum | DIN[i];
+            end
    endgenerate
 
 endmodule

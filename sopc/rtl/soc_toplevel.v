@@ -52,7 +52,8 @@ module soc_toplevel
    parameter CONFIG_CORE_1_ENABLE_DCACHE = 0,
 
    parameter CONFIG_PIPEBUF_BYPASS = 1,
-   parameter CONFIG_IBUS_OUTSTANTING_LOG2 = 2
+   parameter CONFIG_IBUS_OUTSTANTING_LOG2 = 2,
+   parameter CONFIG_CDC_STAGES = 2
 )
 (
    input                            CPU_CLK,
@@ -62,10 +63,10 @@ module soc_toplevel
 
    // SDRAM Interface
    output                           DRAM_CKE,   // Synchronous Clock Enable
-   output [CONFIG_SDR_ADDR_BITS - 1 : 0]   DRAM_ADDR,  // SDRAM Address
-   output   [CONFIG_SDR_BA_BITS - 1 : 0]   DRAM_BA,    // Bank Address
-   inout    [CONFIG_SDR_DQ_BITS - 1 : 0]   DRAM_DATA,  // SDRAM I/O
-   output   [CONFIG_SDR_DM_BITS - 1 : 0]   DRAM_DQM,   // Data Mask
+   output [CONFIG_SDR_ADDR_BITS - 1 : 0]  DRAM_ADDR,  // SDRAM Address
+   output [CONFIG_SDR_BA_BITS - 1 : 0]    DRAM_BA,    // Bank Address
+   inout  [CONFIG_SDR_DQ_BITS - 1 : 0]    DRAM_DATA,  // SDRAM I/O
+   output [CONFIG_SDR_DM_BITS - 1 : 0]    DRAM_DQM,   // Data Mask
    output                           DRAM_CAS_L,
    output                           DRAM_RAS_L,
    output                           DRAM_WE_L,
@@ -82,14 +83,11 @@ module soc_toplevel
    output                           UART_TX_L
 );
 
-   // Internal parameters. Not edit
-   localparam DW = `NCPU_DW;
-   localparam AW = `NCPU_AW;
+   // Internal parameters. Do not edit
    localparam N_BW = 1;
    localparam L2_CH_DW = `NCPU_DW;
    localparam L2_CH_AW = CONFIG_SDR_ROW_BITS+CONFIG_SDR_BA_BITS+CONFIG_SDR_COL_BITS-N_BW+2;
-   localparam NBUS = 4;
-   localparam CPU_RESET_VECTOR = 32'h80000000; // Start from bootrom
+   localparam NBUS = 4; // UART + SPI Master + Bootrom + L2 Cache
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -177,14 +175,14 @@ module soc_toplevel
    wire [`NCPU_DW-1:0]  pb_bootm_ADATA;
    wire                 pb_spi_AVALID;
    wire [`NCPU_AW-1:0]  pb_spi_AADDR;
-   wire [4:0]           pb_spi_AWMSK;
+   wire [3:0]           pb_spi_AWMSK;
    wire [1:0]           pb_spi_AEXC;
    wire [31:0]          pb_spi_ADATA;
    wire [31:0]          pb_spi_BDATA;
    wire                 pb_spi_BREADY;
    wire                 pb_uart_AVALID;
    wire [`NCPU_AW-1:0]  pb_uart_AADDR;
-   wire [4:0]           pb_uart_AWMSK;
+   wire [3:0]           pb_uart_AWMSK;
    wire [1:0]           pb_uart_AEXC;
    wire [31:0]          pb_uart_ADATA;
    wire [31:0]          pb_uart_BDATA;
@@ -249,7 +247,8 @@ module soc_toplevel
     ************************************************************/
    pb_fb_L2_cache
      #(
-       .CONFIG_PIPEBUF_BYPASS          (CONFIG_PIPEBUF_BYPASS)
+       .CONFIG_PIPEBUF_BYPASS          (CONFIG_PIPEBUF_BYPASS),
+       .CONFIG_CDC_STAGES              (CONFIG_CDC_STAGES)
      )
    L2_cache
      (/*AUTOINST*/

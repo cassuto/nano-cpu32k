@@ -17,7 +17,7 @@
 
 module ncpu32k_pipeline_fpu
 #(
-   parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH,
+   parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2,
    parameter CONFIG_ENABLE_FPU,
    parameter CONFIG_PIPEBUF_BYPASS,
    parameter CONFIG_ROB_DEPTH_LOG2
@@ -66,9 +66,11 @@ generate
 
          ncpu32k_issue_queue
             #(
-               .DEPTH      (CONFIG_FPU_ISSUE_QUEUE_DEPTH),
+               .DEPTH      (1<<CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2),
+               .DEPTH_WIDTH (CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2),
                .UOP_WIDTH  (`NCPU_FPU_IOPW),
-               .ALGORITHM  (0) // Out of Order
+               .ALGORITHM  (0), // Out of Order
+               .CONFIG_ROB_DEPTH_LOG2 (CONFIG_ROB_DEPTH_LOG2)
             )
          ISSUE_QUEUE_FPU
             (
@@ -76,6 +78,7 @@ generate
                .rst_n      (rst_n),
                .i_issue_AVALID   (issue_fpu_AVALID),
                .o_issue_AREADY   (issue_fpu_AREADY),
+               .i_flush       (flush),
                .i_uop         (issue_fpu_uop),
                .i_id          (issue_id),
                .i_rs1_rdy     (issue_rs1_rdy),

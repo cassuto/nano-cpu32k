@@ -62,7 +62,6 @@ module ncpu32k_dmmu
 
    // MMU FSM
    wire tlb_cke;
-   wire tlb_pending;
 
    ncpu32k_cell_pipebuf
       #(
@@ -72,6 +71,7 @@ module ncpu32k_dmmu
       (
          .clk        (clk),
          .rst_n      (rst_n),
+         .flush      (1'b0),
          .A_en       (1'b1),
          .AVALID     (dbus_AVALID),
          .AREADY     (dbus_AREADY),
@@ -79,7 +79,7 @@ module ncpu32k_dmmu
          .BVALID     (dcache_AVALID),
          .BREADY     (dcache_AREADY),
          .cke        (tlb_cke),
-         .pending    (tlb_pending)
+         .pending    ()
       );
 
    // MSR.DMMID
@@ -183,6 +183,8 @@ module ncpu32k_dmmu
    wire tlb_nc = tlb_h_r[7];
    wire tlb_s = tlb_h_r[8];
    wire [PPN_DW-1:0] tlb_ppn = tlb_h_r[`NCPU_DW-1:`NCPU_DW-PPN_DW];
+   wire perm_denied;
+   wire tlb_miss;
 
    assign perm_denied =
       (
@@ -195,10 +197,11 @@ module ncpu32k_dmmu
        );
 
    // TLB miss exception
-   assign dcache_AEXC[0] = ~(tlb_v & tlb_vpn == tgt_vpn_r) & msr_psr_dmme_r;
+   assign tlb_miss = ~(tlb_v & tlb_vpn == tgt_vpn_r);
+   assign dcache_AEXC[0] = tlb_miss & msr_psr_dmme_r;
 
    // Permission check, Page Fault exception
-   assign dcache_AEXC[1] = perm_denied & ~dcache_AEXC[0] & msr_psr_dmme_r;
+   assign dcache_AEXC[1] = perm_denied & ~tlb_miss & msr_psr_dmme_r;
 
    assign tlb_addr = {tlb_ppn[PPN_DW-1:0], tgt_page_offset_r[PPN_SHIFT-1:0]};
 

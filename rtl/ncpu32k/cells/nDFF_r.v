@@ -35,14 +35,23 @@ module nDFF_r # (
 );
 `ifdef NCPU_NO_RST
    always @(posedge CLK) begin
-       Q <= #1 D;
+      `ifdef SYNTHESIS
+      Q <= D;
+      `else
+      Q <= #1 D;
+      `endif
    end
 `else
    always @(posedge CLK or negedge RST_n) begin
-     if (!RST_n)
-       Q <= RST_VECTOR;
-     else
-       Q <= #1 D;
+      if (!RST_n)
+         Q <= RST_VECTOR;
+      else
+         `ifdef SYNTHESIS
+         Q <= D;
+         `else
+         Q <= #1 D;
+         `endif
+
    end
 `endif
 
@@ -51,10 +60,12 @@ module nDFF_r # (
 
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
+`ifdef NCPU_CHECK_X
    always @(posedge CLK) begin
-      if(D == {DW{1'bx}})
-         $fatal ("\n dff uncertain state! \n");
+      if((^D) === 1'bx)
+         $fatal ("\n DFF: uncertain state! \n");
    end
+`endif
 `endif
 
 `endif

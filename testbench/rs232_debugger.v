@@ -18,6 +18,7 @@
 /*  Lesser General Public License for more details.                        */
 /***************************************************************************/
 
+`timescale 1ns / 1ps
 `include "ncpu32k_config.h"
 
 module rs232_debugger

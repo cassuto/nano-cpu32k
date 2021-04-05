@@ -29,8 +29,12 @@ module nDFF_l # (
    output reg [DW-1:0] Q // Data output
 );
    always @(posedge CLK) begin
-     if (LOAD)
-       Q <= #1 D;
+      if (LOAD)
+`ifdef SYNTHESIS
+         Q <= D;
+`else
+         Q <= #1 D;
+`endif
    end
 
    // synthesis translate_off
@@ -38,12 +42,15 @@ module nDFF_l # (
 
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
+`ifdef NCPU_CHECK_X
    always @(posedge CLK) begin
-      if(D == {DW{1'bx}})
-         $fatal ("\n dff uncertain state! \n");
+      if((^D) === 1'bx)
+         $fatal ("\n DFF: uncertain state! \n");
    end
+`endif
 `endif
 
 `endif
    // synthesis translate_on
+
 endmodule

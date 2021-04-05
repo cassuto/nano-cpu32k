@@ -17,7 +17,15 @@
 
 module ncpu32k_wb_commit
 #(
-   parameter CONFIG_ROB_DEPTH_LOG2
+   parameter CONFIG_ROB_DEPTH_LOG2,
+   parameter [`NCPU_AW-1:0] CONFIG_EDTM_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EDPF_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EALIGN_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EITM_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EIPF_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_ESYSCALL_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EINSN_VECTOR,
+   parameter [`NCPU_AW-1:0] CONFIG_EIRQ_VECTOR
 )
 (
    input                      clk,
@@ -48,7 +56,6 @@ module ncpu32k_wb_commit
    input                      wb_agu_BEDTM,
    input                      wb_agu_BEDPF,
    input                      wb_agu_BEALIGN,
-   input [`NCPU_AW-1:0]       wb_agu_BLSA,
    // From EPU
    output                     wb_epu_BREADY,
    input                      wb_epu_BVALID,
@@ -79,7 +86,6 @@ module ncpu32k_wb_commit
    input                      rob_disp_AVALID,
    output                     rob_disp_AREADY,
    input [`NCPU_AW-3:0]       rob_disp_pc,
-   input                      rob_disp_pred_branch,
    input [`NCPU_AW-3:0]       rob_disp_pred_tgt,
    input                      rob_disp_rd_we,
    input [`NCPU_REG_AW-1:0]   rob_disp_rd_addr,
@@ -100,7 +106,8 @@ module ncpu32k_wb_commit
 );
 
    localparam N_FU = 5; // EPU + ALU + LPU + AGU + FPU
-   localparam TAG_WIDTH = 1 + 4; // B + EXC
+   localparam EXC_WIDTH = 4;
+   localparam TAG_WIDTH = 1 + EXC_WIDTH; // B + EXC
    localparam DEPTH_WIDTH = CONFIG_ROB_DEPTH_LOG2;
 
    /*AUTOWIRE*/
@@ -118,57 +125,59 @@ module ncpu32k_wb_commit
    wire [TAG_WIDTH-1:0]       wb_lpu_tag;
    wire [TAG_WIDTH-1:0]       wb_agu_tag;
    wire [TAG_WIDTH-1:0]       wb_fpu_tag;
-   wire [3:0]                 wb_epu_exc;
-   wire [3:0]                 wb_alu_exc;
-   wire [3:0]                 wb_lpu_exc;
-   wire [3:0]                 wb_agu_exc;
-   wire [3:0]                 wb_fpu_exc;
+   wire [EXC_WIDTH-1:0]       wb_epu_exc;
+   wire [EXC_WIDTH-1:0]       wb_alu_exc;
+   wire [EXC_WIDTH-1:0]       wb_lpu_exc;
+   wire [EXC_WIDTH-1:0]       wb_agu_exc;
+   wire [EXC_WIDTH-1:0]       wb_fpu_exc;
    wire [N_FU-1:0]            fu_wb_BVALID;
    wire [N_FU-1:0]            fu_wb_BREADY;
    wire [N_FU*`NCPU_DW-1:0]   fu_wb_BDATA;
    wire [N_FU*TAG_WIDTH-1:0]  fu_wb_BTAG;
-   wire [N_FU*CONFIG_ROB_DEPTH_LOG2-1:0]  fu_wb_id;
+   wire [N_FU*CONFIG_ROB_DEPTH_LOG2-1:0] fu_wb_id;
    wire                       rob_wb_BVALID;
    wire [`NCPU_DW-1:0]        rob_wb_BDATA;
    wire [TAG_WIDTH-1:0]       rob_wb_BTAG;
-   wire [CONFIG_ROB_DEPTH_LOG2-1:0]       rob_wb_id;
-   wire                       wb_agu_hds_b;
+   wire [CONFIG_ROB_DEPTH_LOG2-1:0] rob_wb_id;
    wire                       rob_commit_BREADY;
    wire                       commit_branch_op;
-   wire [3:0]                 commit_exc;
-   wire [`NCPU_AW-1:0]        pc_nxt;
+   wire [EXC_WIDTH-1:0]       commit_exc;
+   wire [`NCPU_AW-3:0]        pc_nxt;
    wire                       branch_taken;
    wire                       exc_taken;
    wire                       se_taken;
 
    // Encode exceptions
    // Assert (2104022034)
-   assign wb_epu_exc = ({TAG_WIDTH{wb_epu_BEITM}} & 4'd1) |
-                        ({TAG_WIDTH{wb_epu_BEIPF}} & 4'd2) |
-                        ({TAG_WIDTH{wb_epu_BEINSN}} & 4'd3) |
-                        ({TAG_WIDTH{wb_epu_BESYSCALL}} & 4'd4) |
-                        ({TAG_WIDTH{wb_epu_BERET}} & 4'd5) |
-                        ({TAG_WIDTH{wb_epu_BEIRQ}} & 4'd6);
-   localparam [3:0] EXC_BRANCH_REG_TAKEN = 4'd7;
-   localparam [3:0] EXC_BRANCH_REL_TAKEN = 4'd8;
-   assign wb_alu_exc = ({TAG_WIDTH{wb_alu_BBRANCH_REG_TAKEN}} & EXC_BRANCH_REG_TAKEN) |
-                        ({TAG_WIDTH{wb_alu_BBRANCH_REL_TAKEN}} & EXC_BRANCH_REL_TAKEN);
-   assign wb_lpu_exc = {TAG_WIDTH{1'b0}};
-   assign wb_agu_exc = ({TAG_WIDTH{wb_agu_BEDTM}} & 4'd9) |
-                        ({TAG_WIDTH{wb_agu_BEDPF}} & 4'd10) |
-                        ({TAG_WIDTH{wb_agu_BEALIGN}} & 4'd11);
-   assign wb_fpu_exc = {TAG_WIDTH{1'b0}};
+   assign wb_epu_exc = ({EXC_WIDTH{wb_epu_BEITM}} & 4'd1) |
+                        ({EXC_WIDTH{wb_epu_BEIPF}} & 4'd2) |
+                        ({EXC_WIDTH{wb_epu_BEINSN}} & 4'd3) |
+                        ({EXC_WIDTH{wb_epu_BESYSCALL}} & 4'd4) |
+                        ({EXC_WIDTH{wb_epu_BERET}} & 4'd5) |
+                        ({EXC_WIDTH{wb_epu_BEIRQ}} & 4'd6);
+   localparam [EXC_WIDTH-1:0] EXC_BRANCH_REG_TAKEN = 4'd7;
+   localparam [EXC_WIDTH-1:0] EXC_BRANCH_REL_TAKEN = 4'd8;
+   assign wb_alu_exc = ({EXC_WIDTH{wb_alu_BBRANCH_REG_TAKEN}} & EXC_BRANCH_REG_TAKEN) |
+                        ({EXC_WIDTH{wb_alu_BBRANCH_REL_TAKEN}} & EXC_BRANCH_REL_TAKEN);
+   assign wb_lpu_exc = {EXC_WIDTH{1'b0}};
+   assign wb_agu_exc = ({EXC_WIDTH{wb_agu_BEDTM}} & 4'd9) |
+                        ({EXC_WIDTH{wb_agu_BEDPF}} & 4'd10) |
+                        ({EXC_WIDTH{wb_agu_BEALIGN}} & 4'd11);
+   assign wb_fpu_exc = {EXC_WIDTH{1'b0}};
 
-   assign wb_epu_tag = {1'b0, wb_epu_exc[3:0]};
-   assign wb_alu_tag = {wb_alu_BBRANCH_OP, wb_alu_exc[3:0]};
-   assign wb_lpu_tag = {1'b0, wb_lpu_exc[3:0]};
-   assign wb_agu_tag = {1'b0, wb_agu_exc[3:0]};
-   assign wb_fpu_tag = {1'b0, wb_fpu_exc[3:0]};
+   assign wb_epu_tag = {1'b0, wb_epu_exc[EXC_WIDTH-1:0]};
+   assign wb_alu_tag = {wb_alu_BBRANCH_OP, wb_alu_exc[EXC_WIDTH-1:0]};
+   assign wb_lpu_tag = {1'b0, wb_lpu_exc[EXC_WIDTH-1:0]};
+   assign wb_agu_tag = {1'b0, wb_agu_exc[EXC_WIDTH-1:0]};
+   assign wb_fpu_tag = {1'b0, wb_fpu_exc[EXC_WIDTH-1:0]};
 
    assign fu_wb_BVALID = {wb_fpu_BVALID, wb_agu_BVALID, wb_lpu_BVALID, wb_alu_BVALID, wb_epu_BVALID};
    assign {wb_fpu_BREADY, wb_agu_BREADY, wb_lpu_BREADY, wb_alu_BREADY, wb_epu_BREADY} = fu_wb_BREADY;
+   assign fu_wb_BDATA = {wb_fpu_BDATA[`NCPU_DW-1:0], wb_agu_BDATA[`NCPU_DW-1:0], wb_lpu_BDATA[`NCPU_DW-1:0], wb_alu_BDATA[`NCPU_DW-1:0], wb_epu_BDATA[`NCPU_DW-1:0]};
    assign fu_wb_BTAG = {wb_fpu_tag[TAG_WIDTH-1:0], wb_agu_tag[TAG_WIDTH-1:0], wb_lpu_tag[TAG_WIDTH-1:0], wb_alu_tag[TAG_WIDTH-1:0], wb_epu_tag[TAG_WIDTH-1:0]};
-   assign fu_wb_id = {wb_fpu_BID, wb_agu_BID, wb_lpu_BID, wb_alu_BID, wb_epu_BID};
+   assign fu_wb_id = {wb_fpu_BID[CONFIG_ROB_DEPTH_LOG2-1:0], wb_agu_BID[CONFIG_ROB_DEPTH_LOG2-1:0],
+                     wb_lpu_BID[CONFIG_ROB_DEPTH_LOG2-1:0], wb_alu_BID[CONFIG_ROB_DEPTH_LOG2-1:0],
+                     wb_epu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]};
 
    ncpu32k_byp_arbiter
       #(
@@ -239,49 +248,50 @@ module ncpu32k_wb_commit
        .rob_wb_id                       (rob_wb_id[DEPTH_WIDTH-1:0]),
        .rob_commit_BREADY               (rob_commit_BREADY));
 
-   assign {commit_branch_op, commit_exc[3:0]} = rob_commit_BTAG;
+   assign {commit_branch_op, commit_exc[EXC_WIDTH-1:0]} = rob_commit_BTAG;
 
    //
    // Flush Request
    //
 
-   assign pc_nxt = ({`NCPU_AW{commit_exc==4'd1}} & `NCPU_EITM_VECTOR) |
-                        ({`NCPU_AW{commit_exc==4'd2}} &  `NCPU_EIPF_VECTOR) |
-                        ({`NCPU_AW{commit_exc==4'd3}} & `NCPU_EINSN_VECTOR) |
-                        ({`NCPU_AW{commit_exc==4'd4}} & `NCPU_ESYSCALL_VECTOR) |
-                        ({`NCPU_AW{commit_exc==4'd5}} & rob_commit_BDATA) |
-                        ({`NCPU_AW{commit_exc==4'd6}} & `NCPU_EIRQ_VECTOR) |
-                        ({`NCPU_AW{commit_exc==4'd7}} & rob_commit_BDATA) |
-                        ({`NCPU_AW{commit_exc==4'd8}} & ({rob_commit_pc[`NCPU_AW-3:0],2'b0} + rob_commit_BDATA)) |
-                        ({`NCPU_AW{commit_exc==4'd9}} & `NCPU_EDTM_VECTOR) |
-                        ({`NCPU_AW{commit_exc==4'd10}} & `NCPU_EDPF_VECTOR) |
-                        ({`NCPU_AW{commit_exc==4'd11}} & `NCPU_EALIGN_VECTOR) |
-                        ({`NCPU_AW{commit_exc==4'd0}} & ({rob_commit_pc[`NCPU_AW-3:0],2'b0} + 4'd4));
+   assign pc_nxt = ({`NCPU_AW-2{commit_exc==4'd1}} & CONFIG_EITM_VECTOR[`NCPU_AW-1:2]) |
+                     ({`NCPU_AW-2{commit_exc==4'd2}} &  CONFIG_EIPF_VECTOR[`NCPU_AW-1:2]) |
+                     ({`NCPU_AW-2{commit_exc==4'd3}} & CONFIG_EINSN_VECTOR[`NCPU_AW-1:2]) |
+                     ({`NCPU_AW-2{commit_exc==4'd4}} & CONFIG_ESYSCALL_VECTOR[`NCPU_AW-1:2]) |
+                     ({`NCPU_AW-2{commit_exc==4'd5}} & rob_commit_BDATA[`NCPU_AW-1:2]) |
+                     ({`NCPU_AW-2{commit_exc==4'd6}} & CONFIG_EIRQ_VECTOR[`NCPU_AW-1:2]) |
+                     ({`NCPU_AW-2{commit_exc==4'd7}} & rob_commit_BDATA[`NCPU_AW-1:2]) | // JMPREG
+                     ({`NCPU_AW-2{commit_exc==4'd8}} & (rob_commit_pc + rob_commit_BDATA[`NCPU_AW-1:2])) | // JMPREL
+                     ({`NCPU_AW-2{commit_exc==4'd9}} & CONFIG_EDTM_VECTOR[`NCPU_AW-1:2]) |
+                     ({`NCPU_AW-2{commit_exc==4'd10}} & CONFIG_EDPF_VECTOR[`NCPU_AW-1:2]) |
+                     ({`NCPU_AW-2{commit_exc==4'd11}} & CONFIG_EALIGN_VECTOR[`NCPU_AW-1:2]) |
+                     ({`NCPU_AW-2{commit_exc==4'd0}} & (rob_commit_pc + 1'b1));
 
-   // Tell if an exception raised.
-   assign exc_taken = (|commit_exc) & ~branch_taken;
    // The actually calculated result of the branch insn
    assign branch_taken = (commit_exc==EXC_BRANCH_REG_TAKEN) | (commit_exc==EXC_BRANCH_REL_TAKEN);
+   // Tell if an exception raised.
+   assign exc_taken = (|commit_exc) & ~branch_taken;
    // Check speculative execution (SE)
    assign se_taken = ~exc_taken & (rob_commit_pred_tgt != pc_nxt);
 
    // Assert (2104032354)
-   assign flush = rob_commit_BVALID & (se_taken | exc_taken);
+   assign flush = rob_commit_BVALID & (exc_taken | se_taken);
    assign flush_tgt = se_taken ? rob_commit_pred_tgt // Go to the right addresss
-                        : pc_nxt[`NCPU_AW-1:2];
+                        : pc_nxt;
 
 
    //
    // Commit
    //
 
-   assign bpu_wb = commit_branch_op;
+   assign bpu_wb = rob_commit_BVALID & commit_branch_op;
    assign bpu_wb_insn_pc = rob_commit_pc;
    assign bpu_wb_taken = branch_taken;
+   assign bpu_wb_tgt = pc_nxt;
 
+   assign arf_we = rob_commit_BVALID & rob_commit_rd_we & ~exc_taken;
    assign arf_din_addr = rob_commit_rd_addr;
    assign arf_din = rob_commit_BDATA;
-   assign arf_we = rob_commit_BVALID & rob_commit_rd_we & ~exc_taken;
 
    // ARF, BPU and flush logics are always ready
    assign rob_commit_BREADY = 1'b1;

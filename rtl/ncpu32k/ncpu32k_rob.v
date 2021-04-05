@@ -91,6 +91,7 @@ module ncpu32k_rob
    wire [DEPTH-2:0]                 rs1_first_match, rs2_first_match;
 
    genvar i;
+   integer x;
 
    assign rob_push = (rob_disp_AVALID & rob_disp_AREADY);
    assign rob_pop = (rob_commit_BREADY & rob_commit_BVALID);
@@ -106,7 +107,7 @@ module ncpu32k_rob
    generate
       for (i=0;i<DEPTH;i=i+1)
          begin : gen_DFFs
-            wire this_disp, this_commit;
+            wire this_disp, this_wb, this_commit;
 
             assign this_disp = (i[DEPTH_WIDTH-1:0]==rob_disp_id) & rob_push;
             assign this_wb = (i[DEPTH_WIDTH-1:0]==rob_wb_id) & rob_wb_BVALID & rob_wb_BREADY;
@@ -266,22 +267,24 @@ module ncpu32k_rob
 
    // Output MUX for dispatch channel
    generate
-      wire [`NCPU_DW-1:0] t_rs1_dat [DEPTH-1:0];
-      wire [`NCPU_DW-1:0] t_rs2_dat [DEPTH-1:0];
-
-      // Bypass from wb channel.
-      assign t_rs1_dat[0] = ({`NCPU_DW{|(rs1_first_match & rs1_prec_bypass)}} & rob_wb_BDATA);
-      assign t_rs2_dat[0] = ({`NCPU_DW{|(rs2_first_match & rs2_prec_bypass)}} & rob_wb_BDATA);
-      
-      // Get from ROB
-      for(i=1;i<DEPTH;i=i+1)
-         begin : gen_issue_output
-            assign t_rs1_dat[i] = t_rs1_dat[i-1] | ({`NCPU_DW{rs1_first_match[i-1] & rs1_prec_ready[i-1]}} & prec_dat[i-1]);
-            assign t_rs2_dat[i] = t_rs2_dat[i-1] | ({`NCPU_DW{rs2_first_match[i-1] & rs2_prec_ready[i-1]}} & prec_dat[i-1]);
+      reg [`NCPU_DW-1:0] t_rs1_dat;
+      reg [`NCPU_DW-1:0] t_rs2_dat;
+      always @(*)
+         begin
+            // Bypass from wb channel.
+            t_rs1_dat = ({`NCPU_DW{|(rs1_first_match & rs1_prec_bypass)}} & rob_wb_BDATA);
+            t_rs2_dat = ({`NCPU_DW{|(rs2_first_match & rs2_prec_bypass)}} & rob_wb_BDATA);
+            
+            // Get from ROB
+            for(x=0; x < DEPTH-1; x=x+1)
+               begin : gen_issue_output
+                  t_rs1_dat = t_rs1_dat | ({`NCPU_DW{rs1_first_match[x] & rs1_prec_ready[x]}} & prec_dat[x]);
+                  t_rs2_dat = t_rs2_dat | ({`NCPU_DW{rs2_first_match[x] & rs2_prec_ready[x]}} & prec_dat[x]);
+               end
          end
 
-      assign rob_disp_rs1_dat = t_rs1_dat[DEPTH-1];
-      assign rob_disp_rs2_dat = t_rs2_dat[DEPTH-1];
+      assign rob_disp_rs1_dat = t_rs1_dat;
+      assign rob_disp_rs2_dat = t_rs2_dat;
    endgenerate
 
    assign rob_disp_rs1_in_ROB = |(rs1_first_match & rs1_prec_in_ROB);

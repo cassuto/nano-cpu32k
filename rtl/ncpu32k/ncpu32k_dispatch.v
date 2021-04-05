@@ -29,7 +29,6 @@ module ncpu32k_dispatch
    output                     disp_AREADY,
    input                      disp_AVALID,
    input [`NCPU_AW-3:0]       disp_pc,
-   input                      disp_pred_branch,
    input [`NCPU_AW-3:0]       disp_pred_tgt,
    input [`NCPU_ALU_IOPW-1:0] disp_alu_opc_bus,
    input [`NCPU_LPU_IOPW-1:0] disp_lpu_opc_bus,
@@ -52,7 +51,6 @@ module ncpu32k_dispatch
    output                     rob_disp_AVALID,
    input                      rob_disp_AREADY,
    output [`NCPU_AW-3:0]      rob_disp_pc,
-   output                     rob_disp_pred_branch,
    output [`NCPU_AW-3:0]      rob_disp_pred_tgt,
    output                     rob_disp_rd_we,
    output [`NCPU_REG_AW-1:0]  rob_disp_rd_addr,
@@ -113,7 +111,6 @@ module ncpu32k_dispatch
    wire [2:0] agu_size;
    wire rs1_re_r;
    wire rs2_re_r;
-   wire [`NCPU_AW-3:0] insn_pc_r;
    wire rs1_in_ROB_r, rs2_in_ROB_r;
    wire rs1_in_ARF_r, rs2_in_ARF_r;
    wire [`NCPU_DW-1:0] rob_rs1_dat_r, rob_rs2_dat_r;
@@ -132,7 +129,8 @@ module ncpu32k_dispatch
    assign issue_ready = (~issue_alu | issue_alu_AREADY) &
                         (~issue_lpu | issue_lpu_AREADY) &
                         (~issue_agu | issue_agu_AREADY) &
-                        (~issue_epu | issue_epu_AREADY);
+                        (~issue_epu | issue_epu_AREADY) &
+                        (~issue_fpu | issue_fpu_AREADY);
    
    // Assert (2103281250)
    assign disp_AREADY = rob_disp_AREADY & issue_ready;
@@ -146,23 +144,23 @@ module ncpu32k_dispatch
    always @(*)
       casez(disp_alu_opc_bus)
       17'b?_????_????_????_???1: alu_uop_opc_nxt = 5'd1;
-      17'b?_????_????_????_??1?: alu_uop_opc_nxt = 5'd2;
-      17'b?_????_????_????_?1??: alu_uop_opc_nxt = 5'd3;
-      17'b?_????_????_????_1???: alu_uop_opc_nxt = 5'd4;
-      17'b?_????_????_???1_????: alu_uop_opc_nxt = 5'd5;
-      17'b?_????_????_??1?_????: alu_uop_opc_nxt = 5'd6;
-      17'b?_????_????_?1??_????: alu_uop_opc_nxt = 5'd7;
-      17'b?_????_????_1???_????: alu_uop_opc_nxt = 5'd8;
-      17'b?_????_???1_????_????: alu_uop_opc_nxt = 5'd9;
-      17'b?_????_??1?_????_????: alu_uop_opc_nxt = 5'd10;
-      17'b?_????_?1??_????_????: alu_uop_opc_nxt = 5'd11;
-      17'b?_????_1???_????_????: alu_uop_opc_nxt = 5'd12;
-      17'b?_???1_????_????_????: alu_uop_opc_nxt = 5'd13;
-      17'b?_??1?_????_????_????: alu_uop_opc_nxt = 5'd14;
-      17'b?_?1??_????_????_????: alu_uop_opc_nxt = 5'd15;
-      17'b?_1???_????_????_????: alu_uop_opc_nxt = 5'd16;
-      17'b1_????_????_????_????: alu_uop_opc_nxt = 5'd17;
-      17'b0_0000_0000_0000_0000: alu_uop_opc_nxt = 5'd0;
+      17'b?_????_????_????_??10: alu_uop_opc_nxt = 5'd2;
+      17'b?_????_????_????_?100: alu_uop_opc_nxt = 5'd3;
+      17'b?_????_????_????_1000: alu_uop_opc_nxt = 5'd4;
+      17'b?_????_????_???1_0000: alu_uop_opc_nxt = 5'd5;
+      17'b?_????_????_??10_0000: alu_uop_opc_nxt = 5'd6;
+      17'b?_????_????_?100_0000: alu_uop_opc_nxt = 5'd7;
+      17'b?_????_????_1000_0000: alu_uop_opc_nxt = 5'd8;
+      17'b?_????_???1_0000_0000: alu_uop_opc_nxt = 5'd9;
+      17'b?_????_??10_0000_0000: alu_uop_opc_nxt = 5'd10;
+      17'b?_????_?100_0000_0000: alu_uop_opc_nxt = 5'd11;
+      17'b?_????_1000_0000_0000: alu_uop_opc_nxt = 5'd12;
+      17'b?_???1_0000_0000_0000: alu_uop_opc_nxt = 5'd13;
+      17'b?_??10_0000_0000_0000: alu_uop_opc_nxt = 5'd14;
+      17'b?_?100_0000_0000_0000: alu_uop_opc_nxt = 5'd15;
+      17'b?_1000_0000_0000_0000: alu_uop_opc_nxt = 5'd16;
+      17'b1_0000_0000_0000_0000: alu_uop_opc_nxt = 5'd17;
+      default: alu_uop_opc_nxt = 5'd0;
       endcase
 
    assign alu_uop_nxt = {disp_rel15[14:0], alu_uop_opc_nxt[`NCPU_ALU_UOPW_OPC-1:0]};
@@ -170,11 +168,11 @@ module ncpu32k_dispatch
    always @(*)
       casez(disp_lpu_opc_bus)
       5'b?_???1: lpu_uop_nxt = 3'd1;
-      5'b?_??1?: lpu_uop_nxt = 3'd2;
-      5'b?_?1??: lpu_uop_nxt = 3'd3;
-      5'b?_1???: lpu_uop_nxt = 3'd4;
-      5'b1_????: lpu_uop_nxt = 3'd5;
-      5'b0_0000: lpu_uop_nxt = 3'd0;
+      5'b?_??10: lpu_uop_nxt = 3'd2;
+      5'b?_?100: lpu_uop_nxt = 3'd3;
+      5'b?_1000: lpu_uop_nxt = 3'd4;
+      5'b1_0000: lpu_uop_nxt = 3'd5;
+      default: lpu_uop_nxt = 3'd0;
       endcase
    
    assign agu_size = disp_agu_load ? disp_agu_load_size : disp_agu_store_size;
@@ -184,14 +182,15 @@ module ncpu32k_dispatch
 
    always @(*)
       casez(disp_epu_opc_bus)
-      7'b???_???1: epu_uop_nxt = 3'd1;
-      7'b???_??1?: epu_uop_nxt = 3'd2;
-      7'b???_?1??: epu_uop_nxt = 3'd3;
-      7'b???_1???: epu_uop_nxt = 3'd4;
-      7'b??1_????: epu_uop_nxt = 3'd5;
-      7'b?1?_????: epu_uop_nxt = 3'd6;
-      7'b1??_????: epu_uop_nxt = 3'd7;
-      7'b000_0000: epu_uop_nxt = 3'd0;
+      8'b????_???1: epu_uop_nxt = 4'd1;
+      8'b????_??10: epu_uop_nxt = 4'd2;
+      8'b????_?100: epu_uop_nxt = 4'd3;
+      8'b????_1000: epu_uop_nxt = 4'd4;
+      8'b???1_0000: epu_uop_nxt = 4'd5;
+      8'b??10_0000: epu_uop_nxt = 4'd6;
+      8'b?100_0000: epu_uop_nxt = 4'd7;
+      8'b1000_0000: epu_uop_nxt = 4'd8;
+      default: epu_uop_nxt = 4'd0;
       endcase
    
    // Read operands from ARF
@@ -208,7 +207,6 @@ module ncpu32k_dispatch
    
    // Allocate entry in ROB
    assign rob_disp_pc = disp_pc;
-   assign rob_disp_pred_branch = disp_pred_branch;
    assign rob_disp_pred_tgt = disp_pred_tgt;
    assign rob_disp_rd_we = disp_rd_we;
    assign rob_disp_rd_addr = disp_rd_addr;
@@ -241,8 +239,14 @@ module ncpu32k_dispatch
    nDFF_lr #(1) dff_rs2_in_ARF_r
      (clk,rst_n, pipe_cke, rob_disp_rs2_in_ARF, rs2_in_ARF_r);
 
+   // Data path: no need to reset
    nDFF_l #(`NCPU_DW) dff_imm32_r
      (clk, pipe_cke, disp_imm32, issue_imm32);
+
+   nDFF_l #(`NCPU_REG_AW) dff_issue_rs1_addr
+     (clk, pipe_cke, disp_rs1_addr, issue_rs1_addr);
+   nDFF_l #(`NCPU_REG_AW) dff_issue_rs2_addr
+     (clk, pipe_cke, disp_rs2_addr, issue_rs2_addr);
      
    nDFF_l #(`NCPU_DW) dff_rob_rs1_dar_r
      (clk, pipe_cke, rob_disp_rs1_dat, rob_rs1_dat_r);
@@ -274,7 +278,8 @@ module ncpu32k_dispatch
  `ifdef NCPU_ENABLE_ASSERT
    initial
       begin
-         if ((`NCPU_EPU_IOPW != 7) |
+         if ((`NCPU_EPU_IOPW != 8) |
+            (`NCPU_EPU_UOPW != 4) |
             (`NCPU_ALU_IOPW != 17) |
             (`NCPU_ALU_UOPW_OPC != 5) |
             (`NCPU_LPU_IOPW != 5) |

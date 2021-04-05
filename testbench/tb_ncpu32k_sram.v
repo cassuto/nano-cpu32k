@@ -1,4 +1,4 @@
-
+`include "timescale.v"
 `include "ncpu32k_config.h"
 
 module tb_ncpu32k_sram();

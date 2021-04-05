@@ -34,7 +34,6 @@ module ncpu32k_psr
    // PSR
    input                   msr_exc_ent,
    output [`NCPU_PSR_DW-1:0] msr_psr,
-   output [`NCPU_PSR_DW-1:0] msr_psr_nold,
    input                   msr_psr_rm_nxt,
    output                  msr_psr_rm,
    input                   msr_psr_rm_we,
@@ -65,19 +64,20 @@ module ncpu32k_psr
    output [`NCPU_DW-1:0]   msr_coreid
 );
 
-   wire msr_psr_rm_r;
-   wire msr_psr_ire_r;
-   wire msr_psr_imme_r;
-   wire msr_psr_dmme_r;
+   wire                    msr_psr_rm_r;
+   wire                    msr_psr_ire_r;
+   wire                    msr_psr_imme_r;
+   wire                    msr_psr_dmme_r;
    wire [`NCPU_PSR_DW-1:0] msr_epsr_r;
-   wire [`NCPU_DW-1:0] msr_epc_r;
-   wire [`NCPU_DW-1:0] msr_elsa_r;
-   wire psr_rm_set;
-   wire psr_imme_msk;
-   wire psr_dmme_msk;
-   wire psr_ire_msk;
-
-   wire psr_ld = msr_exc_ent;
+   wire [`NCPU_DW-1:0]     msr_epc_r;
+   wire [`NCPU_DW-1:0]     msr_elsa_r;
+   wire                    psr_rm_set;
+   wire                    psr_imme_msk;
+   wire                    psr_dmme_msk;
+   wire                    psr_ire_msk;
+   wire                    psr_ld;
+   
+   assign psr_ld = msr_exc_ent;
    assign psr_rm_set = msr_exc_ent;
    assign psr_imme_msk = ~msr_exc_ent;
    assign psr_dmme_msk = ~msr_exc_ent;
@@ -96,28 +96,20 @@ module ncpu32k_psr
    // ELSA
    nDFF_lr #(`NCPU_DW) dff_msr_elsa (clk, rst_n, msr_elsa_we, msr_elsa_nxt, msr_elsa_r);
 
-   // MSR Bypass
-   // Do not bypass the value loaded by psr_ld
-   wire msr_psr_rm_nold = (msr_psr_rm_we ? msr_psr_rm_nxt : msr_psr_rm_r);
-   wire msr_psr_ire_nold = (msr_psr_ire_we ? msr_psr_ire_nxt : msr_psr_ire_r);
-   wire msr_psr_imme_nold = (msr_psr_imme_we ? msr_psr_imme_nxt : msr_psr_imme_r);
-   wire msr_psr_dmme_nold = (msr_psr_dmme_we ? msr_psr_dmme_nxt : msr_psr_dmme_r);
-   // Bypass the value loaded by psr_ld
-   assign msr_psr_rm = (msr_psr_rm_we|psr_ld ? msr_psr_rm_nxt|psr_rm_set : msr_psr_rm_r);
-   assign msr_psr_ire = (msr_psr_ire_we|psr_ld ? msr_psr_ire_nxt&psr_ire_msk : msr_psr_ire_r);
-   assign msr_psr_imme = (msr_psr_imme_we|psr_ld ? msr_psr_imme_nxt&psr_imme_msk : msr_psr_imme_r);
-   assign msr_psr_dmme = (msr_psr_dmme_we|psr_ld ? msr_psr_dmme_nxt&psr_dmme_msk : msr_psr_dmme_r);
+   assign msr_psr_rm = msr_psr_rm_r;
+   assign msr_psr_ire = msr_psr_ire_r;
+   assign msr_psr_imme = msr_psr_imme_r;
+   assign msr_psr_dmme = msr_psr_dmme_r;
 
-   assign msr_epsr = (msr_epsr_we ? msr_epsr_nxt : msr_epsr_r);
-   assign msr_epc = (msr_epc_we ? msr_epc_nxt : msr_epc_r);
-   assign msr_elsa = (msr_elsa_we ? msr_elsa_nxt : msr_elsa_r);
+   assign msr_epsr = msr_epsr_r;
+   assign msr_epc = msr_epc_r;
+   assign msr_elsa = msr_elsa_r;
 
    // Pack PSR
    assign msr_psr = {1'b0,1'b0,msr_psr_dmme,msr_psr_imme,msr_psr_ire,msr_psr_rm,1'b0,1'b0,1'b0,1'b0};
-   assign msr_psr_nold = {1'b0,1'b0,msr_psr_dmme_nold,msr_psr_imme_nold,msr_psr_ire_nold,msr_psr_rm_nold,1'b0,1'b0,1'b0,1'b0};
 
    // CPUID
-   assign msr_cpuid = {CPUID_FTSC,CPUID_FIRQC,CPUID_FFPU,CPUID_FDBG,CPUID_FDCA,CPUID_FICA,CPUID_FDMM,CPUID_FIMM,CPUID_REV[9:0],CPUID_VER[7:0]};
+   assign msr_cpuid = {{`NCPU_DW-26{1'b0}},CPUID_FTSC,CPUID_FIRQC,CPUID_FFPU,CPUID_FDBG,CPUID_FDCA,CPUID_FICA,CPUID_FDMM,CPUID_FIMM,CPUID_REV[9:0],CPUID_VER[7:0]};
 
    // COREID
    assign msr_coreid = {`NCPU_DW{1'b0}};

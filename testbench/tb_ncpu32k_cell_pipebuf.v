@@ -1,3 +1,4 @@
+`include "timescale.v"
 module tb_ncpu32k_cell_pipebuf;
 
    reg clk;

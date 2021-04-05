@@ -42,7 +42,6 @@ module ncpu32k_ifu
       output [`NCPU_IW-1:0]      idu_insn,
       output [`NCPU_AW-3:0]      idu_pc,
       output [2:0]               idu_exc, // 0: D-TLB Miss; 1: Data Page Fault; 2: IRQ
-      output                     idu_pred_branch,
       output [`NCPU_AW-3:0]      idu_pred_tgt,
       // BPU
       output [`NCPU_AW-3:0]      bpu_insn_pc,
@@ -165,7 +164,7 @@ module ncpu32k_ifu
      (clk,rst_n, flush_state_nxt, flush_state_r);
    nDFF_lr #(`NCPU_AW-2) dff_bck_flush_tgt_r
      (clk,rst_n, flush_tgt_en, flush_tgt, flush_tgt_r);
-   nDFF_lr #(`NCPU_AW-2, CONFIG_ERST_VECTOR[`NCPU_AW-3:2]) dff_fnt_PC_r
+   nDFF_lr #(`NCPU_AW-2, CONFIG_ERST_VECTOR[`NCPU_AW-1:2]) dff_fnt_PC_r
      (clk,rst_n, outst_push, fnt_PC_nxt, fnt_PC_r);
 
    // synthesis translate_off

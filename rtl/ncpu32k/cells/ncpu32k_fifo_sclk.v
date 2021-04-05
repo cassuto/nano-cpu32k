@@ -96,21 +96,21 @@ module ncpu32k_fifo_sclk # (
 
             // FWFT FSM
             nDFF_lr #(DW) dff_dat_r
-              (CLK,RST_N, fwft_nxt, i_din, dat_r);
+              (CLK,RST_N, fwft_nxt, DIN, dat_r);
             nDFF_lr #(1) dff_state_r
               (CLK,RST_N, (fwft_nxt|clr_state), (fwft_nxt|~clr_state), state_r);
 
             assign fwft_nxt = ~state_r & EMPTY & PUSH;
             assign clr_state = state_r & POP;
 
-            assign ram_raddr = r_ptr_nxt;
-            assign ram_waddr = w_ptr_r;
+            assign ram_raddr = r_ptr_nxt[DEPTH_WIDTH-1:0];
+            assign ram_waddr = w_ptr_r[DEPTH_WIDTH-1:0];
             assign DOUT = state_r ? dat_r : ram_dout;
          end
       else
          begin : gen_standard
-            assign ram_raddr = r_ptr_r;
-            assign ram_waddr = w_ptr_r;
+            assign ram_raddr = r_ptr_r[DEPTH_WIDTH-1:0];
+            assign ram_waddr = w_ptr_r[DEPTH_WIDTH-1:0];
             assign DOUT = ram_dout;
          end
    endgenerate

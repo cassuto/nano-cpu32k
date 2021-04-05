@@ -29,7 +29,7 @@ module ncpu32k_pipeline_agu
    output                     issue_agu_AREADY,
    input                      issue_agu_AVALID,
    input [`NCPU_AGU_UOPW-1:0] issue_agu_uop,
-   input [CONFIG_ROB_DEPTH_LOG2-1:0]      issue_id,
+   input [CONFIG_ROB_DEPTH_LOG2-1:0] issue_id,
    input                      issue_rs1_rdy,
    input [`NCPU_DW-1:0]       issue_rs1_dat,
    input [`NCPU_REG_AW-1:0]   issue_rs1_addr,
@@ -48,7 +48,7 @@ module ncpu32k_pipeline_agu
    input [`NCPU_DW-1:0]       dbus_BDATA,
    input [1:0]                dbus_BEXC,
    // From ROB
-   input [CONFIG_ROB_DEPTH_LOG2-1:0]      rob_commit_ptr,
+   input [CONFIG_ROB_DEPTH_LOG2-1:0] rob_commit_ptr,
    // From BYP
    input                      byp_BVALID,
    input [`NCPU_DW-1:0]       byp_BDATA,
@@ -58,11 +58,10 @@ module ncpu32k_pipeline_agu
    input                      wb_agu_BREADY,
    output                     wb_agu_BVALID,
    output [`NCPU_DW-1:0]      wb_agu_BDATA,
-   output [CONFIG_ROB_DEPTH_LOG2-1:0]     wb_agu_BID,
+   output [CONFIG_ROB_DEPTH_LOG2-1:0] wb_agu_BID,
    output                     wb_agu_BEDTM,
    output                     wb_agu_BEDPF,
    output                     wb_agu_BEALIGN,
-   output [`NCPU_AW-1:0]      wb_agu_BLSA,
    // To EPU
    output                     epu_commit_EDTM,
    output                     epu_commit_EDPF,
@@ -91,8 +90,6 @@ module ncpu32k_pipeline_agu
    wire [31:0]                fire_din_8b;
    wire [`NCPU_DW/8-1:0]      fire_we_msk_16b;
    wire [31:0]                fire_din_16b;
-   wire [7:0]                 fire_dout_8b;
-   wire [15:0]                fire_dout_16b;
    wire                       fire_misalign;
    wire                       commit;
    wire                       hds_dbus_a, hds_wb_b;
@@ -109,7 +106,8 @@ module ncpu32k_pipeline_agu
          .DEPTH            (1<<CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2),
          .DEPTH_WIDTH      (CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2),
          .UOP_WIDTH        (1),
-         .ALGORITHM        (1) // FIFO
+         .ALGORITHM        (1), // FIFO
+         .CONFIG_ROB_DEPTH_LOG2 (CONFIG_ROB_DEPTH_LOG2)
       )
    RS_AGU
       (
@@ -275,13 +273,12 @@ module ncpu32k_pipeline_agu
    assign wb_agu_BEDTM = dbus_BEXC[0];
    assign wb_agu_BEDPF = dbus_BEXC[1];
    assign wb_agu_BEALIGN = wb_misalign;
-   assign wb_agu_BLSA = wb_lsa;
 
    // Commit MSR
    assign epu_commit_EDTM = (hds_wb_b & wb_agu_BEDTM);
    assign epu_commit_EDPF = (hds_wb_b & wb_agu_BEDPF);
    assign epu_commit_EALIGN = (hds_wb_b & wb_agu_BEALIGN);
-   assign epu_commit_LSA = wb_agu_BLSA;
+   assign epu_commit_LSA = wb_lsa;
 
    // synthesis translate_off
 `ifndef SYNTHESIS

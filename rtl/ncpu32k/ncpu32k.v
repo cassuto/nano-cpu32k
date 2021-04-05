@@ -41,12 +41,12 @@ module ncpu32k
     parameter CONFIG_ENABLE_MOD = 0,
     parameter CONFIG_ENABLE_MODU = 0,
     parameter CONFIG_ENABLE_FPU = 0,
-    parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH = 2,
+    parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2 = 2,
     parameter CONFIG_ALU_INSERT_REG = 0,
-    parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH = 2,
+    parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2 = 2,
     parameter CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2 = 2,
     parameter CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2 = 2,
-    parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH = 2,
+    parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2 = 2,
     parameter CONFIG_ROB_DEPTH_LOG2 = 3
     )
    (
@@ -183,8 +183,7 @@ module ncpu32k
            assign ibus_AREADY = icache_AREADY;
            assign icache_AVALID = ibus_AVALID;
            assign icache_AADDR = ibus_AADDR;
-           assign exc_imm_tlb_miss_stb = 1'b0;
-           assign exc_imm_page_fault_stb = 1'b0;
+           assign icache_AEXC = 2'b0; 
            assign msr_immid = {`NCPU_DW{1'b0}};
            assign msr_imm_tlbl = {`NCPU_DW{1'b0}};
            assign msr_imm_tlbh = {`NCPU_DW{1'b0}};
@@ -238,8 +237,7 @@ module ncpu32k
            assign dcache_AADDR = dbus_AADDR;
            assign dcache_AWMSK = dbus_AWMSK;
            assign dcache_ADATA = dbus_ADATA;
-           assign exc_dmm_tlb_miss_stb = 1'b0;
-           assign exc_dmm_page_fault_stb = 1'b0;
+           assign dcache_AEXC = 2'b0;
            assign msr_dmmid = {`NCPU_DW{1'b0}};
            assign msr_dmm_tlbl = {`NCPU_DW{1'b0}};
            assign msr_dmm_tlbh = {`NCPU_DW{1'b0}};
@@ -402,10 +400,12 @@ module ncpu32k
 
    ncpu32k_core
      #(
-       .CONFIG_ENABLE_IMMU           (CONFIG_ENABLE_IMMU),
-       .CONFIG_ENABLE_DMMU           (CONFIG_ENABLE_DMMU),
-       .CONFIG_ENABLE_ICACHE         (CONFIG_ENABLE_ICACHE),
-       .CONFIG_ENABLE_DCACHE         (CONFIG_ENABLE_DCACHE),
+       .CONFIG_HAVE_IMMU             (CONFIG_ENABLE_IMMU),
+       .CONFIG_HAVE_DMMU             (CONFIG_ENABLE_DMMU),
+       .CONFIG_HAVE_ICACHE           (CONFIG_ENABLE_ICACHE),
+       .CONFIG_HAVE_DCACHE           (CONFIG_ENABLE_DCACHE),
+       .CONFIG_HAVE_IRQC             (1),
+       .CONFIG_HAVE_TSC              (1),
        .CONFIG_IBUS_OUTSTANTING_LOG2 (CONFIG_IBUS_OUTSTANTING_LOG2),
        .CONFIG_ERST_VECTOR           (CONFIG_ERST_VECTOR),
        .CONFIG_EDTM_VECTOR           (CONFIG_EDTM_VECTOR),
@@ -422,12 +422,12 @@ module ncpu32k
        .CONFIG_ENABLE_MOD            (CONFIG_ENABLE_MOD),
        .CONFIG_ENABLE_MODU           (CONFIG_ENABLE_MODU),
        .CONFIG_ENABLE_FPU            (CONFIG_ENABLE_FPU),
-       .CONFIG_ALU_ISSUE_QUEUE_DEPTH (CONFIG_ALU_ISSUE_QUEUE_DEPTH),
+       .CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2 (CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2),
        .CONFIG_ALU_INSERT_REG        (CONFIG_ALU_INSERT_REG),
-       .CONFIG_LPU_ISSUE_QUEUE_DEPTH (CONFIG_LPU_ISSUE_QUEUE_DEPTH),
+       .CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2 (CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2),
        .CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2 (CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2),
        .CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2 (CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2),
-       .CONFIG_FPU_ISSUE_QUEUE_DEPTH (CONFIG_FPU_ISSUE_QUEUE_DEPTH),
+       .CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2 (CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2),
        .CONFIG_ROB_DEPTH_LOG2        (CONFIG_ROB_DEPTH_LOG2),
        .CONFIG_PIPEBUF_BYPASS        (CONFIG_PIPEBUF_BYPASS)
        )

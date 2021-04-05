@@ -34,7 +34,7 @@ module ncpu32k_issue_queue
    output                     o_issue_AREADY,
    input                      i_flush,
    input [UOP_WIDTH-1:0]      i_uop,
-   input [CONFIG_ROB_DEPTH_LOG2-1:0]      i_id,
+   input [CONFIG_ROB_DEPTH_LOG2-1:0] i_id,
    input                      i_rs1_rdy,
    input [`NCPU_DW-1:0]       i_rs1_dat,
    input [`NCPU_REG_AW-1:0]   i_rs1_addr,
@@ -47,7 +47,7 @@ module ncpu32k_issue_queue
    input [`NCPU_REG_AW-1:0]   byp_rd_addr,
    input                      i_fu_AREADY,
    output                     o_fu_AVALID,
-   output [CONFIG_ROB_DEPTH_LOG2-1:0]     o_fu_id,
+   output [CONFIG_ROB_DEPTH_LOG2-1:0] o_fu_id,
    output [UOP_WIDTH-1:0]     o_fu_uop,
    output [`NCPU_DW-1:0]      o_fu_rs1_dat,
    output [`NCPU_DW-1:0]      o_fu_rs2_dat,
@@ -55,6 +55,7 @@ module ncpu32k_issue_queue
    output [DEPTH_WIDTH-1:0]   o_payload_w_ptr,
    output [DEPTH_WIDTH-1:0]   o_payload_r_ptr
 );
+   localparam PTR_MAX = (DEPTH-1);
    wire                       que_v_r [DEPTH-1:0];
    wire                       que_v_nxt [DEPTH-1:0];
    wire                       que_v_en [DEPTH-1:0];
@@ -73,9 +74,10 @@ module ncpu32k_issue_queue
 
    wire [DEPTH-1:0]           free;
    wire [DEPTH-1:0]           select;
-   wire                       rs1_bypass_rdy, rs2_bypass_rdy;
+   wire                       rs1_i_bypass_rdy, rs2_i_bypass_rdy;
 
    genvar i;
+   integer x;
 
    generate
       for (i=0;i<DEPTH;i=i+1)
@@ -174,31 +176,34 @@ module ncpu32k_issue_queue
       if (ALGORITHM == 0)
          begin : gen_alloc_out_of_order
             // FIXME: design a better algorithm
-            wire [DEPTH-1:0] t_que_v_r;
-            assign t_que_v_r[0] = 1'b1;
-            for(i=1;i<DEPTH;i=i+1)
-               begin : gen_t_que_v_r
-                  assign t_que_v_r[i] = t_que_v_r[i-1] & que_v_r[i-1];
+            reg t_que_v_r;
+            reg [DEPTH-1:0] free_r;
+            always @(*)
+               begin
+                  for(x=0; x<DEPTH; x=x+1)
+                     begin
+                        if (x==0)
+                           t_que_v_r = 1'b1;
+                        else
+                           t_que_v_r = t_que_v_r & que_v_r[x-1];
+                        free_r[x] = t_que_v_r & ~que_v_r[x];
+                     end
                end
-            for(i=0;i<DEPTH;i=i+1)
-               begin : gen_free
-                  assign free[i] = t_que_v_r[i] & ~que_v_r[i];
-               end
+            for(i=0; i<DEPTH; i=i+1)
+               assign free[i] = free_r[i];
             assign o_payload_w_ptr = {DEPTH_WIDTH{1'b0}}; // unimplemented
          end
       else
          begin : gen_alloc_FIFO
             // Note that DEPTH is not necessary being exactly 2^DEPTH_WIDTH
-            assign w_ptr_nxt = (w_ptr_r + 1'b1) & {DEPTH_WIDTH{(w_ptr_r != DEPTH-1) & ~i_flush}};
+            assign w_ptr_nxt = (w_ptr_r + 1'b1) & {DEPTH_WIDTH{(w_ptr_r != PTR_MAX[DEPTH_WIDTH-1:0]) & ~i_flush}};
             // Write pointer register
             nDFF_lr #(DEPTH_WIDTH) dff_w_ptr_r
               (clk,rst_n, (i_issue_AVALID & o_issue_AREADY) | i_flush, w_ptr_nxt, w_ptr_r);
 
             // Address decoder
-            for(i=0;i<DEPTH;i=i+1)
-               begin
-                  assign free[i] = (w_ptr_r == i[DEPTH_WIDTH-1:0]) & ~que_v_r[i];
-               end
+            for(i = 0; i < DEPTH; i = i + 1)
+               assign free[i] = (w_ptr_r == i[DEPTH_WIDTH-1:0]) & ~que_v_r[i];
             assign o_payload_w_ptr = w_ptr_r;
          end
 
@@ -208,28 +213,31 @@ module ncpu32k_issue_queue
       if (ALGORITHM == 0)
          begin : gen_sel_out_of_order
             // FIXME: design a better algorithm
-            wire [DEPTH-1:0] t_select;
-            assign t_select[0] = 1'b0;
-            for(i=1;i<DEPTH;i=i+1)
-               begin : gen_t_select
-                  assign t_select[i] = t_select[i-1] | select[i-1];
-               end
-            for (i=0;i<DEPTH;i=i+1)
-               begin : gen_select
-                  assign select[i] = ~t_select[i] & (que_v_r[i] & que_rs1_rdy_r[i] & que_rs2_rdy_r[i]);
-               end
+            reg t_select;
+            reg [DEPTH-1:0] select_r;
+            always @(*)
+               for(x=0; x<DEPTH; x=x+1)
+                  begin : gen_t_select
+                     if (x==0)
+                        t_select = 1'b0;
+                     else
+                        t_select = t_select | select_r[x-1];
+                     select_r[x] = ~t_select & (que_v_r[x] & que_rs1_rdy_r[x] & que_rs2_rdy_r[x]);
+                  end
+            for (i=0; i<DEPTH; i=i+1)
+               assign select[i] = select_r[i];
             assign o_payload_r_ptr = {DEPTH_WIDTH{1'b0}}; // unimplemented
          end
       else
          begin : gen_sel_FIFO
             // Note that DEPTH is not necessary being exactly 2^DEPTH_WIDTH
-            assign r_ptr_nxt = (r_ptr_r + 1'b1) & {DEPTH_WIDTH{(r_ptr_r != DEPTH-1) & ~i_flush}};
+            assign r_ptr_nxt = (r_ptr_r + 1'b1) & {DEPTH_WIDTH{(r_ptr_r != PTR_MAX[DEPTH_WIDTH-1:0]) & ~i_flush}};
             // Read pointer register
             nDFF_lr #(DEPTH_WIDTH) dff_r_ptr_r
               (clk,rst_n, (o_fu_AVALID & i_fu_AREADY) | i_flush, r_ptr_nxt, r_ptr_r);
             
             // Address decoder
-            for(i=0;i<DEPTH;i=i+1)
+            for(i = 0; i < DEPTH; i = i + 1)
                begin
                   assign select[i] = (r_ptr_r == i[DEPTH_WIDTH-1:0]) &
                                        (que_v_r[i] & que_rs1_rdy_r[i] & que_rs2_rdy_r[i]);
@@ -242,28 +250,28 @@ module ncpu32k_issue_queue
 
    // Output MUX
    generate
-      wire [CONFIG_ROB_DEPTH_LOG2-1:0] t_id [DEPTH-1:0];
-      wire [UOP_WIDTH-1:0] t_uop [DEPTH-1:0];
-      wire [`NCPU_DW-1:0] t_rs1_dat [DEPTH-1:0];
-      wire [`NCPU_DW-1:0] t_rs2_dat [DEPTH-1:0];
-
-      assign t_id[0] = {CONFIG_ROB_DEPTH_LOG2{select[0]}} & que_id_r[0];
-      assign t_uop[0] = {UOP_WIDTH{select[0]}} & que_uop_r[0];
-      assign t_rs1_dat[0] = {`NCPU_DW{select[0]}} & que_rs1_r[0];
-      assign t_rs2_dat[0] = {`NCPU_DW{select[0]}} & que_rs2_r[0];
-
-      for(i=1;i<DEPTH;i=i+1)
-         begin : gen_output
-            assign t_id[i] = t_id[i-1] | ({CONFIG_ROB_DEPTH_LOG2{select[i]}} & que_id_r[i]);
-            assign t_uop[i] = t_uop[i-1] | ({UOP_WIDTH{select[i]}} & que_uop_r[i]);
-            assign t_rs1_dat[i] = t_rs1_dat[i-1] | ({`NCPU_DW{select[i]}} & que_rs1_r[i]);
-            assign t_rs2_dat[i] = t_rs2_dat[i-1] | ({`NCPU_DW{select[i]}} & que_rs2_r[i]);
+      reg [CONFIG_ROB_DEPTH_LOG2-1:0] t_id;
+      reg [UOP_WIDTH-1:0] t_uop;
+      reg [`NCPU_DW-1:0] t_rs1_dat;
+      reg [`NCPU_DW-1:0] t_rs2_dat;
+      always @(*)
+         begin
+            t_id = {CONFIG_ROB_DEPTH_LOG2{1'b0}};
+            t_uop = {UOP_WIDTH{1'b0}};
+            t_rs1_dat = {`NCPU_DW{1'b0}};
+            t_rs2_dat = {`NCPU_DW{1'b0}};
+            for(x=0; x<DEPTH; x=x+1)
+               begin : gen_output
+                  t_id = t_id | ({CONFIG_ROB_DEPTH_LOG2{select[x]}} & que_id_r[x]);
+                  t_uop = t_uop | ({UOP_WIDTH{select[x]}} & que_uop_r[x]);
+                  t_rs1_dat = t_rs1_dat | ({`NCPU_DW{select[x]}} & que_rs1_r[x]);
+                  t_rs2_dat = t_rs2_dat | ({`NCPU_DW{select[x]}} & que_rs2_r[x]);
+               end
          end
-
-      assign o_fu_id = t_id[DEPTH-1];
-      assign o_fu_uop = t_uop[DEPTH-1];
-      assign o_fu_rs1_dat = t_rs1_dat[DEPTH-1];
-      assign o_fu_rs2_dat = t_rs2_dat[DEPTH-1];
+      assign o_fu_id = t_id;
+      assign o_fu_uop = t_uop;
+      assign o_fu_rs1_dat = t_rs1_dat;
+      assign o_fu_rs2_dat = t_rs2_dat;
    endgenerate
 
    // synthesis translate_off

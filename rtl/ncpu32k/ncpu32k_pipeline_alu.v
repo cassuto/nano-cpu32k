@@ -17,7 +17,7 @@
 
 module ncpu32k_pipeline_alu
 #(
-   parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH,
+   parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2,
    parameter CONFIG_ALU_INSERT_REG,
    parameter CONFIG_PIPEBUF_BYPASS,
    parameter CONFIG_ROB_DEPTH_LOG2
@@ -54,8 +54,6 @@ module ncpu32k_pipeline_alu
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 alu_AREADY;             // From FU_ALU of ncpu32k_alu.v
-   wire                 alu_BBRANCH_REG_TAKEN;  // From FU_ALU of ncpu32k_alu.v
-   wire                 alu_BBRANCH_REL_TAKEN;  // From FU_ALU of ncpu32k_alu.v
    // End of automatics
    wire                 alu_AVALID;
    wire [CONFIG_ROB_DEPTH_LOG2-1:0] alu_AID;
@@ -69,9 +67,11 @@ module ncpu32k_pipeline_alu
 
    ncpu32k_issue_queue
       #(
-         .DEPTH      (CONFIG_ALU_ISSUE_QUEUE_DEPTH),
-         .UOP_WIDTH  (`NCPU_ALU_IOPW),
-         .ALGORITHM  (0) // Out of Order
+         .DEPTH      (1<<CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2),
+         .DEPTH_WIDTH (CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2),
+         .UOP_WIDTH  (`NCPU_ALU_UOPW),
+         .ALGORITHM  (0), // Out of Order
+         .CONFIG_ROB_DEPTH_LOG2 (CONFIG_ROB_DEPTH_LOG2)
       )
    ISSUE_QUEUE_ALU
       (
@@ -79,6 +79,7 @@ module ncpu32k_pipeline_alu
          .rst_n      (rst_n),
          .i_issue_AVALID   (issue_alu_AVALID),
          .o_issue_AREADY   (issue_alu_AREADY),
+         .i_flush    (flush),
          .i_uop      (issue_alu_uop),
          .i_id       (issue_id),
          .i_rs1_rdy  (issue_rs1_rdy),
@@ -115,15 +116,16 @@ module ncpu32k_pipeline_alu
          .alu_BVALID          (wb_alu_BVALID),
          .alu_BDATA           (wb_alu_BDATA),
          .alu_BID             (wb_alu_BID),
-         .alu_BBRANCH_REG     (wb_alu_BBRANCH_REG_TAKEN),
-         .alu_BBRANCH_REL     (wb_alu_BBRANCH_REL_TAKEN),
+         .alu_BBRANCH_REG_TAKEN (wb_alu_BBRANCH_REG_TAKEN),
+         .alu_BBRANCH_REL_TAKEN (wb_alu_BBRANCH_REL_TAKEN),
          .alu_BBRANCH_OP      (wb_alu_BBRANCH_OP),
       )
    */
    ncpu32k_alu
       #(
          .CONFIG_ALU_INSERT_REG  (CONFIG_ALU_INSERT_REG),
-         .CONFIG_PIPEBUF_BYPASS  (CONFIG_PIPEBUF_BYPASS)
+         .CONFIG_PIPEBUF_BYPASS  (CONFIG_PIPEBUF_BYPASS),
+         .CONFIG_ROB_DEPTH_LOG2 (CONFIG_ROB_DEPTH_LOG2)
       )
    FU_ALU
       (/*AUTOINST*/
@@ -132,8 +134,8 @@ module ncpu32k_pipeline_alu
        .alu_BVALID                      (wb_alu_BVALID),         // Templated
        .alu_BID                         (wb_alu_BID),            // Templated
        .alu_BDATA                       (wb_alu_BDATA),          // Templated
-       .alu_BBRANCH_REG_TAKEN           (alu_BBRANCH_REG_TAKEN),
-       .alu_BBRANCH_REL_TAKEN           (alu_BBRANCH_REL_TAKEN),
+       .alu_BBRANCH_REG_TAKEN           (wb_alu_BBRANCH_REG_TAKEN), // Templated
+       .alu_BBRANCH_REL_TAKEN           (wb_alu_BBRANCH_REL_TAKEN), // Templated
        .alu_BBRANCH_OP                  (wb_alu_BBRANCH_OP),     // Templated
        // Inputs
        .clk                             (clk),

@@ -1,4 +1,4 @@
-
+`include "timescale.v"
 `include "ncpu32k_config.h"
 
 module tb_rob;
@@ -8,11 +8,10 @@ module tb_rob;
 
    reg clk = 1'b0;
    reg rst_n = 1'b0;
-   reg flush_req;
+   reg flush;
    reg disp_AVALID;
    wire disp_AREADY;
    reg [`NCPU_AW-3:0] disp_pc;
-   reg disp_pred_branch;
    reg [`NCPU_AW-3:0] disp_pred_tgt;
    reg disp_rd_we;
    reg [`NCPU_REG_AW-1:0] disp_rd_addr;
@@ -48,11 +47,10 @@ module tb_rob;
       (
          .clk                       (clk),
          .rst_n                     (rst_n),
-         .flush                     (flush_req),
+         .flush                     (flush),
          .rob_disp_AVALID           (disp_AVALID),
          .rob_disp_AREADY           (disp_AREADY),
          .rob_disp_pc               (disp_pc),
-         .rob_disp_pred_branch      (disp_pred_branch),
          .rob_disp_pred_tgt         (disp_pred_tgt),
          .rob_disp_rd_we            (disp_rd_we),
          .rob_disp_rd_addr          (disp_rd_addr),
@@ -75,7 +73,6 @@ module tb_rob;
          .rob_commit_BVALID         (commit_BVALID),
          .rob_commit_BREADY         (commit_BREADY),
          .rob_commit_pc             (),
-         .rob_commit_pred_branch    (),
          .rob_commit_pred_tgt       (),
          .rob_commit_rd_we          (commit_rd_we),
          .rob_commit_rd_addr        (commit_rd_addr),
@@ -91,30 +88,29 @@ module tb_rob;
       begin
          @(posedge clk);
          if (~disp_AREADY | ~disp_AVALID)
-            $fatal($time);
+            $fatal(1, $time);
       end
    endtask
    task handshake_wb;
       begin
          @(posedge clk);
          if (~wb_BREADY | ~wb_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
       end
    endtask
    task handshake_commit;
       begin
          @(posedge clk);
          if (~commit_BREADY | ~commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
       end
    endtask
 
    initial
       begin
-         flush_req = 1'b0;
+         flush = 1'b0;
          disp_AVALID = 1'b0;
          disp_pc = {`NCPU_AW-2{1'b0}};
-         disp_pred_branch = 1'b0;
          disp_pred_tgt = {`NCPU_AW-2{1'b0}};
          wb_BVALID = 1'b0;
          commit_BREADY = 1'b0;
@@ -135,24 +131,22 @@ module tb_rob;
                disp_rs1_addr = 5'h3;
                disp_rs2_addr = 5'h4;
                if (~disp_AREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_issue;
-               if (byp_rd_addr != 5'h2 || byp_rd_we != 1'b1)
-                  $fatal($time);
             end
             begin
                @(posedge clk)
-               if (disp_id != 2'd0)
-                  $fatal($time);
+               if (disp_id !== 2'd0)
+                  $fatal(1, $time);
                if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-                  $fatal($time);
+                  $fatal(1, $time);
                if (~disp_rs1_in_ARF | ~disp_rs2_in_ARF)
-                  $fatal($time);
+                  $fatal(1, $time);
             end
          join
 
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
 
          //
          // Dispatch #2
@@ -165,22 +159,22 @@ module tb_rob;
                disp_rs1_addr = 5'h5;
                disp_rs2_addr = 5'h6;
                if (~disp_AREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_issue;
             end
             begin
                @(posedge clk);
-               if (disp_id != 2'd1)
-                  $fatal($time);
+               if (disp_id !== 2'd1)
+                  $fatal(1, $time);
                if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-                  $fatal($time);
+                  $fatal(1, $time);
                if (~disp_rs1_in_ARF | ~disp_rs2_in_ARF)
-                  $fatal($time);
+                  $fatal(1, $time);
             end
          join
          
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
          
          //
          // Dispatch #3 - not write
@@ -193,24 +187,22 @@ module tb_rob;
                disp_rs1_addr = 5'h6;
                disp_rs2_addr = 5'h7;
                if (~disp_AREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_issue;
-               if (byp_rd_addr != 5'h3 || byp_rd_we != 1'b0)
-                  $fatal($time);
             end
             begin
                @(posedge clk);
-               if (disp_id != 2'd2)
-                  $fatal($time);
+               if (disp_id !== 2'd2)
+                  $fatal(1, $time);
                if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-                  $fatal($time);
+                  $fatal(1, $time);
                if (~disp_rs1_in_ARF | ~disp_rs2_in_ARF)
-                  $fatal($time);
+                  $fatal(1, $time);
             end
          join
          
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
          
          fork
             begin
@@ -222,11 +214,13 @@ module tb_rob;
                wb_BTAG = 4'h2;
                wb_id = 2'd1;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                wb_BVALID = 1'b0;
                if (commit_BVALID)
-                  $fatal($time);
+                  $fatal(1, $time);
+               if (byp_rd_addr !== 5'h3 || byp_rd_we !== 1'b1)
+                  $fatal(1, $time);
             end
             begin
                //
@@ -238,17 +232,17 @@ module tb_rob;
                disp_rs1_addr = 5'h3; // rd of #2
                disp_rs2_addr = 5'h9;
                if (~disp_AREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_issue;
             end
             begin
                @(posedge clk);
-               if (disp_id != 2'd3)
-                  $fatal($time);
+               if (disp_id !== 2'd3)
+                  $fatal(1, $time);
                if (~disp_rs1_in_ROB | disp_rs2_in_ROB)
-                  $fatal($time);
+                  $fatal(1, $time);
                if (disp_rs1_in_ARF | ~disp_rs2_in_ARF)
-                  $fatal($time);
+                  $fatal(1, $time);
             end
          join
          
@@ -257,9 +251,9 @@ module tb_rob;
          // Now queue is full
          @(posedge clk);
          if (disp_AREADY)
-            $fatal($time);
+            $fatal(1, $time);
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
          
          ///////////////////////////////////////////////////////////////////////
          // Testcase - Pipelined wb and commit
@@ -275,7 +269,7 @@ module tb_rob;
                wb_BTAG = 4'h1;
                wb_id = 2'd0;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                //
                // Writeback #3
@@ -284,8 +278,10 @@ module tb_rob;
                wb_BTAG = 4'h3;
                wb_id = 2'd2;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
+               if (byp_rd_addr !== 5'h3 || byp_rd_we !== 1'b0)
+                  $fatal(1, $time);
                //
                // Writeback #4
                //
@@ -293,7 +289,7 @@ module tb_rob;
                wb_BTAG = 4'h4;
                wb_id = 2'd3;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                
                wb_BVALID = 1'b0;
@@ -309,53 +305,53 @@ module tb_rob;
                // Retire #1
                //
                handshake_commit;
-               if (commit_BDATA != 32'h123)
-                  $fatal($time);
-               if (commit_BTAG != 4'h1)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h2)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h123)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h1)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h2)
+                  $fatal(1, $time);
                   
                //
                // Retire #2
                //
                handshake_commit;
-               if (commit_BDATA != 32'hdad)
-                  $fatal($time);
-               if (commit_BTAG != 4'h2)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h3)
-                  $fatal($time);
+               if (commit_BDATA !== 32'hdad)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h2)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h3)
+                  $fatal(1, $time);
                   
                //
                // Retire #3
                //
                handshake_commit;
-               if (commit_BDATA != 32'h321)
-                  $fatal($time);
-               if (commit_BTAG != 4'h3)
-                  $fatal($time);
-               if (commit_rd_we != 1'b0)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h3)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h321)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h3)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b0)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h3)
+                  $fatal(1, $time);
                   
                //
                // Retire #4
                //
                handshake_commit;
-               if (commit_BDATA != 32'h542)
-                  $fatal($time);
-               if (commit_BTAG != 4'h4)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h4)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h542)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h4)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h4)
+                  $fatal(1, $time);
                   
                commit_BREADY = 1'b0;
             end
@@ -363,12 +359,12 @@ module tb_rob;
 
          // Now queue is empty
          @(posedge clk);
-         if (disp_id != 2'd0)
-            $fatal($time);
+         if (disp_id !== 2'd0)
+            $fatal(1, $time);
          if (~disp_AREADY)
-            $fatal($time);
+            $fatal(1, $time);
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
             
          ///////////////////////////////////////////////////////////////////////
          // Testcase - Wrap around and read operands from ROB
@@ -385,22 +381,22 @@ module tb_rob;
                disp_rs1_addr = 5'h3;
                disp_rs2_addr = 5'h4;
                if (~disp_AREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_issue;
             end
             begin
                @(posedge clk)
-               if (disp_id != 2'd0)
-                  $fatal($time);
+               if (disp_id !== 2'd0)
+                  $fatal(1, $time);
                if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-                  $fatal($time);
+                  $fatal(1, $time);
                if (~disp_rs1_in_ARF | ~disp_rs2_in_ARF)
-                  $fatal($time);
+                  $fatal(1, $time);
             end
          join
 
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
             
          //
          // Dispatch #2
@@ -413,22 +409,22 @@ module tb_rob;
                disp_rs1_addr = 5'h3;
                disp_rs2_addr = 5'h4;
                if (~disp_AREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_issue;
             end
             begin
                @(posedge clk)
-               if (disp_id != 2'd1)
-                  $fatal($time);
+               if (disp_id !== 2'd1)
+                  $fatal(1, $time);
                if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-                  $fatal($time);
+                  $fatal(1, $time);
                if (~disp_rs1_in_ARF | ~disp_rs2_in_ARF)
-                  $fatal($time);
+                  $fatal(1, $time);
             end
          join
 
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
             
          //
          // Dispatch #3
@@ -441,22 +437,22 @@ module tb_rob;
                disp_rs1_addr = 5'h3;
                disp_rs2_addr = 5'h4;
                if (~disp_AREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_issue;
             end
             begin
                @(posedge clk)
-               if (disp_id != 2'd2)
-                  $fatal($time);
+               if (disp_id !== 2'd2)
+                  $fatal(1, $time);
                if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-                  $fatal($time);
+                  $fatal(1, $time);
                if (~disp_rs1_in_ARF | ~disp_rs2_in_ARF)
-                  $fatal($time);
+                  $fatal(1, $time);
             end
          join
 
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
             
          //
          // Dispatch #4 - not write
@@ -469,24 +465,24 @@ module tb_rob;
                disp_rs1_addr = 5'h3;
                disp_rs2_addr = 5'h4;
                if (~disp_AREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_issue;
             end
             begin
                @(posedge clk)
-               if (disp_id != 2'd3)
-                  $fatal($time);
+               if (disp_id !== 2'd3)
+                  $fatal(1, $time);
                if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-                  $fatal($time);
+                  $fatal(1, $time);
                if (~disp_rs1_in_ARF | ~disp_rs2_in_ARF)
-                  $fatal($time);
+                  $fatal(1, $time);
             end
          join
          
          disp_AVALID = 1'b0;
 
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
        
          //
          // Writeback #1
@@ -496,7 +492,7 @@ module tb_rob;
          wb_BTAG = 4'h1;
          wb_id = 2'd0;
          if (~wb_BREADY)
-            $fatal($time);
+            $fatal(1, $time);
          handshake_wb;
          wb_BVALID = 1'b0;
          
@@ -506,16 +502,16 @@ module tb_rob;
          @(posedge clk); // Test delayed handshake
          commit_BREADY = 1'b1;
          if (~commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
          handshake_commit;
-         if (commit_BDATA != 32'hff643)
-            $fatal($time);
-         if (commit_BTAG != 4'h1)
-            $fatal($time);
-         if (commit_rd_we != 1'b1)
-            $fatal($time);
-         if (commit_rd_addr != 5'h2)
-            $fatal($time);
+         if (commit_BDATA !== 32'hff643)
+            $fatal(1, $time);
+         if (commit_BTAG !== 4'h1)
+            $fatal(1, $time);
+         if (commit_rd_we !== 1'b1)
+            $fatal(1, $time);
+         if (commit_rd_addr !== 5'h2)
+            $fatal(1, $time);
          commit_BREADY = 1'b0;
          @(posedge clk);
          
@@ -528,7 +524,7 @@ module tb_rob;
          wb_BTAG = 4'h4;
          wb_id = 2'd3;
          if (~wb_BREADY)
-            $fatal($time);
+            $fatal(1, $time);
          handshake_wb;
          wb_BVALID = 1'b0;
          
@@ -539,12 +535,12 @@ module tb_rob;
          disp_rs1_addr = 5'h3;
          disp_rs2_addr = 5'h2; // = rd of #3
          if (~disp_AREADY)
-            $fatal($time);
+            $fatal(1, $time);
          @(posedge clk);
          if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-            $fatal($time);
+            $fatal(1, $time);
          if (~disp_rs1_in_ARF | disp_rs2_in_ARF)
-            $fatal($time);
+            $fatal(1, $time);
          
          
          //
@@ -558,19 +554,19 @@ module tb_rob;
          disp_rs1_addr = 5'h3;
          disp_rs2_addr = 5'h2; // = rd of #3
          if (~disp_AREADY)
-            $fatal($time);
+            $fatal(1, $time);
          @(posedge clk);
          if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-            $fatal($time);
+            $fatal(1, $time);
          if (~disp_rs1_in_ARF | disp_rs2_in_ARF)
-            $fatal($time);
+            $fatal(1, $time);
          
          wb_BVALID = 1'b1;
          wb_BDATA = 32'h64eef;
          wb_BTAG = 4'h5;
          wb_id = 2'd2;
          if (~wb_BREADY)
-            $fatal($time);
+            $fatal(1, $time);
          handshake_wb;
          wb_BVALID = 1'b0;
            
@@ -585,19 +581,19 @@ module tb_rob;
                disp_rs1_addr = 5'h3;
                disp_rs2_addr = 5'h2; // = rd of #3
                if (~disp_AREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_issue;
             end
             begin
                @(posedge clk)
-               if (disp_id != 2'd0) // Wrap around
-                  $fatal($time);
+               if (disp_id !== 2'd0) // Wrap around
+                  $fatal(1, $time);
                if (disp_rs1_in_ROB | ~disp_rs2_in_ROB)
-                  $fatal($time);
+                  $fatal(1, $time);
                if (~disp_rs1_in_ARF | disp_rs2_in_ARF)
-                  $fatal($time);
-               if (disp_rs2_dat != 32'h64eef)
-                  $fatal($time);
+                  $fatal(1, $time);
+               if (disp_rs2_dat !== 32'h64eef)
+                  $fatal(1, $time);
             end
          join
          
@@ -606,9 +602,9 @@ module tb_rob;
          // Now the queue is full
          @(posedge clk);
          if (disp_AREADY)
-            $fatal($time);
+            $fatal(1, $time);
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
             
          ///////////////////////////////////////////////////////////////////////
          // Testcase - Flush. Pipelined read and bypass. Pipelined commit.
@@ -616,15 +612,15 @@ module tb_rob;
          ///////////////////////////////////////////////////////////////////////
          
          @(posedge clk);
-         flush_req = 1'b1;
+         flush = 1'b1;
          @(posedge clk);
          // Now the queue is empty
-         flush_req = 1'b0;
+         flush = 1'b0;
          @(posedge clk);
          if (~disp_AREADY)
-            $fatal($time);
+            $fatal(1, $time);
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
          
          fork
             begin
@@ -640,17 +636,17 @@ module tb_rob;
                      disp_rs1_addr = 5'h2;
                      disp_rs2_addr = 5'h2;
                      if (~disp_AREADY)
-                        $fatal($time);
+                        $fatal(1, $time);
                      handshake_issue;
                   end
                   begin
                      @(posedge clk)
-                     if (disp_id != 2'd0)
-                        $fatal($time);
+                     if (disp_id !== 2'd0)
+                        $fatal(1, $time);
                      if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-                        $fatal($time);
+                        $fatal(1, $time);
                      if (~disp_rs1_in_ARF | ~disp_rs2_in_ARF)
-                        $fatal($time);
+                        $fatal(1, $time);
                   end
                join
                //
@@ -663,21 +659,21 @@ module tb_rob;
                      disp_rs1_addr = 5'h2;
                      disp_rs2_addr = 5'h2;
                      if (~disp_AREADY)
-                        $fatal($time);
+                        $fatal(1, $time);
                      handshake_issue;
                   end
                   begin
                      @(posedge clk)
-                     if (disp_id != 2'd1)
-                        $fatal($time);
+                     if (disp_id !== 2'd1)
+                        $fatal(1, $time);
                      if (~disp_rs1_in_ROB | ~disp_rs2_in_ROB)
-                        $fatal($time);
+                        $fatal(1, $time);
                      if (disp_rs1_in_ARF | disp_rs2_in_ARF)
-                        $fatal($time);
-                     if (disp_rs1_dat != 32'h123)
-                        $fatal($time);
-                     if (disp_rs2_dat != 32'h123)
-                        $fatal($time);
+                        $fatal(1, $time);
+                     if (disp_rs1_dat !== 32'h123)
+                        $fatal(1, $time);
+                     if (disp_rs2_dat !== 32'h123)
+                        $fatal(1, $time);
                   end
                join
                //
@@ -690,21 +686,21 @@ module tb_rob;
                      disp_rs1_addr = 5'h2;
                      disp_rs2_addr = 5'h2;
                      if (~disp_AREADY)
-                        $fatal($time);
+                        $fatal(1, $time);
                      handshake_issue;
                   end
                   begin
                      @(posedge clk)
-                     if (disp_id != 2'd2)
-                        $fatal($time);
+                     if (disp_id !== 2'd2)
+                        $fatal(1, $time);
                      if (~disp_rs1_in_ROB | ~disp_rs2_in_ROB)
-                        $fatal($time);
+                        $fatal(1, $time);
                      if (disp_rs1_in_ARF | disp_rs2_in_ARF)
-                        $fatal($time);
-                     if (disp_rs1_dat != 32'h321)
-                        $fatal($time);
-                     if (disp_rs2_dat != 32'h321)
-                        $fatal($time);
+                        $fatal(1, $time);
+                     if (disp_rs1_dat !== 32'h321)
+                        $fatal(1, $time);
+                     if (disp_rs2_dat !== 32'h321)
+                        $fatal(1, $time);
                   end
                join
                //
@@ -717,21 +713,21 @@ module tb_rob;
                      disp_rs1_addr = 5'h2;
                      disp_rs2_addr = 5'h2;
                      if (~disp_AREADY)
-                        $fatal($time);
+                        $fatal(1, $time);
                      handshake_issue;
                   end
                   begin
                      @(posedge clk)
-                     if (disp_id != 2'd3)
-                        $fatal($time);
+                     if (disp_id !== 2'd3)
+                        $fatal(1, $time);
                      if (~disp_rs1_in_ROB | ~disp_rs2_in_ROB)
-                        $fatal($time);
+                        $fatal(1, $time);
                      if (disp_rs1_in_ARF | disp_rs2_in_ARF)
-                        $fatal($time);
-                     if (disp_rs1_dat != 32'h542)
-                        $fatal($time);
-                     if (disp_rs2_dat != 32'h542)
-                        $fatal($time);
+                        $fatal(1, $time);
+                     if (disp_rs1_dat !== 32'h542)
+                        $fatal(1, $time);
+                     if (disp_rs2_dat !== 32'h542)
+                        $fatal(1, $time);
                   end
                join
                //
@@ -744,21 +740,21 @@ module tb_rob;
                      disp_rs1_addr = 5'h2;
                      disp_rs2_addr = 5'h2;
                      if (~disp_AREADY)
-                        $fatal($time);
+                        $fatal(1, $time);
                      handshake_issue;
                   end
                   begin
                      @(posedge clk)
-                     if (disp_id != 2'd0)
-                        $fatal($time);
+                     if (disp_id !== 2'd0)
+                        $fatal(1, $time);
                      if (~disp_rs1_in_ROB | ~disp_rs2_in_ROB)
-                        $fatal($time);
+                        $fatal(1, $time);
                      if (disp_rs1_in_ARF | disp_rs2_in_ARF)
-                        $fatal($time);
-                     if (disp_rs1_dat != 32'h245)
-                        $fatal($time);
-                     if (disp_rs2_dat != 32'h245)
-                        $fatal($time);
+                        $fatal(1, $time);
+                     if (disp_rs1_dat !== 32'h245)
+                        $fatal(1, $time);
+                     if (disp_rs2_dat !== 32'h245)
+                        $fatal(1, $time);
                   end
                join
                //
@@ -771,21 +767,21 @@ module tb_rob;
                      disp_rs1_addr = 5'h2;
                      disp_rs2_addr = 5'h2;
                      if (~disp_AREADY)
-                        $fatal($time);
+                        $fatal(1, $time);
                      handshake_issue;
                   end
                   begin
                      @(posedge clk)
-                     if (disp_id != 2'd1)
-                        $fatal($time);
+                     if (disp_id !== 2'd1)
+                        $fatal(1, $time);
                      if (~disp_rs1_in_ROB | ~disp_rs2_in_ROB)
-                        $fatal($time);
+                        $fatal(1, $time);
                      if (disp_rs1_in_ARF | disp_rs2_in_ARF)
-                        $fatal($time);
-                     if (disp_rs1_dat != 32'h555)
-                        $fatal($time);
-                     if (disp_rs2_dat != 32'h555)
-                        $fatal($time);
+                        $fatal(1, $time);
+                     if (disp_rs1_dat !== 32'h555)
+                        $fatal(1, $time);
+                     if (disp_rs2_dat !== 32'h555)
+                        $fatal(1, $time);
                   end
                join
                
@@ -802,7 +798,7 @@ module tb_rob;
                wb_BTAG = 4'h1;
                wb_id = 2'd0;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                //
                // Writeback #2
@@ -811,7 +807,7 @@ module tb_rob;
                wb_BTAG = 4'h2;
                wb_id = 2'd1;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                //
                // Writeback #3
@@ -820,7 +816,7 @@ module tb_rob;
                wb_BTAG = 4'h3;
                wb_id = 2'd2;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                //
                // Writeback #4
@@ -829,7 +825,7 @@ module tb_rob;
                wb_BTAG = 4'h4;
                wb_id = 2'd3;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                //
                // Writeback #5
@@ -838,7 +834,7 @@ module tb_rob;
                wb_BTAG = 4'h5;
                wb_id = 2'd0;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                //
                // Writeback #6
@@ -847,7 +843,7 @@ module tb_rob;
                wb_BTAG = 4'h6;
                wb_id = 2'd1;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                
                wb_BVALID = 1'b0;
@@ -863,79 +859,79 @@ module tb_rob;
                // Retire #1
                //
                handshake_commit;
-               if (commit_BDATA != 32'h123)
-                  $fatal($time);
-               if (commit_BTAG != 4'h1)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h2)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h123)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h1)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h2)
+                  $fatal(1, $time);
                   
                //
                // Retire #2
                //
                handshake_commit;
-               if (commit_BDATA != 32'h321)
-                  $fatal($time);
-               if (commit_BTAG != 4'h2)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h2)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h321)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h2)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h2)
+                  $fatal(1, $time);
                   
                //
                // Retire #3
                //
                handshake_commit;
-               if (commit_BDATA != 32'h542)
-                  $fatal($time);
-               if (commit_BTAG != 4'h3)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h2)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h542)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h3)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h2)
+                  $fatal(1, $time);
                   
                //
                // Retire #4
                //
                handshake_commit;
-               if (commit_BDATA != 32'h245)
-                  $fatal($time);
-               if (commit_BTAG != 4'h4)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h2)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h245)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h4)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h2)
+                  $fatal(1, $time);
                   
                //
                // Retire #5
                //
                handshake_commit;
-               if (commit_BDATA != 32'h555)
-                  $fatal($time);
-               if (commit_BTAG != 4'h5)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h2)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h555)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h5)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h2)
+                  $fatal(1, $time);
                   
                //
                // Retire #6
                //
                handshake_commit;
-               if (commit_BDATA != 32'h666)
-                  $fatal($time);
-               if (commit_BTAG != 4'h6)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h2)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h666)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h6)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h2)
+                  $fatal(1, $time);
                
                commit_BREADY = 1'b0;
             end
@@ -944,9 +940,9 @@ module tb_rob;
          // Now the queue is empty
          @(posedge clk);
          if (~disp_AREADY)
-            $fatal($time);
+            $fatal(1, $time);
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
             
          ///////////////////////////////////////////////////////////////////////
          // Testcase - Operand not ready. Wrap around.
@@ -966,17 +962,17 @@ module tb_rob;
                      disp_rs1_addr = 5'h2;
                      disp_rs2_addr = 5'h2;
                      if (~disp_AREADY)
-                        $fatal($time);
+                        $fatal(1, $time);
                      handshake_issue;
                   end
                   begin
                      @(posedge clk)
-                     if (disp_id != 2'd2)
-                        $fatal($time);
+                     if (disp_id !== 2'd2)
+                        $fatal(1, $time);
                      if (disp_rs1_in_ROB | disp_rs2_in_ROB)
-                        $fatal($time);
+                        $fatal(1, $time);
                      if (~disp_rs1_in_ARF | ~disp_rs2_in_ARF)
-                        $fatal($time);
+                        $fatal(1, $time);
                   end
                join
                //
@@ -989,21 +985,21 @@ module tb_rob;
                      disp_rs1_addr = 5'h2;
                      disp_rs2_addr = 5'h2;
                      if (~disp_AREADY)
-                        $fatal($time);
+                        $fatal(1, $time);
                      handshake_issue;
                   end
                   begin
                      @(posedge clk)
-                     if (disp_id != 2'd3)
-                        $fatal($time);
+                     if (disp_id !== 2'd3)
+                        $fatal(1, $time);
                      if (~disp_rs1_in_ROB | ~disp_rs2_in_ROB)
-                        $fatal($time);
+                        $fatal(1, $time);
                      if (disp_rs1_in_ARF | disp_rs2_in_ARF)
-                        $fatal($time);
-                     if (disp_rs1_dat != 32'h123)
-                        $fatal($time);
-                     if (disp_rs2_dat != 32'h123)
-                        $fatal($time);
+                        $fatal(1, $time);
+                     if (disp_rs1_dat !== 32'h123)
+                        $fatal(1, $time);
+                     if (disp_rs2_dat !== 32'h123)
+                        $fatal(1, $time);
                   end
                join
                //
@@ -1016,17 +1012,17 @@ module tb_rob;
                      disp_rs1_addr = 5'h2;
                      disp_rs2_addr = 5'h2;
                      if (~disp_AREADY)
-                        $fatal($time);
+                        $fatal(1, $time);
                      handshake_issue;
                   end
                   begin
                      @(posedge clk)
-                     if (disp_id != 2'd0) // Wrap around
-                        $fatal($time);
+                     if (disp_id !== 2'd0) // Wrap around
+                        $fatal(1, $time);
                      if (disp_rs1_in_ROB | disp_rs2_in_ROB) // not ready
-                        $fatal($time);
+                        $fatal(1, $time);
                      if (disp_rs1_in_ARF | disp_rs2_in_ARF)
-                        $fatal($time);
+                        $fatal(1, $time);
                   end
                join
                
@@ -1045,7 +1041,7 @@ module tb_rob;
                wb_BTAG = 4'h1;
                wb_id = 2'd2;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                wb_BVALID = 1'b0;
                
@@ -1059,7 +1055,7 @@ module tb_rob;
                wb_BTAG = 4'h2;
                wb_id = 2'd3;
                if (~wb_BREADY)
-                  $fatal($time);
+                  $fatal(1, $time);
                handshake_wb;
                wb_BVALID = 1'b0;
                
@@ -1074,14 +1070,14 @@ module tb_rob;
                // Retire #1
                //
                handshake_commit;
-               if (commit_BDATA != 32'h123)
-                  $fatal($time);
-               if (commit_BTAG != 4'h1)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h2)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h123)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h1)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h2)
+                  $fatal(1, $time);
                commit_BREADY = 1'b0;
                   
                @(posedge clk); // Wait #2 to be wbted
@@ -1091,14 +1087,14 @@ module tb_rob;
                //
                commit_BREADY = 1'b1;
                handshake_commit;
-               if (commit_BDATA != 32'h321)
-                  $fatal($time);
-               if (commit_BTAG != 4'h2)
-                  $fatal($time);
-               if (commit_rd_we != 1'b1)
-                  $fatal($time);
-               if (commit_rd_addr != 5'h2)
-                  $fatal($time);
+               if (commit_BDATA !== 32'h321)
+                  $fatal(1, $time);
+               if (commit_BTAG !== 4'h2)
+                  $fatal(1, $time);
+               if (commit_rd_we !== 1'b1)
+                  $fatal(1, $time);
+               if (commit_rd_addr !== 5'h2)
+                  $fatal(1, $time);
                
                commit_BREADY = 1'b0;
                
@@ -1106,15 +1102,15 @@ module tb_rob;
          join
 
          @(posedge clk);
-         flush_req = 1'b1;
+         flush = 1'b1;
          @(posedge clk);
          // Now the queue is empty
-         flush_req = 1'b0;
+         flush = 1'b0;
          @(posedge clk);
          if (~disp_AREADY)
-            $fatal($time);
+            $fatal(1, $time);
          if (commit_BVALID)
-            $fatal($time);
+            $fatal(1, $time);
          
          $display("===============================");
          $display(" PASS !");

@@ -17,10 +17,12 @@
 
 module ncpu32k_core
 #(
-   parameter CONFIG_ENABLE_IMMU,
-   parameter CONFIG_ENABLE_DMMU,
-   parameter CONFIG_ENABLE_ICACHE,
-   parameter CONFIG_ENABLE_DCACHE,
+   parameter CONFIG_HAVE_IMMU,
+   parameter CONFIG_HAVE_DMMU,
+   parameter CONFIG_HAVE_ICACHE,
+   parameter CONFIG_HAVE_DCACHE,
+   parameter CONFIG_HAVE_IRQC,
+   parameter CONFIG_HAVE_TSC,
    parameter CONFIG_IBUS_OUTSTANTING_LOG2,
    parameter [`NCPU_AW-1:0] CONFIG_ERST_VECTOR,
    parameter [`NCPU_AW-1:0] CONFIG_EDTM_VECTOR,
@@ -37,12 +39,12 @@ module ncpu32k_core
    parameter CONFIG_ENABLE_MOD,
    parameter CONFIG_ENABLE_MODU,
    parameter CONFIG_ENABLE_FPU,
-   parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH,
+   parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2,
    parameter CONFIG_ALU_INSERT_REG,
-   parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH,
+   parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2,
    parameter CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2,
    parameter CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2,
-   parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH,
+   parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2,
    parameter CONFIG_ROB_DEPTH_LOG2,
    parameter CONFIG_PIPEBUF_BYPASS
 )
@@ -134,7 +136,6 @@ module ncpu32k_core
    wire [`NCPU_DW-1:0]  disp_imm32;             // From IDU of ncpu32k_idu.v
    wire [`NCPU_LPU_IOPW-1:0] disp_lpu_opc_bus;  // From IDU of ncpu32k_idu.v
    wire [`NCPU_AW-3:0]  disp_pc;                // From IDU of ncpu32k_idu.v
-   wire                 disp_pred_branch;       // From IDU of ncpu32k_idu.v
    wire [`NCPU_AW-3:0]  disp_pred_tgt;          // From IDU of ncpu32k_idu.v
    wire [`NCPU_REG_AW-1:0] disp_rd_addr;        // From IDU of ncpu32k_idu.v
    wire                 disp_rd_we;             // From IDU of ncpu32k_idu.v
@@ -154,7 +155,6 @@ module ncpu32k_core
    wire [2:0]           idu_exc;                // From IFU of ncpu32k_ifu.v
    wire [`NCPU_IW-1:0]  idu_insn;               // From IFU of ncpu32k_ifu.v
    wire [`NCPU_AW-3:0]  idu_pc;                 // From IFU of ncpu32k_ifu.v
-   wire                 idu_pred_branch;        // From IFU of ncpu32k_ifu.v
    wire [`NCPU_AW-3:0]  idu_pred_tgt;           // From IFU of ncpu32k_ifu.v
    wire                 issue_agu_AREADY;       // From AGU of ncpu32k_pipeline_agu.v
    wire                 issue_agu_AVALID;       // From DISP of ncpu32k_dispatch.v
@@ -198,7 +198,6 @@ module ncpu32k_core
    wire                 msr_psr_imme_we;        // From EPU of ncpu32k_pipeline_epu.v
    wire                 msr_psr_ire_nxt;        // From EPU of ncpu32k_pipeline_epu.v
    wire                 msr_psr_ire_we;         // From EPU of ncpu32k_pipeline_epu.v
-   wire [`NCPU_PSR_DW-1:0] msr_psr_nold;        // From PSR of ncpu32k_psr.v
    wire                 msr_psr_rm_nxt;         // From EPU of ncpu32k_pipeline_epu.v
    wire                 msr_psr_rm_we;          // From EPU of ncpu32k_pipeline_epu.v
    wire [`NCPU_AW-3:0]  rob_commit_pc;          // From WB_COMMIT of ncpu32k_wb_commit.v
@@ -207,7 +206,6 @@ module ncpu32k_core
    wire                 rob_disp_AVALID;        // From DISP of ncpu32k_dispatch.v
    wire [CONFIG_ROB_DEPTH_LOG2-1:0] rob_disp_id;// From WB_COMMIT of ncpu32k_wb_commit.v
    wire [`NCPU_AW-3:0]  rob_disp_pc;            // From DISP of ncpu32k_dispatch.v
-   wire                 rob_disp_pred_branch;   // From DISP of ncpu32k_dispatch.v
    wire [`NCPU_AW-3:0]  rob_disp_pred_tgt;      // From DISP of ncpu32k_dispatch.v
    wire [`NCPU_REG_AW-1:0] rob_disp_rd_addr;    // From DISP of ncpu32k_dispatch.v
    wire                 rob_disp_rd_we;         // From DISP of ncpu32k_dispatch.v
@@ -224,7 +222,6 @@ module ncpu32k_core
    wire                 wb_agu_BEDPF;           // From AGU of ncpu32k_pipeline_agu.v
    wire                 wb_agu_BEDTM;           // From AGU of ncpu32k_pipeline_agu.v
    wire [CONFIG_ROB_DEPTH_LOG2-1:0] wb_agu_BID; // From AGU of ncpu32k_pipeline_agu.v
-   wire [`NCPU_AW-1:0]  wb_agu_BLSA;            // From AGU of ncpu32k_pipeline_agu.v
    wire                 wb_agu_BREADY;          // From WB_COMMIT of ncpu32k_wb_commit.v
    wire                 wb_agu_BVALID;          // From AGU of ncpu32k_pipeline_agu.v
    wire                 wb_alu_BBRANCH_OP;      // From ALU of ncpu32k_pipeline_alu.v
@@ -274,11 +271,23 @@ module ncpu32k_core
        .arf_din                         (arf_din[`NCPU_DW-1:0]),
        .arf_we                          (arf_we));
 
-   ncpu32k_psr PSR
+   ncpu32k_psr
+      #(
+         .CPUID_VER                       (1),
+         .CPUID_REV                       (0),
+         .CPUID_FIMM                      (CONFIG_HAVE_IMMU),
+         .CPUID_FDMM                      (CONFIG_HAVE_DMMU),
+         .CPUID_FICA                      (CONFIG_HAVE_ICACHE),
+         .CPUID_FDCA                      (CONFIG_HAVE_DCACHE),
+         .CPUID_FDBG                      (0),
+         .CPUID_FFPU                      (CONFIG_ENABLE_FPU),
+         .CPUID_FIRQC                     (CONFIG_HAVE_IRQC),
+         .CPUID_FTSC                      (CONFIG_HAVE_TSC)
+      )
+   PSR
       (/*AUTOINST*/
        // Outputs
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
-       .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
        .msr_psr_rm                      (msr_psr_rm),
        .msr_psr_ire                     (msr_psr_ire),
        .msr_psr_imme                    (msr_psr_imme),
@@ -314,14 +323,6 @@ module ncpu32k_core
    ncpu32k_ifu
       #(
          .CONFIG_ERST_VECTOR           (CONFIG_ERST_VECTOR),
-         .CONFIG_EDTM_VECTOR           (CONFIG_EDTM_VECTOR),
-         .CONFIG_EDPF_VECTOR           (CONFIG_EDPF_VECTOR),
-         .CONFIG_EALIGN_VECTOR         (CONFIG_EALIGN_VECTOR),
-         .CONFIG_EITM_VECTOR           (CONFIG_EITM_VECTOR),
-         .CONFIG_EIPF_VECTOR           (CONFIG_EIPF_VECTOR),
-         .CONFIG_ESYSCALL_VECTOR       (CONFIG_ESYSCALL_VECTOR),
-         .CONFIG_EINSN_VECTOR          (CONFIG_EINSN_VECTOR),
-         .CONFIG_EIRQ_VECTOR           (CONFIG_EIRQ_VECTOR),
          .CONFIG_IBUS_OUTSTANTING_LOG2 (CONFIG_IBUS_OUTSTANTING_LOG2)
       )
    IFU
@@ -334,7 +335,6 @@ module ncpu32k_core
        .idu_insn                        (idu_insn[`NCPU_IW-1:0]),
        .idu_pc                          (idu_pc[`NCPU_AW-3:0]),
        .idu_exc                         (idu_exc[2:0]),
-       .idu_pred_branch                 (idu_pred_branch),
        .idu_pred_tgt                    (idu_pred_tgt[`NCPU_AW-3:0]),
        .bpu_insn_pc                     (bpu_insn_pc[`NCPU_AW-3:0]),
        // Inputs
@@ -384,7 +384,6 @@ module ncpu32k_core
        .idu_AREADY                      (idu_AREADY),
        .disp_AVALID                     (disp_AVALID),
        .disp_pc                         (disp_pc[`NCPU_AW-3:0]),
-       .disp_pred_branch                (disp_pred_branch),
        .disp_pred_tgt                   (disp_pred_tgt[`NCPU_AW-3:0]),
        .disp_alu_opc_bus                (disp_alu_opc_bus[`NCPU_ALU_IOPW-1:0]),
        .disp_lpu_opc_bus                (disp_lpu_opc_bus[`NCPU_LPU_IOPW-1:0]),
@@ -406,11 +405,11 @@ module ncpu32k_core
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
+       .flush                           (flush),
        .idu_AVALID                      (idu_AVALID),
        .idu_insn                        (idu_insn[`NCPU_IW-1:0]),
        .idu_pc                          (idu_pc[`NCPU_AW-3:0]),
        .idu_exc                         (idu_exc[2:0]),
-       .idu_pred_branch                 (idu_pred_branch),
        .idu_pred_tgt                    (idu_pred_tgt[`NCPU_AW-3:0]),
        .disp_AREADY                     (disp_AREADY));
 
@@ -429,7 +428,6 @@ module ncpu32k_core
        .disp_AREADY                     (disp_AREADY),
        .rob_disp_AVALID                 (rob_disp_AVALID),
        .rob_disp_pc                     (rob_disp_pc[`NCPU_AW-3:0]),
-       .rob_disp_pred_branch            (rob_disp_pred_branch),
        .rob_disp_pred_tgt               (rob_disp_pred_tgt[`NCPU_AW-3:0]),
        .rob_disp_rd_we                  (rob_disp_rd_we),
        .rob_disp_rd_addr                (rob_disp_rd_addr[`NCPU_REG_AW-1:0]),
@@ -462,7 +460,6 @@ module ncpu32k_core
        .rst_n                           (rst_n),
        .disp_AVALID                     (disp_AVALID),
        .disp_pc                         (disp_pc[`NCPU_AW-3:0]),
-       .disp_pred_branch                (disp_pred_branch),
        .disp_pred_tgt                   (disp_pred_tgt[`NCPU_AW-3:0]),
        .disp_alu_opc_bus                (disp_alu_opc_bus[`NCPU_ALU_IOPW-1:0]),
        .disp_lpu_opc_bus                (disp_lpu_opc_bus[`NCPU_LPU_IOPW-1:0]),
@@ -503,7 +500,7 @@ module ncpu32k_core
 
    ncpu32k_pipeline_alu
       #(
-         .CONFIG_ALU_ISSUE_QUEUE_DEPTH (CONFIG_ALU_ISSUE_QUEUE_DEPTH),
+         .CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2 (CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2),
          .CONFIG_ALU_INSERT_REG  (CONFIG_ALU_INSERT_REG),
          .CONFIG_PIPEBUF_BYPASS  (CONFIG_PIPEBUF_BYPASS),
          .CONFIG_ROB_DEPTH_LOG2  (CONFIG_ROB_DEPTH_LOG2)
@@ -539,7 +536,7 @@ module ncpu32k_core
 
    ncpu32k_pipeline_lpu
       #(
-         .CONFIG_LPU_ISSUE_QUEUE_DEPTH (CONFIG_LPU_ISSUE_QUEUE_DEPTH),
+         .CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2 (CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2),
          .CONFIG_ENABLE_MUL   (CONFIG_ENABLE_MUL),
          .CONFIG_ENABLE_DIV   (CONFIG_ENABLE_DIV),
          .CONFIG_ENABLE_DIVU  (CONFIG_ENABLE_DIVU),
@@ -652,7 +649,6 @@ module ncpu32k_core
        .byp_rd_addr                     (byp_rd_addr[`NCPU_REG_AW-1:0]),
        .wb_epu_BREADY                   (wb_epu_BREADY),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
-       .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
        .msr_cpuid                       (msr_cpuid[`NCPU_DW-1:0]),
        .msr_epc                         (msr_epc[`NCPU_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
@@ -690,7 +686,6 @@ module ncpu32k_core
        .wb_agu_BEDTM                    (wb_agu_BEDTM),
        .wb_agu_BEDPF                    (wb_agu_BEDPF),
        .wb_agu_BEALIGN                  (wb_agu_BEALIGN),
-       .wb_agu_BLSA                     (wb_agu_BLSA[`NCPU_AW-1:0]),
        .epu_commit_EDTM                 (epu_commit_EDTM),
        .epu_commit_EDPF                 (epu_commit_EDPF),
        .epu_commit_EALIGN               (epu_commit_EALIGN),
@@ -722,7 +717,7 @@ module ncpu32k_core
 
    ncpu32k_pipeline_fpu
       #(
-         .CONFIG_FPU_ISSUE_QUEUE_DEPTH (CONFIG_FPU_ISSUE_QUEUE_DEPTH),
+         .CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2 (CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2),
          .CONFIG_ENABLE_FPU      (CONFIG_ENABLE_FPU),
          .CONFIG_PIPEBUF_BYPASS  (CONFIG_PIPEBUF_BYPASS),
          .CONFIG_ROB_DEPTH_LOG2  (CONFIG_ROB_DEPTH_LOG2)
@@ -759,7 +754,15 @@ module ncpu32k_core
 
    ncpu32k_wb_commit
       #(
-         .CONFIG_ROB_DEPTH_LOG2 (CONFIG_ROB_DEPTH_LOG2)
+         .CONFIG_ROB_DEPTH_LOG2        (CONFIG_ROB_DEPTH_LOG2),
+         .CONFIG_EDTM_VECTOR           (CONFIG_EDTM_VECTOR),
+         .CONFIG_EDPF_VECTOR           (CONFIG_EDPF_VECTOR),
+         .CONFIG_EALIGN_VECTOR         (CONFIG_EALIGN_VECTOR),
+         .CONFIG_EITM_VECTOR           (CONFIG_EITM_VECTOR),
+         .CONFIG_EIPF_VECTOR           (CONFIG_EIPF_VECTOR),
+         .CONFIG_ESYSCALL_VECTOR       (CONFIG_ESYSCALL_VECTOR),
+         .CONFIG_EINSN_VECTOR          (CONFIG_EINSN_VECTOR),
+         .CONFIG_EIRQ_VECTOR           (CONFIG_EIRQ_VECTOR)
       )
    WB_COMMIT
       (/*AUTOINST*/
@@ -813,7 +816,6 @@ module ncpu32k_core
        .wb_agu_BEDTM                    (wb_agu_BEDTM),
        .wb_agu_BEDPF                    (wb_agu_BEDPF),
        .wb_agu_BEALIGN                  (wb_agu_BEALIGN),
-       .wb_agu_BLSA                     (wb_agu_BLSA[`NCPU_AW-1:0]),
        .wb_epu_BVALID                   (wb_epu_BVALID),
        .wb_epu_BDATA                    (wb_epu_BDATA[`NCPU_DW-1:0]),
        .wb_epu_BID                      (wb_epu_BID[CONFIG_ROB_DEPTH_LOG2-1:0]),
@@ -825,7 +827,6 @@ module ncpu32k_core
        .wb_epu_BEIRQ                    (wb_epu_BEIRQ),
        .rob_disp_AVALID                 (rob_disp_AVALID),
        .rob_disp_pc                     (rob_disp_pc[`NCPU_AW-3:0]),
-       .rob_disp_pred_branch            (rob_disp_pred_branch),
        .rob_disp_pred_tgt               (rob_disp_pred_tgt[`NCPU_AW-3:0]),
        .rob_disp_rd_we                  (rob_disp_rd_we),
        .rob_disp_rd_addr                (rob_disp_rd_addr[`NCPU_REG_AW-1:0]),

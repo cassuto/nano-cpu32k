@@ -18,16 +18,16 @@
 
 module pb_fb_router
 #(
-   parameter NBUS=-1
+   parameter NBUS
 )
 (
    input                      clk,
    input                      rst_n,
    // Frontend M-Bus
-   output                     fb_mbus_BVALID,
+   output reg                 fb_mbus_BVALID,
    input                      fb_mbus_BREADY,
-   output [`NCPU_DW-1:0]      fb_mbus_BDATA,
-   output [1:0]               fb_mbus_BEXC,
+   output reg [`NCPU_DW-1:0]  fb_mbus_BDATA,
+   output reg [1:0]           fb_mbus_BEXC,
    input [`NCPU_DW-1:0]       fb_mbus_ADATA,
    output                     fb_mbus_AREADY,
    input                      fb_mbus_AVALID,
@@ -48,11 +48,8 @@ module pb_fb_router
    output [NBUS*`NCPU_DW/8-1:0] fb_bus_AWMSK,
    output [NBUS*2-1:0]        fb_bus_AEXC
 );
-
-   localparam AW = `NCPU_AW;
-   localparam DW = `NCPU_DW;
-
-   genvar i,j,k,x,y;
+   genvar i;
+   integer x;
 
    wire [NBUS-1:0] bus_pending;
    wire [NBUS-1:0] bus_pending_nxt;
@@ -77,52 +74,51 @@ module pb_fb_router
    // Cmd Routing
    wire [NBUS-1:0] AREADY;
    generate
-      for(j=0;j<NBUS;j=j+1)
+      for(i=0;i<NBUS;i=i+1)
          begin
             // Exclusive bus channel
             // If there is not any bus taking the time slice,
             // or this is the bus being occupied, we can accept new cmd.
-            wire accept_cmd = ~|bus_pending | bus_pending[j];
+            wire accept_cmd = ~|bus_pending | bus_pending[i];
 
-            assign AREADY[j] = fb_bus_sel[j] & accept_cmd & fb_bus_AREADY[j];
-            assign fb_bus_AVALID[j] = fb_bus_sel[j] & accept_cmd & fb_mbus_AVALID;
+            assign AREADY[i] = fb_bus_sel[i] & accept_cmd & fb_bus_AREADY[i];
+            assign fb_bus_AVALID[i] = fb_bus_sel[i] & accept_cmd & fb_mbus_AVALID;
          end
    endgenerate
    assign fb_mbus_AREADY = |AREADY;
 
    // Direct route
    generate
-      for(k=0;k<NBUS;k=k+1) begin
-         assign fb_bus_AADDR[AW*(k+1)-1:AW*k]      = fb_mbus_AADDR;
-         assign fb_bus_AWMSK[DW/8*(k+1)-1:DW/8*k]  = fb_mbus_AWMSK;
-         assign fb_bus_AEXC[2*(k+1)-1:2*k]         = fb_mbus_AEXC;
-         assign fb_bus_ADATA[DW*(k+1)-1:DW*k]      = fb_mbus_ADATA;
+      for(i=0;i<NBUS;i=i+1) begin
+         assign fb_bus_AADDR[`NCPU_AW*(i+1)-1:`NCPU_AW*i]      = fb_mbus_AADDR;
+         assign fb_bus_AWMSK[`NCPU_DW/8*(i+1)-1:`NCPU_DW/8*i]  = fb_mbus_AWMSK;
+         assign fb_bus_AEXC[2*(i+1)-1:2*i]                     = fb_mbus_AEXC;
+         assign fb_bus_ADATA[`NCPU_DW*(i+1)-1:`NCPU_DW*i]      = fb_mbus_ADATA;
       end
    endgenerate
 
    // Data Routing
-   wire [NBUS-1:0] dout_valid;
-   wire [DW-1:0] dout[NBUS-1:0];
-   wire [1:0] exc[NBUS-1:0];
+   wire [`NCPU_DW-1:0]  e_fb_bus_BDATA [NBUS-1:0];
+   wire [1:0]           e_fb_bus_BEXC [NBUS-1:0];
    generate
-      for(x=0;x<NBUS;x=x+1)
+      for(i=0;i<NBUS;i=i+1)
          begin
-            assign dout_valid[x] = bus_pending[x] & fb_bus_BVALID[x];
-            if (x==0)
+            assign e_fb_bus_BDATA[i] = fb_bus_BDATA[`NCPU_DW*(i+1)-1:`NCPU_DW*i];
+            assign e_fb_bus_BEXC[i] = fb_bus_BEXC[2*(i+1)-1:2*i];
+         end
+      always @(*)
+         begin
+            fb_mbus_BVALID = 1'b0;
+            fb_mbus_BDATA = {`NCPU_DW{1'b0}};
+            fb_mbus_BEXC = 2'b0;
+            for(x=0;x<NBUS;x=x+1)
                begin
-                  assign dout[x] = {DW{bus_pending[x]}} & fb_bus_BDATA[DW*(x+1)-1:DW*x];
-                  assign exc[x] = {2{bus_pending[x]}} & fb_bus_BEXC[2*(x+1)-1:2*x];
-               end
-            else
-               begin
-                  assign dout[x] = dout[x-1] | ({DW{bus_pending[x]}} & fb_bus_BDATA[DW*(x+1)-1:DW*x]);
-                  assign exc[x] = exc[x-1] | ({2{bus_pending[x]}} & fb_bus_BEXC[2*(x+1)-1:2*x]);
+                  fb_mbus_BVALID = fb_mbus_BVALID | (bus_pending[x] & fb_bus_BVALID[x]);
+                  fb_mbus_BDATA = fb_mbus_BDATA | ({`NCPU_DW{bus_pending[x]}} & e_fb_bus_BDATA[x]);
+                  fb_mbus_BEXC = fb_mbus_BEXC | ({2{bus_pending[x]}} & e_fb_bus_BEXC[x]);
                end
          end
    endgenerate
-   assign fb_mbus_BVALID = |dout_valid;
-   assign fb_mbus_BDATA = dout[NBUS-1];
-   assign fb_mbus_BEXC = exc[NBUS-1];
 
    // Direct route
    generate

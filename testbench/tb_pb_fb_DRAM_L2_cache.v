@@ -1,5 +1,4 @@
-
-`timescale 1ns / 1ps
+`include "timescale.v"
 
 module tb_pb_fb_DRAM_L2_cache();
 

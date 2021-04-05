@@ -17,7 +17,7 @@
 
 module ncpu32k_bpu
 #(
-   parameter BPU_JMPREL_STRATEGY = "direction"
+   parameter BPU_JMPREL_STRATEGY = 0 // 0: always_not_taken
 )
 (
    input                   clk,
@@ -32,7 +32,7 @@ module ncpu32k_bpu
 );
 
    generate
-      if(BPU_JMPREL_STRATEGY=="always_not_taken") begin : strategy_always_not_taken
+      if(BPU_JMPREL_STRATEGY==0) begin : strategy_always_not_taken
          assign bpu_pred_taken = 1'b0;
          assign bpu_pred_tgt = {`NCPU_AW-2{1'b0}};
       end

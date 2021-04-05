@@ -22,7 +22,8 @@ module pb_fb_L2_cache
    parameter P_LINE	= 6, // 2^P_LINE bytes per line (= busrt length of DRAM)
    parameter L2_CH_AW = 25,
    parameter L2_CH_DW = 32,
-   parameter CONFIG_PIPEBUF_BYPASS=-1
+   parameter CONFIG_PIPEBUF_BYPASS,
+   parameter CONFIG_CDC_STAGES = 2
 )
 (
    input                   clk,
@@ -76,7 +77,7 @@ module pb_fb_L2_cache
    wire ch_idle = (status_r == S_IDLE);
    wire ch_boot = (status_r == S_BOOT);
 	reg [P_LINE-2:0] line_adr_cnt; // unit: word (2 B)
-	reg line_adr_cnt_msb_sr;
+	wire line_adr_cnt_msb_sr;
    wire [L2_CH_DW-1:0] ch_mem_dout;
 
    //
@@ -123,9 +124,17 @@ module pb_fb_L2_cache
    wire s2_cke;
    wire pipe_en;
 
-   ncpu32k_cell_pipebuf pipebuf_1 (
+   wire sdr_rd_sr;
+	wire sdr_we_sr;
+
+   ncpu32k_cell_pipebuf
+      #(
+         .CONFIG_PIPEBUF_BYPASS (CONFIG_PIPEBUF_BYPASS)
+      )
+   PIPEBUF_1 (
       .clk        (clk),
       .rst_n      (rst_n),
+      .flush      (1'b0),
       .A_en       (~ch_boot),
       .AVALID     (l2_ch_AVALID),
       .AREADY     (l2_ch_AREADY),
@@ -135,9 +144,14 @@ module pb_fb_L2_cache
       .cke        (s1_cke),
       .pending    ()
    );
-   ncpu32k_cell_pipebuf pipebuf_2 (
+   ncpu32k_cell_pipebuf
+      #(
+         .CONFIG_PIPEBUF_BYPASS (CONFIG_PIPEBUF_BYPASS)
+      )
+   PIPEBUF_2 (
       .clk        (clk),
       .rst_n      (rst_n),
+      .flush      (1'b0),
       .A_en       (pipe_en),
       .AVALID     (s1o_valid),
       .AREADY     (s1_ready),
@@ -373,7 +387,7 @@ generate
             s2i_tag_dirty[i] = 1'b0;
          end else if (ch_idle & s1o_valid & s1o_hit) begin
             // Mark it dirty when write
-            s2i_tag_dirty[i] = s1o_match[i] ? s1o_tag_dirty[i] | (|s1o_wmask_r) : s1o_tag_dirty;
+            s2i_tag_dirty[i] = s1o_match[i] ? s1o_tag_dirty[i] | (|s1o_wmask_r) : s1o_tag_dirty[i];
          end else if(ch_idle & s1o_valid & s1o_free[i]) begin
             // Mark it clean when entry is freed
             s2i_tag_dirty[i] = 1'b0;
@@ -405,11 +419,18 @@ endgenerate
    assign pipe_en = wb_idle_r & (~s1o_valid | (s1o_hit|wb_finished_r));
 
    // *Cross clock domain*
-   always @(posedge clk or negedge rst_n)
-      if(~rst_n)
-         line_adr_cnt_msb_sr <= 1'b0;
-      else
-         line_adr_cnt_msb_sr <= line_adr_cnt[P_LINE-2];
+   ncpu32k_cdc_sync
+      #(
+         .RST_VALUE           (1'b0),
+         .CONFIG_CDC_STAGES   (CONFIG_CDC_STAGES - 1)
+      )
+   CDC_LINE_ADR_CNT_MSB
+      (
+         .A             (line_adr_cnt[P_LINE-2]),
+         .CLK_B         (clk),
+         .RST_N_B       (rst_n),
+         .B             (line_adr_cnt_msb_sr)
+      );
 
    // Write-back FSM
 	always @(posedge clk or negedge rst_n) begin
@@ -472,35 +493,54 @@ endgenerate
                   wb_finished_r <= 1'b1;
                end
             end
+
+            default: begin
+            end
          endcase
       end
 	end
 
-   // SDRAM arbiter
    // *Cross clock domain*
    // Receive signals from nl_*
-
-   // 2 Flip flops for crossing clock domains
-   reg [1:0]sdr_rd_sr;
-	reg [1:0]sdr_we_sr;
+   ncpu32k_cdc_sync
+      #(
+         .RST_VALUE           (1'b0),
+         .CONFIG_CDC_STAGES   (CONFIG_CDC_STAGES)
+      )
+   CDC_SDR_RD
+      (
+         .A          (nl_rd_r),
+         .CLK_B      (sdr_clk),
+         .RST_N_B    (sdr_rst_n),
+         .B          (sdr_rd_sr)
+      );
+   ncpu32k_cdc_sync
+      #(
+         .RST_VALUE           (1'b0),
+         .CONFIG_CDC_STAGES   (CONFIG_CDC_STAGES)
+      )
+   CDC_SDR_WE
+      (
+         .A          (nl_we_r),
+         .CLK_B      (sdr_clk),
+         .RST_N_B    (sdr_rst_n),
+         .B          (sdr_we_sr)
+      );
+   
    reg [L2_CH_AW-3:0] sdr_cmd_addr_r;
 
-   // Sample requests at SDRAM clock rise
+   // Write & Read arbiter for SDRAM
    always @ (posedge sdr_clk or negedge sdr_rst_n) begin
       if(~sdr_rst_n) begin
-         sdr_rd_sr <= 0;
-         sdr_we_sr <= 0;
          sdr_cmd_bst_rd_req <= 1'b0;
          sdr_cmd_bst_we_req <= 1'b0;
       end else begin
-         sdr_rd_sr <= {sdr_rd_sr[0], nl_rd_r};
-         sdr_we_sr <= {sdr_we_sr[0], nl_we_r};
          sdr_cmd_addr_r <= {nl_baddr_r[L2_CH_AW-P_LINE-1:0], {P_LINE-2{1'b0}}};
 
          // Priority arbiter
-         if(sdr_we_sr[1])
+         if(sdr_we_sr)
             sdr_cmd_bst_we_req <= 1'b1;
-         else if(sdr_rd_sr[1])
+         else if(sdr_rd_sr)
             sdr_cmd_bst_rd_req <= 1'b1;
          else begin
             sdr_cmd_bst_we_req <= 1'b0;

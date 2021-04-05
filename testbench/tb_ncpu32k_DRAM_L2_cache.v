@@ -1,6 +1,5 @@
-
+`include "timescale.v"
 `include "ncpu32k_config.h"
-//`timescale 1ns / 1ps
 
 module tb_ncpu32k_DRAM_L2_cache();
 

@@ -35,7 +35,10 @@
 // Configure Asertions
 /////////////////////////////////////////////////////////////////////////////
 
-// Take it easy, assertions are automatically ignored during synthesis.
+// Check the uncertain state (X)
+// `define NCPU_CHECK_X
+
+// Assertions are automatically ignored during synthesis.
 // If you want to speed up the simulation, comment this macro out.
 `define NCPU_ENABLE_ASSERT
 
@@ -262,7 +265,7 @@
 // uOP
 /////////////////////////////////////////////////////////////////////////////
 
-`define NCPU_EPU_UOPW 3
+`define NCPU_EPU_UOPW 4
 `define NCPU_ALU_UOPW_OPC 5
 `define NCPU_ALU_UOPW (`NCPU_ALU_UOPW_OPC + 15) /* uOP with rel15 operand */
 `define NCPU_LPU_UOPW 3

@@ -17,7 +17,7 @@
 
 module ncpu32k_pipeline_lpu
 #(
-   parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH,
+   parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2,
    parameter CONFIG_ENABLE_MUL,
    parameter CONFIG_ENABLE_DIV,
    parameter CONFIG_ENABLE_DIVU,
@@ -70,9 +70,11 @@ generate
 
          ncpu32k_issue_queue
             #(
-               .DEPTH      (CONFIG_LPU_ISSUE_QUEUE_DEPTH),
+               .DEPTH      (1<<CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2),
+               .DEPTH_WIDTH (CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2),
                .UOP_WIDTH  (`NCPU_LPU_IOPW),
-               .ALGORITHM  (0) // Out of Order
+               .ALGORITHM  (0), // Out of Order
+               .CONFIG_ROB_DEPTH_LOG2 (CONFIG_ROB_DEPTH_LOG2)
             )
          ISSUE_QUEUE_LPU
             (
@@ -80,6 +82,7 @@ generate
                .rst_n      (rst_n),
                .i_issue_AVALID   (issue_lpu_AVALID),
                .o_issue_AREADY   (issue_lpu_AREADY),
+               .i_flush    (flush),
                .i_uop      (issue_lpu_uop),
                .i_id       (issue_id),
                .i_rs1_rdy  (issue_rs1_rdy),

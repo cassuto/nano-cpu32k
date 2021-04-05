@@ -39,6 +39,9 @@ module ncpu32k_cell_tdpram_aclkd_sclk
    output [DW-1:0]               dout_b,
    input                         en_b
 );
+// synthesis translate_off
+`ifndef SYNTHESIS
+
    genvar i,j;
    reg [DW-1:0] mem_vector[(1<<AW)-1:0];
 
@@ -89,5 +92,15 @@ endgenerate
 
    assign dout_a = dout_a_r;
    assign dout_b = dout_b_r;
+
+`else
+   initial
+      $fatal("\n Bugs: module `ncpu32k_cell_tdpram_aclkd_sclk` is not available for synthesis\n");
+
+   assign dout_a = {DW{1'bx}};
+   assign dout_b = {DW{1'bx}};
+
+`endif
+// synthesis translate_on
 
 endmodule

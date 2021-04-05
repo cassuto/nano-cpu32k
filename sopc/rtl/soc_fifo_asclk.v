@@ -13,10 +13,10 @@
 /*  Lesser General Public License for more details.                        */
 /***************************************************************************/
 
-module sco_fifo_asclk
+module soc_fifo_asclk
 #(
-   parameter DW=-1, // Data bits
-   parameter AW=-1  // Address bits
+   parameter DW, // Data bits
+   parameter AW  // Address bits
 )
 (
    input wclk,
@@ -35,14 +35,14 @@ module sco_fifo_asclk
    reg [AW:0] rptr_g, wptr_g;
 
    // Generate read pointer
-   wire [AW:0] rptr_b_nxt = ~empty ? rptr_b + pop : rptr_b;
+   wire [AW:0] rptr_b_nxt = ~empty ? rptr_b + {{AW-1{1'b0}}, pop} : rptr_b;
    wire [AW:0] rptr_g_nxt = {1'b0,rptr_b_nxt[AW:1]} ^ rptr_b_nxt; // binary-to-gray encoder
    always @(posedge rclk or negedge rrst_n)
       if (~rrst_n) {rptr_b, rptr_g} <= 0;
       else {rptr_b, rptr_g} <= {rptr_b_nxt, rptr_g_nxt};
 
    // Generate write pointer
-   wire [AW:0] wptr_b_nxt = ~full ? wptr_b + push : wptr_b;
+   wire [AW:0] wptr_b_nxt = ~full ? wptr_b + {{AW-1{1'b0}}, push} : wptr_b;
    wire [AW:0] wptr_g_nxt = {1'b0, wptr_b_nxt[AW:1]} ^ wptr_b_nxt;   // binary-to-gray encoder
    always @(posedge wclk or negedge wrst_n)
       if (~wrst_n) {wptr_b, wptr_g} <= 0;

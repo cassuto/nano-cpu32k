@@ -27,17 +27,16 @@ module ncpu32k_idu
 (
    input                      clk,
    input                      rst_n,
+   input                      flush,
    output                     idu_AREADY,
    input                      idu_AVALID,
    input [`NCPU_IW-1:0]       idu_insn,
    input [`NCPU_AW-3:0]       idu_pc,
    input [2:0]                idu_exc,
-   input                      idu_pred_branch,
    input [`NCPU_AW-3:0]       idu_pred_tgt,
    input                      disp_AREADY,
    output                     disp_AVALID,
    output [`NCPU_AW-3:0]      disp_pc,
-   output                     disp_pred_branch,
    output [`NCPU_AW-3:0]      disp_pred_tgt,
    output [`NCPU_ALU_IOPW-1:0] disp_alu_opc_bus,
    output [`NCPU_LPU_IOPW-1:0] disp_lpu_opc_bus,
@@ -116,17 +115,16 @@ module ncpu32k_idu
    wire                       op_wmsr;
    wire                       op_rmsr;
    wire                       pipe_cke;
-   wire                       emu_insn;
    wire                       insn_rs1_imm15;
    wire                       insn_rd_rs1_imm15;
-   wire                       insn_rd_uimm17;
+   wire                       insn_uimm17;
+   wire                       insn_rel25;
    wire                       imm15_signed;
    wire                       insn_no_rops;
    wire                       insn_not_wb;
    wire                       read_rd_as_rs2;
    wire                       wb_regf;
    wire [`NCPU_REG_AW-1:0]    wb_reg_addr;
-   wire                       jmp_link;
    wire                       rs1_re_nxt;
    wire [`NCPU_REG_AW-1:0]    rs1_addr_nxt;
    wire                       rs2_re_nxt;
@@ -138,7 +136,8 @@ module ncpu32k_idu
    wire [`NCPU_ALU_IOPW-1:0]  alu_opc_bus;
    wire [`NCPU_LPU_IOPW-1:0]  lpu_opc_bus;
    wire [`NCPU_EPU_IOPW-1:0]  epu_opc_bus;
-   wire [`NCPU_AW-3:0]        jmprel_offset;
+   wire [`NCPU_EPU_IOPW-1:0]  epu_opc_no_EINSN;
+   wire [`NCPU_AW-1:0]        jmprel_offset;
    wire [2:0]                 agu_store_size;
    wire [2:0]                 agu_load_size;
    wire                       agu_sign_ext;
@@ -280,16 +279,17 @@ module ncpu32k_idu
    assign op_agu_store = |agu_store_size;
    assign op_agu_barr = (f_opcode == `NCPU_OP_MBARR);
 
-   // EPU opcodes
-   assign epu_opc_bus[`NCPU_EPU_WMSR] = op_wmsr;
-   assign epu_opc_bus[`NCPU_EPU_RMSR] = op_rmsr;
-   assign epu_opc_bus[`NCPU_EPU_ESYSCALL] = op_syscall;
-   assign epu_opc_bus[`NCPU_EPU_ERET] = op_ret;
-   assign epu_opc_bus[`NCPU_EPU_EITM] = idu_exc[0];
-   assign epu_opc_bus[`NCPU_EPU_EIPF] = idu_exc[1];
-   assign epu_opc_bus[`NCPU_EPU_EIRQ] = idu_exc[2];
+   // EPU opcodes excluding EINSN 
+   assign epu_opc_no_EINSN[`NCPU_EPU_WMSR] = op_wmsr;
+   assign epu_opc_no_EINSN[`NCPU_EPU_RMSR] = op_rmsr;
+   assign epu_opc_no_EINSN[`NCPU_EPU_ESYSCALL] = op_syscall;
+   assign epu_opc_no_EINSN[`NCPU_EPU_ERET] = op_ret;
+   assign epu_opc_no_EINSN[`NCPU_EPU_EITM] = idu_exc[0];
+   assign epu_opc_no_EINSN[`NCPU_EPU_EIPF] = idu_exc[1];
+   assign epu_opc_no_EINSN[`NCPU_EPU_EIRQ] = idu_exc[2];
+   assign epu_opc_no_EINSN[`NCPU_EPU_EINSN] = 1'b0;
+
    // Insn is to be emulated
-   // Must filter out all the known insns, excluding EINSN itself.
    assign epu_opc_bus[`NCPU_EPU_EINSN] =
       ~(
          // ALU opcodes
@@ -299,8 +299,10 @@ module ncpu32k_idu
          // AGU insns
          op_agu_load | op_agu_store | op_agu_barr |
          // EPU opcodes
-         (|epu_opc_bus[`NCPU_EPU_EINSN-1:0])
+         (|epu_opc_no_EINSN)
       );
+   // Assert 2104051343
+   assign epu_opc_bus[`NCPU_EPU_EINSN-1:0] = epu_opc_no_EINSN[`NCPU_EPU_EINSN-1:0];
 
    // Insn that uses rs1 and imm15 as operand.
    assign insn_rs1_imm15 =
@@ -316,14 +318,14 @@ module ncpu32k_idu
          op_agu_store |
          op_wmsr
       );
-   // Insn that uses rd and imm17 as operand.
-   assign insn_rd_uimm17 = op_mhi;
+   // Insn that uses imm17 as operand.
+   assign insn_uimm17 = op_mhi;
    // Insn that uses rel25 as operand
    assign insn_rel25 = (op_jmp_i | op_jmp_lnk_i);
    // Insn that requires signed imm15.
    assign imm15_signed = (op_xor_i | op_add_i | op_agu_load | op_agu_store);
    // Insns that have no register operands.
-   assign insn_no_rops = (op_agu_barr | op_syscall | op_ret | op_jmp_i | op_jmp_lnk_i);
+   assign insn_no_rops = (op_mhi | op_agu_barr | op_syscall | op_ret | op_jmp_i | op_jmp_lnk_i);
    // Insns that do not writeback ARF
    assign insn_not_wb = (op_jmp_i | bcc | 
                         op_agu_store | op_agu_barr |
@@ -345,6 +347,7 @@ module ncpu32k_idu
       (
          .clk     (clk),
          .rst_n   (rst_n),
+         .flush   (flush),
          .A_en    (1'b1),
          .AVALID  (idu_AVALID),
          .AREADY  (idu_AREADY),
@@ -355,12 +358,12 @@ module ncpu32k_idu
          .pending ()
       );
 
-   assign read_rd_as_rs2 = (op_agu_store | op_wmsr | bcc | insn_rd_uimm17);
+   assign read_rd_as_rs2 = (op_agu_store | op_wmsr | bcc);
 
    // Request operand(s) from regfile when needed
-   assign rs1_re_nxt = ~insn_no_rops & ~insn_rd_uimm17;
+   assign rs1_re_nxt = ~insn_no_rops;
    assign rs1_addr_nxt = f_rs1;
-   assign rs2_re_nxt = (~insn_rs1_imm15 & ~insn_rel25 & ~insn_no_rops) | read_rd_as_rs2;
+   assign rs2_re_nxt = (~insn_rs1_imm15 & ~insn_uimm17 & ~insn_rel25 & ~insn_no_rops) | read_rd_as_rs2;
    assign rs2_addr_nxt = read_rd_as_rs2 ? f_rd : f_rs2;
 
    // Sign-extended 15bit Integer
@@ -370,10 +373,10 @@ module ncpu32k_idu
    // Zero-extended 17bit Integer
    assign uimm17 = {{`NCPU_DW-17{1'b0}}, f_imm17[16:0]};
    // PC-Relative address (sign-extended)
-   assign jmprel_offset = {{`NCPU_AW-2-25{f_rel25[24]}}, f_rel25[24:0]};
+   assign jmprel_offset = {{`NCPU_AW-2-25{f_rel25[24]}}, f_rel25[24:0], 2'b00};
    // Immediate Operand Assert (2103281412)
    assign imm32_nxt = ({`NCPU_DW{insn_rs1_imm15|insn_rd_rs1_imm15}} & (imm15_signed ? simm15 : uimm15)) |
-                        ({`NCPU_DW{insn_rd_uimm17}} & uimm17) |
+                        ({`NCPU_DW{insn_uimm17}} & uimm17) |
                         ({`NCPU_DW{insn_rel25}} & jmprel_offset);
 
    // Data path
@@ -416,9 +419,6 @@ module ncpu32k_idu
    nDFF_lr #(1) dff_disp_agu_sign_ext
      (clk,rst_n, pipe_cke, agu_sign_ext, disp_agu_sign_ext);
 
-   nDFF_lr #(1) dff_disp_pred_branch
-      (clk,rst_n, pipe_cke, idu_pred_branch, disp_pred_branch);
-
    nDFF_lr #(1) dff_disp_rs1_re
       (clk,rst_n, pipe_cke, rs1_re_nxt, disp_rs1_re);
    nDFF_lr #(1) dff_disp_rs2_re
@@ -436,8 +436,14 @@ module ncpu32k_idu
    always @(posedge clk)
       begin
          // Assertion 2103281412
-         if (count_1({insn_rs1_imm15, insn_rd_rs1_imm15, insn_rd_uimm17, insn_rel25})>1)
+         if (count_1({insn_rs1_imm15, insn_rd_rs1_imm15, insn_uimm17, insn_rel25})>1)
             $fatal("\n Bugs on insn type decoder\n");
+      end
+   initial
+      begin
+         // Assertion 2104051343
+         if (`NCPU_EPU_EINSN != `NCPU_EPU_IOPW-1)
+            $fatal("\n Check `NCPU_EPU_EINSN, a particular value\n");
       end
 `endif
 

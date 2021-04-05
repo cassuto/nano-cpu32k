@@ -60,7 +60,6 @@ module ncpu32k_immu
    localparam PPN_DW = `NCPU_DW-PPN_SHIFT;
 
    wire tlb_cke;
-   wire tlb_pending;
 
    ncpu32k_cell_pipebuf
       #(
@@ -70,6 +69,7 @@ module ncpu32k_immu
       (
          .clk        (clk),
          .rst_n      (rst_n),
+         .flush      (1'b0),
          .A_en       (1'b1),
          .AVALID     (ibus_AVALID),
          .AREADY     (ibus_AREADY),
@@ -77,7 +77,7 @@ module ncpu32k_immu
          .BVALID     (icache_AVALID),
          .BREADY     (icache_AREADY),
          .cke        (tlb_cke),
-         .pending    (tlb_pending)
+         .pending    ()
       );
 
    // MSR.IMMID
@@ -168,15 +168,18 @@ module ncpu32k_immu
    wire tlb_rx = tlb_h_r[4];
    wire tlb_s = tlb_h_r[8];
    wire [PPN_DW-1:0] tlb_ppn = tlb_h_r[`NCPU_DW-1:`NCPU_DW-PPN_DW];
+   wire perm_denied;
+   wire tlb_miss;
 
    assign perm_denied = ((msr_psr_rm_r & ~tlb_rx) |
                          (~msr_psr_rm_r & ~tlb_ux));
 
    // TLB miss exception
-   assign icache_AEXC[0] = ~(tlb_v & tlb_vpn == tgt_vpn_r) & msr_psr_imme_r;
+   assign tlb_miss = ~(tlb_v & tlb_vpn == tgt_vpn_r);
+   assign icache_AEXC[0] = tlb_miss & msr_psr_imme_r;
 
    // Permission check, Page Fault exception
-   assign icache_AEXC[1] = perm_denied & ~icache_AEXC[0] & msr_psr_imme_r;
+   assign icache_AEXC[1] = perm_denied & ~tlb_miss & msr_psr_imme_r;
 
    assign icache_AADDR =
       (

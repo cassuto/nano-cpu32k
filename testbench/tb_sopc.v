@@ -1,4 +1,4 @@
-
+`include "timescale.v"
 `include "ncpu32k_config.h"
 
 module spi_flash_config();

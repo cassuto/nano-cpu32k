@@ -54,7 +54,7 @@ module ncpu32k_pipeline_epu
    input                      wb_epu_BREADY,
    output                     wb_epu_BVALID,
    output [`NCPU_DW-1:0]      wb_epu_BDATA,
-   output [CONFIG_ROB_DEPTH_LOG2-1:0]     wb_epu_BID,
+   output [CONFIG_ROB_DEPTH_LOG2-1:0] wb_epu_BID,
    output                     wb_epu_BERET,
    output                     wb_epu_BESYSCALL,
    output                     wb_epu_BEINSN,
@@ -63,7 +63,6 @@ module ncpu32k_pipeline_epu
    output                     wb_epu_BEIRQ,
    // PSR
    input [`NCPU_PSR_DW-1:0]   msr_psr,
-   input [`NCPU_PSR_DW-1:0]   msr_psr_nold,
    output                     msr_psr_rm_nxt,
    output                     msr_psr_rm_we,
    output                     msr_psr_imme_nxt,
@@ -140,7 +139,7 @@ module ncpu32k_pipeline_epu
    wire                       epu_AREADY;
    wire                       epu_AVALID;
    wire [CONFIG_ROB_DEPTH_LOG2-1:0]       epu_id;
-   wire [`NCPU_DW-1:0]        epu_operand_1, rmsr_operand_2;
+   wire [`NCPU_DW-1:0]        epu_operand_1, epu_operand_2;
    wire [14:0]                epu_uimm15;
    wire [`NCPU_EPU_UOPW-1:0]  epu_uop;
    wire [`NCPU_EPU_IOPW-1:0]  epu_opc_bus;
@@ -204,7 +203,8 @@ module ncpu32k_pipeline_epu
          .DEPTH            (1<<CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2),
          .DEPTH_WIDTH      (CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2),
          .UOP_WIDTH        (`NCPU_EPU_UOPW),
-         .ALGORITHM        (1) // FIFO
+         .ALGORITHM        (1), // FIFO
+         .CONFIG_ROB_DEPTH_LOG2 (CONFIG_ROB_DEPTH_LOG2)
       )
    RS_EPU
       (
@@ -280,6 +280,8 @@ module ncpu32k_pipeline_epu
 
    nDFF_l #(CONFIG_ROB_DEPTH_LOG2) dff_epu_id
      (clk, payload_re, rs_id, epu_id);
+   nDFF_l #(`NCPU_EPU_UOPW) dff_epu_uop
+     (clk, payload_re, rs_uop, epu_uop);
    nDFF_l #(`NCPU_DW) dff_epu_operand_1
      (clk, payload_re, rs_operand_1, epu_operand_1);
    nDFF_l #(`NCPU_DW) dff_epu_operand_2
@@ -430,7 +432,7 @@ module ncpu32k_pipeline_epu
    assign msr_psr_ire_nxt = wmsr_psr_we ? wmsr_psr_ire : epsr_ire;
    assign msr_psr_ire_we = ERET_commit | wmsr_psr_we;
    // Commit EPSR
-   assign msr_epsr_nxt = wmsr_epsr_we ? wmsr_operand[`NCPU_PSR_DW-1:0] : msr_psr_nold;
+   assign msr_epsr_nxt = wmsr_epsr_we ? wmsr_operand[`NCPU_PSR_DW-1:0] : msr_psr;
    assign msr_epsr_we = msr_exc_ent | wmsr_epsr_we;
    // In syscall, EPC is a pointer to the next insn to syscall, while in general EPC points to the insn
    // that raised the exception.

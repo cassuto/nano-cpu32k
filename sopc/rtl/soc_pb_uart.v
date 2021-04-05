@@ -100,7 +100,7 @@ module soc_pb_uart
          div_cnt <= phy_cke ? 16'h0000 : div_cnt_nxt;
    end
 
-   reg [6:0] tx_shift_cnt = 6'b000000;
+   reg [6:0] tx_shift_cnt = 7'b0000000;
    reg tx_pending = 1'b0;
    reg we_vld_sr = 1'b0;
    reg [7:0] phy_din_sr;
@@ -121,7 +121,7 @@ module soc_pb_uart
          if(tx_shift_cnt == 7'b1001111)
             tx_shift_cnt <= 7'b000000;
          else
-            tx_shift_cnt <= tx_shift_cnt + tx_pending;
+            tx_shift_cnt <= tx_shift_cnt + {6'b0, tx_pending};
       end
    end
 
@@ -206,6 +206,8 @@ module soc_pb_uart
                      end
                   endcase
             end
+            default: begin
+            end
          endcase
 
          // RX cmd
@@ -217,9 +219,9 @@ module soc_pb_uart
       end
    end
 
-   reg [15:0] DLR = 8'h08;
-   reg [3:0] IER = 8'h00;
-   reg [7:0] LCR = 8'h00;
+   reg [15:0] DLR = 16'h8;
+   reg [3:0] IER = 4'h0;
+   reg [7:0] LCR = 8'h0;
    reg [2:0] IIR = 3'b001;
    wire [7:0] RBR;
    wire DLAB = LCR[7];
@@ -232,9 +234,9 @@ module soc_pb_uart
    wire rx_empty;
    reg dat_ready = 1'b0;
    reg cmd_we_r;
-   reg [2:0] cmd_addr_r = 2'b0;
+   reg [2:0] cmd_addr_r = 3'b0;
 
-   reg [15:0] DLR_sr = 8'h08;
+   reg [15:0] DLR_sr = 16'h8;
    always @(posedge clk_baud)
       DLR_sr <= DLR;
    assign baud_div = {DLR_sr[14:0], 1'b0};
@@ -253,7 +255,7 @@ module soc_pb_uart
          cmd_addr_r <= pb_uart_AADDR[2:0];
       end
 
-   sco_fifo_asclk
+   soc_fifo_asclk
    #(
       .DW (8),
       .AW (4) // 16 entries
@@ -272,7 +274,7 @@ module soc_pb_uart
       .empty (tx_empty)
    );
 
-   sco_fifo_asclk
+   soc_fifo_asclk
    #(
       .DW (8),
       .AW (4) // 16 entries
@@ -331,20 +333,20 @@ module soc_pb_uart
       case(cmd_addr_r)
          // RBR (DLAB = 0)
          // DLL (DLAB = 1)
-         3'b000: pb_uart_BDATA = {24'b0, DLAB ? DLR[7:0] : RBR};
+         3'b000: pb_uart_BDATA = {24'b0, {DLAB ? DLR[7:0] : RBR[7:0]}};
          // IER (DLAB = 0) TODO: EM EL
          // DLM (DLAB = 1)
-         3'b001: pb_uart_BDATA = {16'b0, DLAB ? DLR[15:8] : {4'b0000, IER}, 8'b0};
+         3'b001: pb_uart_BDATA = {16'b0, {DLAB ? DLR[15:8] : {4'b0000, IER[3:0]}}, 8'b0};
          // FCR TODO
-         3'b010: pb_uart_BDATA = {8'b0, {5'b0000, IIR}, 16'b0};
+         3'b010: pb_uart_BDATA = {8'b0, {5'b0000, IIR[2:0]}, 16'b0};
          // LCR TODO: Data bits / Stop bit/ parity / set break
          3'b011: pb_uart_BDATA = {{LCR[7], 7'b0000011}, 24'b0};
          // MCR TODO: DTR RTS OUT1 OUT2 LOOP
          3'b100: pb_uart_BDATA = 32'h0;
          // LSR TODO: Parity and errors
-         3'b101: pb_uart_BDATA = {{16'b0, phy_cmd_we_rdy_sr[1], ~tx_full, 3'b000, phy_dout_overun_sr[1], dat_ready}, 8'b0};
+         3'b101: pb_uart_BDATA = {16'b0, {1'b0,phy_cmd_we_rdy_sr[1], ~tx_full, 3'b000, phy_dout_overun_sr[1], dat_ready}, 8'b0};
          // MSR TODO
-         3'b110: pb_uart_BDATA = {8'b0, 8'b10000000, 16'b0};
+         3'b110: pb_uart_BDATA = {8'b0, {8'b10000000}, 16'b0};
          // SCR TODO
          3'b111: pb_uart_BDATA = 32'h0;
       endcase
@@ -368,6 +370,8 @@ module soc_pb_uart
                   IER <= pb_uart_ADATA[3+8:0+8];
             3'b011:
                LCR[7] <= pb_uart_ADATA[7+24];
+            default: begin
+            end
          endcase
       end
 

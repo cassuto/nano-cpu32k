@@ -51,9 +51,7 @@ module pb_fb_arbiter
    output [`NCPU_DW/8-1:0] fb_mbus_AWMSK,
    output [1:0]            fb_mbus_AEXC
 );
-   wire tlb_cke = fb_dbus_AREADY & fb_dbus_AVALID;
    wire hds_dbus_b = fb_dbus_BREADY & fb_dbus_BVALID;
-   wire hds_ibus_a = fb_ibus_AREADY & fb_ibus_AVALID;
    wire hds_ibus_b = fb_ibus_BREADY & fb_ibus_BVALID;
 
    wire [1:0] status_r;
@@ -82,6 +80,9 @@ module pb_fb_arbiter
             status_nxt = hds_ibus_b ?
                            (fb_dbus_AVALID ? STATUS_DBUS_CYC :
                             fb_ibus_AVALID ? STATUS_IBUS_CYC : STATUS_IDLE) : status_r;
+
+         default:
+            status_nxt = status_r;
       endcase
 
    nDFF_r #(2, STATUS_IDLE) dff_status_r

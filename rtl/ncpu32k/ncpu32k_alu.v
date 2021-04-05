@@ -118,8 +118,9 @@ module ncpu32k_alu
                            alu_opc_bus[`NCPU_ALU_JMPREL]);
 
    assign dat_branch = (// For PC-relative addressing, the output is sign-extended offset
-                        branch_rel_taken_nxt ? {{`NCPU_DW-17{alu_rel15[14]}}, alu_rel15[14:0], 2'b0} :
+                        branch_rel_taken_nxt ? {{`NCPU_DW-2-15{alu_rel15[14]}}, alu_rel15[14:0], 2'b0} :
                         // Operand #1 holds the absolute address
+                        // No alignment check
                         alu_operand_1);
 
    assign sel_branch = (branch_reg_taken_nxt | branch_rel_taken_nxt);
@@ -143,8 +144,6 @@ module ncpu32k_alu
 
    wire [`NCPU_DW-1:0] shift_right;
    wire [`NCPU_DW-1:0] shift_lsw;
-   wire [`NCPU_DW-1:0] shift_msw;
-   wire [`NCPU_DW*2-1:0] shift_wide;
 
    function [`NCPU_DW-1:0] reverse_bits;
       input [`NCPU_DW-1:0] a;
@@ -158,13 +157,15 @@ module ncpu32k_alu
 
    assign shift_lsw = alu_opc_bus[`NCPU_ALU_LSL] ? reverse_bits(alu_operand_1) : alu_operand_1;
 `ifdef ENABLE_ASR
+   wire [`NCPU_DW-1:0] shift_msw;
+   wire [`NCPU_DW*2-1:0] shift_wide;
    assign shift_msw = alu_opc_bus[`NCPU_ALU_ASR] ? {`NCPU_DW{alu_operand_1[`NCPU_DW-1]}} : {`NCPU_DW{1'b0}};
    assign shift_wide = {shift_msw, shift_lsw} >> alu_operand_2[4:0];
    assign shift_right = shift_wide[`NCPU_DW-1:0];
 `else
    assign shift_right = shift_lsw >> alu_operand_2[4:0];
 `endif
-   assign lu_shifter = alu_opc_bus[`NCPU_ALU_LSL] ? reverse_bits(shift_right) : shift_right;
+   assign dat_shifter = alu_opc_bus[`NCPU_ALU_LSL] ? reverse_bits(shift_right) : shift_right;
    assign sel_shifter = alu_opc_bus[`NCPU_ALU_LSL] | alu_opc_bus[`NCPU_ALU_LSR] | alu_opc_bus[`NCPU_ALU_ASR];
 
    //
@@ -241,7 +242,7 @@ module ncpu32k_alu
 
    always @(posedge clk)
       begin
-         if (count_1({sel_adder,sel_and,sel_or,sel_xor,sel_shifter,sel_move})>1)
+         if (count_1({sel_adder,sel_and,sel_or,sel_xor,sel_shifter,sel_move,sel_branch})>1)
             $fatal("\n Bugs on ALU output MUX\n");
       end
 
