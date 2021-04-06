@@ -35,6 +35,10 @@ add wave -noupdate /tb_rob/ROB/rs1_prec_bypass
 add wave -noupdate /tb_rob/ROB/rs2_prec_bypass
 add wave -noupdate /tb_rob/ROB/rs1_prec_ready
 add wave -noupdate /tb_rob/ROB/rs2_prec_ready
+add wave -noupdate /tb_rob/ROB/rob_wb_id
+add wave -noupdate /tb_rob/ROB/payload_wb_din
+add wave -noupdate /tb_rob/ROB/payload_wb_id
+add wave -noupdate /tb_rob/ROB/payload_wb_dout
 add wave -noupdate -divider commit
 add wave -noupdate /tb_rob/ROB/rob_commit_BDATA
 add wave -noupdate /tb_rob/ROB/rob_commit_BREADY
@@ -50,8 +54,6 @@ add wave -noupdate -radix hexadecimal -childformat {{{/tb_rob/ROB/que_valid_r[3]
 add wave -noupdate -radix hexadecimal /tb_rob/ROB/que_rd_addr_r
 add wave -noupdate -expand /tb_rob/ROB/que_rd_ready_r
 add wave -noupdate -radix hexadecimal -childformat {{{/tb_rob/ROB/que_rd_we_r[3]} -radix hexadecimal} {{/tb_rob/ROB/que_rd_we_r[2]} -radix hexadecimal} {{/tb_rob/ROB/que_rd_we_r[1]} -radix hexadecimal} {{/tb_rob/ROB/que_rd_we_r[0]} -radix hexadecimal}} -expand -subitemconfig {{/tb_rob/ROB/que_rd_we_r[3]} {-height 15 -radix hexadecimal} {/tb_rob/ROB/que_rd_we_r[2]} {-height 15 -radix hexadecimal} {/tb_rob/ROB/que_rd_we_r[1]} {-height 15 -radix hexadecimal} {/tb_rob/ROB/que_rd_we_r[0]} {-height 15 -radix hexadecimal}} /tb_rob/ROB/que_rd_we_r
-add wave -noupdate /tb_rob/ROB/que_tag_r
-add wave -noupdate -radix hexadecimal -childformat {{{/tb_rob/ROB/que_dat_r[3]} -radix hexadecimal} {{/tb_rob/ROB/que_dat_r[2]} -radix hexadecimal} {{/tb_rob/ROB/que_dat_r[1]} -radix hexadecimal} {{/tb_rob/ROB/que_dat_r[0]} -radix hexadecimal}} -expand -subitemconfig {{/tb_rob/ROB/que_dat_r[3]} {-height 15 -radix hexadecimal} {/tb_rob/ROB/que_dat_r[2]} {-height 15 -radix hexadecimal} {/tb_rob/ROB/que_dat_r[1]} {-height 15 -radix hexadecimal} {/tb_rob/ROB/que_dat_r[0]} {-height 15 -radix hexadecimal}} /tb_rob/ROB/que_dat_r
 add wave -noupdate -divider controls
 add wave -noupdate /tb_rob/ROB/rob_empty
 add wave -noupdate /tb_rob/ROB/rob_full
@@ -60,9 +62,9 @@ add wave -noupdate /tb_rob/ROB/w_ptr_nxt
 add wave -noupdate /tb_rob/ROB/w_ptr_r
 add wave -noupdate -radix hexadecimal /tb_rob/ROB/r_ptr_r
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {422301 ps} 0}
+WaveRestoreCursors {{Cursor 1} {82056 ps} 0}
 quietly wave cursor active 1
-configure wave -namecolwidth 158
+configure wave -namecolwidth 166
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
@@ -76,4 +78,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {343636 ps} {850211 ps}
+WaveRestoreZoom {0 ps} {501150 ps}

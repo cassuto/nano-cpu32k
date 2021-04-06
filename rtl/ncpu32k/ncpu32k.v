@@ -41,12 +41,12 @@ module ncpu32k
     parameter CONFIG_ENABLE_MOD = 0,
     parameter CONFIG_ENABLE_MODU = 0,
     parameter CONFIG_ENABLE_FPU = 0,
-    parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2 = 2,
+    parameter CONFIG_ALU_ISSUE_QUEUE_DEPTH_LOG2 = 1,
     parameter CONFIG_ALU_INSERT_REG = 0,
-    parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2 = 2,
-    parameter CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2 = 2,
-    parameter CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2 = 2,
-    parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2 = 2,
+    parameter CONFIG_LPU_ISSUE_QUEUE_DEPTH_LOG2 = 1,
+    parameter CONFIG_EPU_ISSUE_QUEUE_DEPTH_LOG2 = 1,
+    parameter CONFIG_AGU_ISSUE_QUEUE_DEPTH_LOG2 = 1,
+    parameter CONFIG_FPU_ISSUE_QUEUE_DEPTH_LOG2 = 1,
     parameter CONFIG_ROB_DEPTH_LOG2 = 3,
     parameter CONFIG_BPU_STRATEGY = 0
     )

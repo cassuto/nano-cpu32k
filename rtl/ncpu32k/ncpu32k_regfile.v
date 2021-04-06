@@ -32,47 +32,31 @@ module ncpu32k_regfile(
    output [`NCPU_DW-1:0]         arf_rs1_dout,      // Output value of operand #1
    output [`NCPU_DW-1:0]         arf_rs2_dout       // Output value of operand #2
 );
-   ncpu32k_cell_sdpram_sclk
+
+   ncpu32k_cell_mpram_1w2r
       #(
-         .AW                           (`NCPU_REG_AW),
-         .DW                           (`NCPU_DW),
+         .AW      (`NCPU_REG_AW),
+         .DW      (`NCPU_DW),
          // Bypass is not necessary.
          // When operands are being committed to ARF, they are still in ROB
          // and the bypass is handled by ROB.
-         .ENABLE_BYPASS                (0)
-         )
-      dpram_sclk0
-         (
-          // Outputs
-          .dout                        (arf_rs1_dout),
-          // Inputs
-          .clk                         (clk),
-          .rst_n                       (rst_n),
-          .raddr                       (arf_rs1_addr),
-          .re                          (arf_rs1_re),
-          .waddr                       (arf_din_addr),
-          .we                          (arf_we & (|arf_din_addr)),
-          .din                         (arf_din)
-         );
-
-   ncpu32k_cell_sdpram_sclk
-      #(
-         .AW                           (`NCPU_REG_AW),
-         .DW                           (`NCPU_DW),
-         .ENABLE_BYPASS                (0)
-         )
-      dpram_sclk1
-         (
-          // Outputs
-          .dout                        (arf_rs2_dout),
-          // Inputs
-          .clk                         (clk),
-          .rst_n                       (rst_n),
-          .raddr                       (arf_rs2_addr),
-          .re                          (arf_rs2_re),
-          .waddr                       (arf_din_addr),
-          .we                          (arf_we & (|arf_din_addr)),
-          .din                         (arf_din)
-         );
+         .ENABLE_BYPASS (0)
+      )
+   REG_MEM
+      (
+         // Outputs
+         .dout_1  (arf_rs1_dout),
+         .dout_2  (arf_rs2_dout),
+         // Inputs
+         .clk     (clk),
+         .rst_n   (rst_n),
+         .raddr_1 (arf_rs1_addr),
+         .re_1    (arf_rs1_re),
+         .raddr_2 (arf_rs2_addr),
+         .re_2    (arf_rs2_re),
+         .waddr   (arf_din_addr),
+         .we      (arf_we & (|arf_din_addr)),
+         .din     (arf_din)
+      );
 
 endmodule

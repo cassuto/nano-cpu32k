@@ -58,6 +58,7 @@ module ncpu32k_dispatch
    output [`NCPU_REG_AW-1:0]  rob_disp_rd_addr,
    output [`NCPU_REG_AW-1:0]  rob_disp_rs1_addr,
    output [`NCPU_REG_AW-1:0]  rob_disp_rs2_addr,
+   // From ROB
    input                      rob_disp_rs1_in_ROB,
    input                      rob_disp_rs1_in_ARF,
    input [`NCPU_DW-1:0]       rob_disp_rs1_dat,
@@ -116,9 +117,6 @@ module ncpu32k_dispatch
    wire [2:0] agu_size;
    wire rs1_re_r;
    wire rs2_re_r;
-   wire rs1_in_ROB_r, rs2_in_ROB_r;
-   wire rs1_in_ARF_r, rs2_in_ARF_r;
-   wire [`NCPU_DW-1:0] rob_rs1_dat_r, rob_rs2_dat_r;
    wire [`NCPU_DW-1:0] ARF_ROB_rs1_dout, ARF_ROB_rs2_dout;
    
    // Assert (2103281250)
@@ -240,8 +238,6 @@ module ncpu32k_dispatch
      (clk,rst_n, pipe_issue_cke, |fpu_uop_nxt, issue_fpu_r);
    nDFF_lr #(1) dff_issue_epu_r
      (clk,rst_n, pipe_issue_cke, |epu_uop_nxt, issue_epu_r);
-   nDFF_lr #(CONFIG_ROB_DEPTH_LOG2) dff_issue_id
-     (clk,rst_n, pipe_issue_cke, rob_disp_id, issue_id);
    nDFF_lr #(`NCPU_EPU_UOPW) dff_issue_epu_uop
      (clk,rst_n, pipe_issue_cke, epu_uop_nxt, issue_epu_uop);
    nDFF_lr #(`NCPU_ALU_UOPW) dff_issue_alu_uop
@@ -257,15 +253,6 @@ module ncpu32k_dispatch
      (clk,rst_n, pipe_issue_cke, disp_rs1_re, rs1_re_r);
    nDFF_lr #(1) dff_rs2_re_r
      (clk,rst_n, pipe_issue_cke, disp_rs2_re, rs2_re_r);
-     
-   nDFF_lr #(1) dff_rs1_in_ROB_r
-     (clk,rst_n, pipe_issue_cke, rob_disp_rs1_in_ROB, rs1_in_ROB_r);
-   nDFF_lr #(1) dff_rs2_in_ROB_r
-     (clk,rst_n, pipe_issue_cke, rob_disp_rs2_in_ROB, rs2_in_ROB_r);
-   nDFF_lr #(1) dff_rs1_in_ARF_r
-     (clk,rst_n, pipe_issue_cke, rob_disp_rs1_in_ARF, rs1_in_ARF_r);
-   nDFF_lr #(1) dff_rs2_in_ARF_r
-     (clk,rst_n, pipe_issue_cke, rob_disp_rs2_in_ARF, rs2_in_ARF_r);
 
    // Data path: no need to reset
    nDFF_l #(`NCPU_DW) dff_imm32_r
@@ -276,18 +263,13 @@ module ncpu32k_dispatch
    nDFF_l #(`NCPU_REG_AW) dff_issue_rs2_addr
      (clk, pipe_issue_cke, disp_rs2_addr, issue_rs2_addr);
      
-   nDFF_l #(`NCPU_DW) dff_rob_rs1_dar_r
-     (clk, pipe_issue_cke, rob_disp_rs1_dat, rob_rs1_dat_r);
-   nDFF_l #(`NCPU_DW) dff_rob_rs2_dar_r
-     (clk, pipe_issue_cke, rob_disp_rs2_dat, rob_rs2_dat_r);
-     
    
    // Final operands
    // Assert (2103280032)
-   assign ARF_ROB_rs1_dout = ({`NCPU_DW{rs1_in_ARF_r}} & arf_rs1_dout) |
-                             ({`NCPU_DW{rs1_in_ROB_r}} & rob_rs1_dat_r);
-   assign ARF_ROB_rs2_dout = ({`NCPU_DW{rs2_in_ARF_r}} & arf_rs2_dout) |
-                             ({`NCPU_DW{rs2_in_ROB_r}} & rob_rs2_dat_r);
+   assign ARF_ROB_rs1_dout = ({`NCPU_DW{rob_disp_rs1_in_ARF}} & arf_rs1_dout) |
+                             ({`NCPU_DW{rob_disp_rs1_in_ROB}} & rob_disp_rs1_dat);
+   assign ARF_ROB_rs2_dout = ({`NCPU_DW{rob_disp_rs2_in_ARF}} & arf_rs2_dout) |
+                             ({`NCPU_DW{rob_disp_rs2_in_ROB}} & rob_disp_rs2_dat);
                               
    assign issue_rs1_dat = rs1_re_r ? ARF_ROB_rs1_dout : issue_imm32;
    assign issue_rs2_dat = rs2_re_r ? ARF_ROB_rs2_dout : issue_imm32;
@@ -295,8 +277,10 @@ module ncpu32k_dispatch
    // If the insn do not need to read operand from regfile, then it uses immediate number
    // coded in the insn, and the operand is marked "ready".
    // If the operand is neither in ROB nor ARF, then the operand is marked "not ready".
-   assign issue_rs1_rdy = ~rs1_re_r | rs1_in_ARF_r | rs1_in_ROB_r;
-   assign issue_rs2_rdy = ~rs2_re_r | rs2_in_ARF_r | rs2_in_ROB_r;
+   assign issue_rs1_rdy = ~rs1_re_r | rob_disp_rs1_in_ARF | rob_disp_rs1_in_ROB;
+   assign issue_rs2_rdy = ~rs2_re_r | rob_disp_rs2_in_ARF | rob_disp_rs2_in_ROB;
+
+   assign issue_id = rob_disp_id;
    
    // synthesis translate_off
 `ifndef SYNTHESIS
@@ -327,7 +311,7 @@ module ncpu32k_dispatch
          if (pipe_issue_BVALID & ~(issue_alu_r | issue_lpu_r | issue_agu_r | issue_fpu_r | issue_epu_r))
             $fatal("\n Bugs on DISPATCH. Some insns are unhandled. \n");
          // Assertion 2103280032
-         if ((rs1_in_ARF_r & rs1_in_ROB_r) | (rs2_in_ARF_r & rs2_in_ROB_r))
+         if ((rob_disp_rs1_in_ARF & rob_disp_rs1_in_ROB) | (rob_disp_rs2_in_ARF & rob_disp_rs2_in_ROB))
             $fatal("\n Bugs on ROB\n");
       end
  `endif

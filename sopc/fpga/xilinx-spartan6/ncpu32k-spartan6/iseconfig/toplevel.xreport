@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <report-views version="2.0" >
  <header>
-  <DateModified>2021-04-05T18:25:22</DateModified>
+  <DateModified>2021-04-06T08:18:29</DateModified>
   <ModuleName>toplevel</ModuleName>
-  <SummaryTimeStamp>2021-04-05T18:22:04</SummaryTimeStamp>
+  <SummaryTimeStamp>2021-04-06T07:58:52</SummaryTimeStamp>
   <ImplementationReportsDirectory>E:/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6\</ImplementationReportsDirectory>
   <DateInitialized>2021-02-09T14:16:19</DateInitialized>
   <SavedFilePath>E:/nano-cpu32k/sopc/fpga/xilinx-spartan6/ncpu32k-spartan6/iseconfig/toplevel.xreport</SavedFilePath>

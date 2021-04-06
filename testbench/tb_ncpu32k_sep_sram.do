@@ -13,6 +13,17 @@ add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/fb_ibus_BDATA
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/fb_ibus_BEXC
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/fb_irqs
 add wave -noupdate -divider IFU
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/flush
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/flush_tgt
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/flush_state_nxt
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/flush_state_r
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/discard_B
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/idu_AREADY
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/idu_AVALID
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/idu_exc
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/idu_insn
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/idu_pc
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IFU/idu_pred_tgt
 add wave -noupdate -divider IDU
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IDU/flush
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IDU/idu_AREADY
@@ -21,6 +32,7 @@ add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IDU/idu_exc
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IDU/idu_insn
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IDU/idu_pc
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IDU/idu_pred_tgt
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/IDU/f_imm15
 add wave -noupdate -divider DISP
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/DISP/disp_AREADY
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/DISP/disp_AVALID
@@ -43,7 +55,18 @@ add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/DISP/disp_rs1_addr
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/DISP/disp_rs1_re
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/DISP/disp_rs2_addr
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/DISP/disp_rs2_re
-add wave -noupdate -divider ALU
+add wave -noupdate -divider {ISSUE ALU}
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/issue_alu_AREADY
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/issue_alu_AVALID
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/issue_alu_uop
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/issue_id
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/issue_rs1_addr
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/issue_rs1_dat
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/issue_rs1_rdy
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/issue_rs2_addr
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/issue_rs2_dat
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/issue_rs2_rdy
+add wave -noupdate -divider {FU ALU}
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/alu_AID
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/alu_AREADY
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/alu_AVALID
@@ -63,6 +86,10 @@ add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/wb_alu_BREADY
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/wb_alu_BVALID
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/wb_alu_exc
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/wb_alu_tag
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/FU_ALU/branch_reg_taken_nxt
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/FU_ALU/branch_rel_taken_nxt
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/FU_ALU/dat_branch
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ALU/FU_ALU/alu_rel15
 add wave -noupdate -divider wb
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_wb_BDATA
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_wb_BREADY
@@ -72,17 +99,21 @@ add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_wb_id
 add wave -noupdate -divider COMMIT
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_commit_BDATA
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_commit_BREADY
-add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_commit_BTAG
+add wave -noupdate -expand /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_commit_BTAG
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_commit_BVALID
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_commit_pc
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_commit_pred_tgt
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_commit_ptr
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_commit_rd_addr
 add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/rob_commit_rd_we
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/pc_nxt
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/commit_exc
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/ROB/rob_commit_pc
+add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/WB_COMMIT/ROB/rob_commit_BDATA
 add wave -noupdate -divider ARF
-add wave -noupdate /tb_ncpu32k_sep_sram/ncpu32k/CORE/ARF/dpram_sclk0/mem_vector
+add wave -noupdate -expand /tb_ncpu32k_sep_sram/ncpu32k/CORE/ARF/REG_MEM/RAM_1/mem_vector
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {95619 ps} 0}
+WaveRestoreCursors {{Cursor 1} {226172 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 100
@@ -98,4 +129,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 ps} {512 ns}
+WaveRestoreZoom {113600 ps} {625600 ps}
