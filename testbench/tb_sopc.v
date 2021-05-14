@@ -85,7 +85,11 @@ module tb_sopc();
    assign SPI_MISO = SF_DQ1;
 
    // SoC
-   soc_toplevel soc
+   soc_toplevel
+   #(
+      .CONFIG_BOOTM_ERST ('h0) // Boot from SDRAM directly
+   )
+   soc
    (
       .CPU_CLK (clk),
       .SDR_CLK (sdr_clk),

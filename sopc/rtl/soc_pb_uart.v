@@ -25,7 +25,7 @@
  */
 
 /***************************************************************************/
-/*  Nano-cpu 32000 (Scalable Ultra-Low-Power Processor)                    */
+/*  Nano-cpu 32000 (High-Performance Superscalar Processor)                */
 /*                                                                         */
 /*  Copyright (C) 2019 cassuto <psc-system@outlook.com>, China.            */
 /*  This project is free edition; you can redistribute it and/or           */
