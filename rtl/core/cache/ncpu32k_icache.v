@@ -98,10 +98,10 @@ module ncpu32k_icache
    wire [CONFIG_IC_P_SETS-1:0]   s1i_entry_idx_final;
 
    // Output of Stage #1
-   reg                           s1o_re_r;
-   reg [CONFIG_IMMU_PAGE_SIZE_LOG2-1:0]   s1o_page_off_r;
+   wire                          s1o_re_r;
+   wire [CONFIG_IMMU_PAGE_SIZE_LOG2-1:0] s1o_page_off_r;
    wire [CONFIG_IC_AW-1:0]       s1o_paddr;
-   reg [CONFIG_IC_P_SETS-1:0]    s1o_entry_idx;
+   wire [CONFIG_IC_P_SETS-1:0]   s1o_entry_idx;
    wire                          s1o_tag_v      [0:(1<<CONFIG_IC_P_WAYS)-1];
    wire [CONFIG_IC_P_WAYS-1:0]   s1o_tag_lru    [0:(1<<CONFIG_IC_P_WAYS)-1];
    wire [TAG_ADDR_DW-1:0]        s1o_tag_paddr   [0:(1<<CONFIG_IC_P_WAYS)-1];
@@ -122,18 +122,15 @@ module ncpu32k_icache
 
    assign s1_cke = ~stall_pc;
 
-   always @(posedge clk or negedge rst_n)
-      if (~rst_n)
-         begin
-            s1o_re_r <= 1'b0;
-            s1o_entry_idx <= 'b0; // Needed for bootstrap
-         end
-      else if (s1_cke)
-         begin
-            s1o_re_r <= re;
-            s1o_page_off_r <= s1i_page_off;
-            s1o_entry_idx <= s1i_entry_idx;
-         end
+   // Control path
+   nDFF_lr #(1) dff_s1o_re_r
+      (clk, rst_n, s1_cke, re, s1o_re_r);
+   nDFF_lr #(CONFIG_IC_P_SETS) dff_s1o_entry_idx // Needed reset for bootstrap
+      (clk, rst_n, (s1_cke & re), s1i_entry_idx, s1o_entry_idx);
+
+   // Data path
+   nDFF_l #(CONFIG_IMMU_PAGE_SIZE_LOG2) dff_s1o_page_off_r
+      (clk, (s1_cke & re), s1i_page_off, s1o_page_off_r);
 
    // Switch the index for s1_cke | s1_readtag
    // And keep the previous index when stalling
@@ -166,7 +163,7 @@ generate
                // Port A (Read)
                .raddr   (s1i_entry_idx_final),
                .dout    (s1o_tag_dout),
-               .re      (s1_cke | s1_readtag),
+               .re      ((s1_cke&re) | s1_readtag),
                // Port B (Write)
                .waddr   (s2i_entry_idx),
                .din     (s2i_tag_din),
@@ -187,7 +184,7 @@ generate
                // Port A (Read)
                .raddr  (s1i_entry_idx_final),
                .dout   (s1o_tag_lru[i]),
-               .re     (s1_cke | s1_readtag),
+               .re     ((s1_cke&re) | s1_readtag),
                // Port B (Write)
                .waddr  (s2i_entry_idx),
                .din    (s2i_tag_lru[i]),
@@ -308,7 +305,7 @@ generate
          wire [CONFIG_IC_DW-1:0] s2i_blk_din_a;
          wire [CONFIG_IC_DW/8-1:0] s2i_blk_we_a;
 
-         wire s2i_matched = (s1o_match_way_idx == i);
+         wire s2i_matched = (s1o_free_way_idx == i);
 
 /////////////////////////////////////////////////////////////////////////////
 // Begin of ibus clock domain

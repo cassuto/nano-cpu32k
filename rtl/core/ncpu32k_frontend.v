@@ -300,7 +300,7 @@ module ncpu32k_frontend
    assign idu_2_insn_vld = (insn_pkt_vld & fetch_insn_2_vld_r);
 
    //
-   // Compared to `idu_*_insn_vld`, `idu_*_insn_rdy` keep high
+   // Compared to `idu_*_insn_vld`, `idu_*_insn_rdy` keeps high
    // while icache is blocking, as long as dout is valid.
    // Use `_rdy` to determine whether flush PC.
    // Consider the following case:

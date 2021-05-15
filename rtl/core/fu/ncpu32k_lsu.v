@@ -37,6 +37,7 @@ module ncpu32k_lsu
 (
    input                               clk,
    input                               rst_n,
+   input                               stall_bck_nolsu,
    output                              lsu_stall,
    // From SCHEDULER
    input                               lsu_flush,
@@ -269,7 +270,10 @@ module ncpu32k_lsu
             if (uncached_dbus_BVALID)
                uncached_state_nxt = S_UNCACHED_OUT;
          S_UNCACHED_OUT:
-            uncached_state_nxt = S_UNCACHED_IDLE;
+            if (stall_bck_nolsu)
+               uncached_state_nxt = S_UNCACHED_OUT;
+            else
+               uncached_state_nxt = S_UNCACHED_IDLE;
          endcase
       end
 

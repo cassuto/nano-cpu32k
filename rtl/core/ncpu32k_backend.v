@@ -297,6 +297,8 @@ module ncpu32k_backend
    wire [`NCPU_DW-1:0]        bru_operand2;           // To BRU of ncpu32k_bru.v
    wire [`NCPU_DW-1:0]        lsu_operand1;           // To LSU of ncpu32k_lsu.v
    wire [`NCPU_DW-1:0]        lsu_operand2;           // To LSU of ncpu32k_lsu.v
+   wire                       stall_bck_nolsu;        // To LSU of ncpu32k_lsu.v
+   wire                       slot_2_inv;             // To SCHEDULER of ncpu32k_scheduler.v
    wire                       s1_pipe_cke;
    wire                       wb_alu_1_AVALID;
    wire [`NCPU_DW-1:0]        wb_alu_1_dout;
@@ -484,10 +486,11 @@ module ncpu32k_backend
        .idu_2_EITM                      (idu_2_EITM),
        .idu_2_EIPF                      (idu_2_EIPF),
        .idu_bpu_pc_nxt                  (idu_bpu_pc_nxt[`NCPU_AW-3:0]),
+       .slot_2_inv                      (slot_2_inv),
        .arf_1_rs1_dout                  (arf_1_rs1_dout_bypass[`NCPU_DW-1:0]), // Templated
        .arf_1_rs2_dout                  (arf_1_rs2_dout_bypass[`NCPU_DW-1:0]), // Templated
        .arf_2_rs1_dout                  (arf_2_rs1_dout_bypass[`NCPU_DW-1:0]), // Templated
-       .arf_2_rs2_dout                  (arf_2_rs2_dout_bypass[`NCPU_DW-1:0])); // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated)
+       .arf_2_rs2_dout                  (arf_2_rs2_dout_bypass[`NCPU_DW-1:0])); // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated)
 
    `define BYPASS_NETWORK_PORTS \
       .wb_slot_1_BVALID             (s2o_slot_BVALID[1]), \
@@ -748,6 +751,7 @@ module ncpu32k_backend
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
+       .stall_bck_nolsu                 (stall_bck_nolsu),
        .lsu_flush                       (lsu_flush),
        .lsu_AVALID                      (lsu_AVALID),
        .lsu_load                        (lsu_load),
@@ -837,44 +841,59 @@ module ncpu32k_backend
          s1_se_flush = 1'b0;
          s1_se_flush_tgt = 'b0;
 
-         if (s1_before_inv_slot_AVALID[1])
-            begin
-               if (s1i_slot_pc_nxt_act[1] == slot_2_pc)
+         // Do not check speculative execution while stalling.
+         //
+         // The stalling is asserted by the previous insn related to PC of backend,
+         // which means that the previous insn is not completed. Thus, insn in backend
+         // may not get its correct operand(s) and produce wrong result while stalling.
+         // We should wait until the previous insn is completed, i.e., `stall_bck` is asserted high.
+         //
+         if (~stall_bck)
+            begin // [1]
+               if (s1_before_inv_slot_AVALID[1])
                   begin
-                     if (s1_before_inv_slot_AVALID[2] & (s1i_slot_pc_nxt_act[2] != slot_bpu_pc_nxt))
+                     if (s1i_slot_pc_nxt_act[1] == slot_2_pc)
                         begin
-                           s1i_inv_slot[1] = 1'b0;
-                           s1i_inv_slot[2] = 1'b0;
-                           s1_se_flush = 1'b1; // The predication is wrong
-                           s1_se_flush_tgt = s1i_slot_pc_nxt_act[2];
-                        end
-                  end
-               else
-                  begin
-                     if (s1i_slot_pc_nxt_act[1] == slot_bpu_pc_nxt)
-                        begin
-                           s1i_inv_slot[1] = 1'b0;
-                           s1i_inv_slot[2] = 1'b1; // slot #2 is in wrong path
-                           s1_se_flush = 1'b0; // The predication is right, do not flush.
+                           if (s1_before_inv_slot_AVALID[2] & (s1i_slot_pc_nxt_act[2] != slot_bpu_pc_nxt))
+                              begin
+                                 s1i_inv_slot[1] = 1'b0;
+                                 s1i_inv_slot[2] = 1'b0;
+                                 s1_se_flush = 1'b1; // The predication is wrong
+                                 s1_se_flush_tgt = s1i_slot_pc_nxt_act[2];
+                              end
                         end
                      else
                         begin
-                           s1i_inv_slot[1] = 1'b0;
-                           s1i_inv_slot[2] = 1'b1;
-                           s1_se_flush = 1'b1; // The predication is wrong
-                           s1_se_flush_tgt = s1i_slot_pc_nxt_act[1];
+                           if (s1i_slot_pc_nxt_act[1] == slot_bpu_pc_nxt)
+                              begin
+                                 s1i_inv_slot[1] = 1'b0;
+                                 s1i_inv_slot[2] = 1'b1; // slot #2 is in wrong path
+                                 s1_se_flush = 1'b0; // The predication is right, do not flush.
+                              end
+                           else
+                              begin
+                                 s1i_inv_slot[1] = 1'b0;
+                                 s1i_inv_slot[2] = 1'b1;
+                                 s1_se_flush = 1'b1; // The predication is wrong
+                                 s1_se_flush_tgt = s1i_slot_pc_nxt_act[1];
+                              end
                         end
                   end
-            end
 
-         // Slot 1 is prior to the slot 2
-         if (s1_before_inv_slot_AVALID[2] & ~s1i_inv_slot[2] & ~s1_se_flush)
-            begin
-               s1i_inv_slot[2] = (s1i_slot_pc_nxt_act[2] != slot_bpu_pc_nxt);
-               s1_se_flush = s1i_inv_slot[2];
-               s1_se_flush_tgt = s1i_slot_pc_nxt_act[2];
-            end
+               // Slot 1 is prior to the slot 2
+               if (s1_before_inv_slot_AVALID[2] & ~s1i_inv_slot[2] & ~s1_se_flush)
+                  begin
+                     s1i_inv_slot[2] = 1'b0;
+                     s1_se_flush = (s1i_slot_pc_nxt_act[2] != slot_bpu_pc_nxt);
+                     s1_se_flush_tgt = s1i_slot_pc_nxt_act[2];
+                  end
+
+            end //[1]
       end
+
+   // To schedule
+   // Invalidate the 2rd insn when single issue
+   assign slot_2_inv = s1i_inv_slot[2];
 
    // Write back BPU (only for BCC and JMPREG insns)
    assign bpu_wb           = (wb_bru_AVALID & ~bru_opc_bus[`NCPU_BRU_JMPREL]);
@@ -1167,6 +1186,7 @@ module ncpu32k_backend
 
    // Stall
    assign stall_bck = (lsu_stall | lpu_stall);
+   assign stall_bck_nolsu = lpu_stall;
    assign stall_fnt = (sch_stall | stall_bck);
 
    // synthesis translate_off

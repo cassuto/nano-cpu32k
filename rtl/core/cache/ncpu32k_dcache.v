@@ -107,13 +107,13 @@ module ncpu32k_dcache
    wire [CONFIG_DC_P_SETS-1:0]   s1i_entry_idx;
 
    // Output of Stage #1
-   reg                           s1o_req_tmp_r;
+   wire                          s1o_req_tmp_r;
    wire                          s1o_req;
-	reg [CONFIG_DMMU_PAGE_SIZE_LOG2-1:0] s1o_page_off_r;
+	wire [CONFIG_DMMU_PAGE_SIZE_LOG2-1:0] s1o_page_off_r;
    wire [CONFIG_DC_AW-1:0]       s1o_paddr;
-	reg [CONFIG_DC_DW-1:0]        s1o_din_r;
-	reg [CONFIG_DC_DW/8-1:0]      s1o_wmsk_r;
-   reg [CONFIG_DC_P_SETS-1:0]    s1o_entry_idx;
+	wire [CONFIG_DC_DW-1:0]       s1o_din_r;
+	wire [CONFIG_DC_DW/8-1:0]     s1o_wmsk_r;
+   wire [CONFIG_DC_P_SETS-1:0]   s1o_entry_idx;
    wire                          s1o_tag_v;
 	wire                          s1o_tag_dirty;
 	wire [TAG_ADDR_DW-1:0]        s1o_tag_paddr;
@@ -137,20 +137,19 @@ module ncpu32k_dcache
    assign s1i_page_off = page_off;
    assign s1i_entry_idx = ch_boot ? cls_cnt : s1i_page_off[CONFIG_DC_P_LINE+CONFIG_DC_P_SETS-1:CONFIG_DC_P_LINE];
 
-   always @(posedge clk or negedge rst_n)
-      if (~rst_n)
-         begin
-            s1o_req_tmp_r <= 'b0;
-            s1o_entry_idx <= 'b0; // Needed for bootstrap
-         end
-		else if (s1_cke)
-         begin
-            s1o_req_tmp_r <= req;
-            s1o_page_off_r <= s1i_page_off;
-            s1o_din_r <= wdat;
-            s1o_wmsk_r <= wmsk;
-            s1o_entry_idx <= s1i_entry_idx;
-         end
+   // Control path
+   nDFF_lr #(1) dff_s1o_req_tmp_r
+      (clk, rst_n, s1_cke, req, s1o_req_tmp_r);
+   nDFF_lr #(CONFIG_DC_P_SETS) dff_s1o_entry_idx // Needed reset for bootstrap
+      (clk, rst_n, (s1_cke & req), s1i_entry_idx, s1o_entry_idx);
+
+   // Data path
+   nDFF_l #(CONFIG_DMMU_PAGE_SIZE_LOG2) dff_s1o_page_off_r
+      (clk, (s1_cke & req), s1i_page_off, s1o_page_off_r);
+   nDFF_l #(CONFIG_DC_DW) dff_s1o_din_r
+      (clk, (s1_cke & req), wdat, s1o_din_r);
+   nDFF_l #(CONFIG_DC_DW/8) dff_s1o_wmsk_r
+      (clk, (s1_cke & req), wmsk, s1o_wmsk_r);
 
    assign s2i_entry_idx = ch_boot ? cls_cnt : s1o_entry_idx;
 
@@ -185,7 +184,7 @@ module ncpu32k_dcache
          // Port A (Read)
          .raddr  (s1i_entry_idx_final),
          .dout   (s1o_tag_dout),
-         .re     (s1_cke | s1_readtag),
+         .re     ((s1_cke&req) | s1_readtag),
          // Port B (Write)
          .waddr  (s2i_entry_idx),
          .din    (s2i_tag_din),
@@ -274,7 +273,7 @@ endgenerate
    localparam DELTA_DW = CONFIG_DC_DW_BYTES_LOG2-CONFIG_DBUS_BYTES_LOG2;
    assign s2i_blk_en_a = dbus_hds_B;
    assign s2i_blk_addr_a = {s1o_entry_idx[CONFIG_DC_P_SETS-1:0], slow_line_adr_cnt[DELTA_DW +: CONFIG_DC_P_LINE-CONFIG_DC_DW_BYTES_LOG2]};
-   assign s2i_blk_we_a = {CONFIG_DC_DW/8{dbus_hds_B & dbus_BWE}} & slow_line_adr_cnt_msk;
+   assign s2i_blk_we_a = {CONFIG_DC_DW/8{dbus_hds_B & ~dbus_BWE}} & slow_line_adr_cnt_msk;
 
    if (CONFIG_DBUS_DW == 16 && CONFIG_DC_DW == 32)
       assign s2i_blk_din_a = {dbus_BDATA[CONFIG_DBUS_DW-1:0], dbus_BDATA[CONFIG_DBUS_DW-1:0]};

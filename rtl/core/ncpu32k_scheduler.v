@@ -70,6 +70,7 @@ module ncpu32k_scheduler
    output [`NCPU_AW-3:0]      slot_2_pc_4,
    output [BPU_UPD_DW-1:0]    slot_2_bpu_upd,
    output [`NCPU_AW-3:0]      slot_bpu_pc_nxt,
+   input                      slot_2_inv,
    // FU - ALU 1
    output                     alu_1_AVALID,
    output [`NCPU_ALU_IOPW-1:0] alu_1_opc_bus,
@@ -363,12 +364,10 @@ module ncpu32k_scheduler
                               (alu_1_sel_nxt & lsu_sel_2_nxt);
 
    // Detect structure hazard
-   assign slot_2_struct_hazard = idu_1_insn_vld & idu_2_insn_vld & (
-                                    (bru_sel_1_nxt & bru_sel_2_nxt) |
-                                    (lpu_sel_1_nxt & lpu_sel_2_nxt) |
-                                    (epu_sel_1_nxt & epu_sel_2_nxt) |
-                                    (lsu_sel_1_nxt & lsu_sel_2_nxt)
-                                 );
+   assign slot_2_struct_hazard = (bru_sel_1_nxt & bru_sel_2_nxt) |
+                                 (lpu_sel_1_nxt & lpu_sel_2_nxt) |
+                                 (epu_sel_1_nxt & epu_sel_2_nxt) |
+                                 (lsu_sel_1_nxt & lsu_sel_2_nxt);
 
    assign slot_2_hazard = (slot_2_RAW_hazard & ~slot_2_could_byp) |
                            slot_2_struct_hazard;
@@ -407,6 +406,7 @@ module ncpu32k_scheduler
    localparam [1:0] S_ISSUE_FULL = 2'b00;
    localparam [1:0] S_ISSUE_1 = 2'b01;
    localparam [1:0] S_ISSUE_2 = 2'b11;
+   localparam [1:0] S_ISSUE_NONE = 2'b10;
 
    assign force_single_issue = (idu_2_insn_vld & ~flush & slot_2_hazard);
 
@@ -417,15 +417,21 @@ module ncpu32k_scheduler
                issue_state_nxt = S_ISSUE_1;
             else
                issue_state_nxt = S_ISSUE_FULL;
+
          S_ISSUE_1:
-            issue_state_nxt = S_ISSUE_2;
-         S_ISSUE_2:
-            // Allow to skip S_ISSUE_FULL and goto S_ISSUE_1 directly.
+            if (slot_2_inv)
+               issue_state_nxt = S_ISSUE_NONE;
+            else
+               issue_state_nxt = S_ISSUE_2;
+
+         S_ISSUE_NONE, S_ISSUE_2:
+            // Allow skip S_ISSUE_FULL and goto S_ISSUE_1 directly.
             // This happens when two consecutive insn packets are both single-issue.
             if (force_single_issue)
                issue_state_nxt = S_ISSUE_1;
             else
                issue_state_nxt = S_ISSUE_FULL;
+
          default:
             issue_state_nxt = issue_state_r;
       endcase
@@ -444,16 +450,16 @@ module ncpu32k_scheduler
    nDFF_lr #(1) dff_slot_2_vld
       (clk, rst_n, pipe_cke, idu_2_insn_vld & ~flush, slot_2_vld);
 
-   assign alu_1_sel_nxt = (|id_alu_opc_bus[0]);
-   assign alu_2_sel_nxt = (|id_alu_opc_bus[1]);
-   assign lpu_sel_1_nxt = (|id_lpu_opc_bus[0]);
-   assign lpu_sel_2_nxt = (|id_lpu_opc_bus[1]);
-   assign epu_sel_1_nxt = (|id_epu_opc_bus[0]);
-   assign epu_sel_2_nxt = (|id_epu_opc_bus[1]);
-   assign bru_sel_1_nxt = (|id_bru_opc_bus[0]);
-   assign bru_sel_2_nxt = (|id_bru_opc_bus[1]);
-   assign lsu_sel_1_nxt = (id_op_lsu_barr[0] | id_op_lsu_load[0] | id_op_lsu_store[0]);
-   assign lsu_sel_2_nxt = (id_op_lsu_barr[1] | id_op_lsu_load[1] | id_op_lsu_store[1]);
+   assign alu_1_sel_nxt = idu_1_insn_vld & (|id_alu_opc_bus[0]);
+   assign alu_2_sel_nxt = idu_2_insn_vld & (|id_alu_opc_bus[1]);
+   assign lpu_sel_1_nxt = idu_1_insn_vld & (|id_lpu_opc_bus[0]);
+   assign lpu_sel_2_nxt = idu_2_insn_vld & (|id_lpu_opc_bus[1]);
+   assign epu_sel_1_nxt = idu_1_insn_vld & (|id_epu_opc_bus[0]);
+   assign epu_sel_2_nxt = idu_2_insn_vld & (|id_epu_opc_bus[1]);
+   assign bru_sel_1_nxt = idu_1_insn_vld & (|id_bru_opc_bus[0]);
+   assign bru_sel_2_nxt = idu_2_insn_vld & (|id_bru_opc_bus[1]);
+   assign lsu_sel_1_nxt = idu_1_insn_vld & (id_op_lsu_barr[0] | id_op_lsu_load[0] | id_op_lsu_store[0]);
+   assign lsu_sel_2_nxt = idu_2_insn_vld & (id_op_lsu_barr[1] | id_op_lsu_load[1] | id_op_lsu_store[1]);
    
    nDFF_l #(1) dff_alu_1_sel_r
       (clk, pipe_cke, alu_1_sel_nxt, alu_1_sel_r);

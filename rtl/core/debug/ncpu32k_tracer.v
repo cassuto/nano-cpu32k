@@ -53,6 +53,9 @@ module ncpu32k_tracer
             $display("Warning: Can't not open trace source file to compare the result!");
       end
 
+   //
+   // Compare ARF operation sequence with given trace file
+   //
    task trace_compare_arf;
       input [`NCPU_REG_AW-1:0]   wb_rd_addr;
       input [`NCPU_DW-1:0]       wb_dout;
@@ -61,20 +64,14 @@ module ncpu32k_tracer
          integer org_wb_pc;
          integer org_wb_rd_addr;
          integer org_wb_dout;
-         integer fail;
-
-         fail = 0;
-         $fscanf(fp_trace_org, "%x %x %x", org_wb_pc, org_wb_rd_addr, org_wb_dout);
-         if (org_wb_pc != wb_pc*4 ||
-               org_wb_rd_addr != wb_rd_addr ||
-               org_wb_dout != wb_dout)
-            begin
-               fail = 1;
-            end
 
          $fwrite(fp_trace, "%08x %02x %08x\n", wb_pc*4, wb_rd_addr, wb_dout);
 
-         if (fail)
+         $fscanf(fp_trace_org, "%x %x %x", org_wb_pc, org_wb_rd_addr, org_wb_dout);
+         
+         if (org_wb_pc != wb_pc*4 ||
+               org_wb_rd_addr != wb_rd_addr ||
+               org_wb_dout != wb_dout)
             begin
                $display("DIE %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
                $fatal(1, "Expected %08x %02x %08x",
