@@ -172,6 +172,10 @@ module ncpu32k_epu
    wire                       wb_wmsr_epc_we;
    wire                       wb_wmsr_epsr_we;
    wire                       wb_wmsr_elsa_we;
+`ifdef NCPU_ENABLE_MSGPORT
+   wire                       wb_wmsr_numport_we;
+   wire                       wb_wmsr_msgport_we;
+`endif
    wire                       wb_msr_imm_tlbl_we;
    wire                       wb_msr_imm_tlbh_we;
    wire                       wb_msr_dmm_tlbl_we;
@@ -183,6 +187,10 @@ module ncpu32k_epu
    wire                       commit_wmsr_epc_we;
    wire                       commit_wmsr_epsr_we;
    wire                       commit_wmsr_elsa_we;
+`ifdef NCPU_ENABLE_MSGPORT
+   wire                       commit_wmsr_numport_we;
+   wire                       commit_wmsr_msgport_we;
+`endif
    wire                       commit_msr_imm_tlbl_we;
    wire                       commit_msr_imm_tlbh_we;
    wire                       commit_msr_dmm_tlbl_we;
@@ -309,6 +317,10 @@ module ncpu32k_epu
    assign wb_wmsr_epc_we      = epu_opc_bus[`NCPU_EPU_WMSR] & bank_ps & bank_off[`NCPU_MSR_EPC];
    assign wb_wmsr_epsr_we     = epu_opc_bus[`NCPU_EPU_WMSR] & bank_ps & bank_off[`NCPU_MSR_EPSR];
    assign wb_wmsr_elsa_we     = epu_opc_bus[`NCPU_EPU_WMSR] & bank_ps & bank_off[`NCPU_MSR_ELSA];
+`ifdef NCPU_ENABLE_MSGPORT
+   assign wb_wmsr_numport_we  = epu_opc_bus[`NCPU_EPU_WMSR] & bank_dbg & bank_off[0];
+   assign wb_wmsr_msgport_we  = epu_opc_bus[`NCPU_EPU_WMSR] & bank_dbg & bank_off[1];
+`endif
    assign wb_msr_imm_tlbl_we  = epu_opc_bus[`NCPU_EPU_WMSR] & bank_imm & msr_imm_tlbl_sel;
    assign wb_msr_imm_tlbh_we  = epu_opc_bus[`NCPU_EPU_WMSR] & bank_imm & msr_imm_tlbh_sel;
    assign wb_msr_dmm_tlbl_we  = epu_opc_bus[`NCPU_EPU_WMSR] & bank_dmm & msr_dmm_tlbl_sel;
@@ -321,6 +333,10 @@ module ncpu32k_epu
                         wb_wmsr_epc_we,
                         wb_wmsr_epsr_we,
                         wb_wmsr_elsa_we,
+`ifdef NCPU_ENABLE_MSGPORT
+                        wb_wmsr_numport_we,
+                        wb_wmsr_msgport_we,
+`endif
                         wb_msr_imm_tlbl_we,
                         wb_msr_imm_tlbh_we,
                         wb_msr_dmm_tlbl_we,
@@ -336,6 +352,10 @@ module ncpu32k_epu
       commit_wmsr_epc_we,
       commit_wmsr_epsr_we,
       commit_wmsr_elsa_we,
+`ifdef NCPU_ENABLE_MSGPORT
+      commit_wmsr_numport_we,
+      commit_wmsr_msgport_we,
+`endif
       commit_msr_imm_tlbl_we,
       commit_msr_imm_tlbh_we,
       commit_msr_dmm_tlbl_we,
@@ -417,13 +437,11 @@ module ncpu32k_epu
    assign msr_tsc_tcr_nxt = commit_wmsr_dat;
 
 	 // synthesis translate_off
-`ifndef SYNTHESIS
-   wire dbg_numport_sel = bank_off[0];
-   wire dbg_msgport_sel = bank_off[1];
+`ifdef NCPU_ENABLE_MSGPORT
    always @(posedge clk) begin
-      if (commit_wmsr_we & bank_dbg & dbg_numport_sel)
+      if (commit_wmsr_numport_we)
          $display("Num port = %d", commit_wmsr_dat);
-      if (commit_wmsr_we & bank_dbg & dbg_msgport_sel)
+      if (commit_wmsr_msgport_we)
          $write("%c", commit_wmsr_dat[7:0]);
    end
 `endif

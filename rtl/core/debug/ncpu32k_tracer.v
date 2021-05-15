@@ -44,13 +44,22 @@ module ncpu32k_tracer
 
    integer fp_trace;
    integer fp_trace_org;
+   integer feof_trace_org;
+   integer cfg_log_on_display;
 
    initial
       begin
          fp_trace = $fopen("trace_sim.txt", "w");
          fp_trace_org = $fopen("trace_org.txt", "r");
+         feof_trace_org = 0;
          if (!fp_trace_org)
-            $display("Warning: Can't not open trace source file to compare the result!");
+            begin
+               $display("Warning: Can't not open trace source file to compare the result!");
+               feof_trace_org = 1;
+            end
+
+         // Configurations
+         cfg_log_on_display = 0;
       end
 
    //
@@ -67,19 +76,31 @@ module ncpu32k_tracer
 
          $fwrite(fp_trace, "%08x %02x %08x\n", wb_pc*4, wb_rd_addr, wb_dout);
 
-         $fscanf(fp_trace_org, "%x %x %x", org_wb_pc, org_wb_rd_addr, org_wb_dout);
-         
-         if (org_wb_pc != wb_pc*4 ||
-               org_wb_rd_addr != wb_rd_addr ||
-               org_wb_dout != wb_dout)
+         if (!feof_trace_org)
+            if ($fscanf(fp_trace_org, "%x %x %x", org_wb_pc, org_wb_rd_addr, org_wb_dout) != 3)
+               feof_trace_org = 1;
+
+         if (feof_trace_org)
             begin
-               $display("DIE %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
-               $fatal(1, "Expected %08x %02x %08x",
-                     org_wb_pc, org_wb_rd_addr, org_wb_dout);
+               if (cfg_log_on_display)
+                  $display("UNKNOWN %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
             end
          else
             begin
-               $display("PASS %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
+               if (org_wb_pc != wb_pc*4 ||
+                  org_wb_rd_addr != wb_rd_addr ||
+                  org_wb_dout != wb_dout)
+                  begin
+                     if (cfg_log_on_display)
+                        $display("DIE %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
+                     $fatal(1, "Expected %08x %02x %08x",
+                           org_wb_pc, org_wb_rd_addr, org_wb_dout);
+                  end
+               else
+                  begin
+                     if (cfg_log_on_display)
+                        $display("PASS %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
+                  end
             end
       end
    endtask

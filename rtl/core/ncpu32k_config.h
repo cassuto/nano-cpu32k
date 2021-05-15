@@ -18,6 +18,31 @@
 
 `timescale 1ns / 1ps
 
+// Tips: After editing this configuration, you may need to recompile the entire
+// design, depending on whether your compiler can detect header file dependencies.
+
+//
+// Macros defined by compiler environment:
+//
+//    SYNTHESIS   (Indicates whether we are in synthesis flow)
+//    IN_SIM      (Indicates whether we are in simulation flow)
+//    IN_LINT     (Indicates whether we are in code lint flow)
+//
+// If your compiler doesn't support above macros, please add them manually
+// according to your work flow.
+//
+
+// In lint mode, enable all other modes to ensure we cover all the codes
+// (expect features you disabled in the configutation)
+`ifdef IN_LINT
+   `ifndef SYNTHESIS
+      `define SYNTHESIS
+   `endif
+   `ifndef IN_SIM
+      `define IN_SIM
+   `endif
+`endif
+
 /////////////////////////////////////////////////////////////////////////////
 // Platform definitions
 /////////////////////////////////////////////////////////////////////////////
@@ -40,7 +65,7 @@
 `ifdef IN_SIM
 
 // Check the uncertain state (X)
-//`define NCPU_CHECK_X
+`undef NCPU_CHECK_X
 
 // Assertions are automatically ignored during synthesis.
 // If you want to speed up the simulation, comment this macro out.
@@ -48,6 +73,9 @@
 
 // Tracer for simulation verification
 `define NCPU_ENABLE_TRACER
+
+// Message port (Currently only for simulation verification)
+`define NCPU_ENABLE_MSGPORT
 
 `endif
 
@@ -76,7 +104,11 @@
 `define NCPU_NIRQ 32
 
 // Width of WMSR we signals
+`ifdef NCPU_ENABLE_MSGPORT
+`define NCPU_WMSR_WE_DW (13+`NCPU_TLB_AW)
+`else
 `define NCPU_WMSR_WE_DW (11+`NCPU_TLB_AW)
+`endif
 
 /////////////////////////////////////////////////////////////////////////////
 // MSR
