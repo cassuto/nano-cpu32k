@@ -64,7 +64,7 @@ module ncpu32k_bru
                         (bru_opc_bus[`NCPU_BRU_BGT] & cmp_gt_s) |
                         (bru_opc_bus[`NCPU_BRU_BLEU] & ~cmp_gt_u) |
                         (bru_opc_bus[`NCPU_BRU_BLE] & ~cmp_gt_s);
-  
+
    assign wb_bru_branch_tgt =
       // PC-relative 15b addressing
       ((bru_pc + {{`NCPU_AW-2-15{bru_rel15[14]}}, bru_rel15[14:0]})  & {`NCPU_AW-2{bcc_taken}}) |

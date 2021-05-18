@@ -23,13 +23,12 @@ module ncpu32k_dcache_ram
    `PARAM_NOT_SPECIFIED
 )
 (
-   input clk_a,
+   input clk,
    input [AW-1:0] addr_a,
    input [DW/8-1:0] we_a,
    input [DW-1:0] din_a,
    output [DW-1:0] dout_a,
    input en_a,
-   input clk_b,
    input [AW-1:0] addr_b,
    input [DW/8-1:0] we_b,
    input [DW-1:0] din_b,
@@ -44,13 +43,12 @@ module ncpu32k_dcache_ram
    // Check this manually...
    ip_dcache_bram RAM
       (
-         .clka    (clk_a),
+         .clk     (clk),
          .addra   (addr_a),
          .wea     (we_a),
          .dina    (din_a),
          .douta   (dout_a),
          .ena     (en_a),
-         .clkb    (clk_b),
          .addrb   (addr_b),
          .web     (we_b),
          .dinb    (din_b),
@@ -67,13 +65,13 @@ module ncpu32k_dcache_ram
       )
    RAM
       (
-         .clk_a   (clk_a),
+         .clk_a   (clk),
          .addr_a  (addr_a),
          .we_a    (we_a),
          .din_a   (din_a),
          .dout_a  (dout_a),
          .en_a    (en_a),
-         .clk_b   (clk_b),
+         .clk_b   (clk),
          .addr_b  (addr_b),
          .we_b    (we_b),
          .din_b   (din_b),

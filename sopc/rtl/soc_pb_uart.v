@@ -102,8 +102,8 @@ module soc_pb_uart
 
    reg [6:0] tx_shift_cnt = 7'b0000000;
    reg tx_pending = 1'b0;
-   reg we_vld_sr = 1'b0;
-   reg [7:0] phy_din_sr;
+   (* ASYNC_REG = "TRUE" *) reg we_vld_sr = 1'b0;
+   (* ASYNC_REG = "TRUE" *) reg [7:0] phy_din_sr;
    reg uart_tx_r;
 
    // TX Frame
@@ -144,7 +144,7 @@ module soc_pb_uart
 
    reg [1:0] rx_status_r = 2'b0;
    reg [6:0] rx_smpl_cnt = 7'h00;
-   reg uart_rx_sr;
+   (* ASYNC_REG = "TRUE" *) reg uart_rx_sr;
    reg [6:0] dout_r;
 
    localparam [1:0] RX_S_DETECT = 2'd0;
@@ -236,7 +236,7 @@ module soc_pb_uart
    reg cmd_we_r;
    reg [2:0] cmd_addr_r = 3'b0;
 
-   reg [15:0] DLR_sr = 16'h8;
+   (* ASYNC_REG = "TRUE" *) reg [15:0] DLR_sr = 16'h8;
    always @(posedge clk_baud)
       DLR_sr <= DLR;
    assign baud_div = {DLR_sr[14:0], 1'b0};
@@ -321,8 +321,8 @@ module soc_pb_uart
          dat_ready <= 1'b0;
    end
 
-   reg [1:0] phy_cmd_we_rdy_sr;
-   reg [1:0] phy_dout_overun_sr;
+   (* ASYNC_REG = "TRUE" *) reg [1:0] phy_cmd_we_rdy_sr;
+   (* ASYNC_REG = "TRUE" *) reg [1:0] phy_dout_overun_sr;
    always @(posedge clk) begin
       phy_cmd_we_rdy_sr <= {phy_cmd_we_rdy_sr[0], phy_cmd_we_rdy};
       phy_dout_overun_sr <= {phy_dout_overun_sr[0], phy_dout_overun};

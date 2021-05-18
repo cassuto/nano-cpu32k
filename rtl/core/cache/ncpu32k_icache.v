@@ -48,23 +48,20 @@ module ncpu32k_icache
    output                        dout_vld, // If cache is blocking, then assert low
    output                        dout_rdy,
    output                        stall_pc,
-   // Async I-Bus Master
-   input                         ibus_clk,
-   input                         ibus_rst_n,
-   input                         ibus_AREADY,
-   output                        ibus_AVALID,
-   output [CONFIG_IBUS_AW-1:0]   ibus_AADDR,
-   output [CONFIG_IC_P_LINE-1:0] ibus_ALEN,
-   input                         ibus_BVALID,
-   output                        ibus_BREADY,
-   input [CONFIG_IBUS_DW-1:0]    ibus_BDATA
+   // I-Bus Master
+   input                         ibus_ARREADY,
+   output                        ibus_ARVALID,
+   output [CONFIG_IBUS_AW-1:0]   ibus_ARADDR,
+   input                         ibus_RVALID,
+   output                        ibus_RREADY,
+   input [CONFIG_IBUS_DW-1:0]    ibus_RDATA
 );
 
    // Main FSM states
    localparam                    S_IDLE = 2'b00;
-   localparam                    S_READ_PENDING_1 = 2'b01;
-   localparam                    S_READ_PENDING_2 = 2'b11;
-   localparam                    S_BOOT = 2'b10;
+   localparam                    S_READ_PENDING = 2'b01;
+   localparam                    S_READOUT = 2'b10;
+   localparam                    S_BOOT = 2'b11;
 
    // Tag data
    localparam                    TAG_ADDR_DW = CONFIG_IC_AW-CONFIG_IC_P_SETS-CONFIG_IC_P_LINE;
@@ -77,11 +74,8 @@ module ncpu32k_icache
    reg [1:0]                     status_nxt;
    wire                          ch_idle = (status_r == S_IDLE);
    wire                          ch_boot = (status_r == S_BOOT);
-   wire                          cdc_line_adr_cnt_msb;
-   wire                          cdc_ibus_A_set;
-   wire                          cdc_ibus_A_clr;
-   wire                          cdc_ibus_AVALID;
-   wire                          cdc_ibus_AREADY;
+   wire                          ibus_A_set;
+   wire                          ibus_A_clr;
 
    //
    // Structure of pipelined cache:
@@ -154,7 +148,7 @@ generate
             #(
                .AW(CONFIG_IC_P_SETS),
                .DW(TAG_DW),
-               .ENABLE_BYPASS(1)
+               .ENABLE_BYPASS(0)
             )
          TAGS
             (
@@ -175,7 +169,7 @@ generate
             #(
                .AW(CONFIG_IC_P_SETS),
                .DW(CONFIG_IC_P_WAYS),
-               .ENABLE_BYPASS(1)
+               .ENABLE_BYPASS(0)
             )
          TAGS_LRU
             (
@@ -235,53 +229,33 @@ generate
       end
 endgenerate
 
-/////////////////////////////////////////////////////////////////////////////
-// Begin of ibus clock domain
-/////////////////////////////////////////////////////////////////////////////
    wire ibus_hds_B;
-   reg [CONFIG_IC_P_LINE - CONFIG_IBUS_BYTES_LOG2 -1:0] slow_line_adr_cnt; // MSB is used to check overflow
+   reg [CONFIG_IC_P_LINE - CONFIG_IBUS_BYTES_LOG2 - 1:0] line_adr_cnt; // MSB is used to check overflow
 
-   assign ibus_hds_B = (ibus_BVALID & ibus_BREADY);
+   assign ibus_hds_B = (ibus_RVALID & ibus_RREADY);
 
    // Maintain the line address counter
    // for burst transmission of cache line when writing back
-   always @(posedge ibus_clk or negedge ibus_rst_n)
-      if (~ibus_rst_n)
-         slow_line_adr_cnt <= {CONFIG_IC_P_LINE - CONFIG_IBUS_BYTES_LOG2 {1'b0}};
+   always @(posedge clk or negedge rst_n)
+      if (~rst_n)
+         line_adr_cnt <= {CONFIG_IC_P_LINE - CONFIG_IBUS_BYTES_LOG2 {1'b0}};
       else if (ibus_hds_B)
-         slow_line_adr_cnt <= slow_line_adr_cnt + 1'b1;
-      
-   ncpu32k_cdc_sync
-      #(
-         .RST_VALUE ('b0),
-         .CONFIG_CDC_STAGES (`NCPU_CDC_STAGES)
-      )
-   CDC_LINE_ADR_CNT_MSB
-      (
-         .A (slow_line_adr_cnt[CONFIG_IC_P_LINE - CONFIG_IBUS_BYTES_LOG2 -1]),
-         .CLK_B (clk),
-         .RST_N_B (rst_n),
-         .B (cdc_line_adr_cnt_msb)
-      );
+         line_adr_cnt <= line_adr_cnt + 1'b1;
 
-   wire [CONFIG_IC_DW/8-1:0] slow_line_adr_cnt_msk;
+   wire [CONFIG_IC_DW/8-1:0] line_adr_cnt_msk;
 
    generate
       if (CONFIG_IC_DW == 64)
-         assign slow_line_adr_cnt_msk = {slow_line_adr_cnt[1:0]==2'b11, slow_line_adr_cnt[1:0]==2'b11,
-                                    slow_line_adr_cnt[1:0]==2'b10, slow_line_adr_cnt[1:0]==2'b10,
-                                    slow_line_adr_cnt[1:0]==2'b01, slow_line_adr_cnt[1:0]==2'b01,
-                                    slow_line_adr_cnt[1:0]==2'b00, slow_line_adr_cnt[1:0]==2'b00};
+         assign line_adr_cnt_msk = {line_adr_cnt[1:0]==2'b11, line_adr_cnt[1:0]==2'b11,
+                                    line_adr_cnt[1:0]==2'b10, line_adr_cnt[1:0]==2'b10,
+                                    line_adr_cnt[1:0]==2'b01, line_adr_cnt[1:0]==2'b01,
+                                    line_adr_cnt[1:0]==2'b00, line_adr_cnt[1:0]==2'b00};
       else if (CONFIG_IC_DW == 32)
-         assign slow_line_adr_cnt_msk = {slow_line_adr_cnt[0], slow_line_adr_cnt[0],
-                                    ~slow_line_adr_cnt[0], ~slow_line_adr_cnt[0]};
+         assign line_adr_cnt_msk = {line_adr_cnt[0], line_adr_cnt[0],
+                                    ~line_adr_cnt[0], ~line_adr_cnt[0]};
       else
          initial $fatal(1, "Please implement one");
    endgenerate
-
-/////////////////////////////////////////////////////////////////////////////
-// End of ibus clock domain
-/////////////////////////////////////////////////////////////////////////////
 
    // Port B (Fast side)
    wire [CONFIG_IC_DW-1:0] s1o_blk_dout_b [(1<<CONFIG_IC_P_WAYS)-1:0];
@@ -307,29 +281,21 @@ generate
 
          wire s2i_matched = (s1o_free_way_idx == i);
 
-/////////////////////////////////////////////////////////////////////////////
-// Begin of ibus clock domain
-/////////////////////////////////////////////////////////////////////////////
-
          localparam DELTA_DW = CONFIG_IC_DW_BYTES_LOG2-CONFIG_IBUS_BYTES_LOG2;
 
          assign s2i_blk_en_a = ibus_hds_B & s2i_matched;
-         assign s2i_blk_addr_a = {s1o_entry_idx[CONFIG_IC_P_SETS-1:0], slow_line_adr_cnt[DELTA_DW +: CONFIG_IC_P_LINE-CONFIG_IC_DW_BYTES_LOG2]};
-         assign s2i_blk_we_a = {CONFIG_IC_DW/8{ibus_hds_B & s2i_matched}} & slow_line_adr_cnt_msk;
+         assign s2i_blk_addr_a = {s1o_entry_idx[CONFIG_IC_P_SETS-1:0], line_adr_cnt[DELTA_DW +: CONFIG_IC_P_LINE-CONFIG_IC_DW_BYTES_LOG2]};
+         assign s2i_blk_we_a = {CONFIG_IC_DW/8{ibus_hds_B & s2i_matched}} & line_adr_cnt_msk;
 
          if (CONFIG_IC_DW == 64 && CONFIG_IBUS_DW == 16)
-            assign s2i_blk_din_a = {ibus_BDATA[15:0], ibus_BDATA[15:0],
-                                    ibus_BDATA[15:0], ibus_BDATA[15:0]};
+            assign s2i_blk_din_a = {ibus_RDATA[15:0], ibus_RDATA[15:0],
+                                    ibus_RDATA[15:0], ibus_RDATA[15:0]};
          else if (CONFIG_IC_DW == 64 && CONFIG_IBUS_DW == 32)
-            assign s2i_blk_din_a = {ibus_BDATA[31:0], ibus_BDATA[31:0]};
+            assign s2i_blk_din_a = {ibus_RDATA[31:0], ibus_RDATA[31:0]};
          else if (CONFIG_IC_DW == 64 && CONFIG_IBUS_DW == 64)
-            assign s2i_blk_din_a = ibus_BDATA;
+            assign s2i_blk_din_a = ibus_RDATA;
          else
             initial $fatal(1, "Please implement one");
-
-/////////////////////////////////////////////////////////////////////////////
-// End of ibus clock domain
-/////////////////////////////////////////////////////////////////////////////
 
          ncpu32k_icache_ram
             #(
@@ -338,12 +304,11 @@ generate
             )
          PAYLOAD_RAM
             (
-               .clk_a   (ibus_clk),
+               .clk     (clk),
                .addr_a  (s2i_blk_addr_a[BLK_AW-1:0]),
                .we_a    (s2i_blk_we_a[CONFIG_IC_DW/8-1:0]),
                .din_a   (s2i_blk_din_a[CONFIG_IC_DW-1:0]),
                .en_a    (s2i_blk_en_a),
-               .clk_b   (clk),
                .addr_b  (s1i_blk_addr_b[BLK_AW-1:0]),
                .dout_b  (s1o_blk_dout_b[i][CONFIG_IC_DW-1:0]),
                .en_b    (s1i_blk_en_b)
@@ -431,25 +396,26 @@ endgenerate
             S_BOOT:
                begin
                   if (cls_cnt == {CONFIG_IC_P_SETS{1'b0}})
-                     status_nxt = S_IDLE;
+                     status_nxt = S_READOUT;
                end
 
             S_IDLE:
                begin
                   if (s1o_re_r & ~s1o_hit) // Cache missed
-                     status_nxt = S_READ_PENDING_1;
+                     status_nxt = S_READ_PENDING;
                end
             
-            S_READ_PENDING_1:
+            S_READ_PENDING:
                begin
-                  if(cdc_line_adr_cnt_msb)
-                     status_nxt = S_READ_PENDING_2;
+                  if(&line_adr_cnt)
+                     status_nxt = S_READOUT;
                end
-            S_READ_PENDING_2:
-               begin
-                  if(~cdc_line_adr_cnt_msb)
-                     status_nxt = S_IDLE;
-               end
+
+            S_READOUT:  
+               status_nxt = S_IDLE;
+
+            default: begin
+            end
          endcase
       end
 
@@ -462,49 +428,20 @@ endgenerate
    // This happens when cache line replacement is completed,
    // in the next beat, tags will hold the latest value.
    // In addition, readout the cleared values when booting.
-   assign s1_readtag = ((status_r == S_READ_PENDING_2) & (status_nxt == S_IDLE)) | ch_boot;
+   assign s1_readtag = (status_r == S_READOUT);
 
    assign stall_pc = ~ch_idle | (s1o_re_r & ~s1o_hit);
 
    // Send request to IBUS
-   assign cdc_ibus_A_set = (status_r == S_IDLE && status_nxt == S_READ_PENDING_1);
-   assign cdc_ibus_A_clr = (cdc_ibus_AVALID & cdc_ibus_AREADY);
+   assign ibus_A_set = (status_r == S_IDLE && status_nxt == S_READ_PENDING);
+   assign ibus_A_clr = (ibus_ARVALID & ibus_ARREADY);
    
    nDFF_lr #(1) dff_ibus_AVALID
-      (clk,rst_n, (cdc_ibus_A_set|cdc_ibus_A_clr), (cdc_ibus_A_set|~cdc_ibus_A_clr), cdc_ibus_AVALID);
+      (clk,rst_n, (ibus_A_set|ibus_A_clr), (ibus_A_set|~ibus_A_clr), ibus_ARVALID);
 
-/////////////////////////////////////////////////////////////////////////////
-// Begin of ibus clock domain
-/////////////////////////////////////////////////////////////////////////////
+   assign ibus_ARADDR = {s1o_paddr[CONFIG_IBUS_AW-1:CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}} }; // align at size of a line, truncate address bits
 
-   //
-   // cache to ibus
-   //
-   ncpu32k_cdc_sync_hds
-      #(
-         .CONFIG_CDC_STAGES (`NCPU_CDC_STAGES)
-      )
-   CDC_IBUS
-      (
-         .clk_a      (clk),
-         .rst_a_n    (rst_n),
-         .AVALID     (cdc_ibus_AVALID),
-         .AREADY     (cdc_ibus_AREADY),
-         .clk_b      (ibus_clk),
-         .rst_b_n    (ibus_rst_n),
-         .BVALID     (ibus_AVALID),
-         .BREADY     (ibus_AREADY)
-      );
-
-   assign ibus_AADDR = {s1o_paddr[CONFIG_IBUS_AW-1:CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}} }; // align at size of a line, truncate address bits
-   
-   assign ibus_ALEN = {CONFIG_IC_P_LINE{1'b1}};
-
-   assign ibus_BREADY = 1'b1;
-
-/////////////////////////////////////////////////////////////////////////////
-// End of ibus clock domain
-/////////////////////////////////////////////////////////////////////////////
+   assign ibus_RREADY = 1'b1;
 
    // synthesis translate_off
 `ifndef SYNTHESIS

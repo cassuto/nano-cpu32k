@@ -27,6 +27,8 @@ module ncpu32k_scheduler
    `PARAM_NOT_SPECIFIED ,
    parameter CONFIG_ENABLE_MODU
    `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_ASR
+   `PARAM_NOT_SPECIFIED ,
    parameter BPU_UPD_DW
    `PARAM_NOT_SPECIFIED
 )
@@ -232,7 +234,8 @@ module ncpu32k_scheduler
                   .CONFIG_ENABLE_DIV      (CONFIG_ENABLE_DIV),
                   .CONFIG_ENABLE_DIVU     (CONFIG_ENABLE_DIVU),
                   .CONFIG_ENABLE_MOD      (CONFIG_ENABLE_MOD),
-                  .CONFIG_ENABLE_MODU     (CONFIG_ENABLE_MODU)
+                  .CONFIG_ENABLE_MODU     (CONFIG_ENABLE_MODU),
+                  .CONFIG_ENABLE_ASR      (CONFIG_ENABLE_ASR)
                )
             DECODE
                (
@@ -436,8 +439,8 @@ module ncpu32k_scheduler
             issue_state_nxt = issue_state_r;
       endcase
 
-   nDFF_r #(2, S_ISSUE_FULL) dff_issue_state_r
-      (clk, rst_n, issue_state_nxt, issue_state_r);
+   nDFF_lr #(2, S_ISSUE_FULL) dff_issue_state_r
+      (clk, rst_n, pipe_cke, issue_state_nxt, issue_state_r);
 
    assign sch_stall = (issue_state_nxt==S_ISSUE_1);
 

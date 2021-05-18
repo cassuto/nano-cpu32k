@@ -27,6 +27,8 @@ module ncpu32k_backend
    `PARAM_NOT_SPECIFIED ,
    parameter CONFIG_ENABLE_MODU
    `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_ASR
+   `PARAM_NOT_SPECIFIED ,
    parameter BPU_UPD_DW
    `PARAM_NOT_SPECIFIED ,
    parameter [7:0] CPUID_VER = 1,
@@ -72,7 +74,9 @@ module ncpu32k_backend
    parameter CONFIG_DCACHE_P_LINE
    `PARAM_NOT_SPECIFIED , /* = log2(Size of a line) */
    parameter CONFIG_DCACHE_P_SETS
-   `PARAM_NOT_SPECIFIED   /* = log2(Number of sets) */
+   `PARAM_NOT_SPECIFIED , /* = log2(Number of sets) */
+   parameter CONFIG_DCACHE_P_WAYS
+   `PARAM_NOT_SPECIFIED /* = log2(Number of ways) */
 )
 (
    input                               clk,
@@ -106,19 +110,19 @@ module ncpu32k_backend
    output [`NCPU_AW-3:0]               bpu_wb_pc,
    output [`NCPU_AW-3:0]               bpu_wb_pc_nxt_act,
    output [BPU_UPD_DW-1:0]             bpu_wb_upd,
-   // Async D-Bus Master
-   input                               dbus_clk,
-   input                               dbus_rst_n,   
-   input                               dbus_AREADY,
-   output                              dbus_AVALID,
-   output [CONFIG_DBUS_AW-1:0]         dbus_AADDR,
-   output [CONFIG_DBUS_DW/8-1:0]       dbus_AWMSK,
-   output [CONFIG_DCACHE_P_LINE-1:0]   dbus_ALEN,
+   // D-Bus Master
+   input                               dbus_ARWREADY,
+   output                              dbus_ARWVALID,
+   output [CONFIG_DBUS_AW-1:0]         dbus_ARWADDR,
+   output                              dbus_AWE,
+   input                               dbus_WREADY,
+   output                              dbus_WVALID,
    output [CONFIG_DBUS_DW-1:0]         dbus_WDATA,
    input                               dbus_BVALID,
    output                              dbus_BREADY,
-   input [CONFIG_DBUS_DW-1:0]          dbus_BDATA,
-   input                               dbus_BWE,
+   input                               dbus_RVALID,
+   output                              dbus_RREADY,
+   input [CONFIG_DBUS_DW-1:0]          dbus_RDATA,
    // Sync Uncached D-Bus master
    input                               uncached_dbus_AREADY,
    output                              uncached_dbus_AVALID,
@@ -312,13 +316,14 @@ module ncpu32k_backend
    wire                       s1i_slot_BVALID [2:1];
    reg                        s1i_inv_slot [2:1];
    wire                       s1i_lsu_flush;
+   wire                       bpu_wb_nxt;
    wire                       s1o_noflush;
    wire                       s1o_slot_rd_we [2:1];
    wire [`NCPU_REG_AW-1:0]    s1o_slot_rd_addr [2:1];
    wire                       s1o_slot_BVALID [2:1];
    wire [`NCPU_DW-1:0]        s1o_slot_dout [2:1];
 `ifdef NCPU_ENABLE_TRACER
-   wire [`NCPU_AW-3:0]        s1o_slot_pc [2:1];
+   wire [`NCPU_AW-3:0]        trace_s1o_slot_pc [2:1];
 `endif
    wire [`NCPU_AW-3:0]        s1o_slot_pc_nxt_act [2:1];
    wire                       s1o_wb_epu_AVALID;
@@ -333,6 +338,11 @@ module ncpu32k_backend
    wire                       lsu_flush;
    wire                       wb_lsu_rd_we, wb_lsu_rd_we_nxt;
    wire [`NCPU_REG_AW-1:0]    wb_lsu_rd_addr, wb_lsu_rd_addr_nxt;
+`ifdef NCPU_ENABLE_TRACER
+   wire                       trace_wb_lsu_load;
+   wire                       trace_wb_lsu_store;
+   wire [2:0]                 trace_wb_lsu_size;
+`endif
    wire                       wb_alu_2_AVALID;
    wire [`NCPU_DW-1:0]        wb_alu_2_dout;
    wire                       s2_inv_slot_1;
@@ -394,6 +404,7 @@ module ncpu32k_backend
          .CONFIG_ENABLE_DIVU  (CONFIG_ENABLE_DIVU),
          .CONFIG_ENABLE_MOD   (CONFIG_ENABLE_MOD),
          .CONFIG_ENABLE_MODU  (CONFIG_ENABLE_MODU),
+         .CONFIG_ENABLE_ASR   (CONFIG_ENABLE_ASR),
          .BPU_UPD_DW          (BPU_UPD_DW)
       )
    SCHEDULER
@@ -490,7 +501,7 @@ module ncpu32k_backend
        .arf_1_rs1_dout                  (arf_1_rs1_dout_bypass[`NCPU_DW-1:0]), // Templated
        .arf_1_rs2_dout                  (arf_1_rs2_dout_bypass[`NCPU_DW-1:0]), // Templated
        .arf_2_rs1_dout                  (arf_2_rs1_dout_bypass[`NCPU_DW-1:0]), // Templated
-       .arf_2_rs2_dout                  (arf_2_rs2_dout_bypass[`NCPU_DW-1:0])); // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated)
+       .arf_2_rs2_dout                  (arf_2_rs2_dout_bypass[`NCPU_DW-1:0])); // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated)
 
    `define BYPASS_NETWORK_PORTS \
       .wb_slot_1_BVALID             (s2o_slot_BVALID[1]), \
@@ -543,7 +554,11 @@ module ncpu32k_backend
    // Pipeline Stage 2 (of backend)
    /////////////////////////////////////////////////////////////////////////////
 
-   ncpu32k_alu ALU_1
+   ncpu32k_alu
+      #(
+         .CONFIG_ENABLE_ASR               (CONFIG_ENABLE_ASR)
+      )
+   ALU_1
       (
          // Outputs
          .wb_alu_AVALID                   (wb_alu_1_AVALID),
@@ -558,7 +573,11 @@ module ncpu32k_backend
          .alu_operand2                    (alu_1_operand2[`NCPU_DW-1:0])
       );
 
-   ncpu32k_alu ALU_2
+   ncpu32k_alu
+      #(
+         .CONFIG_ENABLE_ASR               (CONFIG_ENABLE_ASR)
+      )
+   ALU_2
       (
          // Outputs
          .wb_alu_AVALID                   (wb_alu_2_AVALID),
@@ -716,24 +735,26 @@ module ncpu32k_backend
    ncpu32k_lsu
       #(
          .CONFIG_DBUS_DW               (CONFIG_DBUS_DW),
-         .CONFIG_DBUS_BYTES_LOG2    (CONFIG_DBUS_BYTES_LOG2),
+         .CONFIG_DBUS_BYTES_LOG2       (CONFIG_DBUS_BYTES_LOG2),
          .CONFIG_DBUS_AW               (CONFIG_DBUS_AW),
          .CONFIG_DMMU_PAGE_SIZE_LOG2   (CONFIG_DMMU_PAGE_SIZE_LOG2),
          .CONFIG_DMMU_ENABLE_UNCACHED_SEG (CONFIG_DMMU_ENABLE_UNCACHED_SEG),
          .CONFIG_DTLB_NSETS_LOG2       (CONFIG_DTLB_NSETS_LOG2),
          .CONFIG_DCACHE_P_LINE         (CONFIG_DCACHE_P_LINE),
-         .CONFIG_DCACHE_P_SETS         (CONFIG_DCACHE_P_SETS)
+         .CONFIG_DCACHE_P_SETS         (CONFIG_DCACHE_P_SETS),
+         .CONFIG_DCACHE_P_WAYS         (CONFIG_DCACHE_P_WAYS)
       )
    LSU
       (/*AUTOINST*/
        // Outputs
        .lsu_stall                       (lsu_stall),
-       .dbus_AVALID                     (dbus_AVALID),
-       .dbus_AADDR                      (dbus_AADDR[CONFIG_DBUS_AW-1:0]),
-       .dbus_AWMSK                      (dbus_AWMSK[CONFIG_DBUS_DW/8-1:0]),
-       .dbus_ALEN                       (dbus_ALEN[CONFIG_DCACHE_P_LINE-1:0]),
+       .dbus_ARWVALID                   (dbus_ARWVALID),
+       .dbus_ARWADDR                    (dbus_ARWADDR[CONFIG_DBUS_AW-1:0]),
+       .dbus_AWE                        (dbus_AWE),
+       .dbus_WVALID                     (dbus_WVALID),
        .dbus_WDATA                      (dbus_WDATA[CONFIG_DBUS_DW-1:0]),
        .dbus_BREADY                     (dbus_BREADY),
+       .dbus_RREADY                     (dbus_RREADY),
        .uncached_dbus_AVALID            (uncached_dbus_AVALID),
        .uncached_dbus_AADDR             (uncached_dbus_AADDR[`NCPU_AW-1:0]),
        .uncached_dbus_AWMSK             (uncached_dbus_AWMSK[`NCPU_DW/8-1:0]),
@@ -765,12 +786,11 @@ module ncpu32k_backend
        .lsu_imm32                       (lsu_imm32[`NCPU_DW-1:0]),
        .lsu_pc                          (lsu_pc[`NCPU_AW-3:0]),
        .lsu_in_slot_1                   (lsu_in_slot_1),
-       .dbus_clk                        (dbus_clk),
-       .dbus_rst_n                      (dbus_rst_n),
-       .dbus_AREADY                     (dbus_AREADY),
+       .dbus_ARWREADY                   (dbus_ARWREADY),
+       .dbus_WREADY                     (dbus_WREADY),
        .dbus_BVALID                     (dbus_BVALID),
-       .dbus_BDATA                      (dbus_BDATA[CONFIG_DBUS_DW-1:0]),
-       .dbus_BWE                        (dbus_BWE),
+       .dbus_RVALID                     (dbus_RVALID),
+       .dbus_RDATA                      (dbus_RDATA[CONFIG_DBUS_DW-1:0]),
        .uncached_dbus_AREADY            (uncached_dbus_AREADY),
        .uncached_dbus_BVALID            (uncached_dbus_BVALID),
        .uncached_dbus_BDATA             (uncached_dbus_BDATA[`NCPU_DW-1:0]),
@@ -895,15 +915,6 @@ module ncpu32k_backend
    // Invalidate the 2rd insn when single issue
    assign slot_2_inv = s1i_inv_slot[2];
 
-   // Write back BPU (only for BCC and JMPREG insns)
-   assign bpu_wb           = (wb_bru_AVALID & ~bru_opc_bus[`NCPU_BRU_JMPREL]);
-   assign bpu_wb_is_bcc    = wb_bru_is_bcc;
-   assign bpu_wb_is_breg   = wb_bru_is_breg;
-   assign bpu_wb_taken     = wb_bru_branch_taken;
-   assign bpu_wb_pc        = (wb_bru_in_slot_1 ? slot_1_pc : slot_2_pc);
-   assign bpu_wb_pc_nxt_act = wb_bru_branch_tgt;
-   assign bpu_wb_upd       = (wb_bru_in_slot_1 ? slot_1_bpu_upd : slot_2_bpu_upd);
-
    assign wb_lsu_rd_we_nxt = lsu_in_slot_1 ? slot_1_rd_we : slot_2_rd_we;
    assign wb_lsu_rd_addr_nxt = lsu_in_slot_1 ? slot_1_rd_addr : slot_2_rd_addr;
 
@@ -933,7 +944,15 @@ module ncpu32k_backend
    assign s1i_slot_BVALID_nxt[2] = (s1i_slot_BVALID[2] & ~s1i_inv_slot[2]);
    assign wb_epu_AVALID_nxt = (wb_epu_AVALID & ~(wb_epu_in_slot_1 ? s1i_inv_slot[1] : s1i_inv_slot[2]));
 
+   // Write back BPU (only for BCC and JMPREG insns)
+   assign bpu_wb_nxt = (wb_bru_AVALID &
+                        // Check if this branch insn is not invalidated
+                        (~wb_bru_in_slot_1|~s1i_inv_slot[1]) & (wb_bru_in_slot_1|~s1i_inv_slot[2]) &
+                        // JMP REL is handled by pre decoder, do not affect BPU
+                        ~bru_opc_bus[`NCPU_BRU_JMPREL]);
+
    assign s1_pipe_cke = ~stall_bck;
+
 
    // We have two sources of flushing: `s1_se_flush` and `s2_flush`.
    // If `s1_se_flush` is asserted high, all the flushing caused by SE is handled properly by `s1i_inv_slot`.
@@ -982,6 +1001,8 @@ module ncpu32k_backend
       (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EITM), commit_EITM);
    nDFF_lr #(1) dff_commit_EIRQ
       (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EIRQ), commit_EIRQ);
+   nDFF_lr #(1) dff_bpu_wb
+      (clk, rst_n, s1_pipe_cke, (s1o_noflush & bpu_wb_nxt), bpu_wb);
    
    // Data path
    nDFF_l #(1) dff_s1o_slot_rd_we_1
@@ -998,6 +1019,15 @@ module ncpu32k_backend
       (clk, s1_pipe_cke, wb_lsu_rd_we_nxt, wb_lsu_rd_we);
    nDFF_l #(`NCPU_REG_AW) dff_wb_lsu_rd_addr
       (clk, s1_pipe_cke, wb_lsu_rd_addr_nxt, wb_lsu_rd_addr);
+
+`ifdef NCPU_ENABLE_TRACER
+   nDFF_l #(1) dff_trace_wb_lsu_load
+      (clk, s1_pipe_cke, lsu_load, trace_wb_lsu_load);
+   nDFF_l #(1) dff_trace_wb_lsu_store
+      (clk, s1_pipe_cke, lsu_store, trace_wb_lsu_store);
+   nDFF_l #(3) dff_trace_wb_lsu_size
+      (clk, s1_pipe_cke, lsu_load ? lsu_load_size : lsu_store_size, trace_wb_lsu_size);
+`endif
 
    nDFF_l #(1) dff_s1o_wb_epu_exc
       (clk, s1_pipe_cke, wb_epu_exc, s1o_wb_epu_exc);
@@ -1017,10 +1047,24 @@ module ncpu32k_backend
 
 `ifdef NCPU_ENABLE_TRACER
    nDFF_l #(`NCPU_AW-2) dff_s1o_slot_pc_1
-      (clk, s1_pipe_cke, slot_1_pc, s1o_slot_pc[1]);
+      (clk, s1_pipe_cke, slot_1_pc, trace_s1o_slot_pc[1]);
    nDFF_l #(`NCPU_AW-2) dff_s1o_slot_pc_2
-      (clk, s1_pipe_cke, slot_2_pc, s1o_slot_pc[2]);
+      (clk, s1_pipe_cke, slot_2_pc, trace_s1o_slot_pc[2]);
 `endif
+
+   nDFF_l #(1) dff_bpu_wb_is_bcc
+      (clk ,s1_pipe_cke, wb_bru_is_bcc, bpu_wb_is_bcc);
+   nDFF_l #(1) dff_bpu_wb_is_breg
+      (clk, s1_pipe_cke, wb_bru_is_breg, bpu_wb_is_breg);
+   nDFF_l #(1) dff_bpu_wb_taken
+      (clk, s1_pipe_cke, wb_bru_branch_taken, bpu_wb_taken);
+   nDFF_l #(`NCPU_AW-2) dff_bpu_wb_pc
+      (clk, s1_pipe_cke, (wb_bru_in_slot_1 ? slot_1_pc : slot_2_pc), bpu_wb_pc);
+   nDFF_l #(`NCPU_AW-2) dff_bpu_wb_pc_nxt_act
+      (clk, s1_pipe_cke, wb_bru_branch_tgt, bpu_wb_pc_nxt_act);
+   nDFF_l #(BPU_UPD_DW) dff_bpu_wb_upd
+      (clk, s1_pipe_cke, (wb_bru_in_slot_1 ? slot_1_bpu_upd : slot_2_bpu_upd), bpu_wb_upd);
+
 
    /////////////////////////////////////////////////////////////////////////////
    // Pipeline Stage 3 (of backend)
@@ -1085,7 +1129,11 @@ module ncpu32k_backend
    assign arf_2_wdat = s2o_slot_dout[2];
 
 `ifdef NCPU_ENABLE_TRACER
-   ncpu32k_tracer TRACER
+   ncpu32k_tracer
+      #(
+         .CONFIG_DBUS_AW               (CONFIG_DBUS_AW)
+      )
+   TRACER
       (
          .clk                          (clk),
          .stall_bck                    (stall_bck),
@@ -1093,12 +1141,12 @@ module ncpu32k_backend
          .wb_slot_1_rd_we              (s2o_slot_rd_we[1]),
          .wb_slot_1_rd_addr            (s2o_slot_rd_addr[1]),
          .wb_slot_1_dout               (s2o_slot_dout[1]),
-         .wb_slot_1_pc                 (s1o_slot_pc[1]),
+         .wb_slot_1_pc                 (trace_s1o_slot_pc[1]),
          .wb_slot_2_BVALID             (s2o_slot_BVALID[2]),
          .wb_slot_2_rd_we              (s2o_slot_rd_we[2]),
          .wb_slot_2_rd_addr            (s2o_slot_rd_addr[2]),
          .wb_slot_2_dout               (s2o_slot_dout[2]),
-         .wb_slot_2_pc                 (s1o_slot_pc[2])
+         .wb_slot_2_pc                 (trace_s1o_slot_pc[2])
       );
 `endif
 

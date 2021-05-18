@@ -50,7 +50,7 @@ module soc_fifo_asclk
       if (~wrst_n) {wptr_b, wptr_g} <= 0;
       else {wptr_b, wptr_g} <= {wptr_b_nxt, wptr_g_nxt};
 
-   reg [AW:0] rptr_g_r [1:0], wptr_g_r [1:0];
+   (* ASYNC_REG = "TRUE" *) reg [AW:0] rptr_g_r [1:0], wptr_g_r [1:0];
 
    // Sync read poiner
    always @(posedge rclk or negedge rrst_n)

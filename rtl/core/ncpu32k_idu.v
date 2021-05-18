@@ -26,6 +26,8 @@ module ncpu32k_idu
    parameter CONFIG_ENABLE_MOD
    `PARAM_NOT_SPECIFIED ,
    parameter CONFIG_ENABLE_MODU
+   `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_ASR
    `PARAM_NOT_SPECIFIED
 )
 (
@@ -168,8 +170,6 @@ module ncpu32k_idu
    assign op_lsl_i = (f_opcode == `NCPU_OP_LSL_I);
    assign op_lsr = (f_opcode == `NCPU_OP_LSR);
    assign op_lsr_i = (f_opcode == `NCPU_OP_LSR_I);
-   assign op_asr = (f_opcode == `NCPU_OP_ASR) & enable_asr;
-   assign op_asr_i = (f_opcode == `NCPU_OP_ASR_I) & enable_asr_i;
 
    assign op_add = (f_opcode == `NCPU_OP_ADD);
    assign op_add_i = (f_opcode == `NCPU_OP_ADD_I);
@@ -196,6 +196,16 @@ module ncpu32k_idu
          assign op_modu = (f_opcode == `NCPU_OP_MODU) & enable_modu;
       else
          assign op_modu = 1'b0;
+      if (CONFIG_ENABLE_ASR)
+         begin
+            assign op_asr = (f_opcode == `NCPU_OP_ASR) & enable_asr;
+            assign op_asr_i = (f_opcode == `NCPU_OP_ASR_I) & enable_asr_i;
+         end
+      else
+         begin
+            assign op_asr = 1'b0;
+            assign op_asr_i = 1'b0;
+         end
    endgenerate
    
    assign op_mhi = (f_opcode == `NCPU_OP_MHI);

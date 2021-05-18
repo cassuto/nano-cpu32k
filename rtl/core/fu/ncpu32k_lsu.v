@@ -32,7 +32,9 @@ module ncpu32k_lsu
    parameter CONFIG_DCACHE_P_LINE
    `PARAM_NOT_SPECIFIED , /* = log2(Size of a line) */
    parameter CONFIG_DCACHE_P_SETS
-   `PARAM_NOT_SPECIFIED   /* = log2(Number of sets) */
+   `PARAM_NOT_SPECIFIED ,  /* = log2(Number of sets) */
+   parameter CONFIG_DCACHE_P_WAYS
+   `PARAM_NOT_SPECIFIED /* = log2(Number of ways) */
 )
 (
    input                               clk,
@@ -53,20 +55,20 @@ module ncpu32k_lsu
    input [`NCPU_DW-1:0]                lsu_imm32,
    input [`NCPU_AW-3:0]                lsu_pc,
    input                               lsu_in_slot_1,
-   // Async D-Bus Master
-   input                               dbus_clk,
-   input                               dbus_rst_n,   
-   input                               dbus_AREADY,
-   output                              dbus_AVALID,
-   output [CONFIG_DBUS_AW-1:0]         dbus_AADDR,
-   output [CONFIG_DBUS_DW/8-1:0]       dbus_AWMSK,
-   output [CONFIG_DCACHE_P_LINE-1:0]   dbus_ALEN,
+   // D-Bus Master
+   input                               dbus_ARWREADY,
+   output                              dbus_ARWVALID,
+   output [CONFIG_DBUS_AW-1:0]         dbus_ARWADDR,
+   output                              dbus_AWE,
+   input                               dbus_WREADY,
+   output                              dbus_WVALID,
    output [CONFIG_DBUS_DW-1:0]         dbus_WDATA,
    input                               dbus_BVALID,
    output                              dbus_BREADY,
-   input [CONFIG_DBUS_DW-1:0]          dbus_BDATA,
-   input                               dbus_BWE,
-   // Sync Uncached D-Bus master
+   input                               dbus_RVALID,
+   output                              dbus_RREADY,
+   input [CONFIG_DBUS_DW-1:0]          dbus_RDATA,
+   // Uncached D-Bus master
    input                               uncached_dbus_AREADY,
    output                              uncached_dbus_AVALID,
    output [`NCPU_AW-1:0]               uncached_dbus_AADDR,
@@ -194,7 +196,8 @@ module ncpu32k_lsu
          .CONFIG_DC_DW                 (`NCPU_DW),
          .CONFIG_DC_DW_BYTES_LOG2      (`NCPU_DW_BYTES_LOG2),
          .CONFIG_DC_P_LINE             (CONFIG_DCACHE_P_LINE),
-         .CONFIG_DC_P_SETS             (CONFIG_DCACHE_P_SETS)
+         .CONFIG_DC_P_SETS             (CONFIG_DCACHE_P_SETS),
+         .CONFIG_DC_P_WAYS             (CONFIG_DCACHE_P_WAYS)
       )
    D_CACHE
       (
@@ -209,18 +212,18 @@ module ncpu32k_lsu
          .tlb_exc                      (cancel),
          .tlb_uncached                 (tlb_uncached),
          .tlb_ppn                      (tlb_ppn),
-         .dbus_clk                     (dbus_clk),
-         .dbus_rst_n                   (dbus_rst_n),
-         .dbus_AREADY                  (dbus_AREADY),
-         .dbus_AVALID                  (dbus_AVALID),
-         .dbus_AADDR                   (dbus_AADDR),
-         .dbus_AWMSK                   (dbus_AWMSK),
-         .dbus_ALEN                    (dbus_ALEN),
+         .dbus_ARWREADY                (dbus_ARWREADY),
+         .dbus_ARWVALID                (dbus_ARWVALID),
+         .dbus_ARWADDR                 (dbus_ARWADDR),
+         .dbus_AWE                     (dbus_AWE),
+         .dbus_WREADY                  (dbus_WREADY),
+         .dbus_WVALID                  (dbus_WVALID),
          .dbus_WDATA                   (dbus_WDATA),
          .dbus_BVALID                  (dbus_BVALID),
          .dbus_BREADY                  (dbus_BREADY),
-         .dbus_BDATA                   (dbus_BDATA),
-         .dbus_BWE                     (dbus_BWE)
+         .dbus_RVALID                  (dbus_RVALID),
+         .dbus_RREADY                  (dbus_RREADY),
+         .dbus_RDATA                   (dbus_RDATA)
       );
 
    // Data path

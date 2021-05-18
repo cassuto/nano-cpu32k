@@ -57,10 +57,12 @@ module soc_toplevel
    parameter CONFIG_CORE_1_ENABLE_DIVU = 0,
    parameter CONFIG_CORE_1_ENABLE_MOD = 0,
    parameter CONFIG_CORE_1_ENABLE_MODU = 0,
+   parameter CONFIG_CORE_1_ENABLE_ASR = 1,
    parameter CONFIG_CORE_1_DMMU_PAGE_SIZE_LOG2 = 13, // 8 KiB
    parameter CONFIG_CORE_1_DTLB_NSETS_LOG2 = 7,
    parameter CONFIG_CORE_1_DCACHE_P_LINE = 6,
-   parameter CONFIG_CORE_1_DCACHE_P_SETS = 6
+   parameter CONFIG_CORE_1_DCACHE_P_SETS = 6,
+   parameter CONFIG_CORE_1_DCACHE_P_WAYS = 2
 )
 (
    input                            CPU_CLK,
@@ -103,16 +105,18 @@ module soc_toplevel
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [3:0]           DRAM_CS_WE_RAS_CAS_L;   // From fb_DRAM_ctrl of pb_fb_DRAM_ctrl.v
-   wire [CONFIG_DBUS_AW-1:0] dbus_AADDR;        // From ncpu32k of ncpu32k.v
-   wire [CONFIG_DCACHE_P_LINE-1:0] dbus_ALEN;   // From ncpu32k of ncpu32k.v
-   wire                 dbus_AREADY;            // From DRAM_SUBSYS of DRAM_subsystem.v
-   wire                 dbus_AVALID;            // From ncpu32k of ncpu32k.v
-   wire [CONFIG_DBUS_DW/8-1:0] dbus_AWMSK;      // From ncpu32k of ncpu32k.v
-   wire [CONFIG_DBUS_DW-1:0] dbus_BDATA;        // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire [CONFIG_DBUS_AW-1:0] dbus_ARWADDR;      // From ncpu32k of ncpu32k.v
+   wire                 dbus_ARWREADY;          // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 dbus_ARWVALID;          // From ncpu32k of ncpu32k.v
+   wire                 dbus_AWE;               // From ncpu32k of ncpu32k.v
    wire                 dbus_BREADY;            // From ncpu32k of ncpu32k.v
    wire                 dbus_BVALID;            // From DRAM_SUBSYS of DRAM_subsystem.v
-   wire                 dbus_BWE;               // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire [CONFIG_DBUS_DW-1:0] dbus_RDATA;        // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 dbus_RREADY;            // From ncpu32k of ncpu32k.v
+   wire                 dbus_RVALID;            // From DRAM_SUBSYS of DRAM_subsystem.v
    wire [CONFIG_DBUS_DW-1:0] dbus_WDATA;        // From ncpu32k of ncpu32k.v
+   wire                 dbus_WREADY;            // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 dbus_WVALID;            // From ncpu32k of ncpu32k.v
    wire [NBUS*`NCPU_AW-1:0] fb_bus_AADDR;       // From fb_router of pb_fb_router.v
    wire [NBUS*`NCPU_DW-1:0] fb_bus_ADATA;       // From fb_router of pb_fb_router.v
    wire [NBUS-1:0]      fb_bus_AVALID;          // From fb_router of pb_fb_router.v
@@ -126,13 +130,12 @@ module soc_toplevel
    wire [`NCPU_DW-1:0]  fb_mbus_BDATA;          // From fb_router of pb_fb_router.v
    wire                 fb_mbus_BREADY;         // From ncpu32k of ncpu32k.v
    wire                 fb_mbus_BVALID;         // From fb_router of pb_fb_router.v
-   wire [CONFIG_IBUS_AW-1:0] ibus_AADDR;        // From ncpu32k of ncpu32k.v
-   wire [CONFIG_ICACHE_P_LINE-1:0] ibus_ALEN;   // From ncpu32k of ncpu32k.v
-   wire                 ibus_AREADY;            // From DRAM_SUBSYS of DRAM_subsystem.v
-   wire                 ibus_AVALID;            // From ncpu32k of ncpu32k.v
-   wire [CONFIG_IBUS_DW-1:0] ibus_BDATA;        // From DRAM_SUBSYS of DRAM_subsystem.v
-   wire                 ibus_BREADY;            // From ncpu32k of ncpu32k.v
-   wire                 ibus_BVALID;            // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire [CONFIG_IBUS_AW-1:0] ibus_ARADDR;       // From ncpu32k of ncpu32k.v
+   wire                 ibus_ARREADY;           // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 ibus_ARVALID;           // From ncpu32k of ncpu32k.v
+   wire [CONFIG_IBUS_DW-1:0] ibus_RDATA;        // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 ibus_RREADY;            // From ncpu32k of ncpu32k.v
+   wire                 ibus_RVALID;            // From DRAM_SUBSYS of DRAM_subsystem.v
    wire                 pb_spi_AREADY;          // From pb_spi_master of soc_pb_spi_master.v
    wire                 pb_spi_BVALID;          // From pb_spi_master of soc_pb_spi_master.v
    wire                 pb_uart_AREADY;         // From pb_uart of soc_pb_uart.v
@@ -174,6 +177,87 @@ module soc_toplevel
    wire [31:0]          pb_uart_ADATA;
    wire [31:0]          pb_uart_BDATA;
    wire                 pb_uart_BREADY;
+
+   /************************************************************
+    * Memory Subsystem
+    ************************************************************/
+   /* UMA_subsystem AUTO_TEMPLATE (
+         .sdr_clk       (SDR_CLK),        // SDRAM clk domain
+         .cpu_clk       (CPU_CLK),        // CPU clk domain
+         .cpu_rst_n     (rst_n),
+      );*/
+   UMA_subsystem
+      #(
+         .CONFIG_SDR_ROW_BITS          (CONFIG_SDR_ROW_BITS),
+         .CONFIG_SDR_BA_BITS           (CONFIG_SDR_BA_BITS),
+         .CONFIG_SDR_COL_BITS          (CONFIG_SDR_COL_BITS),
+         .CONFIG_SDR_DATA_BYTES_LOG2   (CONFIG_SDR_DATA_BYTES_LOG2),
+         .CONFIG_SDR_DATA_BITS         (CONFIG_SDR_DATA_BITS),
+         .CONFIG_ICACHE_P_LINE         (CONFIG_ICACHE_P_LINE),
+         .CONFIG_IBUS_AW               (CONFIG_IBUS_AW),
+         .CONFIG_IBUS_DW               (CONFIG_IBUS_DW),
+         .CONFIG_DBUS_AW               (CONFIG_DBUS_AW),
+         .CONFIG_DBUS_DW               (CONFIG_DBUS_DW),
+         .CONFIG_DCACHE_P_LINE         (CONFIG_CORE_1_DCACHE_P_LINE)
+      )
+   UMA_SUBSYS
+      (/*AUTOINST*/
+       // Outputs
+       .ibus_ARREADY                    (ibus_ARREADY),
+       .ibus_RVALID                     (ibus_RVALID),
+       .ibus_RDATA                      (ibus_RDATA[CONFIG_IBUS_DW-1:0]),
+       .dbus_ARWREADY                   (dbus_ARWREADY),
+       .dbus_WREADY                     (dbus_WREADY),
+       .dbus_BVALID                     (dbus_BVALID),
+       .dbus_RVALID                     (dbus_RVALID),
+       .dbus_RDATA                      (dbus_RDATA[CONFIG_DBUS_DW-1:0]),
+       .sdr_cmd_bst_we_req              (sdr_cmd_bst_we_req),
+       .sdr_cmd_bst_rd_req              (sdr_cmd_bst_rd_req),
+       .sdr_cmd_addr                    (sdr_cmd_addr[CONFIG_SDR_ROW_BITS+CONFIG_SDR_BA_BITS+CONFIG_SDR_COL_BITS-1:0]),
+       .sdr_din                         (sdr_din[CONFIG_SDR_DATA_BITS-1:0]),
+       .bootrom_en                      (bootrom_en),
+       .bootrom_addr                    (bootrom_addr[CONFIG_IBUS_AW-1:0]),
+       // Inputs
+       .sdr_clk                         (SDR_CLK),               // Templated
+       .sdr_rst_n                       (sdr_rst_n),
+       .cpu_clk                         (CPU_CLK),               // Templated
+       .cpu_rst_n                       (rst_n),                 // Templated
+       .ibus_ARVALID                    (ibus_ARVALID),
+       .ibus_ARADDR                     (ibus_ARADDR[CONFIG_IBUS_AW-1:0]),
+       .ibus_ASEL_BOOTROM               (ibus_ASEL_BOOTROM),
+       .ibus_RREADY                     (ibus_RREADY),
+       .dbus_ARWVALID                   (dbus_ARWVALID),
+       .dbus_ARWADDR                    (dbus_ARWADDR[CONFIG_DBUS_AW-1:0]),
+       .dbus_AWE                        (dbus_AWE),
+       .dbus_WVALID                     (dbus_WVALID),
+       .dbus_WDATA                      (dbus_WDATA[CONFIG_DBUS_DW-1:0]),
+       .dbus_BREADY                     (dbus_BREADY),
+       .dbus_RREADY                     (dbus_RREADY),
+       .sdr_cmd_bst_we_ack              (sdr_cmd_bst_we_ack),
+       .sdr_cmd_bst_rd_ack              (sdr_cmd_bst_rd_ack),
+       .sdr_dout                        (sdr_dout[CONFIG_SDR_DATA_BITS-1:0]),
+       .sdr_r_vld                       (sdr_r_vld),
+       .sdr_w_rdy                       (sdr_w_rdy),
+       .bootrom_dout                    (bootrom_dout[CONFIG_IBUS_DW-1:0]));
+
+   /************************************************************
+    * Bootrom
+    ************************************************************/
+   pb_fb_bootrom
+      #(
+         .CONFIG_IBUS_DW               (CONFIG_IBUS_DW),
+         .CONFIG_IBUS_BYTES_LOG2       (CONFIG_IBUS_BYTES_LOG2),
+         .CONFIG_IBUS_AW               (CONFIG_IBUS_AW),
+         .CONFIG_BOOTROM_AW            (CONFIG_BOOTM_AW),
+         .CONFIG_BOOTROM_MEMH_FILE     (CONFIG_BOOTM_MEMH_FILE)
+      )
+   BOOTROM
+      (
+         .clk                          (CPU_CLK),
+         .en                           (bootrom_en),
+         .addr                         (bootrom_addr),
+         .dout                         (bootrom_dout)
+      );
 
    /************************************************************
     * SDRAM Controller
@@ -229,63 +313,6 @@ module soc_toplevel
       } = DRAM_CS_WE_RAS_CAS_L;
 
    /************************************************************
-    * DRAM Subsystem
-    ************************************************************/
-   /* DRAM_subsystem AUTO_TEMPLATE (
-         .sdr_clk       (SDR_CLK),        // SDRAM clk domain
-      );*/
-   DRAM_subsystem
-      #(
-         .CONFIG_SDR_ROW_BITS          (CONFIG_SDR_ROW_BITS),
-         .CONFIG_SDR_BA_BITS           (CONFIG_SDR_BA_BITS),
-         .CONFIG_SDR_COL_BITS          (CONFIG_SDR_COL_BITS),
-         .CONFIG_SDR_DATA_BYTES_LOG2   (CONFIG_SDR_DATA_BYTES_LOG2),
-         .CONFIG_SDR_DATA_BITS         (CONFIG_SDR_DATA_BITS),
-         .CONFIG_ICACHE_P_LINE         (CONFIG_ICACHE_P_LINE),
-         .CONFIG_IBUS_AW               (CONFIG_IBUS_AW),
-         .CONFIG_IBUS_DW               (CONFIG_IBUS_DW),
-         .CONFIG_DBUS_AW               (CONFIG_DBUS_AW),
-         .CONFIG_DBUS_DW               (CONFIG_DBUS_DW),
-         .CONFIG_DCACHE_P_LINE         (CONFIG_CORE_1_DCACHE_P_LINE)
-      )
-   DRAM_SUBSYS
-      (/*AUTOINST*/
-       // Outputs
-       .ibus_AREADY                     (ibus_AREADY),
-       .ibus_BVALID                     (ibus_BVALID),
-       .ibus_BDATA                      (ibus_BDATA[CONFIG_IBUS_DW-1:0]),
-       .dbus_AREADY                     (dbus_AREADY),
-       .dbus_BVALID                     (dbus_BVALID),
-       .dbus_BDATA                      (dbus_BDATA[CONFIG_DBUS_DW-1:0]),
-       .dbus_BWE                        (dbus_BWE),
-       .sdr_cmd_bst_we_req              (sdr_cmd_bst_we_req),
-       .sdr_cmd_bst_rd_req              (sdr_cmd_bst_rd_req),
-       .sdr_cmd_addr                    (sdr_cmd_addr[CONFIG_SDR_ROW_BITS+CONFIG_SDR_BA_BITS+CONFIG_SDR_COL_BITS-1:0]),
-       .sdr_din                         (sdr_din[CONFIG_SDR_DATA_BITS-1:0]),
-       .bootrom_en                      (bootrom_en),
-       .bootrom_addr                    (bootrom_addr[CONFIG_IBUS_AW-1:0]),
-       // Inputs
-       .sdr_clk                         (SDR_CLK),               // Templated
-       .sdr_rst_n                       (sdr_rst_n),
-       .ibus_AVALID                     (ibus_AVALID),
-       .ibus_AADDR                      (ibus_AADDR[CONFIG_IBUS_AW-1:0]),
-       .ibus_ASEL_BOOTROM               (ibus_ASEL_BOOTROM),
-       .ibus_ALEN                       (ibus_ALEN[CONFIG_ICACHE_P_LINE-1:0]),
-       .ibus_BREADY                     (ibus_BREADY),
-       .dbus_AVALID                     (dbus_AVALID),
-       .dbus_AADDR                      (dbus_AADDR[CONFIG_DBUS_AW-1:0]),
-       .dbus_AWMSK                      (dbus_AWMSK[CONFIG_DBUS_DW/8-1:0]),
-       .dbus_ALEN                       (dbus_ALEN[CONFIG_DCACHE_P_LINE-1:0]),
-       .dbus_WDATA                      (dbus_WDATA[CONFIG_DBUS_DW-1:0]),
-       .dbus_BREADY                     (dbus_BREADY),
-       .sdr_cmd_bst_we_ack              (sdr_cmd_bst_we_ack),
-       .sdr_cmd_bst_rd_ack              (sdr_cmd_bst_rd_ack),
-       .sdr_dout                        (sdr_dout[CONFIG_SDR_DATA_BITS-1:0]),
-       .sdr_r_vld                       (sdr_r_vld),
-       .sdr_w_rdy                       (sdr_w_rdy),
-       .bootrom_dout                    (bootrom_dout[CONFIG_IBUS_DW-1:0]));
-
-   /************************************************************
     * Frontend bus Router
     ************************************************************/
    /* pb_fb_router AUTO_TEMPLATE (
@@ -322,7 +349,7 @@ module soc_toplevel
    // Bus address mapping
    //             (Type Start       End   )
    // BootROM     (I 0x02000000~)
-   assign ibus_ASEL_BOOTROM = ibus_AADDR[CONFIG_IBUS_AW-1];
+   assign ibus_ASEL_BOOTROM = ibus_ARADDR[CONFIG_IBUS_AW-1];
    // SPI Master  (D 0x80000000~0x80FFFFFF)
    assign fb_bus_sel[0] = fb_mbus_AADDR[`NCPU_AW-1 -:8]==8'h80;
    // UART        (D 0x81000000~0x81FFFFFF)
@@ -375,25 +402,6 @@ module soc_toplevel
          pb_uart_AREADY,
          pb_spi_AREADY
       };
-
-   /************************************************************
-    * Bootrom
-    ************************************************************/
-   pb_fb_bootrom
-      #(
-         .CONFIG_IBUS_DW               (CONFIG_IBUS_DW),
-         .CONFIG_IBUS_BYTES_LOG2       (CONFIG_IBUS_BYTES_LOG2),
-         .CONFIG_IBUS_AW               (CONFIG_IBUS_AW),
-         .CONFIG_BOOTROM_AW            (CONFIG_BOOTM_AW),
-         .CONFIG_BOOTROM_MEMH_FILE     (CONFIG_BOOTM_MEMH_FILE)
-      )
-   BOOTROM
-      (
-         .clk                          (SDR_CLK),
-         .en                           (bootrom_en),
-         .addr                         (bootrom_addr),
-         .dout                         (bootrom_dout)
-      );
 
    /************************************************************
     * SPI Master Controller
@@ -453,10 +461,6 @@ module soc_toplevel
     ************************************************************/
    /* ncpu32k AUTO_TEMPLATE (
          .clk                          (CPU_CLK), // CPU clk domain
-         .dbus_clk                     (SDR_CLK), // SDRAM clk domain
-         .dbus_rst_n                   (sdr_rst_n),
-         .ibus_clk                     (SDR_CLK), // SDRAM clk domain
-         .ibus_rst_n                   (sdr_rst_n),
          .uncached_dbus_AVALID         (fb_mbus_AVALID),
          .uncached_dbus_AREADY         (fb_mbus_AREADY),
          .uncached_dbus_AADDR          (fb_mbus_AADDR[`NCPU_AW-1:0]),
@@ -483,6 +487,7 @@ module soc_toplevel
       .CONFIG_ENABLE_DIVU              (CONFIG_CORE_1_ENABLE_DIVU),
       .CONFIG_ENABLE_MOD               (CONFIG_CORE_1_ENABLE_MOD),
       .CONFIG_ENABLE_MODU              (CONFIG_CORE_1_ENABLE_MODU),
+      .CONFIG_ENABLE_ASR               (CONFIG_CORE_1_ENABLE_ASR),
       .CONFIG_DBUS_DW                  (CONFIG_DBUS_DW),
       .CONFIG_DBUS_BYTES_LOG2          (CONFIG_DBUS_BYTES_LOG2),
       .CONFIG_DBUS_AW                  (CONFIG_DBUS_AW),
@@ -491,21 +496,22 @@ module soc_toplevel
       .CONFIG_DTLB_NSETS_LOG2          (CONFIG_CORE_1_DTLB_NSETS_LOG2),
       .CONFIG_DCACHE_P_LINE            (CONFIG_CORE_1_DCACHE_P_LINE),
       .CONFIG_DCACHE_P_SETS            (CONFIG_CORE_1_DCACHE_P_SETS),
+      .CONFIG_DCACHE_P_WAYS            (CONFIG_CORE_1_DCACHE_P_WAYS),
       .CONFIG_ERST_VECTOR              (CONFIG_BOOTM_ERST)
      )
    ncpu32k
      (/*AUTOINST*/
       // Outputs
-      .ibus_AVALID                      (ibus_AVALID),
-      .ibus_AADDR                       (ibus_AADDR[CONFIG_IBUS_AW-1:0]),
-      .ibus_ALEN                        (ibus_ALEN[CONFIG_ICACHE_P_LINE-1:0]),
-      .ibus_BREADY                      (ibus_BREADY),
-      .dbus_AVALID                      (dbus_AVALID),
-      .dbus_AADDR                       (dbus_AADDR[CONFIG_DBUS_AW-1:0]),
-      .dbus_AWMSK                       (dbus_AWMSK[CONFIG_DBUS_DW/8-1:0]),
-      .dbus_ALEN                        (dbus_ALEN[CONFIG_DCACHE_P_LINE-1:0]),
+      .ibus_ARVALID                     (ibus_ARVALID),
+      .ibus_ARADDR                      (ibus_ARADDR[CONFIG_IBUS_AW-1:0]),
+      .ibus_RREADY                      (ibus_RREADY),
+      .dbus_ARWVALID                    (dbus_ARWVALID),
+      .dbus_ARWADDR                     (dbus_ARWADDR[CONFIG_DBUS_AW-1:0]),
+      .dbus_AWE                         (dbus_AWE),
+      .dbus_WVALID                      (dbus_WVALID),
       .dbus_WDATA                       (dbus_WDATA[CONFIG_DBUS_DW-1:0]),
       .dbus_BREADY                      (dbus_BREADY),
+      .dbus_RREADY                      (dbus_RREADY),
       .uncached_dbus_AVALID             (fb_mbus_AVALID),        // Templated
       .uncached_dbus_AADDR              (fb_mbus_AADDR[`NCPU_AW-1:0]), // Templated
       .uncached_dbus_AWMSK              (fb_mbus_AWMSK[`NCPU_DW/8-1:0]), // Templated
@@ -514,17 +520,14 @@ module soc_toplevel
       // Inputs
       .clk                              (CPU_CLK),               // Templated
       .rst_n                            (rst_n),
-      .ibus_clk                         (SDR_CLK),               // Templated
-      .ibus_rst_n                       (sdr_rst_n),             // Templated
-      .ibus_AREADY                      (ibus_AREADY),
-      .ibus_BVALID                      (ibus_BVALID),
-      .ibus_BDATA                       (ibus_BDATA[CONFIG_IBUS_DW-1:0]),
-      .dbus_clk                         (SDR_CLK),               // Templated
-      .dbus_rst_n                       (sdr_rst_n),             // Templated
-      .dbus_AREADY                      (dbus_AREADY),
+      .ibus_ARREADY                     (ibus_ARREADY),
+      .ibus_RVALID                      (ibus_RVALID),
+      .ibus_RDATA                       (ibus_RDATA[CONFIG_IBUS_DW-1:0]),
+      .dbus_ARWREADY                    (dbus_ARWREADY),
+      .dbus_WREADY                      (dbus_WREADY),
       .dbus_BVALID                      (dbus_BVALID),
-      .dbus_BDATA                       (dbus_BDATA[CONFIG_DBUS_DW-1:0]),
-      .dbus_BWE                         (dbus_BWE),
+      .dbus_RVALID                      (dbus_RVALID),
+      .dbus_RDATA                       (dbus_RDATA[CONFIG_DBUS_DW-1:0]),
       .uncached_dbus_AREADY             (fb_mbus_AREADY),        // Templated
       .uncached_dbus_BVALID             (fb_mbus_BVALID),        // Templated
       .uncached_dbus_BDATA              (fb_mbus_BDATA[`NCPU_DW-1:0]), // Templated

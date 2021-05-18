@@ -32,8 +32,8 @@ module pb_fb_DRAM_ctrl
    parameter nCAS_Latency = 3, // CAS latency
 
    // Burst Length
-   parameter [6:0] BRUST_RD_LENGTH = 7'h20, // 32 x CONFIG_SDR_DATA_BITS bits
-   parameter [6:0] BRUST_WE_LENGTH = 7'h20  // 32 x CONFIG_SDR_DATA_BITS bits
+   parameter [6:0] BRUST_RD_WORDS = 7'h20, // 32 x CONFIG_SDR_DATA_BITS bits
+   parameter [6:0] BRUST_WE_WORDS = 7'h20  // 32 x CONFIG_SDR_DATA_BITS bits
 )
 (
    input                            sdr_clk,
@@ -260,7 +260,7 @@ module pb_fb_DRAM_ctrl
                else
                   DRAM_CS_WE_RAS_CAS_L <= 4'b0010; // WRITE
                status_ret_r <= S_END_WRITE_READ;
-               status_delay_r <= sdr_cmd_bst_rd_ack ? BRUST_RD_LENGTH - 7'h6 : BRUST_WE_LENGTH - 7'h2;
+               status_delay_r <= sdr_cmd_bst_rd_ack ? BRUST_RD_WORDS - 7'h6 : BRUST_WE_WORDS - 7'h2;
             end
 
          endcase

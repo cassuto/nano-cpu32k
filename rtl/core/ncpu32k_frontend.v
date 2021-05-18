@@ -45,16 +45,13 @@ module ncpu32k_frontend
    (
       input                      clk,
       input                      rst_n,
-      // Async I-Bus Master
-      input                      ibus_clk,
-      input                      ibus_rst_n,
-      input                      ibus_AREADY,
-      output                     ibus_AVALID,
-      output [CONFIG_IBUS_AW-1:0] ibus_AADDR,
-      output [CONFIG_ICACHE_P_LINE-1:0] ibus_ALEN,
-      output                     ibus_BREADY,
-      input                      ibus_BVALID,
-      input [CONFIG_IBUS_DW-1:0] ibus_BDATA,
+      // I-Bus Master
+      input                      ibus_ARREADY,
+      output                     ibus_ARVALID,
+      output [CONFIG_IBUS_AW-1:0] ibus_ARADDR,
+      output                     ibus_RREADY,
+      input                      ibus_RVALID,
+      input [CONFIG_IBUS_DW-1:0] ibus_RDATA,
       // Flush
       input                      flush,
       input [`NCPU_AW-3:0]       flush_tgt,
@@ -178,15 +175,12 @@ module ncpu32k_frontend
          .dout_vld               (insn_pkt_vld),
          .dout_rdy               (insn_pkt_rdy),
          .stall_pc               (stall_pc),
-         .ibus_clk               (ibus_clk),
-         .ibus_rst_n             (ibus_rst_n),
-         .ibus_AREADY            (ibus_AREADY),
-         .ibus_AVALID            (ibus_AVALID),
-         .ibus_AADDR             (ibus_AADDR),
-         .ibus_ALEN              (ibus_ALEN),
-         .ibus_BVALID            (ibus_BVALID),
-         .ibus_BREADY            (ibus_BREADY),
-         .ibus_BDATA             (ibus_BDATA)
+         .ibus_ARREADY            (ibus_ARREADY),
+         .ibus_ARVALID            (ibus_ARVALID),
+         .ibus_ARADDR             (ibus_ARADDR),
+         .ibus_RVALID            (ibus_RVALID),
+         .ibus_RREADY            (ibus_RREADY),
+         .ibus_RDATA             (ibus_RDATA)
       );
 
    assign ic_re = (~stall_pc & ~stall_fnt);

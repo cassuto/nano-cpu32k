@@ -22,6 +22,10 @@
 `ifdef NCPU_ENABLE_TRACER
 
 module ncpu32k_tracer
+#(
+   parameter CONFIG_DBUS_AW
+   `PARAM_NOT_SPECIFIED
+)
 (
    input                      clk,
    input                      stall_bck,
@@ -43,23 +47,41 @@ module ncpu32k_tracer
 `ifndef SYNTHESIS
 
    integer fp_trace;
-   integer fp_trace_org;
-   integer feof_trace_org;
+   integer fp_trace_arf;
+   integer fp_trace_lsu;
+   integer feof_trace_arf;
+   integer feof_trace_lsu;
+   integer cfg_enable_compare;
    integer cfg_log_on_display;
+   integer cfg_log_on_file;
+   integer cfg_terminate_when_mismatch;
 
    initial
       begin
-         fp_trace = $fopen("trace_sim.txt", "w");
-         fp_trace_org = $fopen("trace_org.txt", "r");
-         feof_trace_org = 0;
-         if (!fp_trace_org)
-            begin
-               $display("Warning: Can't not open trace source file to compare the result!");
-               feof_trace_org = 1;
-            end
-
          // Configurations
-         cfg_log_on_display = 0;
+         cfg_enable_compare = 0;
+         cfg_log_on_display = 1;
+         cfg_log_on_file = 0;
+         cfg_terminate_when_mismatch = 1;
+
+         if (cfg_log_on_file)
+            fp_trace = $fopen("trace_sim.txt", "w");
+         
+         fp_trace_arf = $fopen("traces/coremark.arf", "r");
+         feof_trace_arf = 0;
+         if (!fp_trace_arf)
+            begin
+               $display("Warning: Can't not open trace source file for ARF to compare the result!");
+               feof_trace_arf = 1;
+            end
+         
+         fp_trace_lsu = $fopen("traces/coremark.lsu", "r");
+         feof_trace_lsu = 0;
+         if (!fp_trace_lsu)
+            begin
+               $display("Warning: Can't not open trace source file for LSU to compare the result!");
+               feof_trace_lsu = 1;
+            end
       end
 
    //
@@ -69,40 +91,99 @@ module ncpu32k_tracer
       input [`NCPU_REG_AW-1:0]   wb_rd_addr;
       input [`NCPU_DW-1:0]       wb_dout;
       input [`NCPU_AW-3:0]       wb_pc;
-      begin : cmp_arf
-         integer org_wb_pc;
-         integer org_wb_rd_addr;
-         integer org_wb_dout;
+      if (cfg_enable_compare)
+         begin : cmp_arf
+            integer org_wb_pc;
+            integer org_wb_rd_addr;
+            integer org_wb_dout;
 
-         $fwrite(fp_trace, "%08x %02x %08x\n", wb_pc*4, wb_rd_addr, wb_dout);
+            if (cfg_log_on_file)
+               $fwrite(fp_trace, "%08x %02x %08x\n", wb_pc*4, wb_rd_addr, wb_dout);
 
-         if (!feof_trace_org)
-            if ($fscanf(fp_trace_org, "%x %x %x", org_wb_pc, org_wb_rd_addr, org_wb_dout) != 3)
-               feof_trace_org = 1;
+            if (!feof_trace_arf)
+               if ($fscanf(fp_trace_arf, "%x %x %x", org_wb_pc, org_wb_rd_addr, org_wb_dout) != 3)
+                  feof_trace_arf = 1;
 
-         if (feof_trace_org)
-            begin
-               if (cfg_log_on_display)
-                  $display("UNKNOWN %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
-            end
-         else
-            begin
-               if (org_wb_pc != wb_pc*4 ||
-                  org_wb_rd_addr != wb_rd_addr ||
-                  org_wb_dout != wb_dout)
-                  begin
-                     if (cfg_log_on_display)
-                        $display("DIE %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
-                     $fatal(1, "Expected %08x %02x %08x",
-                           org_wb_pc, org_wb_rd_addr, org_wb_dout);
-                  end
-               else
-                  begin
-                     if (cfg_log_on_display)
-                        $display("PASS %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
-                  end
-            end
-      end
+            if (feof_trace_arf)
+               begin
+                  if (cfg_log_on_display)
+                     $display("UNKNOWN %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
+               end
+            else
+               begin
+                  if (org_wb_pc != wb_pc*4 ||
+                     org_wb_rd_addr != wb_rd_addr ||
+                     org_wb_dout != wb_dout)
+                     begin
+                        if (cfg_log_on_display)
+                           $display("DIE %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
+
+                        if (cfg_terminate_when_mismatch)
+                           $fatal(1, "Expected %08x %02x %08x",
+                                 org_wb_pc, org_wb_rd_addr, org_wb_dout);
+                        else
+                           $display("Expected %08x %02x %08x",
+                                 org_wb_pc, org_wb_rd_addr, org_wb_dout);
+                     end
+                  else
+                     begin
+                        if (cfg_log_on_display)
+                           $display("PASS %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
+                     end
+               end
+         end
+   endtask
+
+   //
+   // Compare LSU operation sequence with given trace file
+   //
+   task trace_compare_lsu;
+      input [CONFIG_DBUS_AW-1:0] paddr;
+      input                      lsu_store;
+      input [2:0]                lsu_size;
+      input [`NCPU_DW-1:0]       lsu_val;
+      input [`NCPU_AW-3:0]       lsu_pc;
+      if (cfg_enable_compare)
+         begin : cmp_arf
+            /*integer org_wb_pc;
+            integer org_wb_rd_addr;
+            integer org_wb_dout;
+
+            if (cfg_log_on_file)
+               $fwrite(fp_trace, "%08x %02x %08x\n", wb_pc*4, wb_rd_addr, wb_dout);
+
+            if (!feof_trace_arf)
+               if ($fscanf(fp_trace_arf, "%x %x %x", org_wb_pc, org_wb_rd_addr, org_wb_dout) != 3)
+                  feof_trace_arf = 1;
+
+            if (feof_trace_arf)
+               begin
+                  if (cfg_log_on_display)
+                     $display("UNKNOWN %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
+               end
+            else
+               begin
+                  if (org_wb_pc != wb_pc*4 ||
+                     org_wb_rd_addr != wb_rd_addr ||
+                     org_wb_dout != wb_dout)
+                     begin
+                        if (cfg_log_on_display)
+                           $display("DIE %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
+
+                        if (cfg_terminate_when_mismatch)
+                           $fatal(1, "Expected %08x %02x %08x",
+                                 org_wb_pc, org_wb_rd_addr, org_wb_dout);
+                        else
+                           $display("Expected %08x %02x %08x",
+                                 org_wb_pc, org_wb_rd_addr, org_wb_dout);
+                     end
+                  else
+                     begin
+                        if (cfg_log_on_display)
+                           $display("PASS %08x %02x %08x", wb_pc*4, wb_rd_addr, wb_dout);
+                     end
+               end*/
+         end
    endtask
 
    always @(posedge clk)

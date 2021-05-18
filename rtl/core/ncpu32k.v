@@ -57,6 +57,8 @@ module ncpu32k
    `PARAM_NOT_SPECIFIED ,
    parameter CONFIG_ENABLE_MODU
    `PARAM_NOT_SPECIFIED ,
+   parameter CONFIG_ENABLE_ASR
+   `PARAM_NOT_SPECIFIED ,
    parameter CONFIG_DBUS_DW
    `PARAM_NOT_SPECIFIED ,
    parameter CONFIG_DBUS_BYTES_LOG2
@@ -72,33 +74,32 @@ module ncpu32k
    parameter CONFIG_DCACHE_P_LINE
    `PARAM_NOT_SPECIFIED , /* = log2(Size of a line) */
    parameter CONFIG_DCACHE_P_SETS
-   `PARAM_NOT_SPECIFIED   /* = log2(Number of sets) */
+   `PARAM_NOT_SPECIFIED , /* = log2(Number of sets) */
+   parameter CONFIG_DCACHE_P_WAYS
+   `PARAM_NOT_SPECIFIED /* = log2(Number of ways) */
 ) (
    input                               clk,
    input                               rst_n,
-   // Async I-Bus Master
-   input                               ibus_clk,
-   input                               ibus_rst_n,
-   input                               ibus_AREADY,
-   output                              ibus_AVALID,
-   output [CONFIG_IBUS_AW-1:0]         ibus_AADDR,
-   output [CONFIG_ICACHE_P_LINE-1:0]   ibus_ALEN,
-   output                              ibus_BREADY,
-   input                               ibus_BVALID,
-   input [CONFIG_IBUS_DW-1:0]          ibus_BDATA,
-   // Async D-Bus Master
-   input                               dbus_clk,
-   input                               dbus_rst_n,   
-   input                               dbus_AREADY,
-   output                              dbus_AVALID,
-   output [CONFIG_DBUS_AW-1:0]         dbus_AADDR,
-   output [CONFIG_DBUS_DW/8-1:0]       dbus_AWMSK,
-   output [CONFIG_DCACHE_P_LINE-1:0]   dbus_ALEN,
+   // I-Bus Master
+   input                               ibus_ARREADY,
+   output                              ibus_ARVALID,
+   output [CONFIG_IBUS_AW-1:0]         ibus_ARADDR,
+   output                              ibus_RREADY,
+   input                               ibus_RVALID,
+   input [CONFIG_IBUS_DW-1:0]          ibus_RDATA,
+   // D-Bus Master
+   input                               dbus_ARWREADY,
+   output                              dbus_ARWVALID,
+   output [CONFIG_DBUS_AW-1:0]         dbus_ARWADDR,
+   output                              dbus_AWE,
+   input                               dbus_WREADY,
+   output                              dbus_WVALID,
    output [CONFIG_DBUS_DW-1:0]         dbus_WDATA,
    input                               dbus_BVALID,
    output                              dbus_BREADY,
-   input [CONFIG_DBUS_DW-1:0]          dbus_BDATA,
-   input                               dbus_BWE,
+   input                               dbus_RVALID,
+   output                              dbus_RREADY,
+   input [CONFIG_DBUS_DW-1:0]          dbus_RDATA,
    // Sync Uncached D-Bus master
    input                               uncached_dbus_AREADY,
    output                              uncached_dbus_AVALID,
@@ -232,10 +233,9 @@ module ncpu32k
    FRONTEND
       (/*AUTOINST*/
        // Outputs
-       .ibus_AVALID                     (ibus_AVALID),
-       .ibus_AADDR                      (ibus_AADDR[CONFIG_IBUS_AW-1:0]),
-       .ibus_ALEN                       (ibus_ALEN[CONFIG_ICACHE_P_LINE-1:0]),
-       .ibus_BREADY                     (ibus_BREADY),
+       .ibus_ARVALID                     (ibus_ARVALID),
+       .ibus_ARADDR                      (ibus_ARADDR[CONFIG_IBUS_AW-1:0]),
+       .ibus_RREADY                     (ibus_RREADY),
        .idu_1_insn_vld                  (idu_1_insn_vld),
        .idu_1_insn                      (idu_1_insn[`NCPU_IW-1:0]),
        .idu_1_pc                        (idu_1_pc[`NCPU_AW-3:0]),
@@ -255,11 +255,9 @@ module ncpu32k
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .ibus_clk                        (ibus_clk),
-       .ibus_rst_n                      (ibus_rst_n),
-       .ibus_AREADY                     (ibus_AREADY),
-       .ibus_BVALID                     (ibus_BVALID),
-       .ibus_BDATA                      (ibus_BDATA[CONFIG_IBUS_DW-1:0]),
+       .ibus_ARREADY                     (ibus_ARREADY),
+       .ibus_RVALID                     (ibus_RVALID),
+       .ibus_RDATA                      (ibus_RDATA[CONFIG_IBUS_DW-1:0]),
        .flush                           (flush),
        .flush_tgt                       (flush_tgt[`NCPU_AW-3:0]),
        .stall_fnt                       (stall_fnt),
@@ -290,6 +288,7 @@ module ncpu32k
          .CONFIG_ENABLE_DIVU           (CONFIG_ENABLE_DIVU),
          .CONFIG_ENABLE_MOD            (CONFIG_ENABLE_MOD),
          .CONFIG_ENABLE_MODU           (CONFIG_ENABLE_MODU),
+         .CONFIG_ENABLE_ASR            (CONFIG_ENABLE_ASR),
          .BPU_UPD_DW                   (BPU_UPD_DW),
          .CPUID_VER                    (1),
          .CPUID_REV                    (0),
@@ -317,7 +316,8 @@ module ncpu32k
          .CONFIG_DMMU_ENABLE_UNCACHED_SEG (CONFIG_DMMU_ENABLE_UNCACHED_SEG),
          .CONFIG_DTLB_NSETS_LOG2       (CONFIG_DTLB_NSETS_LOG2),
          .CONFIG_DCACHE_P_LINE         (CONFIG_DCACHE_P_LINE),
-         .CONFIG_DCACHE_P_SETS         (CONFIG_DCACHE_P_SETS)
+         .CONFIG_DCACHE_P_SETS         (CONFIG_DCACHE_P_SETS),
+         .CONFIG_DCACHE_P_WAYS         (CONFIG_DCACHE_P_WAYS)
       )
    BACKEND
       (/*AUTOINST*/
@@ -332,12 +332,13 @@ module ncpu32k
        .bpu_wb_pc                       (bpu_wb_pc[`NCPU_AW-3:0]),
        .bpu_wb_pc_nxt_act               (bpu_wb_pc_nxt_act[`NCPU_AW-3:0]),
        .bpu_wb_upd                      (bpu_wb_upd[BPU_UPD_DW-1:0]),
-       .dbus_AVALID                     (dbus_AVALID),
-       .dbus_AADDR                      (dbus_AADDR[CONFIG_DBUS_AW-1:0]),
-       .dbus_AWMSK                      (dbus_AWMSK[CONFIG_DBUS_DW/8-1:0]),
-       .dbus_ALEN                       (dbus_ALEN[CONFIG_DCACHE_P_LINE-1:0]),
+       .dbus_ARWVALID                   (dbus_ARWVALID),
+       .dbus_ARWADDR                    (dbus_ARWADDR[CONFIG_DBUS_AW-1:0]),
+       .dbus_AWE                        (dbus_AWE),
+       .dbus_WVALID                     (dbus_WVALID),
        .dbus_WDATA                      (dbus_WDATA[CONFIG_DBUS_DW-1:0]),
        .dbus_BREADY                     (dbus_BREADY),
+       .dbus_RREADY                     (dbus_RREADY),
        .uncached_dbus_AVALID            (uncached_dbus_AVALID),
        .uncached_dbus_AADDR             (uncached_dbus_AADDR[`NCPU_AW-1:0]),
        .uncached_dbus_AWMSK             (uncached_dbus_AWMSK[`NCPU_DW/8-1:0]),
@@ -377,12 +378,11 @@ module ncpu32k
        .idu_2_EITM                      (idu_2_EITM),
        .idu_2_EIPF                      (idu_2_EIPF),
        .idu_bpu_pc_nxt                  (idu_bpu_pc_nxt[`NCPU_AW-3:0]),
-       .dbus_clk                        (dbus_clk),
-       .dbus_rst_n                      (dbus_rst_n),
-       .dbus_AREADY                     (dbus_AREADY),
+       .dbus_ARWREADY                   (dbus_ARWREADY),
+       .dbus_WREADY                     (dbus_WREADY),
        .dbus_BVALID                     (dbus_BVALID),
-       .dbus_BDATA                      (dbus_BDATA[CONFIG_DBUS_DW-1:0]),
-       .dbus_BWE                        (dbus_BWE),
+       .dbus_RVALID                     (dbus_RVALID),
+       .dbus_RDATA                      (dbus_RDATA[CONFIG_DBUS_DW-1:0]),
        .uncached_dbus_AREADY            (uncached_dbus_AREADY),
        .uncached_dbus_BVALID            (uncached_dbus_BVALID),
        .uncached_dbus_BDATA             (uncached_dbus_BDATA[`NCPU_DW-1:0]),

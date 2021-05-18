@@ -16,6 +16,10 @@
 `include "ncpu32k_config.h"
 
 module ncpu32k_alu
+#(
+   parameter CONFIG_ENABLE_ASR
+   `PARAM_NOT_SPECIFIED
+)
 (
 `ifdef NCPU_ENABLE_ASSERT
    input                      clk,
@@ -48,9 +52,17 @@ module ncpu32k_alu
    //
    // Adder
    //
+/*
    assign adder_sub = alu_opc_bus[`NCPU_ALU_SUB];
    assign adder_op2 = adder_sub ? ~alu_operand2 : alu_operand2;
    assign dat_adder = alu_operand1 + adder_op2 + {{`NCPU_DW-1{1'b0}}, adder_sub};
+   assign sel_adder = (alu_opc_bus[`NCPU_ALU_ADD] | alu_opc_bus[`NCPU_ALU_SUB]);
+*/
+   //assign adder_sub = alu_opc_bus[`NCPU_ALU_SUB];
+   //assign adder_op2 = adder_sub ? ~alu_operand2 : alu_operand2;
+   assign dat_adder = alu_opc_bus[`NCPU_ALU_ADD]
+                        ? alu_operand1 + alu_operand2
+                        : alu_operand1 - alu_operand2;
    assign sel_adder = (alu_opc_bus[`NCPU_ALU_ADD] | alu_opc_bus[`NCPU_ALU_SUB]);
 
    //
@@ -81,15 +93,18 @@ module ncpu32k_alu
    endfunction
 
    assign shift_lsw = alu_opc_bus[`NCPU_ALU_LSL] ? reverse_bits(alu_operand1) : alu_operand1;
-`ifdef ENABLE_ASR
-   wire [`NCPU_DW-1:0] shift_msw;
-   wire [`NCPU_DW*2-1:0] shift_wide;
-   assign shift_msw = alu_opc_bus[`NCPU_ALU_ASR] ? {`NCPU_DW{alu_operand1[`NCPU_DW-1]}} : {`NCPU_DW{1'b0}};
-   assign shift_wide = {shift_msw, shift_lsw} >> alu_operand2[4:0];
-   assign shift_right = shift_wide[`NCPU_DW-1:0];
-`else
-   assign shift_right = shift_lsw >> alu_operand2[4:0];
-`endif
+generate
+   if (CONFIG_ENABLE_ASR)
+      begin : gen_asr
+         wire [`NCPU_DW-1:0] shift_msw;
+         wire [`NCPU_DW*2-1:0] shift_wide;
+         assign shift_msw = alu_opc_bus[`NCPU_ALU_ASR] ? {`NCPU_DW{alu_operand1[`NCPU_DW-1]}} : {`NCPU_DW{1'b0}};
+         assign shift_wide = {shift_msw, shift_lsw} >> alu_operand2[4:0];
+         assign shift_right = shift_wide[`NCPU_DW-1:0];
+      end
+   else
+      assign shift_right = shift_lsw >> alu_operand2[4:0];
+endgenerate
    assign dat_shifter = alu_opc_bus[`NCPU_ALU_LSL] ? reverse_bits(shift_right) : shift_right;
    assign sel_shifter = alu_opc_bus[`NCPU_ALU_LSL] | alu_opc_bus[`NCPU_ALU_LSR] | alu_opc_bus[`NCPU_ALU_ASR];
 
