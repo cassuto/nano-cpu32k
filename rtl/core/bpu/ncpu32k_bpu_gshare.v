@@ -59,6 +59,7 @@ module ncpu32k_bpu_gshare
    wire [1:0]                          bpu_wb_pht_not_taken;
 
    wire [CONFIG_BTB_NUM_LOG2-1:0]      pred_btb_idx [1:0];
+   wire [CONFIG_BTB_NUM_LOG2-1:0]      pred_btb_idx_r [1:0];
    wire                                pred_btb_v  [1:0];
    wire                                pred_btb_is_bcc [1:0];
    wire [`NCPU_AW-CONFIG_BTB_NUM_LOG2-3:0] pred_btb_pc_tag [1:0];
@@ -68,12 +69,14 @@ module ncpu32k_bpu_gshare
    wire                                upd_btb_we;
 
    wire [CONFIG_PHT_NUM_LOG2-1:0]      pred_pht_idx [1:0];
+   wire [CONFIG_PHT_NUM_LOG2-1:0]      pred_pht_idx_r [1:0];
    wire [1:0]                          pred_pht_cnt [1:0];
    wire                                upd_pht_we;
    wire [1:0]                          upd_pht_cnt;
 
    wire [CONFIG_PHT_NUM_LOG2-1:0]      GHSR_r;
    wire [CONFIG_PHT_NUM_LOG2-1:0]      GHSR_nxt;
+   genvar i;
    
    nDFF_l #(`NCPU_AW-2) dff_bpu_insn_pc_1_r
       (clk, bpu_re, bpu_insn_pc_1, bpu_insn_pc_1_r);
@@ -105,6 +108,14 @@ module ncpu32k_bpu_gshare
          .dout_2  ({pred_btb_v[1], pred_btb_is_bcc[1], pred_btb_pc_tag[1][`NCPU_AW-CONFIG_BTB_NUM_LOG2-3:0], pred_btb_pc_nxt[1][`NCPU_AW-3:0]})
       );
 
+   generate
+      for(i=0; i<2; i=i+1)
+         begin
+            nDFF_l #(CONFIG_BTB_NUM_LOG2) dff_pred_btb_idx_r
+               (clk, bpu_re, pred_btb_idx[i], pred_btb_idx_r[i]);
+         end
+   endgenerate
+
    assign pred_btb_hit[0] = (pred_btb_v[0] & (pred_btb_pc_tag[0] == bpu_insn_pc_1_r[`NCPU_AW-3:CONFIG_BTB_NUM_LOG2]));
    assign pred_btb_hit[1] = (pred_btb_v[1] & (pred_btb_pc_tag[1] == bpu_insn_pc_2_r[`NCPU_AW-3:CONFIG_BTB_NUM_LOG2]));
 
@@ -135,6 +146,14 @@ module ncpu32k_bpu_gshare
          .dout_2  (pred_pht_cnt[1])
       );
 
+   generate
+      for(i=0; i<2; i=i+1)
+         begin
+            nDFF_l #(CONFIG_PHT_NUM_LOG2) dff_pred_pht_idx_r
+               (clk, bpu_re, pred_pht_idx[i], pred_pht_idx_r[i]);
+         end
+   endgenerate
+
    assign pred_taken[0] = pred_pht_cnt[0][1];
    assign pred_taken[1] = pred_pht_cnt[1][1];
 
@@ -146,10 +165,10 @@ module ncpu32k_bpu_gshare
                                  : bpu_insn_pc_2_r + 'b1;
 
    assign bpu_upd_pht_taken[0] = (pred_pht_cnt[0] == 2'b11)
-                                 ? 2'b00
+                                 ? 2'b11
                                  : pred_pht_cnt[0] + 'b1;
    assign bpu_upd_pht_taken[1] = (pred_pht_cnt[1] == 2'b11)
-                                 ? 2'b00
+                                 ? 2'b11
                                  : pred_pht_cnt[1] + 'b1;
 
    assign bpu_upd_pht_not_taken[0] = (pred_pht_cnt[0] == 2'b00)
@@ -159,8 +178,8 @@ module ncpu32k_bpu_gshare
                                     ? 2'b00
                                     : pred_pht_cnt[1] - 'b1;
 
-   assign bpu_pred_upd_1 = {bpu_upd_pht_taken[0], bpu_upd_pht_not_taken[0], pred_pht_idx[0], pred_btb_idx[0]};
-   assign bpu_pred_upd_2 = {bpu_upd_pht_taken[1], bpu_upd_pht_not_taken[1], pred_pht_idx[1], pred_btb_idx[1]};
+   assign bpu_pred_upd_1 = {bpu_upd_pht_taken[0], bpu_upd_pht_not_taken[0], pred_pht_idx_r[0], pred_btb_idx_r[0]};
+   assign bpu_pred_upd_2 = {bpu_upd_pht_taken[1], bpu_upd_pht_not_taken[1], pred_pht_idx_r[1], pred_btb_idx_r[1]};
    
    assign {bpu_wb_pht_taken, bpu_wb_pht_not_taken, bpu_wb_pht_idx, bpu_wb_btb_idx} = bpu_wb_upd;
 
