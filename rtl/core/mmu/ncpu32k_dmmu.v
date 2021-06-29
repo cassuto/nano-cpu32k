@@ -151,11 +151,14 @@ module ncpu32k_dmmu
 
    assign ppn = msr_psr_dmme_r ? tlb_ppn : tgt_vpn_r;
 
+   // If DMMU is disabled, UNC bit in page entry is not functioned.
+   // Uncached segment is always functioned as long as physical addr is valid
+   // and is within 0x80000000~0x8FFFFFFF
 generate
    if (CONFIG_DMMU_ENABLE_UNCACHED_SEG)
-      assign uncached = (tlb_unc | (ppn[`NCPU_AW-CONFIG_DMMU_PAGE_SIZE_LOG2-1 -: 4]==4'h8));
+      assign uncached = (msr_psr_dmme_r & ~tlb_miss & tlb_unc) | (~EDTM & (ppn[`NCPU_AW-CONFIG_DMMU_PAGE_SIZE_LOG2-1 -: 4]==4'h8));
    else
-      assign uncached = tlb_unc;
+      assign uncached = msr_psr_dmme_r & ~tlb_miss & tlb_unc;
 endgenerate
    
 

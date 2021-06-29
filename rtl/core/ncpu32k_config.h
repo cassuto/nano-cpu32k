@@ -105,9 +105,9 @@
 
 // Width of WMSR we signals
 `ifdef NCPU_ENABLE_MSGPORT
-`define NCPU_WMSR_WE_DW (13+`NCPU_TLB_AW)
+`define NCPU_WMSR_WE_DW (16+`NCPU_TLB_AW)
 `else
-`define NCPU_WMSR_WE_DW (11+`NCPU_TLB_AW)
+`define NCPU_WMSR_WE_DW (14+`NCPU_TLB_AW)
 `endif
 
 /////////////////////////////////////////////////////////////////////////////
@@ -126,8 +126,8 @@
 `define NCPU_MSR_BANK_PS	0
 `define NCPU_MSR_BANK_IMM	1
 `define NCPU_MSR_BANK_DMM	2
-`define NCPU_MSR_BANK_ICA	3
-`define NCPU_MSR_BANK_DCA	4
+`define NCPU_MSR_BANK_IC	3
+`define NCPU_MSR_BANK_DC	4
 `define NCPU_MSR_BANK_DBG	5
 `define NCPU_MSR_BANK_IRQC	6
 `define NCPU_MSR_BANK_TSC	7
@@ -166,6 +166,26 @@
 `define NCPU_MSR_DMM_TLBSEL 8
 // TLBH (7th bit = TLBH sel)
 `define NCPU_MSR_DMM_TLBH_SEL 7
+
+//
+// IC (ICache)
+//
+
+// IC - ID
+`define NCPU_MSR_IC_ID 0
+// IC - INV
+`define NCPU_MSR_IC_INV 1
+
+//
+// DC (ICache)
+//
+
+// DC - ID
+`define NCPU_MSR_DC_ID 0
+// DC - INV
+`define NCPU_MSR_DC_INV 1
+// DC - FLS
+`define NCPU_MSR_DC_FLS 2
 
 //
 // IRQC (One-hot encoding)

@@ -31,16 +31,26 @@ module ncpu32k_backend
    `PARAM_NOT_SPECIFIED ,
    parameter BPU_UPD_DW
    `PARAM_NOT_SPECIFIED ,
-   parameter [7:0] CPUID_VER = 1,
-   parameter [9:0] CPUID_REV = 0,
-   parameter [0:0] CPUID_FIMM = 1,
-   parameter [0:0] CPUID_FDMM = 1,
-   parameter [0:0] CPUID_FICA = 0,
-   parameter [0:0] CPUID_FDCA = 0,
-   parameter [0:0] CPUID_FDBG = 0,
-   parameter [0:0] CPUID_FFPU = 0,
-   parameter [0:0] CPUID_FIRQC = 1,
-   parameter [0:0] CPUID_FTSC = 1,
+   parameter [7:0] CPUID_VER
+   `PARAM_NOT_SPECIFIED ,
+   parameter [9:0] CPUID_REV
+   `PARAM_NOT_SPECIFIED ,
+   parameter [0:0] CPUID_FIMM
+   `PARAM_NOT_SPECIFIED ,
+   parameter [0:0] CPUID_FDMM
+   `PARAM_NOT_SPECIFIED ,
+   parameter [0:0] CPUID_FICA
+   `PARAM_NOT_SPECIFIED ,
+   parameter [0:0] CPUID_FDCA
+   `PARAM_NOT_SPECIFIED ,
+   parameter [0:0] CPUID_FDBG
+   `PARAM_NOT_SPECIFIED ,
+   parameter [0:0] CPUID_FFPU
+   `PARAM_NOT_SPECIFIED ,
+   parameter [0:0] CPUID_FIRQC
+   `PARAM_NOT_SPECIFIED ,
+   parameter [0:0] CPUID_FTSC
+   `PARAM_NOT_SPECIFIED ,
    parameter [`NCPU_AW-1:0] CONFIG_ERST_VECTOR
    `PARAM_NOT_SPECIFIED ,
    parameter [`NCPU_AW-1:0] CONFIG_EDTM_VECTOR
@@ -86,6 +96,8 @@ module ncpu32k_backend
    output                              stall_fnt,
    // IRQ
    input                               irq_sync,
+   // From icache
+   input                               icinv_stall,
    // From the frontend
    input                               idu_1_insn_vld,
    input [`NCPU_IW-1:0]                idu_1_insn,
@@ -146,6 +158,11 @@ module ncpu32k_backend
    input [`NCPU_DW-1:0]                msr_irqc_imr,
    output [`NCPU_DW-1:0]               msr_irqc_imr_nxt,
    output                              msr_irqc_imr_we,
+   // ICID
+   input [`NCPU_DW-1:0]                msr_icid,
+   // ICINV
+   output [`NCPU_DW-1:0]               msr_icinv_nxt,
+   output                              msr_icinv_we,
    // IRR
    input [`NCPU_DW-1:0]                msr_irqc_irr,
    // TSR
@@ -199,7 +216,7 @@ module ncpu32k_backend
    wire [`NCPU_DW-1:0]  lpu_operand1;           // From SCHEDULER of ncpu32k_scheduler.v
    wire [`NCPU_DW-1:0]  lpu_operand2;           // From SCHEDULER of ncpu32k_scheduler.v
    wire                 lpu_stall;              // From LPU of ncpu32k_lpu.v
-   wire                 lsu_AVALID;             // From SCHEDULER of ncpu32k_scheduler.v
+   wire                 lsu_AVALID_before_inv;  // From SCHEDULER of ncpu32k_scheduler.v
    wire                 lsu_barr;               // From SCHEDULER of ncpu32k_scheduler.v
    wire [`NCPU_DW-1:0]  lsu_imm32;              // From SCHEDULER of ncpu32k_scheduler.v
    wire                 lsu_in_slot_1;          // From SCHEDULER of ncpu32k_scheduler.v
@@ -216,6 +233,11 @@ module ncpu32k_backend
    wire [2:0]           lsu_store_size;         // From SCHEDULER of ncpu32k_scheduler.v
    wire [`NCPU_DW-1:0]  msr_coreid;             // From PSR of ncpu32k_psr.v
    wire [`NCPU_DW-1:0]  msr_cpuid;              // From PSR of ncpu32k_psr.v
+   wire [`NCPU_DW-1:0]  msr_dcfls_nxt;          // From EPU of ncpu32k_epu.v
+   wire                 msr_dcfls_we;           // From EPU of ncpu32k_epu.v
+   wire [`NCPU_DW-1:0]  msr_dcid;               // From LSU of ncpu32k_lsu.v
+   wire [`NCPU_DW-1:0]  msr_dcinv_nxt;          // From EPU of ncpu32k_epu.v
+   wire                 msr_dcinv_we;           // From EPU of ncpu32k_epu.v
    wire [`NCPU_TLB_AW-1:0] msr_dmm_tlbh_idx;    // From EPU of ncpu32k_epu.v
    wire [`NCPU_DW-1:0]  msr_dmm_tlbh_nxt;       // From EPU of ncpu32k_epu.v
    wire                 msr_dmm_tlbh_we;        // From EPU of ncpu32k_epu.v
@@ -230,6 +252,7 @@ module ncpu32k_backend
    wire [`NCPU_DW-1:0]  msr_epc_nxt;            // From EPU of ncpu32k_epu.v
    wire                 msr_epc_we;             // From EPU of ncpu32k_epu.v
    wire [`NCPU_PSR_DW-1:0] msr_epsr;            // From PSR of ncpu32k_psr.v
+   wire [`NCPU_PSR_DW-1:0] msr_epsr_nobyp;      // From PSR of ncpu32k_psr.v
    wire [`NCPU_PSR_DW-1:0] msr_epsr_nxt;        // From EPU of ncpu32k_epu.v
    wire                 msr_epsr_we;            // From EPU of ncpu32k_epu.v
    wire                 msr_exc_ent;            // From EPU of ncpu32k_epu.v
@@ -315,7 +338,6 @@ module ncpu32k_backend
    wire [`NCPU_DW-1:0]        s1i_alu_2_operand2;
    wire                       s1i_slot_BVALID [2:1];
    reg                        s1i_inv_slot [2:1];
-   wire                       s1i_lsu_flush;
    wire                       bpu_wb_nxt;
    wire                       s1o_noflush;
    wire                       s1o_slot_rd_we [2:1];
@@ -334,8 +356,7 @@ module ncpu32k_backend
     wire [`NCPU_AW-3:0]       s1o_wb_epu_pc_4;
    wire [`NCPU_DW-1:0]        commit_wmsr_dat;        // To EPU of ncpu32k_epu.v
    wire [`NCPU_WMSR_WE_DW-1:0] commit_wmsr_we; // To EPU of ncpu32k_epu.v
-   wire                       commit_E_FLUSH_TLB; // To EPU of ncpu32k_epu.v
-   wire                       lsu_flush;
+   wire                       fu_flush;
    wire                       wb_lsu_rd_we, wb_lsu_rd_we_nxt;
    wire [`NCPU_REG_AW-1:0]    wb_lsu_rd_addr, wb_lsu_rd_addr_nxt;
 `ifdef NCPU_ENABLE_TRACER
@@ -374,8 +395,21 @@ module ncpu32k_backend
    wire                       commit_EITM;            // To EPU of ncpu32k_epu.v
    wire                       commit_ERET;            // To EPU of ncpu32k_epu.v
    wire                       commit_ESYSCALL;        // To EPU of ncpu32k_epu.v
+   wire                       commit_E_FLUSH_TLB; // To EPU of ncpu32k_epu.v
    wire [`NCPU_AW-1:0]        commit_LSA;             // To EPU of ncpu32k_epu.v
    wire [`NCPU_AW-3:0]        commit_pc;              // To EPU of ncpu32k_epu.v
+   wire                       lsu_AVALID;             // To LSU of ncpu32k_lsu.v
+   wire                       commit_EALIGN_slot1, commit_EALIGN_slot2;
+   wire                       commit_EDPF_slot1, commit_EDPF_slot2;
+   wire                       commit_EDTM_slot1, commit_EDTM_slot2;
+   wire                       commit_EINSN_slot1, commit_EINSN_slot2;
+   wire                       commit_EIPF_slot1, commit_EIPF_slot2;
+   wire                       commit_EIRQ_slot1, commit_EIRQ_slot2;
+   wire                       commit_EITM_slot1, commit_EITM_slot2;
+   wire                       commit_ERET_slot1, commit_ERET_slot2;
+   wire                       commit_ESYSCALL_slot1, commit_ESYSCALL_slot2;
+   wire                       commit_E_FLUSH_TLB_slot1, commit_E_FLUSH_TLB_slot2;
+   wire                       commit_exc_slot1;
    reg                        s1_se_flush;
    reg [`NCPU_AW-3:0]         s1_se_flush_tgt;
    wire                       s2_flush;
@@ -395,6 +429,7 @@ module ncpu32k_backend
          .bru_operand2        (bru_operand2_nobyp[`NCPU_DW-1:0]),
          .lsu_operand1        (lsu_operand1_nobyp[`NCPU_DW-1:0]),
          .lsu_operand2        (lsu_operand2_nobyp[`NCPU_DW-1:0]),
+         .lsu_AVALID          (lsu_AVALID_before_inv),
       )
    */
    ncpu32k_scheduler
@@ -453,7 +488,7 @@ module ncpu32k_backend
        .epu_operand2                    (epu_operand2[`NCPU_DW-1:0]),
        .epu_imm32                       (epu_imm32[`NCPU_DW-1:0]),
        .epu_in_slot_1                   (epu_in_slot_1),
-       .lsu_AVALID                      (lsu_AVALID),
+       .lsu_AVALID                      (lsu_AVALID_before_inv), // Templated
        .lsu_load                        (lsu_load),
        .lsu_store                       (lsu_store),
        .lsu_sign_ext                    (lsu_sign_ext),
@@ -501,7 +536,7 @@ module ncpu32k_backend
        .arf_1_rs1_dout                  (arf_1_rs1_dout_bypass[`NCPU_DW-1:0]), // Templated
        .arf_1_rs2_dout                  (arf_1_rs2_dout_bypass[`NCPU_DW-1:0]), // Templated
        .arf_2_rs1_dout                  (arf_2_rs1_dout_bypass[`NCPU_DW-1:0]), // Templated
-       .arf_2_rs2_dout                  (arf_2_rs2_dout_bypass[`NCPU_DW-1:0])); // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated)
+       .arf_2_rs2_dout                  (arf_2_rs2_dout_bypass[`NCPU_DW-1:0])); // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated) // Templated)
 
    `define BYPASS_NETWORK_PORTS \
       .wb_slot_1_BVALID             (s2o_slot_BVALID[1]), \
@@ -688,6 +723,12 @@ module ncpu32k_backend
        .msr_dmm_tlbh_idx                (msr_dmm_tlbh_idx[`NCPU_TLB_AW-1:0]),
        .msr_dmm_tlbh_nxt                (msr_dmm_tlbh_nxt[`NCPU_DW-1:0]),
        .msr_dmm_tlbh_we                 (msr_dmm_tlbh_we),
+       .msr_icinv_nxt                   (msr_icinv_nxt[`NCPU_DW-1:0]),
+       .msr_icinv_we                    (msr_icinv_we),
+       .msr_dcinv_nxt                   (msr_dcinv_nxt[`NCPU_DW-1:0]),
+       .msr_dcinv_we                    (msr_dcinv_we),
+       .msr_dcfls_nxt                   (msr_dcfls_nxt[`NCPU_DW-1:0]),
+       .msr_dcfls_we                    (msr_dcfls_we),
        .msr_irqc_imr_nxt                (msr_irqc_imr_nxt[`NCPU_DW-1:0]),
        .msr_irqc_imr_we                 (msr_irqc_imr_we),
        .msr_tsc_tsr_nxt                 (msr_tsc_tsr_nxt[`NCPU_DW-1:0]),
@@ -722,16 +763,23 @@ module ncpu32k_backend
        .msr_cpuid                       (msr_cpuid[`NCPU_DW-1:0]),
        .msr_epc                         (msr_epc[`NCPU_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
+       .msr_epsr_nobyp                  (msr_epsr_nobyp[`NCPU_PSR_DW-1:0]),
        .msr_elsa                        (msr_elsa[`NCPU_DW-1:0]),
        .msr_coreid                      (msr_coreid[`NCPU_DW-1:0]),
        .msr_immid                       (msr_immid[`NCPU_DW-1:0]),
        .msr_dmmid                       (msr_dmmid[`NCPU_DW-1:0]),
+       .msr_icid                        (msr_icid[`NCPU_DW-1:0]),
+       .msr_dcid                        (msr_dcid[`NCPU_DW-1:0]),
        .msr_irqc_imr                    (msr_irqc_imr[`NCPU_DW-1:0]),
        .msr_irqc_irr                    (msr_irqc_irr[`NCPU_DW-1:0]),
        .msr_tsc_tsr                     (msr_tsc_tsr[`NCPU_DW-1:0]),
        .msr_tsc_tcr                     (msr_tsc_tcr[`NCPU_DW-1:0]));
 
    // NOTE: signals named wb_lsu_* are located in 2rd stage.
+   /* ncpu32k_lsu AUTO_TEMPLATE (
+         .lsu_flush                    (fu_flush),
+      )
+   */
    ncpu32k_lsu
       #(
          .CONFIG_DBUS_DW               (CONFIG_DBUS_DW),
@@ -769,11 +817,13 @@ module ncpu32k_backend
        .wb_lsu_in_slot_1                (wb_lsu_in_slot_1),
        .wb_lsu_LSA                      (wb_lsu_LSA[`NCPU_AW-1:0]),
        .msr_dmmid                       (msr_dmmid[`NCPU_DW-1:0]),
+       .msr_dcid                        (msr_dcid[`NCPU_DW-1:0]),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
+       .stall_bck                       (stall_bck),
        .stall_bck_nolsu                 (stall_bck_nolsu),
-       .lsu_flush                       (lsu_flush),
+       .lsu_flush                       (fu_flush),              // Templated
        .lsu_AVALID                      (lsu_AVALID),
        .lsu_load                        (lsu_load),
        .lsu_store                       (lsu_store),
@@ -801,21 +851,25 @@ module ncpu32k_backend
        .msr_dmm_tlbl_we                 (msr_dmm_tlbl_we),
        .msr_dmm_tlbh_idx                (msr_dmm_tlbh_idx[`NCPU_TLB_AW-1:0]),
        .msr_dmm_tlbh_nxt                (msr_dmm_tlbh_nxt[`NCPU_DW-1:0]),
-       .msr_dmm_tlbh_we                 (msr_dmm_tlbh_we));
+       .msr_dmm_tlbh_we                 (msr_dmm_tlbh_we),
+       .msr_dcinv_nxt                   (msr_dcinv_nxt[`NCPU_DW-1:0]),
+       .msr_dcinv_we                    (msr_dcinv_we),
+       .msr_dcfls_nxt                   (msr_dcfls_nxt[`NCPU_DW-1:0]),
+       .msr_dcfls_we                    (msr_dcfls_we));
    
    // Assert (2105041412)
    assign s1_before_inv_slot_AVALID[1] = wb_alu_1_AVALID |
                               (wb_bru_AVALID & wb_bru_in_slot_1) |
                               (wb_lpu_AVALID & wb_lpu_in_slot_1) |
                               (wb_epu_AVALID & wb_epu_in_slot_1) |
-                              (lsu_AVALID & lsu_in_slot_1);
+                              (lsu_AVALID_before_inv & lsu_in_slot_1);
 
    // Assert (2105041434)
    assign s1_before_inv_slot_AVALID[2] = alu_2_AVALID |
                               (wb_bru_AVALID & ~wb_bru_in_slot_1) |
                               (wb_lpu_AVALID & ~wb_lpu_in_slot_1) |
                               (wb_epu_AVALID & ~wb_epu_in_slot_1) |
-                              (lsu_AVALID & ~lsu_in_slot_1);
+                              (lsu_AVALID_before_inv & ~lsu_in_slot_1);
 
    // Describe which FUs could output the result in this stage here
    assign s1i_slot_BVALID[1] = wb_alu_1_AVALID |
@@ -961,9 +1015,9 @@ module ncpu32k_backend
    // If `s2_flush` is asserted high, insns at s1 are in wrong path, flush them.
    assign s1o_noflush = ~s2_flush;
 
-   // LSU outputs the result in the next stage,
-   // so the flushing is postponed to the next stage.
-   assign s1i_lsu_flush = s2_flush | (lsu_AVALID & (lsu_in_slot_1 ? s1i_inv_slot[1] : s1i_inv_slot[2]));
+   // LSU outputs the result in the next stage.
+   // If LSU insn is resolved to be invalidated, don't send any request to LSU.
+   assign lsu_AVALID = lsu_AVALID_before_inv & ~(lsu_in_slot_1 ? s1i_inv_slot[1] : s1i_inv_slot[2]);
 
    generate
       for(i=1;i<=2;i=i+1)
@@ -981,26 +1035,40 @@ module ncpu32k_backend
    endgenerate
 
    // Control path
-   nDFF_lr #(1) dff_s1o_flush_lsu
-      (clk, rst_n, s1_pipe_cke, s1i_lsu_flush, lsu_flush);
    nDFF_lr #(1) dff_s1o_wb_epu_AVALID
       (clk, rst_n, s1_pipe_cke, s1o_noflush & wb_epu_AVALID_nxt, s1o_wb_epu_AVALID);
    nDFF_lr #(`NCPU_WMSR_WE_DW) dff_commit_wmsr_we
       (clk, rst_n, s1_pipe_cke, {`NCPU_WMSR_WE_DW{s1o_noflush &  wb_epu_AVALID_nxt}} & wb_wmsr_we, commit_wmsr_we);
-   nDFF_lr #(1) dff_commit_E_FLUSH_TLB
-      (clk, rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_E_FLUSH_TLB), commit_E_FLUSH_TLB);
-   nDFF_lr #(1) dff_commit_ERET
-      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_ERET), commit_ERET);
-   nDFF_lr #(1) dff_commit_ESYSCALL
-      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_ESYSCALL), commit_ESYSCALL);
-   nDFF_lr #(1) dff_commit_EINSN
-      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EINSN), commit_EINSN);
-   nDFF_lr #(1) dff_commit_EIPF
-      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EIPF), commit_EIPF);
-   nDFF_lr #(1) dff_commit_EITM
-      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EITM), commit_EITM);
-   nDFF_lr #(1) dff_commit_EIRQ
-      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EIRQ), commit_EIRQ);
+   nDFF_lr #(1) dff_commit_E_FLUSH_TLB_slot1
+      (clk, rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_E_FLUSH_TLB & wb_epu_in_slot_1), commit_E_FLUSH_TLB_slot1);
+   nDFF_lr #(1) dff_commit_ERET_slot1
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_ERET & wb_epu_in_slot_1), commit_ERET_slot1);
+   nDFF_lr #(1) dff_commit_ESYSCALL_slot1
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_ESYSCALL & wb_epu_in_slot_1), commit_ESYSCALL_slot1);
+   nDFF_lr #(1) dff_commit_EINSN_slot1
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EINSN & wb_epu_in_slot_1), commit_EINSN_slot1);
+   nDFF_lr #(1) dff_commit_EIPF_slot1
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EIPF & wb_epu_in_slot_1), commit_EIPF_slot1);
+   nDFF_lr #(1) dff_commit_EITM_slot1
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EITM & wb_epu_in_slot_1), commit_EITM_slot1);
+   nDFF_lr #(1) dff_commit_EIRQ_slot1
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EIRQ & wb_epu_in_slot_1), commit_EIRQ_slot1);
+   
+   nDFF_lr #(1) dff_commit_E_FLUSH_TLB_slot2
+      (clk, rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_E_FLUSH_TLB & ~wb_epu_in_slot_1), commit_E_FLUSH_TLB_slot2);
+   nDFF_lr #(1) dff_commit_ERET_slot2
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_ERET & ~wb_epu_in_slot_1), commit_ERET_slot2);
+   nDFF_lr #(1) dff_commit_ESYSCALL_slot2
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_ESYSCALL & ~wb_epu_in_slot_1), commit_ESYSCALL_slot2);
+   nDFF_lr #(1) dff_commit_EINSN_slot2
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EINSN & ~wb_epu_in_slot_1), commit_EINSN_slot2);
+   nDFF_lr #(1) dff_commit_EIPF_slot2
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EIPF & ~wb_epu_in_slot_1), commit_EIPF_slot2);
+   nDFF_lr #(1) dff_commit_EITM_slot2
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EITM & ~wb_epu_in_slot_1), commit_EITM_slot2);
+   nDFF_lr #(1) dff_commit_EIRQ_slot2
+      (clk,rst_n, s1_pipe_cke, (s1o_noflush & wb_epu_AVALID_nxt & wb_EIRQ & ~wb_epu_in_slot_1), commit_EIRQ_slot2);
+   
    nDFF_lr #(1) dff_bpu_wb
       (clk, rst_n, s1_pipe_cke, (s1o_noflush & bpu_wb_nxt), bpu_wb);
    
@@ -1070,9 +1138,36 @@ module ncpu32k_backend
    // Pipeline Stage 3 (of backend)
    /////////////////////////////////////////////////////////////////////////////
 
-   assign commit_EDTM = (wb_lsu_AVALID & wb_lsu_EDTM);
-   assign commit_EDPF = (wb_lsu_AVALID & wb_lsu_EDPF);
-   assign commit_EALIGN = (wb_lsu_AVALID & wb_lsu_EALIGN);
+   assign commit_EDTM_slot1 = (wb_lsu_AVALID & wb_lsu_EDTM & wb_lsu_in_slot_1);
+   assign commit_EDPF_slot1 = (wb_lsu_AVALID & wb_lsu_EDPF & wb_lsu_in_slot_1);
+   assign commit_EALIGN_slot1 = (wb_lsu_AVALID & wb_lsu_EALIGN & wb_lsu_in_slot_1);
+
+   assign commit_EDTM_slot2 = (wb_lsu_AVALID & wb_lsu_EDTM & ~wb_lsu_in_slot_1);
+   assign commit_EDPF_slot2 = (wb_lsu_AVALID & wb_lsu_EDPF & ~wb_lsu_in_slot_1);
+   assign commit_EALIGN_slot2 = (wb_lsu_AVALID & wb_lsu_EALIGN & ~wb_lsu_in_slot_1);
+
+   assign commit_exc_slot1 = (commit_EALIGN_slot1|commit_EDPF_slot1|commit_EDTM_slot1|
+                              commit_EINSN_slot1|
+                              commit_EIPF_slot1|
+                              commit_EIRQ_slot1|
+                              commit_EITM_slot1|
+                              commit_ERET_slot1|
+                              commit_ESYSCALL_slot1|
+                              commit_E_FLUSH_TLB_slot1);
+
+   // Exception are generated both by EPU or LSU
+   // If slot 1 occurs an exception, then any exception in slot 2 is ignored,
+   // because insn in slot 2 will be flushed out.
+   assign commit_EALIGN = commit_EALIGN_slot1 | (~commit_exc_slot1 & commit_EALIGN_slot2);
+   assign commit_EDPF = commit_EDPF_slot1 | (~commit_exc_slot1 & commit_EDPF_slot2);
+   assign commit_EDTM = commit_EDTM_slot1 | (~commit_exc_slot1 & commit_EDTM_slot2);
+   assign commit_EINSN = commit_EINSN_slot1 | (~commit_exc_slot1 & commit_EINSN_slot2);
+   assign commit_EIPF = commit_EIPF_slot1 | (~commit_exc_slot1 & commit_EIPF_slot2);
+   assign commit_EIRQ = commit_EIRQ_slot1 | (~commit_exc_slot1 & commit_EIRQ_slot2);
+   assign commit_EITM = commit_EITM_slot1 | (~commit_exc_slot1 & commit_EITM_slot2);
+   assign commit_ERET = commit_ERET_slot1 | (~commit_exc_slot1 & commit_ERET_slot2);
+   assign commit_ESYSCALL = commit_ESYSCALL_slot1 | (~commit_exc_slot1 & commit_ESYSCALL_slot2);
+   assign commit_E_FLUSH_TLB = commit_E_FLUSH_TLB_slot1 | (~commit_exc_slot1 & commit_E_FLUSH_TLB_slot2);
 
    // If it is an LSU exception, set EPC as the address of LS insn.
    assign commit_pc = (commit_EDTM | commit_EDPF | commit_EALIGN) ? wb_lsu_pc : s1o_wb_epu_pc;
@@ -1080,11 +1175,11 @@ module ncpu32k_backend
 
    // 1. Don't writeback LSU insns if exception raised.
    // 2. Writeback EPU insn although exception raised.
-   assign s2_inv_slot_1 = ((commit_EDTM | commit_EDPF | commit_EALIGN) & wb_lsu_in_slot_1);
+   assign s2_inv_slot_1 = (commit_EDTM_slot1 | commit_EDPF_slot1 | commit_EALIGN_slot1);
    assign s2_inv_slot_2 = s2_inv_slot_1 |
                            (s1o_wb_epu_AVALID & s1o_wb_epu_exc & s1o_wb_epu_in_slot_1) |
-                           (commit_E_FLUSH_TLB & wb_lsu_in_slot_1) |
-                           ((commit_EDTM | commit_EDPF | commit_EALIGN) & ~wb_lsu_in_slot_1);
+                           (commit_E_FLUSH_TLB_slot1) |
+                           (commit_EDTM_slot2 | commit_EDPF_slot2 | commit_EALIGN_slot2);
 
    assign s2_flush = (commit_EDTM | commit_EDPF | commit_EALIGN | commit_E_FLUSH_TLB |
                         (s1o_wb_epu_AVALID & s1o_wb_epu_exc));
@@ -1100,13 +1195,19 @@ module ncpu32k_backend
                                     ? s1o_wb_epu_pc_4
                                     : s1o_wb_epu_exc_vec;
 
+   // For 1-st stage of ALU/BRU/EPU/LPU, the scheme is invalidating BVALID instead of flushing
+   // For LSU, the scheme is flushing
+   assign fu_flush = s2_flush;
+
    // Assert (2105042339)
-   assign s2o_slot_BVALID[1] = ~s2_inv_slot_1 & (s1o_slot_BVALID[1] |
-                                 (wb_lsu_AVALID & wb_lsu_in_slot_1));
+   assign s2o_slot_BVALID[1] = ~s2_inv_slot_1 &
+                                 (s1o_slot_BVALID[1] |
+                                  (wb_lsu_AVALID & wb_lsu_in_slot_1));
 
    // Assert (2105042347)
-   assign s2o_slot_BVALID[2] = ~s2_inv_slot_2 & (s1o_slot_BVALID[2] |
-                                 (wb_lsu_AVALID & ~wb_lsu_in_slot_1));
+   assign s2o_slot_BVALID[2] = ~s2_inv_slot_2 &
+                                 (s1o_slot_BVALID[2] |
+                                  (wb_lsu_AVALID & ~wb_lsu_in_slot_1));
 
    assign s2o_slot_dout[1] = s1o_slot_BVALID[1] ? s1o_slot_dout[1] : wb_lsu_dout;
 
@@ -1203,6 +1304,7 @@ module ncpu32k_backend
        .msr_psr_dmme                    (msr_psr_dmme),
        .msr_cpuid                       (msr_cpuid[`NCPU_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
+       .msr_epsr_nobyp                  (msr_epsr_nobyp[`NCPU_PSR_DW-1:0]),
        .msr_epc                         (msr_epc[`NCPU_DW-1:0]),
        .msr_elsa                        (msr_elsa[`NCPU_DW-1:0]),
        .msr_coreid                      (msr_coreid[`NCPU_DW-1:0]),
@@ -1233,8 +1335,8 @@ module ncpu32k_backend
                         : s1_se_flush_tgt;
 
    // Stall
-   assign stall_bck = (lsu_stall | lpu_stall);
-   assign stall_bck_nolsu = lpu_stall;
+   assign stall_bck = (lsu_stall | stall_bck_nolsu);
+   assign stall_bck_nolsu = (lpu_stall | icinv_stall);
    assign stall_fnt = (sch_stall | stall_bck);
 
    // synthesis translate_off
@@ -1244,6 +1346,28 @@ module ncpu32k_backend
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
    always @(posedge clk) begin
+      if (count_1({commit_EALIGN_slot1,
+                     commit_EDPF_slot1,
+                     commit_EDTM_slot1,
+                     commit_EINSN_slot1,
+                     commit_EIPF_slot1,
+                     commit_EIRQ_slot1,
+                     commit_EITM_slot1,
+                     commit_ERET_slot1,
+                     commit_ESYSCALL_slot1,
+                     commit_E_FLUSH_TLB_slot1}) > 1 )
+         $fatal (1, "BUG ON: Exception sel of slot1");
+      if (count_1({commit_EALIGN_slot2,
+                     commit_EDPF_slot2,
+                     commit_EDTM_slot2,
+                     commit_EINSN_slot2,
+                     commit_EIPF_slot2,
+                     commit_EIRQ_slot2,
+                     commit_EITM_slot2,
+                     commit_ERET_slot2,
+                     commit_ESYSCALL_slot2,
+                     commit_E_FLUSH_TLB_slot2}) > 1 )
+         $fatal (1, "BUG ON: Exception sel of slot2");
       // Assert 2105041412
       if (count_1({wb_alu_1_AVALID,
                      (wb_bru_AVALID & wb_bru_in_slot_1),

@@ -370,7 +370,9 @@ module ncpu32k_scheduler
    assign slot_2_struct_hazard = (bru_sel_1_nxt & bru_sel_2_nxt) |
                                  (lpu_sel_1_nxt & lpu_sel_2_nxt) |
                                  (epu_sel_1_nxt & epu_sel_2_nxt) |
-                                 (lsu_sel_1_nxt & lsu_sel_2_nxt);
+                                 (lsu_sel_1_nxt & lsu_sel_2_nxt) |
+                                 (epu_sel_1_nxt & lsu_sel_2_nxt) | // EPU may write registers that make side-effect with dcache
+                                 (lsu_sel_1_nxt & epu_sel_2_nxt); // 
 
    assign slot_2_hazard = (slot_2_RAW_hazard & ~slot_2_could_byp) |
                            slot_2_struct_hazard;

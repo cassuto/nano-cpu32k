@@ -47,6 +47,14 @@ module ncpu32k_dcache
    input [CONFIG_DC_DW/8-1:0]    wmsk,
    input [CONFIG_DC_DW-1:0]      wdat,
    output [CONFIG_DC_DW-1:0]     rdat,
+   // DCID
+   output [`NCPU_DW-1:0]         msr_dcid,
+   // DCINV
+   input [`NCPU_DW-1:0]          msr_dcinv_nxt,
+   input                         msr_dcinv_we,
+   // DCFLS
+   input [`NCPU_DW-1:0]          msr_dcfls_nxt,
+   input                         msr_dcfls_we,
    // From TLB
    input                         tlb_exc,
    input                         tlb_uncached,
@@ -66,12 +74,16 @@ module ncpu32k_dcache
    input [CONFIG_DBUS_DW-1:0]    dbus_RDATA
 );
    // Main FSM states
-   localparam                    S_IDLE = 3'b000;
-   localparam                    S_WRITE_PENDING = 3'b001;
-   localparam                    S_READ_PENDING = 3'b010;
-   localparam                    S_READOUT = 3'b011;
-   localparam                    S_BOOT = 3'b111;
-   localparam                    S_READ_AFTER_B = 3'b110;
+   localparam                    S_IDLE            = 4'd0;
+   localparam                    S_WRITE_PENDING   = 4'd1;
+   localparam                    S_READ_PENDING    = 4'd2;
+   localparam                    S_READOUT         = 4'd3;
+   localparam                    S_BOOT            = 4'd4;
+   localparam                    S_READ_AFTER_B    = 4'd5;
+   localparam                    S_FLS_1           = 4'd6;
+   localparam                    S_FLS_2           = 4'd7;
+   localparam                    S_INV_1           = 4'd8;
+   localparam                    S_INV_2           = 4'd9;
 
    // Tag data
    localparam                    TAG_ADDR_DW = CONFIG_DC_AW - CONFIG_DC_P_SETS - CONFIG_DC_P_LINE;
@@ -81,10 +93,17 @@ module ncpu32k_dcache
 
    reg [CONFIG_DBUS_AW-1:0]      dbus_AADDR_nxt;
    wire [CONFIG_DC_P_SETS-1:0]   cls_cnt;
-   wire [2:0]                    status_r;
-   reg [2:0]                     status_nxt;
+   wire [3:0]                    status_r;
+   reg [3:0]                     status_nxt;
+   wire [`NCPU_DW-1:0]           invfls_paddr_r;
+   reg [`NCPU_DW-1:0]            invfls_paddr_nxt;
+   wire                          in_invfls_r;
+   reg                           in_invfls_nxt;
    wire                          ch_idle = (status_r == S_IDLE);
    wire                          ch_boot = (status_r == S_BOOT);
+   wire                          ch_inv_2 = (status_r == S_INV_2);
+   wire                          ch_fls_2 = (status_r == S_FLS_2);
+   wire                          ch_idle_no_invfls;
    wire [CONFIG_DC_DW-1:0]       ch_mem_dout;
    wire                          dbus_A_set;
    wire                          dbus_A_clr;
@@ -125,11 +144,13 @@ module ncpu32k_dcache
 	reg [(1<<CONFIG_DC_P_WAYS)-1:0]        s2i_tag_dirty;
 	reg [CONFIG_DC_P_WAYS-1:0]             s2i_tag_lru      [0:(1<<CONFIG_DC_P_WAYS)-1];
 	reg [TAG_ADDR_DW-1:0]                  s2i_tag_paddr    [0:(1<<CONFIG_DC_P_WAYS)-1];
-   wire [CONFIG_DC_P_SETS-1:0]            s2i_entry_idx;
+   wire [CONFIG_DC_P_SETS-1:0]            s2i_entry_idx_final;
+   wire                                   s2i_blk_wb_en;
 
    wire                                   s1_cke;
    wire                                   s1_readtag;
    reg [(1<<CONFIG_DC_P_WAYS)-1:0]        s2i_wr_tag;
+   reg [(1<<CONFIG_DC_P_WAYS)-1:0]        s2i_wr_tag_v;
    reg [(1<<CONFIG_DC_P_WAYS)-1:0]        s2i_wr_tag_lru;
    wire                                   s2_cke;
 
@@ -154,14 +175,26 @@ module ncpu32k_dcache
             s1o_entry_idx <= s1i_entry_idx;
          end
 
-   assign s2i_entry_idx = ch_boot ? cls_cnt : s1o_entry_idx;
-
    // Cancel the request if MMU raised exceptions or cache is inhibited
    assign s1o_req = s1o_req_tmp_r & ~tlb_exc & ~tlb_uncached;
 
-   // Switch the index for s1_cke | s1_readtag
-   assign s1i_entry_idx_final = s1_cke ? s1i_entry_idx : s2i_entry_idx;
-   assign s1i_page_off_final = s1_cke ? s1i_page_off : s1o_page_off_r;
+   // Switch the index for ch_boot | in_invfls
+   assign s2i_entry_idx_final = (ch_boot)
+                                 ? cls_cnt
+                                 : (in_invfls_r)
+                                    ? invfls_paddr_r[CONFIG_DC_P_LINE+CONFIG_DC_P_SETS-1:CONFIG_DC_P_LINE]
+                                    : s1o_entry_idx;
+
+   // Switch the index for s1_cke | s1_readtag | in_invfls
+   assign s1i_entry_idx_final = (s1_cke)
+                                 ? s1i_entry_idx
+                                 : s2i_entry_idx_final;
+
+   assign s1i_page_off_final = (s1_cke)
+                                 ? s1i_page_off
+                                 : (in_invfls_r)
+                                    ? invfls_paddr_r[CONFIG_DMMU_PAGE_SIZE_LOG2-1:0]
+                                    : s1o_page_off_r;
 
    // Tag entries
 generate
@@ -187,11 +220,11 @@ generate
                // Port A (Read)
                .raddr  (s1i_entry_idx_final),
                .dout   (s1o_tag_dout),
-               .re     (s1_cke | s1_readtag),
+               .re     (s1_cke | s1_readtag | in_invfls_r),
                // Port B (Write)
-               .waddr  (s2i_entry_idx),
+               .waddr  (s2i_entry_idx_final),
                .din    (s2i_tag_din),
-               .we     (|s2i_wr_tag)
+               .we     (s2i_wr_tag[i] | s2i_wr_tag_v[i])
             );
 
          // LRU
@@ -208,16 +241,18 @@ generate
                // Port A (Read)
                .raddr  (s1i_entry_idx_final),
                .dout   (s1o_tag_lru[i]),
-               .re     (s1_cke | s1_readtag),
+               .re     (s1_cke | s1_readtag | in_invfls_r),
                // Port B (Write)
-               .waddr  (s2i_entry_idx),
+               .waddr  (s2i_entry_idx_final),
                .din    (s2i_tag_lru[i]),
-               .we     (|s2i_wr_tag_lru)
+               .we     (s2i_wr_tag_lru[i])
             );
       end
 endgenerate
 
-   assign s1o_paddr = {tlb_ppn[CONFIG_DC_AW-CONFIG_DMMU_PAGE_SIZE_LOG2-1:0], s1o_page_off_r[CONFIG_DMMU_PAGE_SIZE_LOG2-1:0]};
+   assign s1o_paddr = (in_invfls_r)
+                        ? invfls_paddr_r
+                        : {tlb_ppn[CONFIG_DC_AW-CONFIG_DMMU_PAGE_SIZE_LOG2-1:0], s1o_page_off_r[CONFIG_DMMU_PAGE_SIZE_LOG2-1:0]};
 
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]  s1o_match;
 	wire [(1<<CONFIG_DC_P_WAYS)-1:0]  s1o_free;
@@ -233,7 +268,8 @@ generate
 endgenerate
 
 	wire s1o_hit = (|s1o_match);
-	wire s1o_dirty = |(s1o_free & s1o_tag_dirty);
+	wire s1o_refill_dirty = |(s1o_free & s1o_tag_dirty);
+   wire s1o_hit_dirty = |(s1o_match & s1o_tag_dirty);
 
    wire [CONFIG_DC_P_WAYS-1:0] s1o_match_way_idx;
    wire [CONFIG_DC_P_WAYS-1:0] s1o_free_way_idx;
@@ -267,7 +303,7 @@ endgenerate
    always @(posedge clk or negedge rst_n)
       if (~rst_n)
          line_adr_cnt <= {CONFIG_DC_P_LINE - CONFIG_DBUS_BYTES_LOG2{1'b0}};
-      else if (dbus_hds_W | dbus_hds_R)
+      else if (s2i_blk_wb_en | dbus_hds_R)
          line_adr_cnt <= line_adr_cnt + 'b1;
 
    wire [CONFIG_DC_DW/8-1:0] line_adr_cnt_msk;
@@ -308,18 +344,24 @@ endgenerate
 
    // Stage #1: CPU Read
    assign s1i_blk_addr_b = {s1i_entry_idx_final[CONFIG_DC_P_SETS-1:0], s1i_page_off_final[CONFIG_DC_P_LINE-1:CONFIG_DC_DW_BYTES_LOG2]};
-   assign s1i_blk_en_b = ((s1_cke & req & ch_idle) | s1_readtag);
+   assign s1i_blk_en_b = ((s1_cke & req & ch_idle_no_invfls) | s1_readtag);
 
    // Stage #2: CPU Write / Cache refill
-   assign s2i_blk_en_a_g = (status_r==S_WRITE_PENDING)
+   assign s2i_blk_wb_en = (status_r==S_WRITE_PENDING) & dbus_WREADY;
+   assign s2i_blk_en_a_g = (status_r==S_WRITE_PENDING) 
                               ? dbus_WREADY
                               : (status_r==S_READ_PENDING)
                                  ? dbus_hds_R
                                  : 1'b1;
    
+   // Note that block RAM takes 1clk to get its dout
+   nDFF_r #(1) dff_dbus_WVALID
+      (clk, rst_n, s2i_blk_wb_en, dbus_WVALID);
+   
+
    localparam DELTA_DW = CONFIG_DC_DW_BYTES_LOG2-CONFIG_DBUS_BYTES_LOG2;
 
-   assign s2i_blk_addr_a = {s1o_entry_idx[CONFIG_DC_P_SETS-1:0],
+   assign s2i_blk_addr_a = {s2i_entry_idx_final[CONFIG_DC_P_SETS-1:0],
                               (s2i_refill)
                                  ? line_adr_cnt[DELTA_DW +: CONFIG_DC_P_LINE-CONFIG_DC_DW_BYTES_LOG2]
                                  : s1o_paddr[CONFIG_DC_P_LINE-1:CONFIG_DC_DW_BYTES_LOG2]
@@ -332,15 +374,6 @@ endgenerate
    assign s2i_blk_din_a = (s2i_refill)
                            ? s2i_refill_din
                            : s1o_din_r;
-
-   wire dbus_W_set;
-   wire dbus_W_clr;
-
-   assign dbus_W_set = ((status_r==S_WRITE_PENDING) & s2i_blk_en_a_g);
-   assign dbus_W_clr = (dbus_WVALID & dbus_WREADY);
-
-   nDFF_lr #(1) dff_dbus_WVALID
-      (clk, rst_n, (dbus_W_set|dbus_W_clr), (dbus_W_set|~dbus_W_clr), dbus_WVALID);
 
 
 generate
@@ -356,9 +389,9 @@ endgenerate
 generate
    for(i=0;i<(1<<CONFIG_DC_P_WAYS);i=i+1)
       begin : gen_blks_ram
-         wire s2i_matched = (s2i_refill)
-                              ? (s1o_free_way_idx == i)
-                              : (s1o_match_way_idx == i);
+         wire s2i_matched = (s2i_refill & ~in_invfls_r)
+                              ? s1o_free[i]
+                              : s1o_match[i];
 
          ncpu32k_dcache_ram
             #(
@@ -382,7 +415,9 @@ generate
       end
 endgenerate
 
-   assign ch_mem_dout = s2o_blk_dout_a[s1o_free_way_idx];
+   assign ch_mem_dout = s2o_blk_dout_a[(in_invfls_r)
+                                          ? s1o_match_way_idx
+                                          : s1o_free_way_idx];
 
    // Detect RAW dependency in D$ pipeline
    wire                                   rdat_bypass_r;
@@ -418,6 +453,7 @@ endgenerate
 
    assign rdat = rdat_bypass_r ? rdat_byp : rdat_org;
 
+
    // Combined logic to maintain tags
 generate
 	for(i=0; i<(1<<CONFIG_DC_P_WAYS); i=i+1)
@@ -431,7 +467,7 @@ generate
                   s2i_tag_lru[i] = i;
                   s2i_wr_tag_lru[i] = 1'b1;
                end
-            else if (ch_idle & s1o_req & s1o_hit)
+            else if (ch_idle_no_invfls & s1o_req & s1o_hit)
                begin
                   // Update LRU priority
                   s2i_tag_lru[i] = s1o_match[i] ? {CONFIG_DC_P_WAYS{1'b1}} : s1o_tag_lru[i] - (s1o_tag_lru[i] > s1o_lru_thresh);
@@ -452,15 +488,27 @@ generate
                   s2i_tag_dirty[i] = 1'b0;
                   s2i_wr_tag[i] = 1'b1;
                end
-            else if (ch_idle & s1o_req & s1o_hit)
+            else if (ch_idle_no_invfls & s1o_req & s1o_hit & s1o_match[i])
                begin
                   // Mark it dirty when write
-                  s2i_tag_dirty[i] = s1o_match[i] ? s1o_tag_dirty[i] | (|s1o_wmask_r) : s1o_tag_dirty[i];
+                  s2i_tag_dirty[i] = s1o_tag_dirty[i] | (|s1o_wmask_r);
                   s2i_wr_tag[i] = 1'b1;
                end
-            else if(ch_idle & s1o_req & s1o_free[i])
+            else if(ch_idle_no_invfls & s1o_req & ~s1o_hit & s1o_free[i])
                begin
                   // Mark it clean when entry is freed
+                  s2i_tag_dirty[i] = 1'b0;
+                  s2i_wr_tag[i] = 1'b1;
+               end
+            else if (ch_fls_2 & s1o_hit & s1o_match[i])
+               begin
+                  // Flushed
+                  s2i_tag_dirty[i] = 1'b0;
+                  s2i_wr_tag[i] = 1'b1;
+               end
+            else if (ch_inv_2 & s1o_hit & s1o_hit_dirty & s1o_match[i])
+               begin
+                  // Invalidate with writing back
                   s2i_tag_dirty[i] = 1'b0;
                   s2i_wr_tag[i] = 1'b1;
                end
@@ -478,19 +526,29 @@ generate
                   // Reset V ADDR tag
                   s2i_tag_v[i] = 1'b0;
                   s2i_tag_paddr[i] = {TAG_ADDR_DW{1'b0}};
+                  s2i_wr_tag_v[i] = 1'b1;
                end
-            else if(ch_idle & s1o_req & ~s1o_hit & (s1o_free_way_idx == i))
+            else if(ch_idle_no_invfls & s1o_req & ~s1o_hit & s1o_free[i])
                begin
                   // Cache missed
                   // Replace a free entry
                   s2i_tag_v[i] = 1'b1;
                   s2i_tag_paddr[i] = s1o_paddr[CONFIG_DC_AW-1:CONFIG_DC_P_LINE+CONFIG_DC_P_SETS];
+                  s2i_wr_tag_v[i] = 1'b1;
+               end
+            else if (ch_inv_2 & s1o_hit & s1o_match[i])
+               begin
+                  // Invalidated
+                  s2i_tag_v[i] = 1'b0;
+                  s2i_tag_paddr[i] = s1o_tag_paddr[i];
+                  s2i_wr_tag_v[i] = 1'b1;
                end
             else
                begin
                   // Hold
                   s2i_tag_v[i] = s1o_tag_v[i];
                   s2i_tag_paddr[i] = s1o_tag_paddr[i];
+                  s2i_wr_tag_v[i] = 1'b0;
                end
 
       end
@@ -503,10 +561,17 @@ endgenerate
 
    assign stall = ~ch_idle | (s1o_req & ~s1o_hit);
 
+   // If INV/FLS is pending, do not handle any command
+   // until INV/FLS is finished.
+   assign ch_idle_no_invfls = (ch_idle & ~msr_dcinv_we & ~msr_dcfls_we);
+
    // Write-back FSM
    always @(*)
       begin
          status_nxt = status_r;
+         in_invfls_nxt = in_invfls_r;
+         invfls_paddr_nxt = invfls_paddr_r;
+
          case (status_r)
             S_BOOT:
                begin
@@ -515,11 +580,25 @@ endgenerate
                end
             S_IDLE:
                begin
-                  if (s1o_req & ~s1o_hit)
+                  if (msr_dcfls_we)
                      begin
-                        // Cache missed
+                        // Flush
+                        invfls_paddr_nxt = msr_dcfls_nxt;
+                        in_invfls_nxt = 1'b1;
+                        status_nxt = S_FLS_1;
+                     end
+                  else if (msr_dcinv_we)
+                     begin
+                        // Invalidate
+                        invfls_paddr_nxt = msr_dcinv_nxt;
+                        in_invfls_nxt = 1'b1;
+                        status_nxt = S_INV_1;
+                     end
+                  else if (s1o_req & ~s1o_hit)
+                     begin
+                        // Cache missed, refill a free line
                         // If the target is dirty, then write back
-                        status_nxt = s1o_dirty ? S_WRITE_PENDING : S_READ_PENDING;
+                        status_nxt = s1o_refill_dirty ? S_WRITE_PENDING : S_READ_PENDING;
                      end
                end
             
@@ -528,11 +607,44 @@ endgenerate
                   status_nxt = S_READ_AFTER_B;
             S_READ_AFTER_B:
                if (dbus_hds_B)
-                  status_nxt = S_READ_PENDING;
+                  begin
+                     if (in_invfls_r)
+                        begin
+                           // End up INV or FLS
+                           in_invfls_nxt = 1'b0;
+                           status_nxt = S_READOUT;
+                        end
+                     else
+                        begin
+                           status_nxt = S_READ_PENDING;
+                        end
+                  end
                
             S_READ_PENDING:
                if (&line_adr_cnt)
                   status_nxt = S_READOUT;
+
+            S_FLS_1:
+               // Readout tag
+               status_nxt = S_FLS_2;
+
+            S_INV_1:
+               // Readout tag
+               status_nxt = S_INV_2;
+
+            S_INV_2,
+            S_FLS_2:
+               if (s1o_hit & s1o_hit_dirty)
+                  begin
+                     // Write back the cache line
+                     status_nxt = S_WRITE_PENDING;
+                  end
+               else
+                  begin
+                     // End up FLS
+                     in_invfls_nxt = 1'b0;
+                     status_nxt = S_READOUT;
+                  end
 
             S_READOUT:
                status_nxt = S_IDLE;
@@ -543,15 +655,22 @@ endgenerate
          endcase
       end
 
-   nDFF_r #(3, S_BOOT) dff_status_r
+   nDFF_l #(`NCPU_DW) dff_invfls_paddr_r
+      (clk, 1'b1, invfls_paddr_nxt, invfls_paddr_r);
+
+   nDFF_r #(1) dff_in_invfls_r
+      (clk, rst_n, in_invfls_nxt, in_invfls_r);
+   nDFF_r #(4, S_BOOT) dff_status_r
       (clk, rst_n, status_nxt, status_r);
 
    nDFF_lr #(CONFIG_DC_P_SETS, {CONFIG_DC_P_SETS{1'b1}}) dff_cls_cnt
       (clk, rst_n, ch_boot, cls_cnt - 'b1, cls_cnt);
 
-   wire [CONFIG_DC_AW-1:0] s1o_replace_line_paddr;
+   wire [CONFIG_DC_AW-1:0] s1o_free_line_paddr;
+   wire [CONFIG_DC_AW-1:0] s1o_hit_line_paddr;
 
-   assign s1o_replace_line_paddr = {s1o_tag_paddr[s1o_free_way_idx], s1o_entry_idx, {CONFIG_DC_P_LINE{1'b0}} };
+   assign s1o_free_line_paddr = {s1o_tag_paddr[s1o_free_way_idx], s2i_entry_idx_final, {CONFIG_DC_P_LINE{1'b0}} };
+   assign s1o_hit_line_paddr = {s1o_tag_paddr[s1o_match_way_idx], s2i_entry_idx_final, {CONFIG_DC_P_LINE{1'b0}} };
 
    // Resolve the start address of burst transmission
    // NOTE: Ensure dbus_ARWADDR doesn't change while dbus_ARWVALID is asserting.
@@ -561,19 +680,25 @@ endgenerate
          case(status_r)
             S_IDLE:
                begin
-                  dbus_AADDR_nxt = s1o_dirty
-                                       ? s1o_replace_line_paddr[CONFIG_DBUS_AW-1:0] // truncate address bits
+                  dbus_AADDR_nxt = s1o_refill_dirty
+                                       ? s1o_free_line_paddr[CONFIG_DBUS_AW-1:0] // truncate address bits
                                        : {s1o_paddr[CONFIG_DBUS_AW-1:CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}} }; // align at size of a line, truncate address bits
                end
 
-            S_WRITE_PENDING:
-               begin
-                  if (status_nxt != S_WRITE_PENDING)
-                     begin
-                        // Prepare to read from DBUS (But DBUS is currently writing)
-                        dbus_AADDR_nxt = {s1o_paddr[CONFIG_DBUS_AW-1:CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}} }; // align at size of a line, truncate address bits
-                     end
-               end
+            S_INV_2,
+            S_FLS_2:
+               if (s1o_hit & s1o_hit_dirty)
+                  begin
+                     dbus_AADDR_nxt = s1o_hit_line_paddr[CONFIG_DBUS_AW-1:0]; // truncate address bits
+                  end
+
+            S_READ_AFTER_B:
+               if (status_nxt == S_READ_PENDING)
+                  begin
+                     // Prepare to read from DBUS
+                     dbus_AADDR_nxt = {s1o_paddr[CONFIG_DBUS_AW-1:CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}} }; // align at size of a line, truncate address bits
+                  end
+
             default:
                begin
                   dbus_AADDR_nxt = dbus_ARWADDR;
@@ -584,17 +709,17 @@ endgenerate
    nDFF_l #(CONFIG_DBUS_AW) dff_dbus_AADDR
       (clk, 1'b1, dbus_AADDR_nxt, dbus_ARWADDR);
 
-   assign dbus_A_set = // Prepare to read or write:
-                        (status_r == S_IDLE && status_nxt != S_IDLE) |
+   assign dbus_A_set = // Prepare to write:
+                        (status_r != S_WRITE_PENDING && status_nxt == S_WRITE_PENDING) |
                         // Prepare to read:
-                        (status_r == S_READ_AFTER_B && status_nxt == S_READ_PENDING);
+                        (status_r != S_READ_PENDING && status_nxt == S_READ_PENDING);
+
    assign dbus_A_clr = (dbus_ARWVALID & dbus_ARWREADY);
 
    nDFF_lr #(1) dff_dbus_AVALID
       (clk,rst_n, (dbus_A_set|dbus_A_clr), (dbus_A_set | ~dbus_A_clr), dbus_ARWVALID);
 
-   assign dbus_AWE = (status_r == S_IDLE && status_nxt == S_WRITE_PENDING) |
-                     (status_r == S_WRITE_PENDING);
+   assign dbus_AWE = (status_r == S_WRITE_PENDING);
    
    assign dbus_hds_R = (dbus_RVALID & dbus_RREADY);
    assign dbus_hds_W = (dbus_WVALID & dbus_WREADY);
@@ -602,6 +727,12 @@ endgenerate
 
    assign dbus_BREADY = (status_r == S_READ_AFTER_B);
    assign dbus_RREADY = 1'b1;
+
+   // DCID Register
+   assign msr_dcid[3:0] = CONFIG_DC_P_SETS[3:0];
+   assign msr_dcid[7:4] = CONFIG_DC_P_LINE[3:0];
+   assign msr_dcid[11:8] = CONFIG_DC_P_WAYS[3:0];
+   assign msr_dcid[31:12] = 20'b0;
 
 
    // synthesis translate_off

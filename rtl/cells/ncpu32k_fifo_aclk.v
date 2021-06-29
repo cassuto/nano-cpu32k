@@ -37,14 +37,14 @@ module ncpu32k_fifo_aclk
    reg [AW:0] rptr_g, wptr_g;
 
    // Generate read pointer
-   wire [AW:0] rptr_b_nxt = ~empty ? rptr_b + {{AW-1{1'b0}}, pop} : rptr_b;
+   wire [AW:0] rptr_b_nxt = rptr_b + {{AW-1{1'b0}}, pop};
    wire [AW:0] rptr_g_nxt = {1'b0,rptr_b_nxt[AW:1]} ^ rptr_b_nxt; // binary-to-gray encoder
    always @(posedge rclk or negedge rrst_n)
       if (~rrst_n) {rptr_b, rptr_g} <= 0;
       else {rptr_b, rptr_g} <= {rptr_b_nxt, rptr_g_nxt};
 
    // Generate write pointer
-   wire [AW:0] wptr_b_nxt = ~full ? wptr_b + {{AW-1{1'b0}}, push} : wptr_b;
+   wire [AW:0] wptr_b_nxt = wptr_b + {{AW-1{1'b0}}, push};
    wire [AW:0] wptr_g_nxt = {1'b0, wptr_b_nxt[AW:1]} ^ wptr_b_nxt;   // binary-to-gray encoder
    always @(posedge wclk or negedge wrst_n)
       if (~wrst_n) {wptr_b, wptr_g} <= 0;
@@ -80,13 +80,13 @@ module ncpu32k_fifo_aclk
 
 	// Read
 	always @(posedge rclk)
-	  if (pop & ~empty)
+	  if (pop)
 	    ra <= rptr_b[AW-1:0];
 	assign dout = mem[ra];
 
 	// Write
 	always@(posedge wclk)
-		if (push & ~full)
+		if (push)
 			mem[wptr_b[AW-1:0]] <= din;
 
    // synthesis translate_off

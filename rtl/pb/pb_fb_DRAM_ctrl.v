@@ -54,11 +54,11 @@ module pb_fb_DRAM_ctrl
    input [CONFIG_SDR_DATA_BITS-1:0]        sdr_din,
    output reg [CONFIG_SDR_DATA_BITS-1:0]   sdr_dout,
    output reg                       sdr_r_vld,   // sdr_dout valid
-   output reg                       sdr_w_rdy   // write ready
+   output reg                       sdr_w_rdy    // write ready
 );
 
    // I/O flip flops
-   reg [CONFIG_SDR_DATA_BITS-1:0] din_r;
+   reg [CONFIG_SDR_DATA_BITS-1:0] din_r [1:0];
    reg [2:0] dout_vld_r;
 
    always @(posedge sdr_clk or negedge sdr_rst_n) begin
@@ -66,12 +66,13 @@ module pb_fb_DRAM_ctrl
          dout_vld_r <= 0;
       end else begin
          dout_vld_r <= {dout_vld_r[1:0], sdr_w_rdy};
-         din_r <= sdr_din;
+         din_r[0] <= sdr_din;
+         din_r[1] <= din_r[0];
          sdr_dout <= DRAM_DATA;
       end
    end
 
-   assign DRAM_DATA = dout_vld_r[2] ? din_r : 16'hzzzz;
+   assign DRAM_DATA = dout_vld_r[2] ? din_r[1] : 16'hzzzz;
 
    assign DRAM_CKE = 1'b1;
 

@@ -40,11 +40,12 @@ module ncpu32k_icache_ram
    // Check this manually...
    ip_icache_bram RAM
       (
-         .clk     (clk),
+         .clka    (clk),
          .addra   (addr_a[AW-1:0]),
          .wea     (we_a[DW/8-1:0]),
          .dina    (din_a[DW-1:0]),
          .ena     (en_a),
+         .clkb    (clk),
          .addrb   (addr_b[AW-1:0]),
          .doutb   (dout_b[DW-1:0]),
          .enb     (en_b)

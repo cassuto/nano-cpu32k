@@ -52,6 +52,7 @@ module ncpu32k_psr
    // EPSR
    input [`NCPU_PSR_DW-1:0] msr_epsr_nxt,
    output [`NCPU_PSR_DW-1:0] msr_epsr,
+   output [`NCPU_PSR_DW-1:0] msr_epsr_nobyp,
    input                   msr_epsr_we,
    // EPC
    input [`NCPU_DW-1:0]    msr_epc_nxt,
@@ -113,9 +114,13 @@ module ncpu32k_psr
    assign msr_psr_imme_nold = (msr_psr_imme_we) ? msr_psr_imme_nxt : msr_psr_imme_r;
    assign msr_psr_dmme_nold = (msr_psr_dmme_we) ? msr_psr_dmme_nxt : msr_psr_dmme_r;
 
-   assign msr_epsr = msr_epsr_r;
-   assign msr_epc = msr_epc_r;
-   assign msr_elsa = msr_elsa_r;
+   // Bypass logic for E*
+   assign msr_epsr = msr_epsr_we ? msr_epsr_nxt : msr_epsr_r;
+   assign msr_epc = msr_epc_we ? msr_epc_nxt : msr_epc_r;
+   assign msr_elsa = msr_elsa_we ? msr_elsa_nxt : msr_elsa_r;
+
+   // No bypass
+   assign msr_epsr_nobyp = msr_epsr_r;
 
    // Pack PSR
    assign msr_psr = {1'b0,1'b0,msr_psr_dmme,msr_psr_imme,msr_psr_ire,msr_psr_rm,1'b0,1'b0,1'b0,1'b0};

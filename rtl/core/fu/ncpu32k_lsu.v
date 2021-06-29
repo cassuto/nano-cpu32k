@@ -39,6 +39,7 @@ module ncpu32k_lsu
 (
    input                               clk,
    input                               rst_n,
+   input                               stall_bck,
    input                               stall_bck_nolsu,
    output                              lsu_stall,
    // From SCHEDULER
@@ -98,7 +99,15 @@ module ncpu32k_lsu
    // DTLBH
    input [`NCPU_TLB_AW-1:0]            msr_dmm_tlbh_idx,
    input [`NCPU_DW-1:0]                msr_dmm_tlbh_nxt,
-   input                               msr_dmm_tlbh_we
+   input                               msr_dmm_tlbh_we,
+   // DCID
+   output [`NCPU_DW-1:0]               msr_dcid,
+   // DCINV
+   input [`NCPU_DW-1:0]                msr_dcinv_nxt,
+   input                               msr_dcinv_we,
+   // DCFLS
+   input [`NCPU_DW-1:0]                msr_dcfls_nxt,
+   input                               msr_dcfls_we
 );
    wire                                dc_stall;
    wire                                dc_en;
@@ -107,7 +116,7 @@ module ncpu32k_lsu
    wire [`NCPU_DW-1:0]                 dc_wdat;
    wire [`NCPU_DW-1:0]                 dc_rdat;
    wire                                tlb_uncached;
-   wire                                cancel;
+   wire                                tlb_exc;
    wire                                pipe_cke;
    wire                                misalign;
    wire [`NCPU_DW-1:0]                 din_8b;
@@ -152,9 +161,9 @@ module ncpu32k_lsu
                      ({`NCPU_DW/8{ls_size==3'd2}} & we_msk_16b) |
                      ({`NCPU_DW/8{ls_size==3'd1}} & we_msk_8b) );
 
-   assign pipe_cke = ~lsu_stall;
+   assign pipe_cke = ~stall_bck;
 
-   assign dc_en = (pipe_cke & lsu_AVALID);
+   assign dc_en = (pipe_cke & lsu_AVALID & ~lsu_flush);
 
    ncpu32k_dmmu
       #(
@@ -184,7 +193,7 @@ module ncpu32k_lsu
          .msr_dmm_tlbh_we              (msr_dmm_tlbh_we)
       );
 
-   assign cancel = (wb_lsu_EDTM|wb_lsu_EDPF|wb_lsu_EALIGN|lsu_flush);
+   assign tlb_exc = (wb_lsu_EDTM|wb_lsu_EDPF|wb_lsu_EALIGN);
 
    ncpu32k_dcache
       #(
@@ -209,9 +218,14 @@ module ncpu32k_lsu
          .wmsk                         (dc_wmsk),
          .wdat                         (dc_wdat),
          .rdat                         (dc_rdat),
-         .tlb_exc                      (cancel),
+         .tlb_exc                      (tlb_exc),
          .tlb_uncached                 (tlb_uncached),
          .tlb_ppn                      (tlb_ppn),
+         .msr_dcid                     (msr_dcid),
+         .msr_dcinv_nxt                (msr_dcinv_nxt),
+         .msr_dcinv_we                 (msr_dcinv_we),
+         .msr_dcfls_nxt                (msr_dcfls_nxt),
+         .msr_dcfls_we                 (msr_dcfls_we),
          .dbus_ARWREADY                (dbus_ARWREADY),
          .dbus_ARWVALID                (dbus_ARWVALID),
          .dbus_ARWADDR                 (dbus_ARWADDR),
@@ -245,7 +259,7 @@ module ncpu32k_lsu
 
    // Control path
    nDFF_lr #(1) dff_wb_lsu_AVALID
-      (clk, rst_n, pipe_cke, lsu_AVALID, wb_AVALID_tmp_r);
+      (clk, rst_n, pipe_cke, lsu_AVALID & ~lsu_flush, wb_AVALID_tmp_r);
    nDFF_lr #(1) dff_wb_misalign
       (clk, rst_n, pipe_cke, misalign, wb_lsu_EALIGN);
 
@@ -264,7 +278,7 @@ module ncpu32k_lsu
          uncached_state_nxt = uncached_state_r;
          case (uncached_state_r)
          S_UNCACHED_IDLE:
-            if (wb_AVALID_tmp_r & tlb_uncached)
+            if (wb_AVALID_tmp_r & ~lsu_flush & tlb_uncached)
                uncached_state_nxt = S_UNCACHED_AVALID;
          S_UNCACHED_AVALID:
             if (uncached_dbus_AREADY)
@@ -299,7 +313,9 @@ module ncpu32k_lsu
 
    assign lsu_stall = (dc_stall | uncached_pending);
 
-   assign wb_lsu_AVALID = (wb_AVALID_tmp_r & ~lsu_flush);
+   // Note that even exception is asserted, AVALID would be asserting high
+   //// When LSU is stalling, the result is unavailable 
+   assign wb_lsu_AVALID = wb_AVALID_tmp_r;//(wb_AVALID_tmp_r & ~lsu_stall);
    
    // B/HW align
    assign wb_dout_8b = ({8{wb_lsu_LSA[1:0]==2'b00}} & dout_w[7:0]) |

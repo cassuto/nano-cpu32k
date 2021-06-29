@@ -56,6 +56,7 @@ module ncpu32k_frontend
       input                      flush,
       input [`NCPU_AW-3:0]       flush_tgt,
       input                      stall_fnt,
+      output                     icinv_stall,
       // to IDU
       output                     idu_1_insn_vld,
       output [`NCPU_IW-1:0]      idu_1_insn,
@@ -93,7 +94,12 @@ module ncpu32k_frontend
       // TLBH
       input [`NCPU_TLB_AW-1:0]   msr_imm_tlbh_idx,
       input [`NCPU_DW-1:0]       msr_imm_tlbh_nxt,
-      input                      msr_imm_tlbh_we
+      input                      msr_imm_tlbh_we,
+      // ICID
+      output [`NCPU_DW-1:0]      msr_icid,
+      // ICINV
+      input [`NCPU_DW-1:0]       msr_icinv_nxt,
+      input                      msr_icinv_we
    );
 
    wire                          ic_re;
@@ -175,9 +181,13 @@ module ncpu32k_frontend
          .dout_vld               (insn_pkt_vld),
          .dout_rdy               (insn_pkt_rdy),
          .stall_pc               (stall_pc),
-         .ibus_ARREADY            (ibus_ARREADY),
-         .ibus_ARVALID            (ibus_ARVALID),
-         .ibus_ARADDR             (ibus_ARADDR),
+         .icinv_stall            (icinv_stall),
+         .msr_icid               (msr_icid),
+         .msr_icinv_nxt          (msr_icinv_nxt),
+         .msr_icinv_we           (msr_icinv_we),
+         .ibus_ARREADY           (ibus_ARREADY),
+         .ibus_ARVALID           (ibus_ARVALID),
+         .ibus_ARADDR            (ibus_ARADDR),
          .ibus_RVALID            (ibus_RVALID),
          .ibus_RREADY            (ibus_RREADY),
          .ibus_RDATA             (ibus_RDATA)

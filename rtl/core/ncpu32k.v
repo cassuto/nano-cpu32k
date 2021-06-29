@@ -124,6 +124,7 @@ module ncpu32k
    wire [BPU_UPD_DW-1:0] bpu_wb_upd;            // From BACKEND of ncpu32k_backend.v
    wire                 flush;                  // From BACKEND of ncpu32k_backend.v
    wire [`NCPU_AW-3:0]  flush_tgt;              // From BACKEND of ncpu32k_backend.v
+   wire                 icinv_stall;            // From FRONTEND of ncpu32k_frontend.v
    wire                 idu_1_EIPF;             // From FRONTEND of ncpu32k_frontend.v
    wire                 idu_1_EITM;             // From FRONTEND of ncpu32k_frontend.v
    wire [BPU_UPD_DW-1:0] idu_1_bpu_upd;         // From FRONTEND of ncpu32k_frontend.v
@@ -140,6 +141,9 @@ module ncpu32k
    wire [`NCPU_AW-3:0]  idu_2_pc_4;             // From FRONTEND of ncpu32k_frontend.v
    wire [`NCPU_AW-3:0]  idu_bpu_pc_nxt;         // From FRONTEND of ncpu32k_frontend.v
    wire                 irq_sync;               // From IRQC of ncpu32k_irqc.v
+   wire [`NCPU_DW-1:0]  msr_icid;               // From FRONTEND of ncpu32k_frontend.v
+   wire [`NCPU_DW-1:0]  msr_icinv_nxt;          // From BACKEND of ncpu32k_backend.v
+   wire                 msr_icinv_we;           // From BACKEND of ncpu32k_backend.v
    wire [`NCPU_TLB_AW-1:0] msr_imm_tlbh_idx;    // From BACKEND of ncpu32k_backend.v
    wire [`NCPU_DW-1:0]  msr_imm_tlbh_nxt;       // From BACKEND of ncpu32k_backend.v
    wire                 msr_imm_tlbh_we;        // From BACKEND of ncpu32k_backend.v
@@ -233,9 +237,10 @@ module ncpu32k
    FRONTEND
       (/*AUTOINST*/
        // Outputs
-       .ibus_ARVALID                     (ibus_ARVALID),
-       .ibus_ARADDR                      (ibus_ARADDR[CONFIG_IBUS_AW-1:0]),
+       .ibus_ARVALID                    (ibus_ARVALID),
+       .ibus_ARADDR                     (ibus_ARADDR[CONFIG_IBUS_AW-1:0]),
        .ibus_RREADY                     (ibus_RREADY),
+       .icinv_stall                     (icinv_stall),
        .idu_1_insn_vld                  (idu_1_insn_vld),
        .idu_1_insn                      (idu_1_insn[`NCPU_IW-1:0]),
        .idu_1_pc                        (idu_1_pc[`NCPU_AW-3:0]),
@@ -252,10 +257,11 @@ module ncpu32k
        .idu_2_EIPF                      (idu_2_EIPF),
        .idu_bpu_pc_nxt                  (idu_bpu_pc_nxt[`NCPU_AW-3:0]),
        .msr_immid                       (msr_immid[`NCPU_DW-1:0]),
+       .msr_icid                        (msr_icid[`NCPU_DW-1:0]),
        // Inputs
        .clk                             (clk),
        .rst_n                           (rst_n),
-       .ibus_ARREADY                     (ibus_ARREADY),
+       .ibus_ARREADY                    (ibus_ARREADY),
        .ibus_RVALID                     (ibus_RVALID),
        .ibus_RDATA                      (ibus_RDATA[CONFIG_IBUS_DW-1:0]),
        .flush                           (flush),
@@ -275,7 +281,9 @@ module ncpu32k
        .msr_imm_tlbl_we                 (msr_imm_tlbl_we),
        .msr_imm_tlbh_idx                (msr_imm_tlbh_idx[`NCPU_TLB_AW-1:0]),
        .msr_imm_tlbh_nxt                (msr_imm_tlbh_nxt[`NCPU_DW-1:0]),
-       .msr_imm_tlbh_we                 (msr_imm_tlbh_we));
+       .msr_imm_tlbh_we                 (msr_imm_tlbh_we),
+       .msr_icinv_nxt                   (msr_icinv_nxt[`NCPU_DW-1:0]),
+       .msr_icinv_we                    (msr_icinv_we));
 
    /************************************************************
     * CPU Backend
@@ -352,6 +360,8 @@ module ncpu32k
        .msr_imm_tlbh_we                 (msr_imm_tlbh_we),
        .msr_irqc_imr_nxt                (msr_irqc_imr_nxt[`NCPU_DW-1:0]),
        .msr_irqc_imr_we                 (msr_irqc_imr_we),
+       .msr_icinv_nxt                   (msr_icinv_nxt[`NCPU_DW-1:0]),
+       .msr_icinv_we                    (msr_icinv_we),
        .msr_tsc_tsr_nxt                 (msr_tsc_tsr_nxt[`NCPU_DW-1:0]),
        .msr_tsc_tsr_we                  (msr_tsc_tsr_we),
        .msr_tsc_tcr_nxt                 (msr_tsc_tcr_nxt[`NCPU_DW-1:0]),
@@ -363,6 +373,7 @@ module ncpu32k
        .clk                             (clk),
        .rst_n                           (rst_n),
        .irq_sync                        (irq_sync),
+       .icinv_stall                     (icinv_stall),
        .idu_1_insn_vld                  (idu_1_insn_vld),
        .idu_1_insn                      (idu_1_insn[`NCPU_IW-1:0]),
        .idu_1_pc                        (idu_1_pc[`NCPU_AW-3:0]),
@@ -388,6 +399,7 @@ module ncpu32k
        .uncached_dbus_BDATA             (uncached_dbus_BDATA[`NCPU_DW-1:0]),
        .msr_immid                       (msr_immid[`NCPU_DW-1:0]),
        .msr_irqc_imr                    (msr_irqc_imr[`NCPU_DW-1:0]),
+       .msr_icid                        (msr_icid[`NCPU_DW-1:0]),
        .msr_irqc_irr                    (msr_irqc_irr[`NCPU_DW-1:0]),
        .msr_tsc_tsr                     (msr_tsc_tsr[`NCPU_DW-1:0]),
        .msr_tsc_tcr                     (msr_tsc_tcr[`NCPU_DW-1:0]));

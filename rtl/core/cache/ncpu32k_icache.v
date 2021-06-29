@@ -48,6 +48,12 @@ module ncpu32k_icache
    output                        dout_vld, // If cache is blocking, then assert low
    output                        dout_rdy,
    output                        stall_pc,
+   output                        icinv_stall, // If cache is processing ICINV
+   // ICID
+   output [`NCPU_DW-1:0]         msr_icid,
+   // ICINV
+   input [`NCPU_DW-1:0]          msr_icinv_nxt,
+   input                         msr_icinv_we,
    // I-Bus Master
    input                         ibus_ARREADY,
    output                        ibus_ARVALID,
@@ -58,10 +64,12 @@ module ncpu32k_icache
 );
 
    // Main FSM states
-   localparam                    S_IDLE = 2'b00;
-   localparam                    S_READ_PENDING = 2'b01;
-   localparam                    S_READOUT = 2'b10;
-   localparam                    S_BOOT = 2'b11;
+   localparam [2:0]              S_IDLE = 3'b000;
+   localparam [2:0]              S_READ_PENDING = 3'b001;
+   localparam [2:0]              S_READOUT = 3'b011;
+   localparam [2:0]              S_BOOT = 3'b010;
+   localparam [2:0]              S_INV_1 = 3'b110;
+   localparam [2:0]              S_INV_2 = 3'b111;
 
    // Tag data
    localparam                    TAG_ADDR_DW = CONFIG_IC_AW-CONFIG_IC_P_SETS-CONFIG_IC_P_LINE;
@@ -70,10 +78,17 @@ module ncpu32k_icache
    genvar i;
 
    wire [CONFIG_IC_P_SETS-1:0]   cls_cnt;
-   wire [1:0]                    status_r;
-   reg [1:0]                     status_nxt;
+   wire [2:0]                    status_r;
+   reg [2:0]                     status_nxt;
    wire                          ch_idle = (status_r == S_IDLE);
    wire                          ch_boot = (status_r == S_BOOT);
+   wire                          ch_inv_1 = (status_r == S_INV_1);
+   wire                          ch_inv_2 = (status_r == S_INV_2);
+   wire                          ch_idle_no_inv;
+   wire                          inv_pending_r;
+   reg                           inv_pending_nxt;
+   wire [`NCPU_AW-1:0]           inv_paddr_r;
+   reg [`NCPU_AW-1:0]            inv_paddr_nxt;
    wire                          ibus_A_set;
    wire                          ibus_A_clr;
 
@@ -104,7 +119,7 @@ module ncpu32k_icache
    reg                           s2i_tag_v      [0:(1<<CONFIG_IC_P_WAYS)-1];
    reg [CONFIG_IC_P_WAYS-1:0]    s2i_tag_lru    [0:(1<<CONFIG_IC_P_WAYS)-1];
    reg [TAG_ADDR_DW-1:0]         s2i_tag_paddr  [0:(1<<CONFIG_IC_P_WAYS)-1];
-   wire [CONFIG_IC_P_SETS-1:0]   s2i_entry_idx;
+   wire [CONFIG_IC_P_SETS-1:0]   s2i_entry_idx_final;
 
    wire                          s1_cke;
    wire                          s1_readtag;
@@ -126,12 +141,22 @@ module ncpu32k_icache
    nDFF_l #(CONFIG_IMMU_PAGE_SIZE_LOG2) dff_s1o_page_off_r
       (clk, (s1_cke & re), s1i_page_off, s1o_page_off_r);
 
-   // Switch the index for s1_cke | s1_readtag
-   // And keep the previous index when stalling
-   assign s1i_entry_idx_final = s1_cke ? s1i_entry_idx : s1o_entry_idx;
-   assign s1i_page_off_final = s1_cke ? s1i_page_off : s1o_page_off_r;
+   // Switch the index for ch_boot | ch_inv
+   assign s2i_entry_idx_final = (ch_boot)
+                                 ? cls_cnt
+                                 : (ch_inv_1 | ch_inv_2)
+                                    ? inv_paddr_r[CONFIG_IC_P_LINE+CONFIG_IC_P_SETS-1:CONFIG_IC_P_LINE]
+                                    : s1o_entry_idx;
 
-   assign s2i_entry_idx = ch_boot ? cls_cnt : s1o_entry_idx;
+   // Switch the index for s1_cke | ch_inv | s1_readtag
+   assign s1i_entry_idx_final = (s1_cke)
+                                 ? s1i_entry_idx
+                                 : s2i_entry_idx_final;
+   assign s1i_page_off_final = (s1_cke)
+                                 ? s1i_page_off
+                                 : (ch_inv_1 | ch_inv_2)
+                                    ? inv_paddr_r[CONFIG_IMMU_PAGE_SIZE_LOG2-1:0]
+                                    : s1o_page_off_r;
 
    // Tag entries
 generate
@@ -157,11 +182,11 @@ generate
                // Port A (Read)
                .raddr   (s1i_entry_idx_final),
                .dout    (s1o_tag_dout),
-               .re      ((s1_cke&re) | s1_readtag),
+               .re      ((s1_cke&re) | s1_readtag | ch_inv_1),
                // Port B (Write)
-               .waddr   (s2i_entry_idx),
+               .waddr   (s2i_entry_idx_final),
                .din     (s2i_tag_din),
-               .we      (|s2i_wr_tag)
+               .we      (s2i_wr_tag[i])
             );
 
          // LRU
@@ -178,16 +203,18 @@ generate
                // Port A (Read)
                .raddr  (s1i_entry_idx_final),
                .dout   (s1o_tag_lru[i]),
-               .re     ((s1_cke&re) | s1_readtag),
+               .re     ((s1_cke&re) | s1_readtag | ch_inv_1),
                // Port B (Write)
-               .waddr  (s2i_entry_idx),
+               .waddr  (s2i_entry_idx_final),
                .din    (s2i_tag_lru[i]),
-               .we     (|s2i_wr_tag_lru)
+               .we     (s2i_wr_tag_lru[i])
             );
       end
 endgenerate
 
-   assign s1o_paddr = {tlb_ppn[CONFIG_IC_AW-CONFIG_IMMU_PAGE_SIZE_LOG2-1:0], s1o_page_off_r[CONFIG_IMMU_PAGE_SIZE_LOG2-1:0]};
+   assign s1o_paddr = (ch_inv_1 | ch_inv_2)
+                        ? inv_paddr_r
+                        : {tlb_ppn[CONFIG_IC_AW-CONFIG_IMMU_PAGE_SIZE_LOG2-1:0], s1o_page_off_r[CONFIG_IMMU_PAGE_SIZE_LOG2-1:0]};
 
    wire [(1<<CONFIG_IC_P_WAYS)-1:0]  s1o_match;
    wire [(1<<CONFIG_IC_P_WAYS)-1:0]  s1o_free;
@@ -205,7 +232,6 @@ endgenerate
    wire s1o_hit = |s1o_match;
 
    wire [CONFIG_IC_P_WAYS-1:0] s1o_match_way_idx;
-   wire [CONFIG_IC_P_WAYS-1:0] s1o_free_way_idx;
    wire [CONFIG_IC_P_WAYS-1:0] s1o_lru_thresh;
 
 generate
@@ -213,8 +239,6 @@ generate
       begin : p_ways_2
          // 4-to-2 binary encoder. Assert (03251128)
          assign s1o_match_way_idx = {|s1o_match[3:2], s1o_match[3] | s1o_match[1]};
-         // 4-to-2 binary encoder
-         assign s1o_free_way_idx = {|s1o_free[3:2], s1o_free[3] | s1o_free[1]};
          // LRU threshold
          assign s1o_lru_thresh = s1o_lru[0] | s1o_lru[1] | s1o_lru[2] | s1o_lru[3];
       end
@@ -222,8 +246,6 @@ generate
       begin : p_ways_1
          // 1-to-2 binary encoder. Assert (03251128)
          assign s1o_match_way_idx = s1o_match[1];
-         // 1-to-2 binary encoder
-         assign s1o_free_way_idx = s1o_free[1];
          // LRU threshold
          assign s1o_lru_thresh = s1o_lru[0] | s1o_lru[1];
       end
@@ -266,7 +288,7 @@ endgenerate
    wire                    s1i_blk_en_b;
    wire [BLK_AW-1:0]       s1i_blk_addr_b;
 
-   assign s1i_blk_en_b = ((s1_cke&re)|s1_readtag) & (ch_idle | (status_nxt == S_IDLE));
+   assign s1i_blk_en_b = ((s1_cke&re & ch_idle_no_inv) | s1_readtag);
    assign s1i_blk_addr_b = {s1i_entry_idx_final[CONFIG_IC_P_SETS-1 : 0], s1i_page_off_final[CONFIG_IC_P_LINE-1 : CONFIG_IC_DW_BYTES_LOG2]};
 
    // Blocks
@@ -279,7 +301,7 @@ generate
          wire [CONFIG_IC_DW-1:0] s2i_blk_din_a;
          wire [CONFIG_IC_DW/8-1:0] s2i_blk_we_a;
 
-         wire s2i_matched = (s1o_free_way_idx == i);
+         wire s2i_matched = s1o_free[i];
 
          localparam DELTA_DW = CONFIG_IC_DW_BYTES_LOG2-CONFIG_IBUS_BYTES_LOG2;
 
@@ -321,7 +343,7 @@ endgenerate
    // If icache is blocking, then `dout_vld` is asserted low.
    // Use this signal to check whether we should issue the invalid NOP insn
    // to the backend.
-   assign dout_vld = (ch_idle & s1o_hit);
+   assign dout_vld = (ch_idle_no_inv & s1o_hit);
 
    // As long as dout is valid, this signal is asserted high,
    // while icache may be blocking.
@@ -344,7 +366,7 @@ generate
                      s2i_tag_lru[i] = i;
                      s2i_wr_tag_lru[i] = 1'b1;
                   end
-               else if (ch_idle & s1o_re_r & s1o_hit)
+               else if (ch_idle_no_inv & s1o_re_r & s1o_hit)
                   begin
                      // Update LRU priority
                      s2i_tag_lru[i] = s1o_match[i] ? {CONFIG_IC_P_WAYS{1'b1}} : s1o_tag_lru[i] - (s1o_tag_lru[i] > s1o_lru_thresh);
@@ -368,12 +390,19 @@ generate
                      s2i_tag_paddr[i] = {TAG_ADDR_DW{1'b0}};
                      s2i_wr_tag[i] = 1'b1;
                   end
-               else if(ch_idle & s1o_re_r & ~s1o_hit & (s1o_free_way_idx == i))
+               else if(ch_idle_no_inv & s1o_re_r & ~s1o_hit & s1o_free[i])
                   begin
                      // Cache missed
                      // Replace a free entry
                      s2i_tag_v[i] = 1'b1;
                      s2i_tag_paddr[i] = s1o_paddr[CONFIG_IC_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS];
+                     s2i_wr_tag[i] = 1'b1;
+                  end
+               else if(ch_inv_2 & s1o_re_r & s1o_hit & s1o_match[i])
+                  begin
+                     // Invalidate the cache line
+                     s2i_tag_v[i] = 1'b0;
+                     s2i_tag_paddr[i] = s1o_tag_paddr[i];
                      s2i_wr_tag[i] = 1'b1;
                   end
                else
@@ -388,10 +417,18 @@ generate
       end
 endgenerate
 
+   // If INV is pending, do not handle any command
+   // until INV is finished.
+   assign ch_idle_no_inv = (ch_idle & ~msr_icinv_we);
+
+   assign icinv_stall = inv_pending_r;
+
    // Write-back FSM
    always @(*)
       begin
          status_nxt = status_r;
+         inv_pending_nxt = inv_pending_r;
+         inv_paddr_nxt = inv_paddr_r;
          case(status_r)
             S_BOOT:
                begin
@@ -401,25 +438,47 @@ endgenerate
 
             S_IDLE:
                begin
-                  if (s1o_re_r & ~s1o_hit) // Cache missed
+                  if (msr_icinv_we) // Invalidate
+                     begin
+                        inv_pending_nxt = 1'b1;
+                        inv_paddr_nxt = msr_icinv_nxt;
+                        status_nxt = S_INV_1;
+                     end
+                  else if (s1o_re_r & ~s1o_hit) // Cache missed
                      status_nxt = S_READ_PENDING;
                end
             
+            S_INV_1:
+               status_nxt = S_INV_2;
+
+            S_INV_2:
+               status_nxt = S_READOUT;
+
             S_READ_PENDING:
                begin
                   if(&line_adr_cnt)
                      status_nxt = S_READOUT;
                end
 
-            S_READOUT:  
-               status_nxt = S_IDLE;
+            S_READOUT:
+               begin
+                  if (inv_pending_r)
+                     inv_pending_nxt = 1'b0;
+                  status_nxt = S_IDLE;
+               end
 
             default: begin
             end
          endcase
       end
 
-   nDFF_r #(2, S_BOOT) dff_status_r
+   nDFF_r #(1) dff_inv_pending_r
+      (clk, rst_n, inv_pending_nxt, inv_pending_r);
+   nDFF_l #(`NCPU_DW) dff_inv_paddr_r
+      (clk, 1'b1, inv_paddr_nxt, inv_paddr_r);
+
+
+   nDFF_r #(3, S_BOOT) dff_status_r
       (clk, rst_n, status_nxt, status_r);
    nDFF_lr #(CONFIG_IC_P_SETS, {CONFIG_IC_P_SETS{1'b1}}) dff_cls_cnt
       (clk, rst_n, ch_boot, cls_cnt - 'b1, cls_cnt);
@@ -430,10 +489,10 @@ endgenerate
    // In addition, readout the cleared values when booting.
    assign s1_readtag = (status_r == S_READOUT);
 
-   assign stall_pc = ~ch_idle | (s1o_re_r & ~s1o_hit);
+   assign stall_pc = ~ch_idle_no_inv | (s1o_re_r & ~s1o_hit);
 
    // Send request to IBUS
-   assign ibus_A_set = (status_r == S_IDLE && status_nxt == S_READ_PENDING);
+   assign ibus_A_set = (status_r != S_READ_PENDING && status_nxt == S_READ_PENDING);
    assign ibus_A_clr = (ibus_ARVALID & ibus_ARREADY);
    
    nDFF_lr #(1) dff_ibus_AVALID
@@ -442,6 +501,12 @@ endgenerate
    assign ibus_ARADDR = {s1o_paddr[CONFIG_IBUS_AW-1:CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}} }; // align at size of a line, truncate address bits
 
    assign ibus_RREADY = 1'b1;
+
+   // ICID Register
+   assign msr_icid[3:0] = CONFIG_IC_P_SETS[3:0];
+   assign msr_icid[7:4] = CONFIG_IC_P_LINE[3:0];
+   assign msr_icid[11:8] = CONFIG_IC_P_WAYS[3:0];
+   assign msr_icid[31:12] = 20'b0;
 
    // synthesis translate_off
 `ifndef SYNTHESIS

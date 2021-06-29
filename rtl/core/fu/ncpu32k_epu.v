@@ -90,6 +90,7 @@ module ncpu32k_epu
    output                     msr_epc_we,
    // EPSR
    input [`NCPU_PSR_DW-1:0]   msr_epsr,
+   input [`NCPU_PSR_DW-1:0]   msr_epsr_nobyp,
    output [`NCPU_PSR_DW-1:0]  msr_epsr_nxt,
    output                     msr_epsr_we,
    // ELSA
@@ -118,6 +119,19 @@ module ncpu32k_epu
    output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbh_idx,
    output [`NCPU_DW-1:0]      msr_dmm_tlbh_nxt,
    output                     msr_dmm_tlbh_we,
+   // ICID
+   input [`NCPU_DW-1:0]       msr_icid,
+   // ICINV
+   output [`NCPU_DW-1:0]      msr_icinv_nxt,
+   output                     msr_icinv_we,
+   // DCID
+   input [`NCPU_DW-1:0]       msr_dcid,
+   // DCINV
+   output [`NCPU_DW-1:0]      msr_dcinv_nxt,
+   output                     msr_dcinv_we,
+   // DCFLS
+   output [`NCPU_DW-1:0]      msr_dcfls_nxt,
+   output                     msr_dcfls_we,
    // IMR
    input [`NCPU_DW-1:0]       msr_irqc_imr,
    output [`NCPU_DW-1:0]      msr_irqc_imr_nxt,
@@ -140,8 +154,8 @@ module ncpu32k_epu
    wire                       bank_ps;
    wire                       bank_imm;
    wire                       bank_dmm;
-   wire                       bank_ica;
-   wire                       bank_dca;
+   wire                       bank_ic;
+   wire                       bank_dc;
    wire                       bank_dbg;
    wire                       bank_irqc;
    wire                       bank_tsc;
@@ -151,7 +165,14 @@ module ncpu32k_epu
    wire [`NCPU_DW-1:0]        dout_imm;
    wire                       msr_dmm_tlbl_sel;
    wire                       msr_dmm_tlbh_sel;
+   wire                       msr_ic_id_sel;
+   wire                       msr_ic_inv_sel;
+   wire                       msr_dc_id_sel;
+   wire                       msr_dc_inv_sel;
+   wire                       msr_dc_fls_sel;
    wire [`NCPU_DW-1:0]        dout_dmm;
+   wire [`NCPU_DW-1:0]        dout_ic;
+   wire [`NCPU_DW-1:0]        dout_dc;
    wire                       msr_irqc_imr_sel;
    wire                       msr_irqc_irr_sel;
    wire [`NCPU_DW-1:0]        dout_irqc;
@@ -163,10 +184,10 @@ module ncpu32k_epu
    wire                       set_elsa_as_pc;
    wire                       set_elsa;
    wire [`NCPU_DW-1:0]        lsa_nxt;
-   wire                       epsr_rm;
-   wire                       epsr_ire;
-   wire                       epsr_imme;
-   wire                       epsr_dmme;
+   wire                       epsr_rm_nobpy;
+   wire                       epsr_ire_nobpy;
+   wire                       epsr_imme_nobpy;
+   wire                       epsr_dmme_nobpy;
    wire [9:0]                 epsr_res;
    wire                       wb_wmsr_psr_we;
    wire                       wb_wmsr_epc_we;
@@ -180,6 +201,9 @@ module ncpu32k_epu
    wire                       wb_msr_imm_tlbh_we;
    wire                       wb_msr_dmm_tlbl_we;
    wire                       wb_msr_dmm_tlbh_we;
+   wire                       wb_msr_ic_inv_we;
+   wire                       wb_msr_dc_inv_we;
+   wire                       wb_msr_dc_fls_we;
    wire                       wb_msr_irqc_imr_we;
    wire                       wb_msr_tsc_tsr_we;
    wire                       wb_msr_tsc_tcr_we;
@@ -195,6 +219,9 @@ module ncpu32k_epu
    wire                       commit_msr_imm_tlbh_we;
    wire                       commit_msr_dmm_tlbl_we;
    wire                       commit_msr_dmm_tlbh_we;
+   wire                       commit_msr_ic_inv_we;
+   wire                       commit_msr_dc_inv_we;
+   wire                       commit_msr_dc_fls_we;
    wire                       commit_msr_irqc_imr_we;
    wire                       commit_msr_tsc_tsr_we;
    wire                       commit_msr_tsc_tcr_we;
@@ -204,6 +231,8 @@ module ncpu32k_epu
    wire                       wmsr_psr_imme;
    wire                       wmsr_psr_dmme;
    wire [9:0]                 wmsr_psr_res;
+   wire                       msr_exc_ent_r;
+   wire                       save_psr;
    genvar i;
 
    assign msr_addr = epu_operand1 | {{`NCPU_DW-15{1'b0}}, epu_imm32[14:0]};
@@ -237,6 +266,23 @@ module ncpu32k_epu
          ({`NCPU_DW{~bank_off[`NCPU_MSR_DMM_TLBSEL]}} & msr_dmmid)
       );
 
+   // Readout IC
+   assign msr_ic_id_sel = bank_off[`NCPU_MSR_IC_ID];
+   assign msr_ic_inv_sel = bank_off[`NCPU_MSR_IC_INV];
+   assign dout_ic =
+      (
+         ({`NCPU_DW{msr_ic_id_sel}} & msr_icid)
+      );
+
+   // Readout DC
+   assign msr_dc_id_sel = bank_off[`NCPU_MSR_DC_ID];
+   assign msr_dc_inv_sel = bank_off[`NCPU_MSR_DC_INV];
+   assign msr_dc_fls_sel = bank_off[`NCPU_MSR_DC_FLS];
+   assign dout_dc =
+      (
+         ({`NCPU_DW{msr_dc_id_sel}} & msr_dcid)
+      );
+
    // Readout IRQC
    assign msr_irqc_imr_sel = bank_off[`NCPU_MSR_IRQC_IMR];
    assign msr_irqc_irr_sel = bank_off[`NCPU_MSR_IRQC_IRR];
@@ -259,8 +305,8 @@ module ncpu32k_epu
    assign bank_ps = (bank_addr == `NCPU_MSR_BANK_PS);
    assign bank_imm = (bank_addr == `NCPU_MSR_BANK_IMM);
    assign bank_dmm = (bank_addr == `NCPU_MSR_BANK_DMM);
-   assign bank_ica = (bank_addr == `NCPU_MSR_BANK_ICA);
-   assign bank_dca = (bank_addr == `NCPU_MSR_BANK_DCA);
+   assign bank_ic = (bank_addr == `NCPU_MSR_BANK_IC);
+   assign bank_dc = (bank_addr == `NCPU_MSR_BANK_DC);
    assign bank_dbg = (bank_addr == `NCPU_MSR_BANK_DBG);
    assign bank_irqc = (bank_addr == `NCPU_MSR_BANK_IRQC);
    assign bank_tsc = (bank_addr == `NCPU_MSR_BANK_TSC);
@@ -273,6 +319,8 @@ module ncpu32k_epu
          ({`NCPU_DW{bank_ps}} & dout_ps) |
          ({`NCPU_DW{bank_imm}} & dout_imm) |
          ({`NCPU_DW{bank_dmm}} & dout_dmm) |
+         ({`NCPU_DW{bank_ic}} & dout_ic) |
+         ({`NCPU_DW{bank_dc}} & dout_dc) |
          ({`NCPU_DW{bank_irqc}} & dout_irqc) |
          ({`NCPU_DW{bank_tsc}} & dout_tsc)
       );
@@ -325,6 +373,10 @@ module ncpu32k_epu
    assign wb_msr_imm_tlbh_we  = epu_opc_bus[`NCPU_EPU_WMSR] & bank_imm & msr_imm_tlbh_sel;
    assign wb_msr_dmm_tlbl_we  = epu_opc_bus[`NCPU_EPU_WMSR] & bank_dmm & msr_dmm_tlbl_sel;
    assign wb_msr_dmm_tlbh_we  = epu_opc_bus[`NCPU_EPU_WMSR] & bank_dmm & msr_dmm_tlbh_sel;
+   assign wb_msr_ic_inv_we    = epu_opc_bus[`NCPU_EPU_WMSR] & bank_ic & msr_ic_inv_sel;
+   assign wb_msr_dc_inv_we    = epu_opc_bus[`NCPU_EPU_WMSR] & bank_dc & msr_dc_inv_sel;
+   assign wb_msr_dc_fls_we    = epu_opc_bus[`NCPU_EPU_WMSR] & bank_dc & msr_dc_fls_sel;
+
    assign wb_msr_irqc_imr_we  = epu_opc_bus[`NCPU_EPU_WMSR] & bank_irqc & msr_irqc_imr_sel;
    assign wb_msr_tsc_tsr_we   = epu_opc_bus[`NCPU_EPU_WMSR] & bank_tsc & msr_tsc_tsr_sel;
    assign wb_msr_tsc_tcr_we   = epu_opc_bus[`NCPU_EPU_WMSR] & bank_tsc & msr_tsc_tcr_sel;
@@ -341,6 +393,9 @@ module ncpu32k_epu
                         wb_msr_imm_tlbh_we,
                         wb_msr_dmm_tlbl_we,
                         wb_msr_dmm_tlbh_we,
+                        wb_msr_ic_inv_we,
+                        wb_msr_dc_inv_we,
+                        wb_msr_dc_fls_we,
                         wb_msr_irqc_imr_we,
                         wb_msr_tsc_tsr_we,
                         wb_msr_tsc_tcr_we,
@@ -360,13 +415,16 @@ module ncpu32k_epu
       commit_msr_imm_tlbh_we,
       commit_msr_dmm_tlbl_we,
       commit_msr_dmm_tlbh_we,
+      commit_msr_ic_inv_we,
+      commit_msr_dc_inv_we,
+      commit_msr_dc_fls_we,
       commit_msr_irqc_imr_we,
       commit_msr_tsc_tsr_we,
       commit_msr_tsc_tcr_we,
       commit_bank_off} = commit_wmsr_we;
 
    // Unpack EPSR. Be consistend with ncpu32k_psr
-   assign {epsr_res[9],epsr_res[8],epsr_dmme,epsr_imme,epsr_ire,epsr_rm,epsr_res[3],epsr_res[2], epsr_res[1],epsr_res[0]} = msr_epsr;
+   assign {epsr_res[9],epsr_res[8],epsr_dmme_nobpy,epsr_imme_nobpy,epsr_ire_nobpy,epsr_rm_nobpy,epsr_res[3],epsr_res[2], epsr_res[1],epsr_res[0]} = msr_epsr_nobyp;
 
    // Unpack WMSR PSR. Be consistend with ncpu32k_psr
    assign {wmsr_psr_res[9],wmsr_psr_res[8],wmsr_psr_dmme,wmsr_psr_imme,wmsr_psr_ire,wmsr_psr_rm,wmsr_psr_res[3],wmsr_psr_res[2], wmsr_psr_res[1],wmsr_psr_res[0]} = commit_wmsr_dat[9:0];
@@ -381,16 +439,22 @@ module ncpu32k_epu
    assign msr_exc_ent = (exc_commit & ~commit_ERET);
    // Commit PSR. Assert (03060934)
    assign msr_psr_rm_we = (commit_wmsr_psr_we | commit_ERET);
-   assign msr_psr_rm_nxt = commit_wmsr_psr_we ? wmsr_psr_rm : epsr_rm;
+   assign msr_psr_rm_nxt = commit_wmsr_psr_we ? wmsr_psr_rm : epsr_rm_nobpy;
    assign msr_psr_imme_we = (commit_wmsr_psr_we | commit_ERET);
-   assign msr_psr_imme_nxt = commit_wmsr_psr_we ? wmsr_psr_imme : epsr_imme;
+   assign msr_psr_imme_nxt = commit_wmsr_psr_we ? wmsr_psr_imme : epsr_imme_nobpy;
    assign msr_psr_dmme_we = (commit_wmsr_psr_we | commit_ERET);
-   assign msr_psr_dmme_nxt = commit_wmsr_psr_we ? wmsr_psr_dmme : epsr_dmme;
+   assign msr_psr_dmme_nxt = commit_wmsr_psr_we ? wmsr_psr_dmme : epsr_dmme_nobpy;
    assign msr_psr_ire_we = (commit_wmsr_psr_we | commit_ERET);
-   assign msr_psr_ire_nxt = commit_wmsr_psr_we ? wmsr_psr_ire : epsr_ire;
+   assign msr_psr_ire_nxt = commit_wmsr_psr_we ? wmsr_psr_ire : epsr_ire_nobpy;
+
+   nDFF_r #(1) dff_msr_exc_ent_r
+      (clk,rst_n, msr_exc_ent, msr_exc_ent_r);
+
+   // Save PSR to EPSR at the first edge of exception signal
+   assign save_psr = msr_exc_ent & ~msr_exc_ent_r;
    
    // Commit EPSR
-   assign msr_epsr_we = (commit_wmsr_epsr_we | msr_exc_ent);
+   assign msr_epsr_we = (commit_wmsr_epsr_we | save_psr);
    assign msr_epsr_nxt = commit_wmsr_epsr_we ? commit_wmsr_dat[`NCPU_PSR_DW-1:0] : msr_psr_nold;
    // In syscall, EPC is a pointer to the next insn to syscall, while in general EPC points to the insn
    // that raised the exception.
@@ -425,6 +489,16 @@ module ncpu32k_epu
    assign msr_dmm_tlbh_idx = commit_bank_off;
    assign msr_dmm_tlbh_nxt = commit_wmsr_dat;
    assign msr_dmm_tlbh_we = commit_msr_dmm_tlbh_we;
+
+   // Commit IC
+   assign msr_icinv_we = commit_msr_ic_inv_we;
+   assign msr_icinv_nxt = commit_wmsr_dat;
+
+   // Commit DC
+   assign msr_dcinv_we = commit_msr_dc_inv_we;
+   assign msr_dcinv_nxt = commit_wmsr_dat;
+   assign msr_dcfls_we = commit_msr_dc_fls_we;
+   assign msr_dcfls_nxt = commit_wmsr_dat;
 
    // Commit IRQC
    assign msr_irqc_imr_we = commit_msr_irqc_imr_we;

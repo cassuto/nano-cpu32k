@@ -43,12 +43,13 @@ module ncpu32k_dcache_ram
    // Check this manually...
    ip_dcache_bram RAM
       (
-         .clk     (clk),
+         .clka    (clk),
          .addra   (addr_a),
          .wea     (we_a),
          .dina    (din_a),
          .douta   (dout_a),
          .ena     (en_a),
+         .clkb    (clk),
          .addrb   (addr_b),
          .web     (we_b),
          .dinb    (din_b),
