@@ -132,6 +132,10 @@ module ncpu32k_lsu
    wire [15:0]                         wb_dout_16b;
    wire                                wb_AVALID_tmp_r;
 
+always @(posedge clk)
+   if (wb_lsu_AVALID && (wb_lsu_LSA == 32'hc0468cc4) && wb_lsu_dout != 32'h0 && ~lsu_stall)
+      $fatal(1, "test");
+
    // Address Geneator
    assign dc_vaddr = lsu_operand1 + lsu_imm32;
 

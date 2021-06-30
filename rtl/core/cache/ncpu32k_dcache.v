@@ -89,7 +89,7 @@ module ncpu32k_dcache
    localparam                    TAG_ADDR_DW = CONFIG_DC_AW - CONFIG_DC_P_SETS - CONFIG_DC_P_LINE;
    localparam                    TAG_DW = 2 + TAG_ADDR_DW; // V + D + ADDR
 
-   genvar i;
+   genvar i, j;
 
    reg [CONFIG_DBUS_AW-1:0]      dbus_AADDR_nxt;
    wire [CONFIG_DC_P_SETS-1:0]   cls_cnt;
@@ -392,6 +392,9 @@ generate
          wire s2i_matched = (s2i_refill & ~in_invfls_r)
                               ? s1o_free[i]
                               : s1o_match[i];
+         wire [CONFIG_DC_DW/8-1:0] we_a = s2i_blk_we_a[CONFIG_DC_DW/8-1:0] & {CONFIG_DC_DW/8{s2i_matched}};
+         wire en_a = (s2i_blk_en_a_g & s2i_matched);
+         wire [CONFIG_DC_DW-1:0] dout_b;
 
          ncpu32k_dcache_ram
             #(
@@ -402,16 +405,46 @@ generate
             (
                .clk      (clk),
                .addr_a   (s2i_blk_addr_a[BLK_AW-1:0]),
-               .we_a     (s2i_blk_we_a[CONFIG_DC_DW/8-1:0] & {CONFIG_DC_DW/8{s2i_matched}}),
+               .we_a     (we_a),
                .din_a    (s2i_blk_din_a[CONFIG_DC_DW-1:0]),
                .dout_a   (s2o_blk_dout_a[i][CONFIG_DC_DW-1:0]),
-               .en_a     (s2i_blk_en_a_g & s2i_matched),
+               .en_a     (en_a),
                .addr_b   (s1i_blk_addr_b[BLK_AW-1:0]),
                .we_b     ({CONFIG_DC_DW/8{1'b0}}),
                .din_b    ({CONFIG_DC_DW{1'b0}}),
-               .dout_b   (s1o_blk_dout_b[i][CONFIG_DC_DW-1:0]),
+               .dout_b   (dout_b[CONFIG_DC_DW-1:0]),
                .en_b     (s1i_blk_en_b)
             );
+
+         // Detect RAW dependency in D$ pipeline
+         wire                                   rdat_bypass_r;
+         wire [CONFIG_DC_DW-1:0]                rdat_din_r;
+         wire [CONFIG_DC_DW/8-1:0]              rdat_wmsk_r;
+         wire [CONFIG_DC_DW-1:0]                rdat_byp;
+         wire                                   rdat_conflict;
+
+         assign rdat_conflict = ((s2i_blk_addr_a == s1i_blk_addr_b) & s1i_blk_en_b & |we_a & en_a);
+
+         // Bypass FSM
+         nDFF_lr #(1, 1'b0) dff_rdat_bypass_r
+            (clk,rst_n, (rdat_conflict|s1i_blk_en_b), (rdat_conflict | ~s1i_blk_en_b), rdat_bypass_r); // Keep bypass_r valid till the next Read
+         // Latch din
+         nDFF_l #(CONFIG_DC_DW) dff_rdat_din_r
+            (clk, (|we_a & en_a), s2i_blk_din_a, rdat_din_r);
+         // Latch w mask
+         nDFF_l #(CONFIG_DC_DW/8) dff_rdat_wmsk_r
+            (clk, (|we_a & en_a), we_a, rdat_wmsk_r);
+
+         // Restore byte selection
+         for(j=0; j<CONFIG_DC_DW/8; j=j+1)
+            begin : gen_rdat_byp
+               assign rdat_byp[j*8 +: 8] = (rdat_wmsk_r[j])
+                                             ? rdat_din_r[j*8 +: 8]
+                                             : dout_b[j*8 +: 8];
+            end
+
+         assign s1o_blk_dout_b[i] = rdat_bypass_r ? rdat_byp : dout_b;
+         
       end
 endgenerate
 
@@ -419,39 +452,7 @@ endgenerate
                                           ? s1o_match_way_idx
                                           : s1o_free_way_idx];
 
-   // Detect RAW dependency in D$ pipeline
-   wire                                   rdat_bypass_r;
-   wire [CONFIG_DC_DW-1:0]                rdat_din_r;
-   wire [CONFIG_DC_DW/8-1:0]              rdat_wmsk_r;
-   wire [CONFIG_DC_DW-1:0]                rdat_byp;
-   wire [CONFIG_DC_DW-1:0]                rdat_org;
-   wire                                   rdat_conflict;
-   
-   assign rdat_org = s1o_blk_dout_b[s1o_match_way_idx];
-
-   assign rdat_conflict = ((s2i_blk_addr_a == s1i_blk_addr_b) & s1i_blk_en_b & |s2i_blk_we_a & s2i_blk_en_a_g);
-
-   // Bypass FSM
-   nDFF_lr #(1, 1'b0) dff_rdat_bypass_r
-      (clk,rst_n, (rdat_conflict|s1i_blk_en_b), (rdat_conflict | ~s1i_blk_en_b), rdat_bypass_r); // Keep bypass_r valid till the next Read
-   // Latch din
-   nDFF_l #(CONFIG_DC_DW) dff_rdat_din_r
-      (clk, s1i_blk_en_b, s2i_blk_din_a, rdat_din_r);
-   // Latch w mask
-   nDFF_l #(CONFIG_DC_DW/8) dff_rdat_wmsk_r
-      (clk, s1i_blk_en_b, s2i_blk_we_a, rdat_wmsk_r);
-
-   // Restore byte selection
-generate
-   for(i=0; i<CONFIG_DC_DW/8; i=i+1)
-      begin : gen_rdat_byp
-         assign rdat_byp[i*8 +: 8] = (rdat_wmsk_r[i])
-                                       ? rdat_din_r[i*8 +: 8]
-                                       : rdat_org[i*8 +: 8];
-      end
-endgenerate
-
-   assign rdat = rdat_bypass_r ? rdat_byp : rdat_org;
+   assign rdat = s1o_blk_dout_b[s1o_match_way_idx];
 
 
    // Combined logic to maintain tags
