@@ -9,12 +9,14 @@ help() {
     exit -1
 }
 
+BUILD="false"
 SUMULATE="false"
 CHECK_WAVE="false"
 
-while getopts 'hsw:' OPT; do
+while getopts 'hbsw:' OPT; do
     case $OPT in
         s) SUMULATE="true";;
+        b) BUILD="true";;
         w) CHECK_WAVE="true"; WAVE_FILE="$OPTARG";;
         h) help;;
         ?) help;;
@@ -39,19 +41,21 @@ ID="${ID##*\r}"
 NAME="${NAME##*\r}"
 
 # build
-cd $SHELL_PATH/src
-CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
-verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir ./$BUILD_PATH/ --build $V_TOP_FILE $CPP_SRC
-if [ $? -ne 0 ]; then
-    echo "Failed to run verilator!!!"
-    exit 1
-fi
-cd $SHELL_PATH
+if [ "$BUILD" == "true" ]; then
+    cd $SHELL_PATH/src
+    CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
+    verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir ./$BUILD_PATH/ --build $V_TOP_FILE $CPP_SRC
+    if [ $? -ne 0 ]; then
+        echo "Failed to run verilator!!!"
+        exit 1
+    fi
+    cd $SHELL_PATH
 
-# git commit
-git add . -A --ignore-errors
-(echo $NAME && echo $ID && hostnamectl && uptime) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty 1>/dev/null 2>&1
-sync
+    # git commit
+    git add . -A --ignore-errors
+    (echo $NAME && echo $ID && hostnamectl && uptime) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty 1>/dev/null 2>&1
+    sync
+fi
 
 # simulate
 if [ "$SUMULATE" == "true" ]; then
