@@ -3,7 +3,7 @@ A Verilator-based demo.
 
 Please fill your information in myinfo.txt.
 
-For example:
+For example:  
 ID=202100001  
 Name=张三  
 
