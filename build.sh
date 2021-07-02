@@ -2,22 +2,26 @@
 
 help() {
     echo "Usage:"
-    echo "build.sh [-s] [-w filename]"
+    echo "build.sh [-b] [-s] [-w filename] [-c]"
     echo "Description:"
+    echo "-b: Build project."
     echo "-s: Run simulation program."
     echo "-w: Open the waveform file using gtkwave."
+    echo "-c: Clean project."
     exit -1
 }
 
+CLEAN="false"
 BUILD="false"
 SUMULATE="false"
 CHECK_WAVE="false"
 
-while getopts 'hbsw:' OPT; do
+while getopts 'hbsw:c' OPT; do
     case $OPT in
         s) SUMULATE="true";;
         b) BUILD="true";;
         w) CHECK_WAVE="true"; WAVE_FILE="$OPTARG";;
+        c) CLEAN="true";;
         h) help;;
         ?) help;;
     esac
@@ -39,6 +43,12 @@ if [[ ! $ID ]] || [[ ! $NAME ]]; then
 fi
 ID="${ID##*\r}"
 NAME="${NAME##*\r}"
+
+# clean
+if [ "$CLEAN" == "true" ]; then
+    rm -rf $SHELL_PATH/src/$BUILD_PATH
+    exit 0
+fi
 
 # build
 if [ "$BUILD" == "true" ]; then
