@@ -57,6 +57,7 @@ module UMA_subsystem
    output                              dbus_ARWREADY,
    input                               dbus_ARWVALID,
    input [CONFIG_DBUS_AW-1:0]          dbus_ARWADDR,
+   input                               dbus_ASEL_BOOTROM,
    input                               dbus_AWE,
    output                              dbus_WREADY,
    input                               dbus_WVALID,
@@ -114,6 +115,8 @@ module UMA_subsystem
    localparam [3:0]                    S_IBUS_BURST_READ_2        = 4'd7;
    localparam [3:0]                    S_IBUS_BURST_START_BOOTROM = 4'd8;
    localparam [3:0]                    S_IBUS_BURST_BOOTROM_PENDING = 4'd9;
+   localparam [3:0]                    S_DBUS_BURST_START_BOOTROM = 4'd10;
+   localparam [3:0]                    S_DBUS_BURST_BOOTROM_PENDING = 4'd11;
 
    // D-BUS is prior to I-BUS
    assign dbus_ARWREADY = (state_r == S_IDLE);
@@ -232,8 +235,8 @@ module UMA_subsystem
       (cpu_clk, cpu_rst_n, rx_pop, rx_BVALID_r);
 
    // Read response
-   assign dbus_RVALID = (sdr_dbus_r & rx_BVALID_r);
-   assign dbus_RDATA = rx_dout;
+   assign dbus_RVALID = (sdr_dbus_r & rx_BVALID_r) | (state_r==S_DBUS_BURST_BOOTROM_PENDING);
+   assign dbus_RDATA = (sdr_dbus_r & rx_BVALID_r) ? rx_dout : bootrom_dout;
 
    assign ibus_RVALID = (sdr_ibus_r & rx_BVALID_r) | (state_r==S_IBUS_BURST_BOOTROM_PENDING);
    assign ibus_RDATA = (sdr_ibus_r & rx_BVALID_r) ? rx_dout : bootrom_dout;
@@ -260,7 +263,17 @@ module UMA_subsystem
          begin
             case (state_r)
             S_IDLE:
-               if (dbus_ARWVALID)
+               if (dbus_ARWVALID & ~dbus_AWE & dbus_ASEL_BOOTROM) // Bootrom is selected by dbus
+                  begin
+                     bootrom_en <= 1'b1;
+                     bootrom_addr <= dbus_ARWADDR;
+                     bootrom_burst_cnt <= {BURST_WORDS_AW{1'b1}};
+                     state_r <= S_DBUS_BURST_START_BOOTROM;
+                  end
+
+               // FIXME Writing bootROM is unhandled, which causes writing to DRAM (with address truncated)
+
+               else if (dbus_ARWVALID)
                   begin
                      sdr_dbus_r <= 1'b1;
                      sdr_cmd_addr <= dbus_ARWADDR[CONFIG_SDR_DATA_BYTES_LOG2 +: CONFIG_SDR_ROW_BITS+CONFIG_SDR_BA_BITS+CONFIG_SDR_COL_BITS];
@@ -276,11 +289,11 @@ module UMA_subsystem
                         end
                   end
 
-               else if (ibus_ARVALID & ibus_ASEL_BOOTROM) // Bootrom is selected
+               else if (ibus_ARVALID & ibus_ASEL_BOOTROM) // Bootrom is selected by ibus
                   begin
                      bootrom_en <= 1'b1;
                      bootrom_addr <= ibus_ARADDR;
-                     bootrom_burst_cnt <= {BURST_WORDS_AW{1'b0}};
+                     bootrom_burst_cnt <= {BURST_WORDS_AW{1'b1}};
                      state_r <= S_IBUS_BURST_START_BOOTROM;
                   end
 
@@ -308,7 +321,7 @@ module UMA_subsystem
                   end
             S_DBUS_BURST_WRITE_2:
                // Need to wait handshake
-               if (~cdc_sdr_burst_cnt_msb & dbus_hds_B)
+               if (~cdc_sdr_burst_cnt_msb & dbus_hds_B) // FIXME simplify this
                   begin
                      sdr_dbus_r <= 1'b0;
                      state_r <= S_IDLE;
@@ -332,6 +345,12 @@ module UMA_subsystem
                   end
 
 
+            S_DBUS_BURST_START_BOOTROM:
+               begin
+                  // Bootrom takes 1 clk to output the result
+                  state_r <= S_DBUS_BURST_BOOTROM_PENDING;
+                  bootrom_addr <= bootrom_addr + (CONFIG_IBUS_DW/8);
+               end
             S_IBUS_BURST_START_BOOTROM:
                begin
                   // Bootrom takes 1 clk to output the result
@@ -339,6 +358,7 @@ module UMA_subsystem
                   bootrom_addr <= bootrom_addr + (CONFIG_IBUS_DW/8);
                end
 
+            S_DBUS_BURST_BOOTROM_PENDING,
             S_IBUS_BURST_BOOTROM_PENDING:
                begin
                   if (|bootrom_burst_cnt)
@@ -386,6 +406,14 @@ module UMA_subsystem
 
          if (sdr_r_vld & rx_full)
             $fatal(1, "BUG ON: RX FIFO is too small!");
+      end
+
+   always @(posedge sdr_clk)
+      begin
+         if (dbus_ASEL_BOOTROM & dbus_ARWVALID & dbus_AWE)
+            begin
+               $fatal(1, "BUG ON: Write to boot ROM!");
+            end
       end
 
    initial
