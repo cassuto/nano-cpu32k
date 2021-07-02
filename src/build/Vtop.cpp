@@ -39,7 +39,7 @@ static void _eval_initial_loop(Vtop* vlSelf) {
             Verilated::debug(1);
             __Vchange = Vtop___change_request(vlSelf);
             Verilated::debug(__Vsaved_debug);
-            VL_FATAL_MT("top.v", 1, "",
+            VL_FATAL_MT("top.v", 2, "",
                 "Verilated model didn't DC converge\n"
                 "- See https://verilator.org/warn/DIDNOTCONVERGE");
         } else {
@@ -70,7 +70,7 @@ void Vtop::eval_step() {
             Verilated::debug(1);
             __Vchange = Vtop___change_request(this);
             Verilated::debug(__Vsaved_debug);
-            VL_FATAL_MT("top.v", 1, "",
+            VL_FATAL_MT("top.v", 2, "",
                 "Verilated model didn't converge\n"
                 "- See https://verilator.org/warn/DIDNOTCONVERGE");
         } else {
@@ -83,15 +83,14 @@ void Vtop::final() {
     Vtop___final(this);
 }
 
-VL_INLINE_OPT void Vtop___sequent__TOP__1(Vtop* vlSelf) {
+VL_INLINE_OPT void Vtop___combo__TOP__1(Vtop* vlSelf) {
     if (false && vlSelf) {}  // Prevent unused
     Vtop__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
-    VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___sequent__TOP__1\n"); );
+    VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___combo__TOP__1\n"); );
     // Body
-    vlSelf->top__DOT__reg_result = ((IData)(vlSelf->reset)
-                                     ? 0U : (vlSelf->io_a 
-                                             + vlSelf->io_b));
-    vlSelf->io_out = vlSelf->top__DOT__reg_result;
+    vlSelf->out_c = ((IData)(vlSelf->in_a) & (IData)(vlSelf->in_b));
+    vlSelf->out_s = (((~ (IData)(vlSelf->in_a)) & (IData)(vlSelf->in_b)) 
+                     | ((IData)(vlSelf->in_a) & (~ (IData)(vlSelf->in_b))));
 }
 
 void Vtop___eval(Vtop* vlSelf) {
@@ -99,11 +98,7 @@ void Vtop___eval(Vtop* vlSelf) {
     Vtop__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___eval\n"); );
     // Body
-    if (((IData)(vlSelf->clock) & (~ (IData)(vlSelf->__Vclklast__TOP__clock)))) {
-        Vtop___sequent__TOP__1(vlSelf);
-    }
-    // Final
-    vlSelf->__Vclklast__TOP__clock = vlSelf->clock;
+    Vtop___combo__TOP__1(vlSelf);
 }
 
 QData Vtop___change_request_1(Vtop* vlSelf);
@@ -132,9 +127,9 @@ void Vtop___eval_debug_assertions(Vtop* vlSelf) {
     Vtop__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___eval_debug_assertions\n"); );
     // Body
-    if (VL_UNLIKELY((vlSelf->clock & 0xfeU))) {
-        Verilated::overWidthError("clock");}
-    if (VL_UNLIKELY((vlSelf->reset & 0xfeU))) {
-        Verilated::overWidthError("reset");}
+    if (VL_UNLIKELY((vlSelf->in_a & 0xfeU))) {
+        Verilated::overWidthError("in_a");}
+    if (VL_UNLIKELY((vlSelf->in_b & 0xfeU))) {
+        Verilated::overWidthError("in_b");}
 }
 #endif  // VL_DEBUG

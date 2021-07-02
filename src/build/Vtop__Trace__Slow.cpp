@@ -50,17 +50,14 @@ void Vtop__traceInitSub0(Vtop* vlSelf, VerilatedVcd* tracep) {
     if (false && tracep && c) {}  // Prevent unused
     // Body
     {
-        tracep->declBit(c+1,"clock", false,-1);
-        tracep->declBit(c+2,"reset", false,-1);
-        tracep->declBus(c+3,"io_a", false,-1, 31,0);
-        tracep->declBus(c+4,"io_b", false,-1, 31,0);
-        tracep->declBus(c+5,"io_out", false,-1, 31,0);
-        tracep->declBit(c+1,"top clock", false,-1);
-        tracep->declBit(c+2,"top reset", false,-1);
-        tracep->declBus(c+3,"top io_a", false,-1, 31,0);
-        tracep->declBus(c+4,"top io_b", false,-1, 31,0);
-        tracep->declBus(c+5,"top io_out", false,-1, 31,0);
-        tracep->declBus(c+6,"top reg_result", false,-1, 31,0);
+        tracep->declBit(c+1,"in_a", false,-1);
+        tracep->declBit(c+2,"in_b", false,-1);
+        tracep->declBit(c+3,"out_s", false,-1);
+        tracep->declBit(c+4,"out_c", false,-1);
+        tracep->declBit(c+1,"top in_a", false,-1);
+        tracep->declBit(c+2,"top in_b", false,-1);
+        tracep->declBit(c+3,"top out_s", false,-1);
+        tracep->declBit(c+4,"top out_c", false,-1);
     }
 }
 
@@ -97,11 +94,9 @@ void Vtop__traceFullSub0(Vtop* vlSelf, VerilatedVcd* tracep) {
     if (false && oldp) {}  // Prevent unused
     // Body
     {
-        tracep->fullBit(oldp+1,(vlSelf->clock));
-        tracep->fullBit(oldp+2,(vlSelf->reset));
-        tracep->fullIData(oldp+3,(vlSelf->io_a),32);
-        tracep->fullIData(oldp+4,(vlSelf->io_b),32);
-        tracep->fullIData(oldp+5,(vlSelf->io_out),32);
-        tracep->fullIData(oldp+6,(vlSelf->top__DOT__reg_result),32);
+        tracep->fullBit(oldp+1,(vlSelf->in_a));
+        tracep->fullBit(oldp+2,(vlSelf->in_b));
+        tracep->fullBit(oldp+3,(vlSelf->out_s));
+        tracep->fullBit(oldp+4,(vlSelf->out_c));
     }
 }

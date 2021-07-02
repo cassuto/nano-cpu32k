@@ -24,19 +24,10 @@ VL_MODULE(Vtop) {
     // PORTS
     // The application code writes and reads these signals to
     // propagate new values into/out from the Verilated model.
-    VL_IN8(clock,0,0);
-    VL_IN8(reset,0,0);
-    VL_IN(io_a,31,0);
-    VL_IN(io_b,31,0);
-    VL_OUT(io_out,31,0);
-
-    // LOCAL SIGNALS
-    // Internals; generally not touched by application code
-    IData/*31:0*/ top__DOT__reg_result;
-
-    // LOCAL VARIABLES
-    // Internals; generally not touched by application code
-    CData/*0:0*/ __Vclklast__TOP__clock;
+    VL_IN8(in_a,0,0);
+    VL_IN8(in_b,0,0);
+    VL_OUT8(out_s,0,0);
+    VL_OUT8(out_c,0,0);
 
     // INTERNAL VARIABLES
     // Internals; generally not touched by application code

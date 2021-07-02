@@ -28,28 +28,20 @@ Vtop::~Vtop() {
     VL_DO_CLEAR(delete vlSymsp, vlSymsp = nullptr);
 }
 
-void Vtop___settle__TOP__2(Vtop* vlSelf) {
-    if (false && vlSelf) {}  // Prevent unused
-    Vtop__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
-    VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___settle__TOP__2\n"); );
-    // Body
-    vlSelf->io_out = vlSelf->top__DOT__reg_result;
-}
-
 void Vtop___eval_initial(Vtop* vlSelf) {
     if (false && vlSelf) {}  // Prevent unused
     Vtop__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___eval_initial\n"); );
-    // Body
-    vlSelf->__Vclklast__TOP__clock = vlSelf->clock;
 }
+
+void Vtop___combo__TOP__1(Vtop* vlSelf);
 
 void Vtop___eval_settle(Vtop* vlSelf) {
     if (false && vlSelf) {}  // Prevent unused
     Vtop__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___eval_settle\n"); );
     // Body
-    Vtop___settle__TOP__2(vlSelf);
+    Vtop___combo__TOP__1(vlSelf);
 }
 
 void Vtop___final(Vtop* vlSelf) {
@@ -63,10 +55,8 @@ void Vtop___ctor_var_reset(Vtop* vlSelf) {
     Vtop__Syms* const __restrict vlSymsp VL_ATTR_UNUSED = vlSelf->vlSymsp;
     VL_DEBUG_IF(VL_DBG_MSGF("+    Vtop___ctor_var_reset\n"); );
     // Body
-    vlSelf->clock = VL_RAND_RESET_I(1);
-    vlSelf->reset = VL_RAND_RESET_I(1);
-    vlSelf->io_a = VL_RAND_RESET_I(32);
-    vlSelf->io_b = VL_RAND_RESET_I(32);
-    vlSelf->io_out = VL_RAND_RESET_I(32);
-    vlSelf->top__DOT__reg_result = VL_RAND_RESET_I(32);
+    vlSelf->in_a = VL_RAND_RESET_I(1);
+    vlSelf->in_b = VL_RAND_RESET_I(1);
+    vlSelf->out_s = VL_RAND_RESET_I(1);
+    vlSelf->out_c = VL_RAND_RESET_I(1);
 }
