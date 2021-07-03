@@ -21,4 +21,5 @@ build/
 cpu-tests/build/
 cpu-tests/abstract-machine/am/build/
 cpu-tests/abstract-machine/klib/build/
+myinfo.txt
 !.gitignore
