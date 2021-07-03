@@ -43,7 +43,7 @@ int main()
 #endif
 
     dut_ptr->reset = 0;
-    dut_ptr->clk = 1;
+    dut_ptr->clk = 0;
     dut_ptr->eval();
 
     int cycle = 0;
