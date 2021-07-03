@@ -44,8 +44,6 @@ int main()
     int times = 0;
     dut_ptr->reset = 0;
     dut_ptr->eval();
-    
-    printf("out : %d\n", dut_ptr->out);
 
     printf("Enter the test times:\t");
     int ret = scanf("%d", &times);
