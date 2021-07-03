@@ -46,14 +46,13 @@ int main()
     dut_ptr->clk = 1;
     dut_ptr->eval();
 
-    int times = 0;
-    printf("Enter the test times:\t");
-    int ret = scanf("%d", &times);
-    for (int i = 0; i < times; i++) {
+    int cycle = 0;
+    printf("Enter the test cycle:\t");
+    int ret = scanf("%d", &cycle);
+    for (int i = 0; i < cycle; i++) {
         test(i);
     }
 #ifdef VM_TRACE
-    // fp->dump(times + 1);
     fp->close();
     delete fp;
 #endif
