@@ -41,17 +41,19 @@ int main()
     fp->open("vlt_dump.vcd");   
     fp->dump(0);
 #endif
-    int times = 0;
+
     dut_ptr->reset = 0;
+    dut_ptr->clk = 1;
     dut_ptr->eval();
 
+    int times = 0;
     printf("Enter the test times:\t");
     int ret = scanf("%d", &times);
     for (int i = 0; i < times; i++) {
         test(i);
     }
 #ifdef VM_TRACE
-    fp->dump(times + 1);
+    // fp->dump(times + 1);
     fp->close();
     delete fp;
 #endif
