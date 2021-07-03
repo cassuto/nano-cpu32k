@@ -14,12 +14,6 @@
 !README
 !README.md
 !LICENSE
-.*
-_*
-*~
-build/
-cpu-tests/build/
-cpu-tests/abstract-machine/am/build/
-cpu-tests/abstract-machine/klib/build/
+src/build/
 myinfo.txt
 !.gitignore
