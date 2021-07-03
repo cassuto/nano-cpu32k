@@ -16,14 +16,14 @@ void test(int time)
     dut_ptr->eval();
 
 #ifdef VM_TRACE
-    fp->dump(time * 2);
+    fp->dump(time * 2 + 1);
 #endif
 
     dut_ptr->clk = 0;
     dut_ptr->eval();
 
 #ifdef VM_TRACE
-    fp->dump(time * 2 + 1);
+    fp->dump(time * 2 + 2);
 #endif
 }
 
