@@ -8,21 +8,23 @@
 VerilatedVcdC* fp;      //to form *.vcd file
 #endif
 
-Vtop* dut_ptr;   //design under test of half_adder
+Vtop* dut_ptr;   //design under test of top
 
 void test(int time)
 {
-    int ret = scanf("%hhd %hhd", &dut_ptr->in_a, &dut_ptr->in_b);
+    dut_ptr->clk = 1;
     dut_ptr->eval();
+    dut_ptr->clk = 0;
+    dut_ptr->eval();
+
 #ifdef VM_TRACE
     fp->dump(time + 1);
 #endif
-    printf("%d + %d = %d , carry = %d\n", dut_ptr->in_a, dut_ptr->in_b, dut_ptr->out_s, dut_ptr->out_c);
 }
 
 int main()
 {
-    dut_ptr = new Vtop;  //instantiating module half_adder
+    dut_ptr = new Vtop;  //instantiating module top
 #ifdef VM_TRACE
     ////// !!!  ATTENTION  !!!//////
     //  Call Verilated::traceEverOn(true) first.
@@ -35,6 +37,8 @@ int main()
     fp->dump(0);
 #endif
     int times = 0;
+    dut_ptr->reset = 0;
+
     printf("Enter the test times:\t");
     int ret = scanf("%d", &times);
     for (int i = 0; i < times; i++) {

@@ -1,9 +1,16 @@
 //top.v
-module top(
-    input   in_a, in_b, 
-    output  out_s,  //sum
-    output  out_c   //carry
-);
-    assign out_c = in_a & in_b;
-    assign out_s = (~in_a & in_b) | (in_a & ~in_b);
+module top (
+    input clk,
+    input reset,
+    output reg [3:0] out);
+    
+    always @(posedge clk) begin
+        if(reset) begin
+            out <= 4'b0;
+        end
+        else begin
+            out <= out + 4'b1;
+        end
+    end
+
 endmodule
