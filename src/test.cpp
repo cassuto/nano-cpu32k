@@ -10,6 +10,7 @@ VerilatedVcdC* fp;      //to form *.vcd file
 
 Vtop* dut_ptr;   //design under test of top
 
+
 void test(int time)
 {
     dut_ptr->clk = 1;
