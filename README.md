@@ -1,5 +1,5 @@
-# verilator-demo
-A Verilator-based demo.
+# oscpu-framework
+A Verilator-based framework.
 
 Please fill your information in myinfo.txt.
 
