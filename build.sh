@@ -2,10 +2,10 @@
 
 help() {
     echo "Usage:"
-    echo "build.sh [-b] [-d example_name] [-s] [-w waveform_name] [-c]"
+    echo "build.sh [-b] [-e example_name] [-s] [-w waveform_name] [-c]"
     echo "Description:"
     echo "-b: Build cpu project."
-    echo "-c: Build a specified example project. For example : -c counter."
+    echo "-e: Build a specified example project. For example : -c counter."
     echo "-s: Run simulation program."
     echo "-w: Open a specified waveform file under build folder using gtkwave."
     echo "-c: Delete all \"build\" folders."
@@ -14,7 +14,7 @@ help() {
 
 CLEAN="false"
 CPU="false"
-DEMO="false"
+EXAMPLES="false"
 SUMULATE="false"
 CHECK_WAVE="false"
 
@@ -23,7 +23,7 @@ while getopts 'hbsw:d:c' OPT; do
         s) SUMULATE="true";;
         b) CPU="true";;
         w) CHECK_WAVE="true"; WAVE_FILE="$OPTARG";;
-        d) DEMO="true"; DEMO_PATH="$OPTARG";;
+        d) EXAMPLES="true"; EXAMPLES_PATH="$OPTARG";;
         c) CLEAN="true";;
         h) help;;
         ?) help;;
@@ -31,7 +31,7 @@ while getopts 'hbsw:d:c' OPT; do
 done
 
 # Check the validity of parameters
-if [ "$CPU" == "true" ] && [ "$DEMO" == "true" ]; then
+if [ "$CPU" == "true" ] && [ "$EXAMPLES" == "true" ]; then
     echo "Parameters -b and -d cannot coexist!!!"
     exit 1
 fi
@@ -44,7 +44,7 @@ CPU_SRC_FOLDER=cpu
 EXAMPLES_SRC_FOLDER=examples
 BUILD_FOLDER=build
 
-[ "$DEMO" == "true" ] && SRC_PATH=$SHELL_PATH/$EXAMPLES_SRC_FOLDER/$DEMO_PATH || SRC_PATH=$SHELL_PATH/$CPU_SRC_FOLDER
+[ "$EXAMPLES" == "true" ] && SRC_PATH=$SHELL_PATH/$EXAMPLES_SRC_FOLDER/$EXAMPLES_PATH || SRC_PATH=$SHELL_PATH/$CPU_SRC_FOLDER
 BUILD_PATH=$SRC_PATH/build
 
 # Get id and name
@@ -65,7 +65,7 @@ if [ "$CLEAN" == "true" ]; then
 fi
 
 # Build project
-if [ "$CPU" == "true" ] || [ "$DEMO" == "true" ]; then
+if [ "$CPU" == "true" ] || [ "$EXAMPLES" == "true" ]; then
     cd $SRC_PATH
     CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
     verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
