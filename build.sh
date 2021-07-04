@@ -18,12 +18,12 @@ EXAMPLES="false"
 SUMULATE="false"
 CHECK_WAVE="false"
 
-while getopts 'hbsw:d:c' OPT; do
+while getopts 'hbsw:e:c' OPT; do
     case $OPT in
         s) SUMULATE="true";;
         b) CPU="true";;
         w) CHECK_WAVE="true"; WAVE_FILE="$OPTARG";;
-        d) EXAMPLES="true"; EXAMPLES_PATH="$OPTARG";;
+        e) EXAMPLES="true"; EXAMPLES_PATH="$OPTARG";;
         c) CLEAN="true";;
         h) help;;
         ?) help;;
