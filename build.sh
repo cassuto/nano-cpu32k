@@ -31,7 +31,7 @@ while getopts 'hbsw:d:c' OPT; do
 done
 
 # Check the validity of parameters
-if [[ "$CPU" == "true" ]] && [[ "$DEMO" == "true" ]]; then
+if [ "$CPU" == "true" ] && [ "$DEMO" == "true" ]; then
     echo "Parameters -b and -d cannot coexist!!!"
     exit 1
 fi
@@ -50,7 +50,7 @@ BUILD_PATH=$SRC_PATH/build
 # Get id and name
 ID=`sed '/^ID=/!d;s/.*=//' $MYINFO_FILE`
 NAME=`sed '/^Name=/!d;s/.*=//' $MYINFO_FILE`
-if [[ ! $ID ]] || [[ ! $NAME ]]; then
+if [ ! $ID ] || [ ! $NAME ]; then
     echo "Please fill your information in myinfo.txt!!!"
     exit 1
 fi
