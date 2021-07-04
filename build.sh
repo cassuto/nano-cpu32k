@@ -4,7 +4,7 @@ help() {
     echo "Usage:"
     echo "build.sh [-e example_name] [-s] [-w waveform_name] [-c]"
     echo "Description:"
-    echo "-e: Specify a example project. For example: \"-c counter\". If not specified, the CPU directory is used as the project directory."
+    echo "-e: Specify a example project. For example: \"-c counter\". If not specified, the \"cpu\" directory is used as the project directory."
     echo "-s: Run simulation program."
     echo "-w: Open a specified waveform file under build folder using gtkwave."
     echo "-c: Delete all \"build\" folders."
