@@ -66,7 +66,6 @@ fi
 
 # Build project
 if [ "$CPU" == "true" ] || [ "$DEMO" == "true" ]; then
-    echo $SRC_PATH
     cd $SRC_PATH
     CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
     verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
