@@ -35,11 +35,14 @@ V_TOP_FILE=top.v
 EMU_FILE=emu
 BUILD_FOLDER=build
 
-if [ "$DEMO" == "true" ]; then
-    SRC_PATH=$SHELL_PATH/examples/$DEMO_PATH
-else
-    SRC_PATH=$SHELL_PATH/cpu
-fi
+[ "$DEMO" == "true" ] && SRC_PATH=$SHELL_PATH/examples/$DEMO_PATH || SRC_PATH=$SHELL_PATH/cpu
+# SRC_PATH= $[ "$DEMO" == "true" ] ? $SHELL_PATH/examples/$DEMO_PATH : $SHELL_PATH/cpu)
+echo $SRC_PATH
+# if [ "$DEMO" == "true" ]; then
+#     SRC_PATH=$SHELL_PATH/examples/$DEMO_PATH
+# else
+#     SRC_PATH=$SHELL_PATH/cpu
+# fi
 BUILD_PATH=$SRC_PATH/build
 
 # get id and name
@@ -59,12 +62,10 @@ if [ "$CLEAN" == "true" ]; then
     exit 0
 fi
 
-echo $BUILD_PATH
 # build
 if [ "$BUILD" == "true" ]; then
     cd $SRC_PATH
     CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
-    echo $CPP_SRC
     verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
     if [ $? -ne 0 ]; then
         echo "Failed to run verilator!!!"
