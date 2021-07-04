@@ -2,17 +2,18 @@
 
 help() {
     echo "Usage:"
-    echo "build.sh [-b] [-s] [-w filename] [-c]"
+    echo "build.sh [-b] [-d example_name] [-s] [-w waveform_name] [-c]"
     echo "Description:"
-    echo "-b: Build project."
+    echo "-b: Build cpu project."
+    echo "-c: Build a specified example project. For example : -c counter."
     echo "-s: Run simulation program."
-    echo "-w: Open the waveform file using gtkwave."
-    echo "-c: Clean project."
+    echo "-w: Open a specified waveform file under build folder using gtkwave."
+    echo "-c: Delete all \"build\" folders."
     exit -1
 }
 
 CLEAN="false"
-BUILD="false"
+CPU="false"
 DEMO="false"
 SUMULATE="false"
 CHECK_WAVE="false"
@@ -20,7 +21,7 @@ CHECK_WAVE="false"
 while getopts 'hbsw:d:c' OPT; do
     case $OPT in
         s) SUMULATE="true";;
-        b) BUILD="true";;
+        b) CPU="true";;
         w) CHECK_WAVE="true"; WAVE_FILE="$OPTARG";;
         d) DEMO="true"; DEMO_PATH="$OPTARG";;
         c) CLEAN="true";;
@@ -28,6 +29,12 @@ while getopts 'hbsw:d:c' OPT; do
         ?) help;;
     esac
 done
+
+# Check the validity of parameters
+if [[ "$CPU" == "true" ]] && [[ "$DEMO" == "true" ]]; then
+    echo "Parameters -b and -d cannot coexist!!!"
+    exit 1
+fi
 
 SHELL_PATH=$(dirname $(readlink -f "$0"))
 MYINFO_FILE=$SHELL_PATH/myinfo.txt
@@ -40,26 +47,26 @@ BUILD_FOLDER=build
 [ "$DEMO" == "true" ] && SRC_PATH=$SHELL_PATH/$EXAMPLES_SRC_FOLDER/$DEMO_PATH || SRC_PATH=$SHELL_PATH/$CPU_SRC_FOLDER
 BUILD_PATH=$SRC_PATH/build
 
-# get id and name
-MYINFO_ERR="Please fill your information in myinfo.txt!!!"
+# Get id and name
 ID=`sed '/^ID=/!d;s/.*=//' $MYINFO_FILE`
 NAME=`sed '/^Name=/!d;s/.*=//' $MYINFO_FILE`
-if [[ ! $ID ]] || [[ ! $NAME ]]; then  
-  echo $MYINFO_ERR
-  exit 1
+if [[ ! $ID ]] || [[ ! $NAME ]]; then
+    echo "Please fill your information in myinfo.txt!!!"
+    exit 1
 fi
 ID="${ID##*\r}"
 NAME="${NAME##*\r}"
 
-# clean
+# Clean
 if [ "$CLEAN" == "true" ]; then
     # delete all "build" folders
     find . -name "build" -print0 | xargs -0 rm -rf
     exit 0
 fi
 
-# build
-if [ "$BUILD" == "true" ]; then
+# Build project
+if [ "$CPU" == "true" ] || [ "$DEMO" == "true" ]; then
+    echo $SRC_PATH
     cd $SRC_PATH
     CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
     verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
@@ -75,7 +82,7 @@ if [ "$BUILD" == "true" ]; then
     sync
 fi
 
-# simulate
+# Simulate
 if [ "$SUMULATE" == "true" ]; then
     echo "Simulating..."
     cd $BUILD_PATH
@@ -87,7 +94,7 @@ if [ "$SUMULATE" == "true" ]; then
     cd $SHELL_PATH
 fi
 
-# check waveform
+# Check waveform
 if [ "$CHECK_WAVE" == "true" ]; then
     cd $BUILD_PATH
     gtkwave $WAVE_FILE
