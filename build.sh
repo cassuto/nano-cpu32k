@@ -34,15 +34,7 @@ MYINFO_FILE=$SHELL_PATH/myinfo.txt
 V_TOP_FILE=top.v
 EMU_FILE=emu
 BUILD_FOLDER=build
-
 [ "$DEMO" == "true" ] && SRC_PATH=$SHELL_PATH/examples/$DEMO_PATH || SRC_PATH=$SHELL_PATH/cpu
-# SRC_PATH= $[ "$DEMO" == "true" ] ? $SHELL_PATH/examples/$DEMO_PATH : $SHELL_PATH/cpu)
-echo $SRC_PATH
-# if [ "$DEMO" == "true" ]; then
-#     SRC_PATH=$SHELL_PATH/examples/$DEMO_PATH
-# else
-#     SRC_PATH=$SHELL_PATH/cpu
-# fi
 BUILD_PATH=$SRC_PATH/build
 
 # get id and name
