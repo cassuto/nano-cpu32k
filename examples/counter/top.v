@@ -12,4 +12,5 @@ module top (
             out <= out + 4'b1;
         end
     end
+    
 endmodule
