@@ -2,9 +2,8 @@
 
 help() {
     echo "Usage:"
-    echo "build.sh [-b] [-e example_name] [-s] [-w waveform_name] [-c]"
+    echo "build.sh [-e example_name] [-s] [-w waveform_name] [-c]"
     echo "Description:"
-    echo "-b: Build cpu project."
     echo "-e: Build a specified example project. For example : -c counter."
     echo "-s: Run simulation program."
     echo "-w: Open a specified waveform file under build folder using gtkwave."
@@ -13,7 +12,6 @@ help() {
 }
 
 CLEAN="false"
-CPU="false"
 EXAMPLES="false"
 SUMULATE="false"
 CHECK_WAVE="false"
@@ -21,7 +19,6 @@ CHECK_WAVE="false"
 while getopts 'hbsw:e:c' OPT; do
     case $OPT in
         s) SUMULATE="true";;
-        b) CPU="true";;
         w) CHECK_WAVE="true"; WAVE_FILE="$OPTARG";;
         e) EXAMPLES="true"; EXAMPLES_PATH="$OPTARG";;
         c) CLEAN="true";;
@@ -29,12 +26,6 @@ while getopts 'hbsw:e:c' OPT; do
         ?) help;;
     esac
 done
-
-# Check the validity of parameters
-if [ "$CPU" == "true" ] && [ "$EXAMPLES" == "true" ]; then
-    echo "Parameters -b and -d cannot coexist!!!"
-    exit 1
-fi
 
 SHELL_PATH=$(dirname $(readlink -f "$0"))
 MYINFO_FILE=$SHELL_PATH/myinfo.txt
@@ -65,21 +56,20 @@ if [ "$CLEAN" == "true" ]; then
 fi
 
 # Build project
-if [ "$CPU" == "true" ] || [ "$EXAMPLES" == "true" ]; then
-    cd $SRC_PATH
-    CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
-    verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
-    if [ $? -ne 0 ]; then
-        echo "Failed to run verilator!!!"
-        exit 1
-    fi
-    cd $SHELL_PATH
-
-    # git commit
-    git add . -A --ignore-errors
-    (echo $NAME && echo $ID && hostnamectl && uptime) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty 1>/dev/null 2>&1
-    sync
+echo $SRC_PATH
+cd $SRC_PATH
+CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
+verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
+if [ $? -ne 0 ]; then
+    echo "Failed to run verilator!!!"
+    exit 1
 fi
+cd $SHELL_PATH
+
+git commit
+git add . -A --ignore-errors
+(echo $NAME && echo $ID && hostnamectl && uptime) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty 1>/dev/null 2>&1
+sync
 
 # Simulate
 if [ "$SUMULATE" == "true" ]; then
