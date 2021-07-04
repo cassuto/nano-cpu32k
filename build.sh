@@ -33,8 +33,11 @@ SHELL_PATH=$(dirname $(readlink -f "$0"))
 MYINFO_FILE=$SHELL_PATH/myinfo.txt
 V_TOP_FILE=top.v
 EMU_FILE=emu
+CPU_SRC_FOLDER=cpu
+EXAMPLES_SRC_FOLDER=examples
 BUILD_FOLDER=build
-[ "$DEMO" == "true" ] && SRC_PATH=$SHELL_PATH/examples/$DEMO_PATH || SRC_PATH=$SHELL_PATH/cpu
+
+[ "$DEMO" == "true" ] && SRC_PATH=$SHELL_PATH/$EXAMPLES_SRC_FOLDER/$DEMO_PATH || SRC_PATH=$SHELL_PATH/$CPU_SRC_FOLDER
 BUILD_PATH=$SRC_PATH/build
 
 # get id and name
@@ -50,7 +53,8 @@ NAME="${NAME##*\r}"
 
 # clean
 if [ "$CLEAN" == "true" ]; then
-    rm -rf $BUILD_PATH
+    # delete all "build" folders
+    find . -name "build" -print0 | xargs -0 rm -rf
     exit 0
 fi
 
