@@ -15,5 +15,5 @@
 !README.md
 !LICENSE
 !.gitignore
-*/build/
+**/build/
 myinfo.txt
