@@ -13,18 +13,19 @@ module tb_sopc();
    reg rst_n = 0;
    reg DRAM_CLK = 0;
 
-   // DRAM clk 80MHz
-   localparam tCK = 7.5; // ns.  7.5 - 133MHz
+   // DRAM clk
+   //localparam tCK = 7.5; // ns.  7.5 - 133MHz
+   localparam tCK = 10; // ns. - 100MHz
    initial begin
-      // phrase shift +0.8ns (+28.8deg)
-      /*#0.8*/#1.0 forever #(tCK/2) sdr_clk = ~sdr_clk;
+      // phrase shift -1ns (-36deg)
+      #1.0 forever #(tCK/2) sdr_clk = ~sdr_clk;
    end
    initial begin
       forever #(tCK/2) DRAM_CLK = ~DRAM_CLK;
    end
-   // Cache clk 100MHz
+   // Cache clk
    initial begin
-      forever #(10.0/2) clk = ~clk;
+      forever #(50.0/2) clk = ~clk; // 20 MHz
    end
    // UART clk 14.7456MHz
    initial begin
@@ -34,7 +35,7 @@ module tb_sopc();
 
    // Generate reset
    initial begin
-      #10 rst_n= 1'b1;
+      #(10*1000) rst_n= 1'b1; // PLL may has fairly long resetting cycle
    end
 
    localparam ADDR_BITS = 13;
@@ -79,7 +80,7 @@ module tb_sopc();
    );
 
    // SPI FLASH
-   //N25Qxxx spi_flash (SPI_CS_L, SPI_SCK, SF_HOLD_DQ3, SF_DQ0, SF_DQ1, SF_Vcc, SF_Vpp_W_DQ2);
+   N25Qxxx spi_flash (SPI_CS_L, SPI_SCK, SF_HOLD_DQ3, SF_DQ0, SF_DQ1, SF_Vcc, SF_Vpp_W_DQ2);
    assign SF_DQ1 = 1'b0;
    assign SF_DQ0 = SPI_MOSI;
    assign SPI_MISO = SF_DQ1;
@@ -87,7 +88,8 @@ module tb_sopc();
    // SoC
    soc_toplevel
    #(
-      .CONFIG_BOOTM_ERST ('h0) // Boot from SDRAM directly
+      //.CONFIG_BOOTM_ERST ('h0) // Boot from SDRAM directly
+      .CONFIG_BOOTM_ERST ('h02000000) // Boot from bootrom
    )
    soc
    (

@@ -1,9 +1,9 @@
 `include "timescale.v"
 `include "ncpu32k_config.h"
 
-//module spi_flash_config();
-//`include "include/DevParam.h"
-//endmodule
+module spi_flash_config();
+`include "include/DevParam.h"
+endmodule
 
 module tb_toplevel;
 
@@ -41,7 +41,7 @@ module tb_toplevel;
    wire                     SPI_MOSI;
    wire                     SPI_MISO;
 
-   //reg [`VoltageRange] SF_Vcc;
+   reg [`VoltageRange] SF_Vcc;
    wire SF_DQ0, SF_DQ1;
    wire SF_Vpp_W_DQ2;
    wire SF_HOLD_DQ3;
@@ -63,7 +63,7 @@ module tb_toplevel;
    );
 
    // SPI FLASH
-   //N25Qxxx spi_flash (SPI_CS_L, SPI_SCK, SF_HOLD_DQ3, SF_DQ0, SF_DQ1, SF_Vcc, SF_Vpp_W_DQ2);
+   N25Qxxx spi_flash (SPI_CS_L, SPI_SCK, SF_HOLD_DQ3, SF_DQ0, SF_DQ1, SF_Vcc, SF_Vpp_W_DQ2);
    assign SF_DQ1 = 1'b0;
 
    assign SF_DQ0 = SPI_MOSI;
@@ -101,9 +101,9 @@ module tb_toplevel;
    assign SF_HOLD_DQ3=1; // Disable HOLD
 
    // SPI FLASH power up
-   //initial begin
-   //  SF_Vcc='d3000;  // 3.000V
-   //end
+   initial begin
+     SF_Vcc='d3000;  // 3.000V
+   end
 
    assign UART_RX_L = 1'b0;
 

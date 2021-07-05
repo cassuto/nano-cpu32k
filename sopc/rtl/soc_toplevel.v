@@ -100,22 +100,22 @@ module soc_toplevel
    localparam CONFIG_DBUS_AW = CONFIG_IBUS_AW;
    localparam CONFIG_DCACHE_P_LINE = CONFIG_CORE_1_DCACHE_P_LINE; // TODO: We have only one core.
    localparam CONFIG_ICACHE_P_LINE = CONFIG_CORE_1_ICACHE_P_LINE; // TODO: We have only one core.
-   localparam NBUS = 2; // UART + SPI Master
+   localparam NBUS = 3; // UART + SPI Master + NULL Device
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [3:0]           DRAM_CS_WE_RAS_CAS_L;   // From fb_DRAM_ctrl of pb_fb_DRAM_ctrl.v
    wire [CONFIG_DBUS_AW-1:0] dbus_ARWADDR;      // From ncpu32k of ncpu32k.v
-   wire                 dbus_ARWREADY;          // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 dbus_ARWREADY;          // From UMA_SUBSYS of UMA_subsystem.v
    wire                 dbus_ARWVALID;          // From ncpu32k of ncpu32k.v
    wire                 dbus_AWE;               // From ncpu32k of ncpu32k.v
    wire                 dbus_BREADY;            // From ncpu32k of ncpu32k.v
-   wire                 dbus_BVALID;            // From DRAM_SUBSYS of DRAM_subsystem.v
-   wire [CONFIG_DBUS_DW-1:0] dbus_RDATA;        // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 dbus_BVALID;            // From UMA_SUBSYS of UMA_subsystem.v
+   wire [CONFIG_DBUS_DW-1:0] dbus_RDATA;        // From UMA_SUBSYS of UMA_subsystem.v
    wire                 dbus_RREADY;            // From ncpu32k of ncpu32k.v
-   wire                 dbus_RVALID;            // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 dbus_RVALID;            // From UMA_SUBSYS of UMA_subsystem.v
    wire [CONFIG_DBUS_DW-1:0] dbus_WDATA;        // From ncpu32k of ncpu32k.v
-   wire                 dbus_WREADY;            // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 dbus_WREADY;            // From UMA_SUBSYS of UMA_subsystem.v
    wire                 dbus_WVALID;            // From ncpu32k of ncpu32k.v
    wire [NBUS*`NCPU_AW-1:0] fb_bus_AADDR;       // From fb_router of pb_fb_router.v
    wire [NBUS*`NCPU_DW-1:0] fb_bus_ADATA;       // From fb_router of pb_fb_router.v
@@ -131,22 +131,25 @@ module soc_toplevel
    wire                 fb_mbus_BREADY;         // From ncpu32k of ncpu32k.v
    wire                 fb_mbus_BVALID;         // From fb_router of pb_fb_router.v
    wire [CONFIG_IBUS_AW-1:0] ibus_ARADDR;       // From ncpu32k of ncpu32k.v
-   wire                 ibus_ARREADY;           // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 ibus_ARREADY;           // From UMA_SUBSYS of UMA_subsystem.v
    wire                 ibus_ARVALID;           // From ncpu32k of ncpu32k.v
-   wire [CONFIG_IBUS_DW-1:0] ibus_RDATA;        // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire [CONFIG_IBUS_DW-1:0] ibus_RDATA;        // From UMA_SUBSYS of UMA_subsystem.v
    wire                 ibus_RREADY;            // From ncpu32k of ncpu32k.v
-   wire                 ibus_RVALID;            // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 ibus_RVALID;            // From UMA_SUBSYS of UMA_subsystem.v
+   wire                 pb_null_AREADY;         // From pb_null of pb_fb_null.v
+   wire [31:0]          pb_null_BDATA;          // From pb_null of pb_fb_null.v
+   wire                 pb_null_BVALID;         // From pb_null of pb_fb_null.v
    wire                 pb_spi_AREADY;          // From pb_spi_master of soc_pb_spi_master.v
    wire                 pb_spi_BVALID;          // From pb_spi_master of soc_pb_spi_master.v
    wire                 pb_uart_AREADY;         // From pb_uart of soc_pb_uart.v
    wire                 pb_uart_BVALID;         // From pb_uart of soc_pb_uart.v
    wire                 pb_uart_irq;            // From pb_uart of soc_pb_uart.v
-   wire [CONFIG_SDR_ROW_BITS+CONFIG_SDR_BA_BITS+CONFIG_SDR_COL_BITS-1:0] sdr_cmd_addr;// From DRAM_SUBSYS of DRAM_subsystem.v
+   wire [CONFIG_SDR_ROW_BITS+CONFIG_SDR_BA_BITS+CONFIG_SDR_COL_BITS-1:0] sdr_cmd_addr;// From UMA_SUBSYS of UMA_subsystem.v
    wire                 sdr_cmd_bst_rd_ack;     // From fb_DRAM_ctrl of pb_fb_DRAM_ctrl.v
-   wire                 sdr_cmd_bst_rd_req;     // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 sdr_cmd_bst_rd_req;     // From UMA_SUBSYS of UMA_subsystem.v
    wire                 sdr_cmd_bst_we_ack;     // From fb_DRAM_ctrl of pb_fb_DRAM_ctrl.v
-   wire                 sdr_cmd_bst_we_req;     // From DRAM_SUBSYS of DRAM_subsystem.v
-   wire [CONFIG_SDR_DATA_BITS-1:0] sdr_din;     // From DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 sdr_cmd_bst_we_req;     // From UMA_SUBSYS of UMA_subsystem.v
+   wire [CONFIG_SDR_DATA_BITS-1:0] sdr_din;     // From UMA_SUBSYS of UMA_subsystem.v
    wire [CONFIG_SDR_DATA_BITS-1:0] sdr_dout;    // From fb_DRAM_ctrl of pb_fb_DRAM_ctrl.v
    wire                 sdr_r_vld;              // From fb_DRAM_ctrl of pb_fb_DRAM_ctrl.v
    wire                 sdr_w_rdy;              // From fb_DRAM_ctrl of pb_fb_DRAM_ctrl.v
@@ -158,6 +161,7 @@ module soc_toplevel
    wire                 uart_rst_n;
    wire [`NCPU_NIRQ-1:0] irqs;
    wire                 ibus_ASEL_BOOTROM;      // To DRAM_SUBSYS of DRAM_subsystem.v
+   wire                 dbus_ASEL_BOOTROM;      // To UMA_SUBSYS of UMA_subsystem.v
    wire [NBUS-1:0]      fb_bus_sel;
    wire [NBUS-1:0]      fb_bus_BVALID;
    wire [NBUS*`NCPU_DW-1:0] fb_bus_BDATA;
@@ -177,6 +181,11 @@ module soc_toplevel
    wire [31:0]          pb_uart_ADATA;
    wire [31:0]          pb_uart_BDATA;
    wire                 pb_uart_BREADY;
+   wire [`NCPU_AW-1:0]  pb_null_AADDR;          // To pb_null of soc_pb_null.v
+   wire [31:0]          pb_null_ADATA;          // To pb_null of soc_pb_null.v
+   wire                 pb_null_AVALID;         // To pb_null of soc_pb_null.v
+   wire [3:0]           pb_null_AWMSK;          // To pb_null of soc_pb_null.v
+   wire                 pb_null_BREADY;         // To pb_null of soc_pb_null.v
 
    /************************************************************
     * Memory Subsystem
@@ -228,6 +237,7 @@ module soc_toplevel
        .ibus_RREADY                     (ibus_RREADY),
        .dbus_ARWVALID                   (dbus_ARWVALID),
        .dbus_ARWADDR                    (dbus_ARWADDR[CONFIG_DBUS_AW-1:0]),
+       .dbus_ASEL_BOOTROM               (dbus_ASEL_BOOTROM),
        .dbus_AWE                        (dbus_AWE),
        .dbus_WVALID                     (dbus_WVALID),
        .dbus_WDATA                      (dbus_WDATA[CONFIG_DBUS_DW-1:0]),
@@ -346,61 +356,76 @@ module soc_toplevel
       .fb_bus_BDATA                     (fb_bus_BDATA[NBUS*`NCPU_DW-1:0]),
       .fb_bus_AREADY                    (fb_bus_AREADY[NBUS-1:0]));
 
+   wire pb_sel_spi, pb_sel_uart;
+
    // Bus address mapping
    //             (Type Start       End   )
-   // BootROM     (I 0x02000000~)
+   // BootROM     (I/D 0x02000000~)
    assign ibus_ASEL_BOOTROM = ibus_ARADDR[CONFIG_IBUS_AW-1];
+   assign dbus_ASEL_BOOTROM = dbus_ARWADDR[CONFIG_DBUS_AW-1];
    // SPI Master  (D 0x80000000~0x80FFFFFF)
-   assign fb_bus_sel[0] = fb_mbus_AADDR[`NCPU_AW-1 -:8]==8'h80;
+   assign pb_sel_spi = fb_mbus_AADDR[`NCPU_AW-1 -:8]==8'h80;
    // UART        (D 0x81000000~0x81FFFFFF)
-   assign fb_bus_sel[1] = fb_mbus_AADDR[`NCPU_AW-1 -:8]==8'h81;
+   assign pb_sel_uart = fb_mbus_AADDR[`NCPU_AW-1 -:8]==8'h81;
+   // NULL        (D Others)
+   assign fb_bus_sel[0] = ~(pb_sel_spi | pb_sel_uart);
+   assign fb_bus_sel[1] = pb_sel_spi;
+   assign fb_bus_sel[2] = pb_sel_uart;
 
    assign
       {
          pb_uart_BREADY,
-         pb_spi_BREADY
+         pb_spi_BREADY,
+         pb_null_BREADY
       } = fb_bus_BREADY;
 
    assign
       {
          pb_uart_ADATA[`NCPU_DW-1:0],
-         pb_spi_ADATA[`NCPU_DW-1:0]
+         pb_spi_ADATA[`NCPU_DW-1:0],
+         pb_null_ADATA[`NCPU_DW-1:0]
       } = fb_bus_ADATA;
 
    assign
       {
          pb_uart_AVALID,
-         pb_spi_AVALID
+         pb_spi_AVALID,
+         pb_null_AVALID
       } = fb_bus_AVALID;
 
    assign
       {
          pb_uart_AADDR[`NCPU_AW-1:0],
-         pb_spi_AADDR[`NCPU_AW-1:0]
+         pb_spi_AADDR[`NCPU_AW-1:0],
+         pb_null_AADDR[`NCPU_AW-1:0]
       } = fb_bus_AADDR;
 
    assign
       {
          pb_uart_AWMSK[`NCPU_DW/8-1:0],
-         pb_spi_AWMSK[`NCPU_DW/8-1:0]
+         pb_spi_AWMSK[`NCPU_DW/8-1:0],
+         pb_null_AWMSK[`NCPU_DW/8-1:0]
       } = fb_bus_AWMSK;
 
    assign fb_bus_BVALID =
       {
          pb_uart_BVALID,
-         pb_spi_BVALID
+         pb_spi_BVALID,
+         pb_null_BVALID
       };
 
    assign fb_bus_BDATA =
       {
          pb_uart_BDATA[`NCPU_DW-1:0],
-         pb_spi_BDATA[`NCPU_DW-1:0]
+         pb_spi_BDATA[`NCPU_DW-1:0],
+         pb_null_BDATA[`NCPU_DW-1:0]
       };
 
    assign fb_bus_AREADY =
       {
          pb_uart_AREADY,
-         pb_spi_AREADY
+         pb_spi_AREADY,
+         pb_null_AREADY
       };
 
    /************************************************************
@@ -455,6 +480,27 @@ module soc_toplevel
        .pb_uart_ADATA                   (pb_uart_ADATA[31:0]),
        .pb_uart_BREADY                  (pb_uart_BREADY),
        .UART_RX_L                       (UART_RX_L));
+
+   /************************************************************
+    * NULL Device
+    ************************************************************/
+   /* pb_fb_null AUTO_TEMPLATE (
+         .clk           (CPU_CLK),        // CPU clk domain
+      );*/
+   pb_fb_null pb_null
+      (/*AUTOINST*/
+       // Outputs
+       .pb_null_AREADY                  (pb_null_AREADY),
+       .pb_null_BDATA                   (pb_null_BDATA[31:0]),
+       .pb_null_BVALID                  (pb_null_BVALID),
+       // Inputs
+       .clk                             (CPU_CLK),               // Templated
+       .rst_n                           (rst_n),
+       .pb_null_AVALID                  (pb_null_AVALID),
+       .pb_null_AADDR                   (pb_null_AADDR[`NCPU_AW-1:0]),
+       .pb_null_AWMSK                   (pb_null_AWMSK[3:0]),
+       .pb_null_ADATA                   (pb_null_ADATA[31:0]),
+       .pb_null_BREADY                  (pb_null_BREADY));
 
    /************************************************************
     * CPU Core #1
