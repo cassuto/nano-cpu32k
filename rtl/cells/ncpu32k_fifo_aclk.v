@@ -73,30 +73,53 @@ module ncpu32k_fifo_aclk
       else full <= wptr_g_nxt=={~rptr_g_r[1][AW:AW-1], rptr_g_r[1][AW-2:0]};
 
    //
-   // True DPRAM
+   // Simple DPRAM
    //
+`ifdef PLATFORM_XILINX_XC6
+   generate
+      if (DW == 16 && AW == 5)
+         begin
+            blk_mem_fifo_a5_d16 DPRAM(
+            .clka    (wclk),
+            .addra   (wptr_b[AW-1:0]),
+            .dina    (din),
+            .ena     (push),
+            .wea     (push),
+
+            .clkb    (rclk),
+            .addrb   (rptr_b[AW-1:0]),
+            .doutb   (dout),
+            .enb     (pop)
+         );
+         end
+      else
+         begin
+            initial $fatal(1, "Please implement one.");
+         end
+   endgenerate
+   
+`else
+   initial $display("Warning: ncpu32k_fifo_aclk is configured for simulation only.");
+   
    reg [DW-1:0] mem[0:(1<<AW)-1];
-	reg [AW-1:0] ra;
+   reg [AW-1:0] ra;
 
-	// Read
-	always @(posedge rclk)
-	  if (pop)
-	    ra <= rptr_b[AW-1:0];
-	assign dout = mem[ra];
+   // Read
+   always @(posedge rclk)
+     if (pop)
+       ra <= rptr_b[AW-1:0];
+   assign dout = mem[ra];
 
-	// Write
-	always@(posedge wclk)
-		if (push)
-			mem[wptr_b[AW-1:0]] <= din;
+   // Write
+   always@(posedge wclk)
+      if (push)
+         mem[wptr_b[AW-1:0]] <= din;
 
-   // synthesis translate_off
-`ifndef SYNTHESIS
    initial begin : ini
       integer i;
       for(i=0; i < (1<<AW); i=i+1)
          mem[i] = {DW{1'b0}};
    end
 `endif
-   // synthesis translate_on
 
 endmodule

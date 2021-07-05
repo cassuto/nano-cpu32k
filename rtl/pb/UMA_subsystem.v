@@ -91,7 +91,7 @@ module UMA_subsystem
 // Begin of CPU clock domain
 /////////////////////////////////////////////////////////////////////////////
 
-   reg [3:0]                           state_r;
+   (* KEEP = "TRUE" *) reg [3:0]                           state_r;
    reg [BURST_WORDS_AW-1:0]            bootrom_burst_cnt;
    reg                                 cdc_sdr_cmd_bst_we_req;
    reg                                 cdc_sdr_cmd_bst_rd_req;
@@ -104,6 +104,8 @@ module UMA_subsystem
    wire                                dbus_hds_W;
    wire                                dbus_hds_B;
    wire                                cdc_sdr_burst_cnt_msb;
+   wire                                cdc_sdr_cmd_bst_we_ack;
+   wire                                cdc_sdr_cmd_bst_rd_ack;
 
    localparam [3:0]                    S_IDLE                     = 4'd0;
    localparam [3:0]                    S_DBUS_BURST_W_BUF         = 4'd1;
@@ -143,6 +145,7 @@ module UMA_subsystem
    nDFF_lr #(BURST_WORDS_AW) dff_sdr_burst_cnt
       (sdr_clk, sdr_rst_n, sdr_burst_cnt_ld, sdr_burst_cnt_nxt, sdr_burst_cnt);
 
+   // CPU to SDR
    ncpu32k_cdc_sync #(
          .CONFIG_CDC_STAGES (`NCPU_CDC_STAGES)
       )
@@ -165,6 +168,7 @@ module UMA_subsystem
          .B       (sdr_cmd_bst_we_req)
       );
 
+   // SDR to CPU
    ncpu32k_cdc_sync #(
          .CONFIG_CDC_STAGES (`NCPU_CDC_STAGES)
       )
@@ -174,6 +178,28 @@ module UMA_subsystem
          .CLK_B   (cpu_clk),
          .RST_N_B (cpu_rst_n),
          .B       (cdc_sdr_burst_cnt_msb)
+      );
+
+   ncpu32k_cdc_sync #(
+         .CONFIG_CDC_STAGES (`NCPU_CDC_STAGES)
+      )
+   CDC_SDR_CMD_BST_WE_ACK
+      (
+         .A       (sdr_cmd_bst_we_ack),
+         .CLK_B   (cpu_clk),
+         .RST_N_B (cpu_rst_n),
+         .B       (cdc_sdr_cmd_bst_we_ack)
+      );
+
+   ncpu32k_cdc_sync #(
+         .CONFIG_CDC_STAGES (`NCPU_CDC_STAGES)
+      )
+   CDC_SDR_CMD_BST_RD_ACK
+      (
+         .A       (sdr_cmd_bst_rd_ack),
+         .CLK_B   (cpu_clk),
+         .RST_N_B (cpu_rst_n),
+         .B       (cdc_sdr_cmd_bst_rd_ack)
       );
 
 /////////////////////////////////////////////////////////////////////////////
@@ -258,6 +284,7 @@ module UMA_subsystem
             sdr_dbus_r <= 1'b0;
             cdc_sdr_cmd_bst_we_req <= 1'b0;
             cdc_sdr_cmd_bst_rd_req <= 1'b0;
+            bootrom_en <= 1'b0;
          end
       else
          begin
@@ -265,7 +292,7 @@ module UMA_subsystem
             S_IDLE:
                if (dbus_ARWVALID & ~dbus_AWE & dbus_ASEL_BOOTROM) // Bootrom is selected by dbus
                   begin
-                     bootrom_en <= 1'b1;
+                     bootrom_en <= 1'b1; // FIXME reset `bootrom_en` when operation is terminated
                      bootrom_addr <= dbus_ARWADDR;
                      bootrom_burst_cnt <= {BURST_WORDS_AW{1'b1}};
                      state_r <= S_DBUS_BURST_START_BOOTROM;
@@ -291,7 +318,7 @@ module UMA_subsystem
 
                else if (ibus_ARVALID & ibus_ASEL_BOOTROM) // Bootrom is selected by ibus
                   begin
-                     bootrom_en <= 1'b1;
+                     bootrom_en <= 1'b1; // FIXME reset `bootrom_en` when operation is terminated
                      bootrom_addr <= ibus_ARADDR;
                      bootrom_burst_cnt <= {BURST_WORDS_AW{1'b1}};
                      state_r <= S_IBUS_BURST_START_BOOTROM;
@@ -314,14 +341,18 @@ module UMA_subsystem
                   end
 
             S_DBUS_BURST_WRITE_1:
-               if (cdc_sdr_burst_cnt_msb)
-                  begin
+               begin
+                  if (cdc_sdr_cmd_bst_we_ack)
                      cdc_sdr_cmd_bst_we_req <= 1'b0;
-                     state_r <= S_DBUS_BURST_WRITE_2;
-                  end
+                  if (cdc_sdr_burst_cnt_msb)
+                     begin
+                        cdc_sdr_cmd_bst_we_req <= 1'b0;
+                        state_r <= S_DBUS_BURST_WRITE_2;
+                     end
+               end
             S_DBUS_BURST_WRITE_2:
                // Need to wait handshake
-               if (~cdc_sdr_burst_cnt_msb & dbus_hds_B) // FIXME simplify this
+               if (dbus_hds_B)
                   begin
                      sdr_dbus_r <= 1'b0;
                      state_r <= S_IDLE;
@@ -329,14 +360,18 @@ module UMA_subsystem
 
             S_IBUS_BURST_READ_1,
             S_DBUS_BURST_READ_1:
-               if (cdc_sdr_burst_cnt_msb)
-                  begin
+               begin
+                  if (cdc_sdr_cmd_bst_rd_ack)
                      cdc_sdr_cmd_bst_rd_req <= 1'b0;
-                     state_r <= S_DBUS_BURST_READ_2;
-                  end
+                  if (cdc_sdr_burst_cnt_msb)
+                     begin
+                        cdc_sdr_cmd_bst_rd_req <= 1'b0;
+                        state_r <= S_DBUS_BURST_READ_2;
+                     end
+               end
             S_IBUS_BURST_READ_2,
             S_DBUS_BURST_READ_2:
-               // Need to wait FIFO being empty
+               // Need to wait FIFO being empty and burst transfer completed
                if (~cdc_sdr_burst_cnt_msb & rx_empty)
                   begin
                      sdr_ibus_r <= 1'b0;

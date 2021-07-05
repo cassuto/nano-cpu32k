@@ -48,6 +48,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 `ifndef IN_SIM
+// Xilinx Spartan-6 series FPGA
 `define PLATFORM_XILINX_XC6
 `endif
 
@@ -57,7 +58,7 @@
 // For FPGA, you could define this macro to disable `RST_N` port of DFF,
 // which reduces routing overheads. However, once when the system is powered on,
 // it cannot be reset again!
-`define NCPU_NO_RST
+//`define NCPU_NO_RST
 
 /////////////////////////////////////////////////////////////////////////////
 // Configure Simulation Checks
