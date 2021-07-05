@@ -161,6 +161,10 @@ TIMESPEC TS_10 = FROM "dcm_clkt_clkout1" TO "dcm_clkt_clkout0" TIG;
 TIMESPEC TS_03 = FROM "dcm_clkt_clkout0" TO "dcm_clkt_clkout3" TIG;
 TIMESPEC TS_30 = FROM "dcm_clkt_clkout3" TO "dcm_clkt_clkout0" TIG;
 #Created by Constraints Editor (xc6slx16-ftg256-2) - 2021/04/05
-INST "soc/L2_cache/CDC_SDR_WE/gen_cdc.dff_stage_r/Q_1" ASYNC_REG = TRUE;
-INST "soc/L2_cache/CDC_LINE_ADR_CNT_MSB/gen_cdc.dff_stage_r/Q_0" ASYNC_REG = TRUE;
-INST "soc/L2_cache/CDC_SDR_RD/gen_cdc.dff_stage_r/Q_1" ASYNC_REG = TRUE;
+#INST "soc/ncpu32k/FRONTEND/I_CACHE/CDC_LINE_ADR_CNT_MSB/gen_cdc.stage_r" ASYNC_REG = TRUE;
+#INST "soc/ncpu32k/FRONTEND/I_CACHE/CDC_IBUS/CDC_A_B/gen_cdc.stage_r" ASYNC_REG = TRUE;
+#INST "soc/ncpu32k/FRONTEND/I_CACHE/CDC_IBUS/CDC_B_A/gen_cdc.stage_r" ASYNC_REG = TRUE;
+#INST "soc/ncpu32k/BACKEND/LSU/D_CACHE/CDC_LINE_ADR_CNT_MSB/gen_cdc.stage_r" ASYNC_REG = TRUE;
+#INST "soc/ncpu32k/BACKEND/LSU/D_CACHE/CDC_DBUS/CDC_A_B/gen_cdc.stage_r" ASYNC_REG = TRUE;
+#INST "soc/ncpu32k/BACKEND/LSU/D_CACHE/CDC_DBUS/CDC_B_A/gen_cdc.stage_r" ASYNC_REG = TRUE;
+#INST "soc/ncpu32k/BACKEND/LSU/D_CACHE/CDC_DBUS_WE/gen_cdc.stage_r" ASYNC_REG = TRUE;

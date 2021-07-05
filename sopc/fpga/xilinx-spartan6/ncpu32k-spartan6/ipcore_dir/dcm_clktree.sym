@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <symbol version="7" name="dcm_clktree">
     <symboltype>BLOCK</symboltype>
-    <timestamp>2021-4-5T11:12:3</timestamp>
+    <timestamp>2021-7-2T9:48:28</timestamp>
     <pin polarity="Input" x="0" y="80" name="clk_in1" />
     <pin polarity="Input" x="0" y="432" name="reset" />
     <pin polarity="Output" x="608" y="80" name="clk_out1" />
