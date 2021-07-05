@@ -1,0 +1,6 @@
+Limitations for writing boot routines:
+   1. Be aware we're running in ROM, don't declare and write any global variables (in .bss). The behavior is undefined.
+      If one wants some global variables, allocate them in DRAM address space.
+   2. Stack is growing from the highest address in the first 32MB space (located in DRAM)
+   3. Available stack size is determined by macro `STACK_SIZE`.
+   4. Code size is extremely limited.

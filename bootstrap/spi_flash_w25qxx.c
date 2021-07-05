@@ -1,7 +1,8 @@
 #include "spi_flash_w25qxx.h"
+#include "cache.h"
 #include "log.h"
 
-#define SPI_REG_BASE 0x81000000
+#define SPI_REG_BASE 0x80000000
 #define SPI_REG_DR() *((volatile char *)SPI_REG_BASE)
 #define SPI_REG_CR() *((volatile short *)SPI_REG_BASE)
 
@@ -39,7 +40,7 @@ static void sys_delay(int cyc)
 		__asm__ __volatile__("nop");
 }
 
-// W25QXX flash Commands
+/* W25QXX flash Commands */
 #define W25QXX_CMD_WriteEnable        0x06
 #define W25QXX_CMD_WriteDisable       0x04
 #define W25QXX_CMD_ReadStatusReg      0x05
@@ -56,6 +57,17 @@ static void sys_delay(int cyc)
 #define W25QXX_CMD_DeviceID           0xAB
 #define W25QXX_CMD_ManufactDeviceID   0x90
 #define W25QXX_CMD_JEDECDeviceID      0x9F
+
+/* FLASH JEDEC IDs */
+struct jedec_info
+{
+	unsigned char vendor_id;
+	const char *name;
+};
+static const struct jedec_info flash_infos[] = {
+	{0xEF, "WINBOND"},
+	{-1,0}
+};
 
 /**
  * @brief FLASH register operations
@@ -111,9 +123,10 @@ spi_flash_read(char *buff, flash_addr_t addr, int len)
 	spi_write((addr >> 16) & 0xff);
 	spi_write((addr >> 8) & 0xff);
 	spi_write(addr & 0xff);
-	for (i = 0; i < len; i++) {
-		buff[i] = spi_read(); // address 80H - FFH
-	}
+   for (i = 0; i < len; i++) {
+      buff[i] = spi_read(); // address 80H - FFH
+      sync_dcache_icache(&buff[i]); // sync with dcache and icache
+   }
 	spi_cs_disable();
 }
 
@@ -134,10 +147,19 @@ spi_flash_dump()
 	
 	spi_cs_disable();
 	log_msg("Vendor: ");
-	log_num(man_id);
+	log_hex(man_id);
+	/* Match JEDEC info in predefined table */
+	for(int i=0;flash_infos[i].name;++i) {
+		if(flash_infos[i].vendor_id==man_id) {
+			log_msg(" (");
+			log_msg(flash_infos[i].name);
+			log_msg(")");
+			break;
+		}
+	}
 	log_msg("\n");
 	log_msg("Type: ");
-	log_num(mem_type_id);
+	log_hex(mem_type_id);
 	log_msg("\n");
 	log_msg("Capacity: ");
 	log_num(1<<(capacity_id-10));

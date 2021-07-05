@@ -4,7 +4,7 @@
 #define UART_FCLK 14745600L
 
 /* 16550 registers */
-#define UART_REG_BASE 0x82000000
+#define UART_REG_BASE 0x81000000
 #define UART_REG_RBR_DLL() *((volatile char *)(UART_REG_BASE+0x00))
 #define UART_REG_IER_DLM() *((volatile char *)(UART_REG_BASE+0x01))
 #define UART_REG_FCR() *((volatile char *)(UART_REG_BASE+0x02))
@@ -35,7 +35,7 @@ void uart_putc(char ch)
 	UART_REG_RBR_DLL() = ch;
 }
 
-char uart_getc()
+char uart_getc(void)
 {
 	/* Wait till data ready */
 	while((UART_REG_LSR() & (1<<0)) ==0)
