@@ -2,25 +2,31 @@
 
 help() {
     echo "Usage:"
-    echo "build.sh [-e example_name] [-s] [-w waveform_name] [-c]"
+    echo "build.sh [-e example_name] [-b] [-s] [-w waveform_name] [-a parameters_list] [-c]"
     echo "Description:"
-    echo "-e: Specify a example project. For example: \"-c counter\". If not specified, the \"cpu\" directory is used as the project directory."
+    echo "-e: Specify a example project. For example: -c counter. If not specified, the \"cpu\" directory is used as the project directory."
+    echo "-b: Build project using verilator and make tools automatically."
     echo "-s: Run simulation program."
     echo "-w: Open a specified waveform file under build folder using gtkwave."
+    echo "-a: Parameters passed to the simulation program. For example: -a \"1 2 3 ......\". Multiple parameters require double quotes."
     echo "-c: Delete all \"build\" folders."
-    exit -1
+    exit 0
 }
 
-CLEAN="false"
+BUILD="false"
 EXAMPLES="false"
 SUMULATE="false"
 CHECK_WAVE="false"
+CLEAN="false"
+PARAMETERS=
 
-while getopts 'hbsw:e:c' OPT; do
+while getopts 'hbsw:e:a:c' OPT; do
     case $OPT in
+        b) BUILD="true";;
         s) SUMULATE="true";;
         w) CHECK_WAVE="true"; WAVE_FILE="$OPTARG";;
         e) EXAMPLES="true"; EXAMPLES_PATH="$OPTARG";;
+        a) PARAMETERS="$OPTARG";;
         c) CLEAN="true";;
         h) help;;
         ?) help;;
@@ -56,26 +62,27 @@ if [ "$CLEAN" == "true" ]; then
 fi
 
 # Build project
-echo $SRC_PATH
-cd $SRC_PATH
-CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
-verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
-if [ $? -ne 0 ]; then
-    echo "Failed to run verilator!!!"
-    exit 1
-fi
-cd $SHELL_PATH
+if [ "$BUILD" == "true" ]; then
+    cd $SRC_PATH
+    CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
+    verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
+    if [ $? -ne 0 ]; then
+        echo "Failed to run verilator!!!"
+        exit 1
+    fi
+    cd $SHELL_PATH
 
-git commit
-git add . -A --ignore-errors
-(echo $NAME && echo $ID && hostnamectl && uptime) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty 1>/dev/null 2>&1
-sync
+    #git commit
+    git add . -A --ignore-errors
+    (echo $NAME && echo $ID && hostnamectl && uptime) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty 1>/dev/null 2>&1
+    sync
+fi
 
 # Simulate
 if [ "$SUMULATE" == "true" ]; then
     echo "Simulating..."
     cd $BUILD_PATH
-    ./$EMU_FILE
+    ./$EMU_FILE $PARAMETERS
     if [ $? -ne 0 ]; then
         echo "Failed to simulate!!!"
         exit 1
