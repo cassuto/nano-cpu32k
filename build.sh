@@ -82,6 +82,7 @@ fi
 if [ "$SUMULATE" == "true" ]; then
     echo "Simulating..."
     cd $BUILD_PATH
+    echo ./$EMU_FILE $PARAMETERS
     ./$EMU_FILE $PARAMETERS
     if [ $? -ne 0 ]; then
         echo "Failed to simulate!!!"
