@@ -10,6 +10,7 @@
 !*.sh
 !*.py
 !*.mk
+!*.bin
 !Makefile
 !README
 !README.md
