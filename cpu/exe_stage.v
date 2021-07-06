@@ -4,7 +4,6 @@
 `include "defines.v"
 
 module exe_stage(
-  //input wire clk,
   input wire rst,
   input wire [4 : 0]inst_type_i,
   input wire [7 : 0]inst_opcode,

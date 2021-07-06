@@ -2,28 +2,38 @@
 
 help() {
     echo "Usage:"
-    echo "build.sh [-e example_name] [-b] [-s] [-w waveform_name] [-a parameters_list] [-c]"
+    echo "build.sh [-e example_name] [-b] [-t top_file] [-s] [-a parameters_list] [-w waveform_file] [-c]"
     echo "Description:"
-    echo "-e: Specify a example project. For example: -c counter. If not specified, the \"cpu\" directory is used as the project directory. \
-        It will generate the \"build\" subfolder under the project directory."
+    echo "-e: Specify a example project. For example: -c counter. If not specified, the default directory \"cpu\" will be used. It will generate the \"build\" subfolder under the project directory."
     echo "-b: Build project using verilator and make tools automatically."
+    echo "-t: Specify a file as verilog top file. If not specified, the default filename \"top.v\" will be used."
     echo "-s: Run simulation program. Use the \"build\" folders as work path."
-    echo "-w: Open a specified waveform file using gtkwave. Use the \"build\" folders as work path."
     echo "-a: Parameters passed to the simulation program. For example: -a \"1 2 3 ......\". Multiple parameters require double quotes."
+    echo "-w: Open a specified waveform file using gtkwave. Use the \"build\" folders as work path."
     echo "-c: Delete all \"build\" folders."
     exit 0
 }
 
+# Initialize variables
+SHELL_PATH=$(dirname $(readlink -f "$0"))
+MYINFO_FILE=$SHELL_PATH/myinfo.txt
+EMU_FILE=emu
+CPU_SRC_FOLDER=cpu
+EXAMPLES_SRC_FOLDER=examples
+BUILD_FOLDER=build
 BUILD="false"
 EXAMPLES="false"
+V_TOP_FILE=top.v
 SUMULATE="false"
 CHECK_WAVE="false"
 CLEAN="false"
 PARAMETERS=
 
-while getopts 'hbsw:e:a:c' OPT; do
+# Check parameters
+while getopts 'he:bt:sa:w:c' OPT; do
     case $OPT in
         b) BUILD="true";;
+        t) V_TOP_FILE="$OPTARG";;
         s) SUMULATE="true";;
         w) CHECK_WAVE="true"; WAVE_FILE="$OPTARG";;
         e) EXAMPLES="true"; EXAMPLES_PATH="$OPTARG";;
@@ -33,14 +43,6 @@ while getopts 'hbsw:e:a:c' OPT; do
         ?) help;;
     esac
 done
-
-SHELL_PATH=$(dirname $(readlink -f "$0"))
-MYINFO_FILE=$SHELL_PATH/myinfo.txt
-V_TOP_FILE=top.v
-EMU_FILE=emu
-CPU_SRC_FOLDER=cpu
-EXAMPLES_SRC_FOLDER=examples
-BUILD_FOLDER=build
 
 [ "$EXAMPLES" == "true" ] && SRC_PATH=$SHELL_PATH/$EXAMPLES_SRC_FOLDER/$EXAMPLES_PATH || SRC_PATH=$SHELL_PATH/$CPU_SRC_FOLDER
 BUILD_PATH=$SRC_PATH/build
