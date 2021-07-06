@@ -5,10 +5,10 @@
 
 #ifdef VM_TRACE         // --trace
 #include <verilated_vcd_c.h>
-VerilatedVcdC* fp;      //to form *.vcd file
+static VerilatedVcdC* fp;      //to form *.vcd file
 #endif
 
-Vtop* dut_ptr;   //design under test of top
+static Vtop* dut_ptr;   //design under test of top
 
 void test(int time)
 {
