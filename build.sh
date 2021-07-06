@@ -4,10 +4,11 @@ help() {
     echo "Usage:"
     echo "build.sh [-e example_name] [-b] [-s] [-w waveform_name] [-a parameters_list] [-c]"
     echo "Description:"
-    echo "-e: Specify a example project. For example: -c counter. If not specified, the \"cpu\" directory is used as the project directory."
+    echo "-e: Specify a example project. For example: -c counter. If not specified, the \"cpu\" directory is used as the project directory. \
+        It will generate the \"build\" subfolder under the project directory."
     echo "-b: Build project using verilator and make tools automatically."
-    echo "-s: Run simulation program."
-    echo "-w: Open a specified waveform file under build folder using gtkwave."
+    echo "-s: Run simulation program. Use the \"build\" folders as work path."
+    echo "-w: Open a specified waveform file using gtkwave. Use the \"build\" folders as work path."
     echo "-a: Parameters passed to the simulation program. For example: -a \"1 2 3 ......\". Multiple parameters require double quotes."
     echo "-c: Delete all \"build\" folders."
     exit 0
