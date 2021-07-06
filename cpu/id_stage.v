@@ -6,7 +6,6 @@
 `include "defines.v"
 
 module id_stage(
-  //input wire clk,
   input wire rst,
   input wire [31 : 0]inst,
   input wire [`REG_BUS]rs1_data,
