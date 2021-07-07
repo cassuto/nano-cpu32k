@@ -4,12 +4,12 @@ help() {
     echo "Usage:"
     echo "build.sh [-e example_name] [-b] [-t top_file] [-s] [-a parameters_list] [-w waveform_file] [-c]"
     echo "Description:"
-    echo "-e: Specify a example project. For example: -c counter. If not specified, the default directory \"cpu\" will be used. It will generate the \"build\" subfolder under the project directory."
+    echo "-e: Specify a example project. For example: -e counter. If not specified, the default directory \"cpu\" will be used. It will generate the \"build\" subfolder under the project directory."
     echo "-b: Build project using verilator and make tools automatically."
     echo "-t: Specify a file as verilog top file. If not specified, the default filename \"top.v\" will be used."
-    echo "-s: Run simulation program. Use the \"build\" folders as work path."
+    echo "-s: Run simulation program. Use the \"build\" folder as work path."
     echo "-a: Parameters passed to the simulation program. For example: -a \"1 2 3 ......\". Multiple parameters require double quotes."
-    echo "-w: Open a specified waveform file using gtkwave. Use the \"build\" folders as work path."
+    echo "-w: Open a specified waveform file using gtkwave. Use the \"build\" folder as work path."
     echo "-c: Delete all \"build\" folders."
     exit 0
 }
