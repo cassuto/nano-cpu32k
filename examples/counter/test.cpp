@@ -30,6 +30,11 @@ void test(int time)
 int main()
 {
     dut_ptr = new Vtop;  //instantiating module top
+
+    dut_ptr->reset = 0;
+    dut_ptr->clk = 0;
+    dut_ptr->eval();
+    
 #ifdef VM_TRACE
     ////// !!!  ATTENTION  !!!//////
     //  Call Verilated::traceEverOn(true) first.
@@ -41,10 +46,6 @@ int main()
     fp->open("vlt_dump.vcd");   
     fp->dump(0);
 #endif
-
-    dut_ptr->reset = 0;
-    dut_ptr->clk = 0;
-    dut_ptr->eval();
 
     int cycle = 0;
     printf("Enter the test cycle:\t");
