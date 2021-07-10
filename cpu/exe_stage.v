@@ -25,8 +25,8 @@ begin
   else
   begin
     case( inst_opcode )
-	  `INST_ADDI: begin rd_data = op1 + op2;  end
-	  default:    begin rd_data = `ZERO_WORD; end
+	  `INST_ADD: begin rd_data = op1 + op2;  end
+	  default:   begin rd_data = `ZERO_WORD; end
 	endcase
   end
 end
