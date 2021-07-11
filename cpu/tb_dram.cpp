@@ -78,11 +78,12 @@ int main()
 #endif
 
     uint16_t limit = 512;
+    int cycle=0;
     for(uint16_t i=0; i<limit;i++) {
-        test_write(0, i,i);
+        test_write(cycle++, i,i);
     }
     for(uint16_t i=0; i<limit;i++) {
-        test_read(0, i,i);
+        test_read(cycle++, i,i);
     }
 #ifdef VM_TRACE
     fp->close();
