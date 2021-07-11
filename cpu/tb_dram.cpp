@@ -14,7 +14,7 @@ static Vdram
 
 void test_write(int time, uint16_t addr, uint64_t dat)
 {
-    dut->i_we = 1;
+    dut->i_we = 0xff;
     dut->i_addr = addr;
     dut->i_dat = dat;
     dut->clk = 1;
