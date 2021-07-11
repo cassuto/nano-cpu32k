@@ -43,7 +43,7 @@ void test_read(int time, uint16_t addr, uint64_t dat)
     fp->dump(time * 2 + 1);
 #endif
 
-    if (dut->i_dat != dat) {
+    if (dut->o_dat != dat) {
         printf("Reaout error!\n");
         //exit(1);
     }
