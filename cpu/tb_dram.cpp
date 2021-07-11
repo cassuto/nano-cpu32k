@@ -17,18 +17,21 @@ void test_write(int time, uint16_t addr, uint64_t dat)
     dut->i_we = 0xff;
     dut->i_addr = addr;
     dut->i_dat = dat;
+#ifdef VM_TRACE
+    fp->dump(time * 3 + 0);
+#endif
     dut->clk = 1;
     dut->eval();
 
 #ifdef VM_TRACE
-    fp->dump(time * 2 + 1);
+    fp->dump(time * 3 + 1);
 #endif
 
     dut->clk = 0;
     dut->eval();
 
 #ifdef VM_TRACE
-    fp->dump(time * 2 + 2);
+    fp->dump(time * 3 + 2);
 #endif
 }
 
@@ -37,10 +40,13 @@ void test_read(int time, uint16_t addr, uint64_t dat)
     dut->i_we = 0;
     dut->i_addr = addr;
     dut->clk = 1;
+#ifdef VM_TRACE
+    fp->dump(time * 3 + 0);
+#endif
     dut->eval();
 
 #ifdef VM_TRACE
-    fp->dump(time * 2 + 1);
+    fp->dump(time * 3 + 1);
 #endif
 
     if (dut->o_dat != dat) {
@@ -52,7 +58,7 @@ void test_read(int time, uint16_t addr, uint64_t dat)
     dut->eval();
 
 #ifdef VM_TRACE
-    fp->dump(time * 2 + 2);
+    fp->dump(time * 3 + 2);
 #endif
 }
 
