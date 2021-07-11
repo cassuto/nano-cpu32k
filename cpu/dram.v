@@ -1,12 +1,12 @@
 module dram #(
-   parameter DRAM_AW
+   parameter DRAM_AW = 16
 )
 (
    input clk,
    input rst,
    output reg [63:0] o_dat,
    input reg [63:0] i_dat,
-   input [7:0] i_we;
+   input [7:0] i_we,
    input [DRAM_AW-1:0] i_addr
 );
 
