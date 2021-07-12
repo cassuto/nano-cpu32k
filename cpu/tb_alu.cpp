@@ -96,7 +96,7 @@ int tb_alu_main()
 
     for(int i=0;i<N_ITERATIONS;i++) {
         for(int j=0;j<sizeof(tests)/sizeof(*tests);j++) {
-            if (test_alu(&tests[i])) {
+            if (test_alu(&tests[j])) {
                 ret = 1;
                 goto out;
             }
