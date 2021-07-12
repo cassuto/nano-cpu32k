@@ -15,6 +15,7 @@ struct testcase {
     pfnOperator pfnOp;
 };
 
+static uint64_t opNone(uint64_t, uint64_t);
 static uint64_t opAdd(uint64_t, uint64_t);
 static uint64_t opSub(uint64_t, uint64_t);
 static uint64_t opAnd(uint64_t, uint64_t);
@@ -24,6 +25,7 @@ static uint64_t opSll(uint64_t, uint64_t);
 static uint64_t opSrl(uint64_t, uint64_t);
 
 static testcase tests[] = {
+    {0, &opNone},
     {(1U<<0), &opAdd},
     {(1U<<1), &opSub},
     {(1U<<2), &opAnd},
@@ -40,6 +42,10 @@ static VerilatedVcdC* fp;
 
 static Valu* dut;
 
+static uint64_t opNone(uint64_t operand1, uint64_t operand2)
+{
+    return 0;
+}
 static uint64_t opAdd(uint64_t operand1, uint64_t operand2)
 {
     return operand1 + operand2;

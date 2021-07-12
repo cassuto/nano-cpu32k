@@ -18,3 +18,9 @@
 !.gitignore
 **/build/
 myinfo.txt
+
+; My files
+!*.vh
+!doc/*
+!doc/*/*
+!doc/*/*/*
