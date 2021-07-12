@@ -1,3 +1,5 @@
+#include "tb.h"
+#ifdef TESTBENCH_DRAM
 
 #include "verilated.h"
 #include "Vdram.h"  
@@ -62,7 +64,7 @@ void test_read(int time, uint16_t addr, uint64_t dat)
 }
 
 
-int main()
+int tb_dram_main()
 {
     dut = new Vdram;  //instantiating module top
 
@@ -97,3 +99,5 @@ int main()
     delete dut;
     return 0;
 }
+
+#endif
