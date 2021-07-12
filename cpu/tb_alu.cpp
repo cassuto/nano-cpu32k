@@ -86,7 +86,7 @@ int test_alu(int iteration, testcase *test)
         fprintf(stderr, "Error output of ALU: Expected = %#lx, Actual = %#lx\n", dut->o_result, expected);
         return 1;
     }
-    printf("#%d: PASS! fu_sel=%x operand1=%#lx, operand1=%#2x, result=%#lx,\n", iteration, test->fu_sel, operand1, operand2, dut->o_result);
+    printf("#%d: PASS! fu_sel=%x operand1=%#lx, operand1=%#lx, result=%#lx,\n", iteration, test->fu_sel, operand1, operand2, dut->o_result);
     return 0;
 }
 
