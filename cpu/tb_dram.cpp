@@ -43,7 +43,7 @@ void test_read(int time, uint16_t addr, uint64_t dat)
 #endif
 
     if (dut->o_dat != dat) {
-        printf("Reaout error! %#x !== %#x\n", dat, dut->o_dat);
+        printf("Reaout error! %#x !== %#llx\n", dat, dut->o_dat);
         //exit(1);
     }
 
