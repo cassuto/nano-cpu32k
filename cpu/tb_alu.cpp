@@ -70,7 +70,7 @@ static uint64_t opSrl(uint64_t operand1, uint64_t operand2)
 }
 
 
-int test_alu(testcase *test)
+int test_alu(int iteration, testcase *test)
 {
     uint64_t operand1, operand2, expected;
 
@@ -86,6 +86,7 @@ int test_alu(testcase *test)
         fprintf(stderr, "Error output of ALU: Expected = %#lx, Actual = %#lx\n", dut->o_result, expected);
         return 1;
     }
+    printf("#%d: PASS! fu_sel=%x operand1=%#lx, operand1=%#2x, result=%#lx,\n", iteration, test->fu_sel, operand1, operand2, dut->o_result);
     return 0;
 }
 
@@ -96,8 +97,7 @@ int tb_alu_main()
 
     for(int i=0;i<N_ITERATIONS;i++) {
         for(int j=0;j<sizeof(tests)/sizeof(*tests);j++) {
-            printf("#%d: Testing fu_sel=%x\n", i, tests[j].fu_sel);
-            if (test_alu(&tests[j])) {
+            if (test_alu(i, &tests[j])) {
                 ret = 1;
                 goto out;
             }
