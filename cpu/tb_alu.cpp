@@ -96,6 +96,7 @@ int tb_alu_main()
 
     for(int i=0;i<N_ITERATIONS;i++) {
         for(int j=0;j<sizeof(tests)/sizeof(*tests);j++) {
+            printf("#%d: Testing fu_sel=%x\n", i, tests[j].fu_sel);
             if (test_alu(&tests[j])) {
                 ret = 1;
                 goto out;
