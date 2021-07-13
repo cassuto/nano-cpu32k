@@ -16,6 +16,7 @@ static Vtop* dut;
 void reset(int time)
 {
     dut->rst = 1;
+    dut->eval();
     dut->clk = 1;
     dut->eval();
 #ifdef VM_TRACE
@@ -65,7 +66,7 @@ int tb_top_main()
 #endif
 
     reset(0);
-    int cycle=100;
+    int cycle=20;
     for(uint16_t i=1; i<=cycle;i++) {
         test(i);
     }
