@@ -13,6 +13,24 @@ static VerilatedVcdC* fp;
 
 static Vtop* dut;
 
+void reset(int time)
+{
+    dut->rst = 1;
+    dut->clk = 1;
+    dut->eval();
+#ifdef VM_TRACE
+    fp->dump(time * 2 + 1);
+#endif
+
+    dut->clk = 0;
+    dut->rst = 0;
+    dut->eval();
+
+#ifdef VM_TRACE
+    fp->dump(time * 2 + 2);
+#endif
+}
+
 void test(int time)
 {
     dut->clk = 1;
@@ -34,12 +52,7 @@ int tb_top_main()
 {
     dut = new Vtop;  //instantiating module top
 
-    dut->rst = 1;
-    dut->clk = 0;
-    dut->eval();
-    dut->rst = 0;
-    dut->clk = 0;
-    dut->eval();
+    reset(0);
     
 #ifdef VM_TRACE
     ////// !!!  ATTENTION  !!!//////
@@ -54,7 +67,7 @@ int tb_top_main()
 #endif
 
     int cycle=100;
-    for(uint16_t i=0; i<cycle;i++) {
+    for(uint16_t i=1; i<=cycle;i++) {
         test(i);
     }
 #ifdef VM_TRACE
