@@ -7,13 +7,13 @@ module pc #(
    output [IRAM_AW-1:0] iram_addr
 );
 
-   reg [IRAM_AW-3:0] pc_r;
-   wire [IRAM_AW-3:0] pc_nxt;
+   reg [IRAM_AW-1:0] pc_r;
+   wire [IRAM_AW-1:0] pc_nxt;
 
    always @(posedge clk)
       if (rst)
          begin
-            pc_r <= {IRAM_AW-2{1'b1}};
+            pc_r <= {IRAM_AW{1'b1}};
          end
       else
          begin
@@ -22,6 +22,6 @@ module pc #(
 
    assign pc_nxt = pc_r + 'b1;
 
-   assign iram_addr = {pc_nxt[IRAM_AW-3:0], 2'b00};
+   assign iram_addr = pc_nxt;
 
 endmodule

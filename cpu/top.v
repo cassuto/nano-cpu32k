@@ -4,7 +4,7 @@ module top(
    input clk,
    input rst
 );
-   localparam IRAM_AW = 16; // 64 KiB
+   localparam IRAM_AW = 16; // (2^ILEN) * 64 KiB
 
    wire [IRAM_AW-1:0] iram_addr;
    wire [31:0] insn;
