@@ -5,6 +5,7 @@ module pc(
 );
 
    reg [61:0] pc_r;
+   wire [61:0] pc_nxt;
 
    always @(posedge clk)
       if (rst)
@@ -13,9 +14,11 @@ module pc(
          end
       else
          begin
-            pc_r <= pc_r + 'b1;
+            pc_r <= pc_nxt;
          end
 
-   assign iram_addr = {pc_r[61:0], 2'b00};
+   assign pc_nxt = pc_r + 'b1;
+
+   assign iram_addr = {pc_nxt[61:0], 2'b00};
 
 endmodule
