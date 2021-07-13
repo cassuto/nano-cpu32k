@@ -18,4 +18,7 @@ module iram #(
             o_insn <= imem[i_addr];
       end
 
+   initial
+      $readmemb("insn.bin", imem, 0);
+
 endmodule
