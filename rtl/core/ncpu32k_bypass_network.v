@@ -15,58 +15,123 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_bypass_network
-(
-   input                      clk,
-   input                      en,
-   input [`NCPU_REG_AW-1:0]   i_operand_rf_addr,
-   input [`NCPU_DW-1:0]       i_operand,
-   output [`NCPU_DW-1:0]      o_operand,
-
-   // WB 1st slot (LISTENING)
-   input                      wb_slot_1_BVALID,
-   input                      wb_slot_1_rd_we,
-   input [`NCPU_REG_AW-1:0]   wb_slot_1_rd_addr,
-   input [`NCPU_DW-1:0]       wb_slot_1_dout,
-   // WB 2rd slot (LISTENING)
-   input                      wb_slot_2_BVALID,
-   input                      wb_slot_2_rd_we,
-   input [`NCPU_REG_AW-1:0]   wb_slot_2_rd_addr,
-   input [`NCPU_DW-1:0]       wb_slot_2_dout
+module ncpu32k_bypass_network(
+   input                               clk,
+   // From ARF
+   input                               arf_1_rs1_re,
+   input [`NCPU_REG_AW-1:0]            arf_1_rs1_addr,
+   input [`NCPU_DW-1:0]                arf_1_rs1_dout,
+   input                               arf_2_rs1_re,
+   input [`NCPU_REG_AW-1:0]            arf_2_rs1_addr,
+   input [`NCPU_DW-1:0]                arf_2_rs1_dout,
+   // From scheduler
+   input                               alu_2_operand1_frm_alu_1,
+   input                               alu_2_operand2_frm_alu_1,
+   input                               bru_operand1_frm_alu_1,
+   input                               bru_operand2_frm_alu_1,
+   input                               lsu_operand1_frm_alu_1,
+   input                               lsu_operand2_frm_alu_1,
+   input [`NCPU_DW-1:0]                alu_2_operand1_nobyp,
+   input [`NCPU_DW-1:0]                alu_2_operand2_nobyp,
+   input [`NCPU_DW-1:0]                bru_operand1_nobyp,
+   input [`NCPU_DW-1:0]                bru_operand2_nobyp,
+   input [`NCPU_DW-1:0]                lsu_operand1_nobyp,
+   input [`NCPU_DW-1:0]                lsu_operand2_nobyp,
+   // From ALU #1
+   input [`NCPU_DW-1:0]                wb_alu_1_dout,
+   // From stage 2 of backend
+   input                               s2o_slot_BVALID_nolsu_1,
+   input                               s2o_slot_rd_we_1,
+   input [`NCPU_REG_AW-1:0]            s2o_slot_rd_addr_1,
+   input [`NCPU_DW-1:0]                s2o_slot_dout_nolsu_1,
+   input                               s2o_slot_BVALID_nolsu_2,
+   input                               s2o_slot_rd_we_2,
+   input [`NCPU_REG_AW-1:0]            s2o_slot_rd_addr_2,
+   input [`NCPU_DW-1:0]                s2o_slot_dout_nolsu_2,
+   // Output
+   output [`NCPU_DW-1:0]               arf_1_rs1_dout_bypass,
+   output [`NCPU_DW-1:0]               arf_1_rs2_dout_bypass,
+   output [`NCPU_DW-1:0]               arf_2_rs1_dout_bypass,
+   output [`NCPU_DW-1:0]               arf_2_rs2_dout_bypass,
+   output [`NCPU_DW-1:0]               alu_2_operand1,
+   output [`NCPU_DW-1:0]               alu_2_operand2,
+   output [`NCPU_DW-1:0]               bru_operand1,
+   output [`NCPU_DW-1:0]               bru_operand2,
+   output [`NCPU_DW-1:0]               lsu_operand1,
+   output [`NCPU_DW-1:0]               lsu_operand2
 );
-   wire [1:0]                 bypass_r, bypass_nxt;
-   wire [`NCPU_DW-1:0]        wb_slot_1_dout_r;
-   wire [`NCPU_DW-1:0]        wb_slot_2_dout_r;
-   wire [`NCPU_REG_AW-1:0] rf_addr_r;
 
-   assign bypass_nxt = (wb_slot_2_BVALID & wb_slot_2_rd_we & (wb_slot_2_rd_addr == i_operand_rf_addr))
-                           ? 2'b10
-                           : (wb_slot_1_BVALID & wb_slot_1_rd_we & (wb_slot_1_rd_addr == i_operand_rf_addr))
-                              ? 2'b01
-                              : 2'b00;
-   // Data path
-   nDFF_l #(2) dff_wb_slot_1_bypass_r
-      (clk, en, bypass_nxt, bypass_r);
+   //
+   // *** Bypass path: Backend stage2->Backend stage1 ***
+   // *** Bypass path: Backend stage1->Scheduler ***
+   //
+   `define BYPASS_OP_PORTS \
+      .wb_slot_1_BVALID             (s2o_slot_BVALID_nolsu_1), \
+      .wb_slot_1_rd_we              (s2o_slot_rd_we_1), \
+      .wb_slot_1_rd_addr            (s2o_slot_rd_addr_1), \
+      .wb_slot_1_dout               (s2o_slot_dout_nolsu_1), \
+      .wb_slot_2_BVALID             (s2o_slot_BVALID_nolsu_2), \
+      .wb_slot_2_rd_we              (s2o_slot_rd_we_2), \
+      .wb_slot_2_rd_addr            (s2o_slot_rd_addr_2), \
+      .wb_slot_2_dout               (s2o_slot_dout_nolsu_2)
 
-   nDFF_l #(`NCPU_REG_AW) dff_rf_addr_r
-      (clk, en, i_operand_rf_addr, rf_addr_r);
+   ncpu32k_bypass_op BYPASS_OP_1
+      (
+         .clk                          (clk),
+         .en                           (arf_1_rs1_re),
+         .i_operand_rf_addr            (arf_1_rs1_addr),
+         .i_operand                    (arf_1_rs1_dout),
+         .o_operand                    (arf_1_rs1_dout_bypass),
+         `BYPASS_OP_PORTS
+      );
+   ncpu32k_bypass_op BYPASS_OP_2
+      (
+         .clk                          (clk),
+         .en                           (arf_1_rs2_re),
+         .i_operand_rf_addr            (arf_1_rs2_addr),
+         .i_operand                    (arf_1_rs2_dout),
+         .o_operand                    (arf_1_rs2_dout_bypass),
+         `BYPASS_OP_PORTS
+      );
+   ncpu32k_bypass_op BYPASS_OP_3
+      (
+         .clk                          (clk),
+         .en                           (arf_2_rs1_re),
+         .i_operand_rf_addr            (arf_2_rs1_addr),
+         .i_operand                    (arf_2_rs1_dout),
+         .o_operand                    (arf_2_rs1_dout_bypass),
+         `BYPASS_OP_PORTS
+      );
+   ncpu32k_bypass_op BYPASS_OP_4
+      (
+         .clk                          (clk),
+         .en                           (arf_2_rs2_re),
+         .i_operand_rf_addr            (arf_2_rs2_addr),
+         .i_operand                    (arf_2_rs2_dout),
+         .o_operand                    (arf_2_rs2_dout_bypass),
+         `BYPASS_OP_PORTS
+      );
 
-   nDFF_l #(`NCPU_DW) dff_wb_slot_1_dout_r
-      (clk, en, wb_slot_1_dout, wb_slot_1_dout_r);
-   nDFF_l #(`NCPU_DW) dff_wb_slot_2_dout_r
-      (clk, en, wb_slot_2_dout, wb_slot_2_dout_r);
+   
+   //
+   // *** Bypass path: ALU1->ALU2 ***
+   // Assert (2105110002)
+   //
+   assign alu_2_operand1 = alu_2_operand1_frm_alu_1 ? wb_alu_1_dout : alu_2_operand1_nobyp;
+   assign alu_2_operand2 = alu_2_operand2_frm_alu_1 ? wb_alu_1_dout : alu_2_operand2_nobyp;
 
-   // Slot #2 is prior to slot #1 in order to get the right value when there is WAW dependency.
-   // Earlier stage is prior to the older stage, to get latest value when RAW
+   //
+   // *** Bypass path: ALU1->BRU ***
+   // Assert (2105051653)
+   //
+   assign bru_operand1 = bru_operand1_frm_alu_1 ? wb_alu_1_dout : bru_operand1_nobyp;
+   assign bru_operand2 = bru_operand2_frm_alu_1 ? wb_alu_1_dout : bru_operand2_nobyp;
 
-   assign o_operand = (wb_slot_2_BVALID & wb_slot_2_rd_we & (wb_slot_2_rd_addr == rf_addr_r))
-                        ? wb_slot_2_dout
-                        : (wb_slot_1_BVALID & wb_slot_1_rd_we & (wb_slot_1_rd_addr == rf_addr_r))
-                           ? wb_slot_1_dout
-                           : (bypass_r[1])
-                              ? wb_slot_2_dout_r
-                              : (bypass_r[0])
-                                 ? wb_slot_1_dout_r
-                                 : i_operand;
+   //
+   // *** Bypass path: ALU1->LSU ***
+   // Assert (2105051655)
+   //
+   assign lsu_operand1 = lsu_operand1_frm_alu_1 ? wb_alu_1_dout : lsu_operand1_nobyp;
+   assign lsu_operand2 = lsu_operand2_frm_alu_1 ? wb_alu_1_dout : lsu_operand2_nobyp;
 
 endmodule
