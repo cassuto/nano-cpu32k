@@ -34,6 +34,9 @@ int tb_top_main()
 {
     dut = new Vtop;  //instantiating module top
 
+    dut->rst = 1;
+    dut->clk = 0;
+    dut->eval();
     dut->rst = 0;
     dut->clk = 0;
     dut->eval();
