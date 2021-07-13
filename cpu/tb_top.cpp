@@ -50,7 +50,7 @@ int tb_top_main()
     fp->dump(0);
 #endif
 
-    int cycle=0;
+    int cycle=100;
     for(uint16_t i=0; i<cycle;i++) {
         test(i);
     }
