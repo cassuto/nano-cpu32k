@@ -51,8 +51,6 @@ void test(int time)
 int tb_top_main()
 {
     dut = new Vtop;  //instantiating module top
-
-    reset(0);
     
 #ifdef VM_TRACE
     ////// !!!  ATTENTION  !!!//////
@@ -66,6 +64,7 @@ int tb_top_main()
     fp->dump(0);
 #endif
 
+    reset(0);
     int cycle=100;
     for(uint16_t i=1; i<=cycle;i++) {
         test(i);
