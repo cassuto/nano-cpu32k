@@ -13,7 +13,7 @@ module pc #(
    always @(posedge clk)
       if (rst)
          begin
-            pc_r <= 'b0;
+            pc_r <= {IRAM_AW-2{1'b1}};
          end
       else
          begin
