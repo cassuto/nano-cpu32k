@@ -5,6 +5,7 @@ addi x2, x1, 4
 addi x3, x2, 4
 addi x4, x3, 4
 addi x5, x4, 4
+addi x6, x5, 4
 addi x7, x6, 4
 addi x8, x7, 4
 addi x31, x8, 4
