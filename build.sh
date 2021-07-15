@@ -69,8 +69,13 @@ NAME="${NAME##*\r}"
 
 # Clean
 if [[ "$CLEAN" == "true" ]]; then
-    # delete all "build" folders
-    find . -name "build" -print0 | xargs -0 rm -rf
+    if [[ "$BUILD" == "true" ]]; then
+        cd $SRC_PATH
+        find . -name "build" -print0 | xargs -0 rm -rf
+        cd $SHELL_PATH
+    else
+        # delete all "build" folders
+        find . -name "build" -print0 | xargs -0 rm -rf
     exit 0
 fi
 
@@ -78,7 +83,7 @@ fi
 if [[ "$BUILD" == "true" ]]; then
     cd $SRC_PATH
     CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
-    verilator -Wall --cc --exe -o $EMU_FILE --trace $CFLAGS -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
+    verilator --unused-regexp -Wall --cc --exe -o $EMU_FILE --trace $CFLAGS -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
     if [ $? -ne 0 ]; then
         echo "Failed to run verilator!!!"
         exit 1
