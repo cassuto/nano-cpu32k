@@ -1,6 +1,9 @@
 #!/bin/bash
 
+VERSION="1.1"
+
 help() {
+    echo "Version v"$VERSION
     echo "Usage:"
     echo "build.sh [-e example_name] [-b] [-t top_file] [-s] [-a parameters_list] [-w waveform_file] [-c]"
     echo "Description:"
@@ -10,9 +13,9 @@ help() {
     echo "-s: Run simulation program. Use the \"build\" folder as work path."
     echo "-a: Parameters passed to the simulation program. For example: -a \"1 2 3 ......\". Multiple parameters require double quotes."
     echo "-f: C++ compiler arguments for makefile. For example: -f \"-DGLOBAL_DEFINE=1 -ggdb3\". Multiple parameters require double quotes."
-    echo "-g: Debug the simulation Program with GDB."
+    echo "-g: Debug the simulation program with GDB."
     echo "-w: Open a specified waveform file using gtkwave. Use the \"build\" folder as work path."
-    echo "-c: Delete all \"build\" folders."
+    echo "-c: Delete \"build\" folder under the project directory."
     exit 0
 }
 
@@ -24,7 +27,7 @@ CPU_SRC_FOLDER="cpu"
 EXAMPLES_SRC_FOLDER="examples"
 BUILD_FOLDER="build"
 BUILD="false"
-EXAMPLES="false"
+EXAMPLES="false"``
 V_TOP_FILE="top.v"
 SIMULATE="false"
 CHECK_WAVE="false"
@@ -50,6 +53,14 @@ while getopts 'he:bt:sa:f:gw:c' OPT; do
     esac
 done
 
+# Clean
+if [[ "$CLEAN" == "true" ]]; then
+    cd $SRC_PATH
+    find . -name "build" -print0 | xargs -0 rm -rf
+    cd $SHELL_PATH
+    exit 0
+fi
+
 [[ "$EXAMPLES" == "true" ]] && SRC_PATH=$SHELL_PATH/$EXAMPLES_SRC_FOLDER/$EXAMPLES_PATH || SRC_PATH=$SHELL_PATH/$CPU_SRC_FOLDER
 BUILD_PATH=$SRC_PATH"/build"
 
@@ -69,13 +80,9 @@ NAME="${NAME##*\r}"
 
 # Clean
 if [[ "$CLEAN" == "true" ]]; then
-    if [[ "$BUILD" == "true" ]]; then
-        cd $SRC_PATH
-        find . -name "build" -print0 | xargs -0 rm -rf
-        cd $SHELL_PATH
-    else
-        # delete all "build" folders
-        find . -name "build" -print0 | xargs -0 rm -rf
+    cd $SRC_PATH
+    find . -name "build" -print0 | xargs -0 rm -rf
+    cd $SHELL_PATH
     exit 0
 fi
 
