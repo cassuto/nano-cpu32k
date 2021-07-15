@@ -23,7 +23,7 @@ module regfile(
 	
 	always @(posedge clk) 
 	begin
-		if ( rst == 0'b1 ) 
+		if ( rst == 1'b1 ) 
 		begin
 			regs[ 0] <= `ZERO_WORD;
 			regs[ 1] <= `ZERO_WORD;
@@ -60,24 +60,24 @@ module regfile(
 		end
 		else 
 		begin
-			if ((w_ena == 0'b1) && (w_addr != 5'h00))	
+			if ((w_ena == 1'b1) && (w_addr != 5'h00))	
 				regs[w_addr] <= w_data;
 		end
 	end
 	
 	always @(*) begin
-		if (rst == 0'b1)
+		if (rst == 1'b1)
 			r_data1 = `ZERO_WORD;
-		else if (r_ena1 == 0'b1)
+		else if (r_ena1 == 1'b1)
 			r_data1 = regs[r_addr1];
 		else
 			r_data1 = `ZERO_WORD;
 	end
 	
 	always @(*) begin
-		if (rst == 0'b1)
+		if (rst == 1'b1)
 			r_data2 = `ZERO_WORD;
-		else if (r_ena2 == 0'b1)
+		else if (r_ena2 == 1'b1)
 			r_data2 = regs[r_addr2];
 		else
 			r_data2 = `ZERO_WORD;
