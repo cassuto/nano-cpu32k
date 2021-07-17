@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="1.2"
+VERSION="1.3"
 
 help() {
     echo "Version v"$VERSION
@@ -80,9 +80,9 @@ if [[ "$BUILD" == "true" ]]; then
     CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
 
     if [[ $CFLAGS ]]; then
-        verilator -Wall --cc --exe -o $EMU_FILE --trace -CFLAGS "$CFLAGS" -Mdir $BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
+        verilator --unused-regexp -Wall --cc --exe -o $EMU_FILE --trace -CFLAGS "$CFLAGS" -Mdir $BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
     else
-        verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir $BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
+        verilator --unused-regexp -Wall --cc --exe -o $EMU_FILE --trace -Mdir $BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
     fi
 
     if [ $? -ne 0 ]; then
