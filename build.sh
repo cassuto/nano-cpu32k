@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="1.1"
+VERSION="1.2"
 
 help() {
     echo "Version v"$VERSION
@@ -53,20 +53,8 @@ while getopts 'he:bt:sa:f:gw:c' OPT; do
     esac
 done
 
-# Clean
-if [[ "$CLEAN" == "true" ]]; then
-    cd $SRC_PATH
-    find . -name "build" -print0 | xargs -0 rm -rf
-    cd $SHELL_PATH
-    exit 0
-fi
-
 [[ "$EXAMPLES" == "true" ]] && SRC_PATH=$SHELL_PATH/$EXAMPLES_SRC_FOLDER/$EXAMPLES_PATH || SRC_PATH=$SHELL_PATH/$CPU_SRC_FOLDER
 BUILD_PATH=$SRC_PATH"/build"
-
-if [[ $CFLAGS ]]; then
-    CFLAGS="-CFLAGS "$CFLAGS
-fi
 
 # Get id and name
 ID=`sed '/^ID=/!d;s/.*=//' $MYINFO_FILE`
@@ -81,7 +69,7 @@ NAME="${NAME##*\r}"
 # Clean
 if [[ "$CLEAN" == "true" ]]; then
     cd $SRC_PATH
-    find . -name "build" -print0 | xargs -0 rm -rf
+    rm -rf $BUILD_FOLDER
     cd $SHELL_PATH
     exit 0
 fi
@@ -90,7 +78,13 @@ fi
 if [[ "$BUILD" == "true" ]]; then
     cd $SRC_PATH
     CPP_SRC=`find . -maxdepth 1 -name "*.cpp"`
-    verilator --unused-regexp -Wall --cc --exe -o $EMU_FILE --trace $CFLAGS -Mdir ./$BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
+
+    if [[ $CFLAGS ]]; then
+        verilator -Wall --cc --exe -o $EMU_FILE --trace -CFLAGS "$CFLAGS" -Mdir $BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
+    else
+        verilator -Wall --cc --exe -o $EMU_FILE --trace -Mdir $BUILD_FOLDER --build $V_TOP_FILE $CPP_SRC
+    fi
+
     if [ $? -ne 0 ]; then
         echo "Failed to run verilator!!!"
         exit 1
