@@ -59,7 +59,7 @@ module ncpu32k_tracer
    initial
       begin
          // Configurations
-         cfg_enable_compare = 0;
+         cfg_enable_compare = 1;
          cfg_log_on_display = 1;
          cfg_log_on_file = 0;
          cfg_terminate_when_mismatch = 1;

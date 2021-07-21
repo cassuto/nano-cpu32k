@@ -81,7 +81,7 @@ module ncpu32k_immu
       #(
          .AW (CONFIG_ITLB_NSETS_LOG2),
          .DW (`NCPU_DW),
-         .ENABLE_BYPASS (1)
+         .ENABLE_BYPASS (0)
       )
    TLB_L
       (
@@ -100,7 +100,7 @@ module ncpu32k_immu
       #(
          .AW (CONFIG_ITLB_NSETS_LOG2),
          .DW (`NCPU_DW),
-         .ENABLE_BYPASS (1)
+         .ENABLE_BYPASS (0)
       )
    TLB_H
       (

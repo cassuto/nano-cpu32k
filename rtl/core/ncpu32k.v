@@ -135,6 +135,7 @@ module ncpu32k
    wire                 idu_2_EIPF;             // From FRONTEND of ncpu32k_frontend.v
    wire                 idu_2_EITM;             // From FRONTEND of ncpu32k_frontend.v
    wire [BPU_UPD_DW-1:0] idu_2_bpu_upd;         // From FRONTEND of ncpu32k_frontend.v
+   wire                 idu_2_in_pred_path;     // From FRONTEND of ncpu32k_frontend.v
    wire [`NCPU_IW-1:0]  idu_2_insn;             // From FRONTEND of ncpu32k_frontend.v
    wire                 idu_2_insn_vld;         // From FRONTEND of ncpu32k_frontend.v
    wire [`NCPU_AW-3:0]  idu_2_pc;               // From FRONTEND of ncpu32k_frontend.v
@@ -256,6 +257,7 @@ module ncpu32k
        .idu_2_EITM                      (idu_2_EITM),
        .idu_2_EIPF                      (idu_2_EIPF),
        .idu_bpu_pc_nxt                  (idu_bpu_pc_nxt[`NCPU_AW-3:0]),
+       .idu_2_in_pred_path              (idu_2_in_pred_path),
        .msr_immid                       (msr_immid[`NCPU_DW-1:0]),
        .msr_icid                        (msr_icid[`NCPU_DW-1:0]),
        // Inputs
@@ -389,6 +391,7 @@ module ncpu32k
        .idu_2_EITM                      (idu_2_EITM),
        .idu_2_EIPF                      (idu_2_EIPF),
        .idu_bpu_pc_nxt                  (idu_bpu_pc_nxt[`NCPU_AW-3:0]),
+       .idu_2_in_pred_path              (idu_2_in_pred_path),
        .dbus_ARWREADY                   (dbus_ARWREADY),
        .dbus_WREADY                     (dbus_WREADY),
        .dbus_BVALID                     (dbus_BVALID),

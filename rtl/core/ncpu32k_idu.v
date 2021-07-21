@@ -269,8 +269,8 @@ module ncpu32k_idu
 
    assign lsu_sign_ext = (op_ldb | op_ldh);
 
-   assign op_lsu_load = |lsu_load_size;
-   assign op_lsu_store = |lsu_store_size;
+   assign op_lsu_load = (op_ldb|op_ldbu|op_ldh|op_ldhu|op_ldwu);
+   assign op_lsu_store = (op_stb|op_sth|op_stw);
    assign op_lsu_barr = (f_opcode == `NCPU_OP_MBARR);
 
    // EPU opcodes excluding EINSN 

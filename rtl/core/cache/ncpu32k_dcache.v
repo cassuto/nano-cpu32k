@@ -55,9 +55,8 @@ module ncpu32k_dcache
    // DCFLS
    input [`NCPU_DW-1:0]          msr_dcfls_nxt,
    input                         msr_dcfls_we,
-   // From TLB
-   input                         tlb_exc,
-   input                         tlb_uncached,
+   // Kill
+   input                         kill_req,
    input [CONFIG_DC_AW-CONFIG_DMMU_PAGE_SIZE_LOG2-1:0] tlb_ppn,
    // D-Bus Master
    input                         dbus_ARWREADY,
@@ -175,8 +174,8 @@ module ncpu32k_dcache
             s1o_entry_idx <= s1i_entry_idx;
          end
 
-   // Cancel the request if MMU raised exceptions or cache is inhibited
-   assign s1o_req = s1o_req_tmp_r & ~tlb_exc & ~tlb_uncached;
+   // Kill the request to stage 2
+   assign s1o_req = s1o_req_tmp_r & ~kill_req;
 
    // Switch the index for ch_boot | in_invfls
    assign s2i_entry_idx_final = (ch_boot)
@@ -394,7 +393,6 @@ generate
                               : s1o_match[i];
          wire [CONFIG_DC_DW/8-1:0] we_a = s2i_blk_we_a[CONFIG_DC_DW/8-1:0] & {CONFIG_DC_DW/8{s2i_matched}};
          wire en_a = (s2i_blk_en_a_g & s2i_matched);
-         wire [CONFIG_DC_DW-1:0] dout_b;
 
          ncpu32k_dcache_ram
             #(
@@ -412,38 +410,9 @@ generate
                .addr_b   (s1i_blk_addr_b[BLK_AW-1:0]),
                .we_b     ({CONFIG_DC_DW/8{1'b0}}),
                .din_b    ({CONFIG_DC_DW{1'b0}}),
-               .dout_b   (dout_b[CONFIG_DC_DW-1:0]),
+               .dout_b   (s1o_blk_dout_b[i][CONFIG_DC_DW-1:0]),
                .en_b     (s1i_blk_en_b)
             );
-
-         // Detect RAW dependency in D$ pipeline
-         wire                                   rdat_bypass_r;
-         wire [CONFIG_DC_DW-1:0]                rdat_din_r;
-         wire [CONFIG_DC_DW/8-1:0]              rdat_wmsk_r;
-         wire [CONFIG_DC_DW-1:0]                rdat_byp;
-         wire                                   rdat_conflict;
-
-         assign rdat_conflict = ((s2i_blk_addr_a == s1i_blk_addr_b) & s1i_blk_en_b & |we_a & en_a);
-
-         // Bypass FSM
-         nDFF_lr #(1, 1'b0) dff_rdat_bypass_r
-            (clk,rst_n, (rdat_conflict|s1i_blk_en_b), (rdat_conflict | ~s1i_blk_en_b), rdat_bypass_r); // Keep bypass_r valid till the next Read
-         // Latch din
-         nDFF_l #(CONFIG_DC_DW) dff_rdat_din_r
-            (clk, (|we_a & en_a), s2i_blk_din_a, rdat_din_r);
-         // Latch w mask
-         nDFF_l #(CONFIG_DC_DW/8) dff_rdat_wmsk_r
-            (clk, (|we_a & en_a), we_a, rdat_wmsk_r);
-
-         // Restore byte selection
-         for(j=0; j<CONFIG_DC_DW/8; j=j+1)
-            begin : gen_rdat_byp
-               assign rdat_byp[j*8 +: 8] = (rdat_wmsk_r[j])
-                                             ? rdat_din_r[j*8 +: 8]
-                                             : dout_b[j*8 +: 8];
-            end
-
-         assign s1o_blk_dout_b[i] = rdat_bypass_r ? rdat_byp : dout_b;
          
       end
 endgenerate
@@ -452,7 +421,46 @@ endgenerate
                                           ? s1o_match_way_idx
                                           : s1o_free_way_idx];
 
-   assign rdat = s1o_blk_dout_b[s1o_match_way_idx];
+   // Detect RAW dependency in D$ pipeline
+   wire                                   rdat_bypass_r;
+   wire [CONFIG_DC_DW-1:0]                rdat_din_r;
+   wire [CONFIG_DC_DW/8-1:0]              rdat_wmsk_r;
+   wire [CONFIG_DC_DW-1:0]                rdat_byp;
+   wire                                   rdat_conflict;
+   wire [CONFIG_DC_DW-1:0]                rdat_org;
+   wire                                   payload_matched;
+   wire [CONFIG_DC_DW/8-1:0]              payload_we_a;
+   wire                                   payload_en_a;
+   
+   assign payload_matched = (s2i_refill & ~in_invfls_r)
+                              ? |s1o_free
+                              : |s1o_match;
+   assign payload_we_a = s2i_blk_we_a[CONFIG_DC_DW/8-1:0] & {CONFIG_DC_DW/8{payload_matched}};
+   assign payload_en_a = s2i_blk_en_a_g & payload_matched;
+
+   assign rdat_conflict = ((s2i_blk_addr_a == s1i_blk_addr_b) & s1i_blk_en_b & |payload_we_a & payload_en_a);
+
+   // Bypass FSM
+   nDFF_lr #(1, 1'b0) dff_rdat_bypass_r
+      (clk,rst_n, (rdat_conflict|s1i_blk_en_b), (rdat_conflict | ~s1i_blk_en_b), rdat_bypass_r); // Keep bypass_r valid till the next Read
+   // Latch din
+   nDFF_l #(CONFIG_DC_DW) dff_rdat_din_r
+      (clk, (|payload_we_a & payload_en_a), s2i_blk_din_a, rdat_din_r);
+   // Latch w mask
+   nDFF_l #(CONFIG_DC_DW/8) dff_rdat_wmsk_r
+      (clk, (|payload_we_a & payload_en_a), payload_we_a, rdat_wmsk_r);
+
+   // Restore byte selection
+   for(j=0; j<CONFIG_DC_DW/8; j=j+1)
+      begin : gen_rdat_byp
+         assign rdat_byp[j*8 +: 8] = (rdat_wmsk_r[j])
+                                       ? rdat_din_r[j*8 +: 8]
+                                       : rdat_org[j*8 +: 8];
+      end
+
+   assign rdat_org = s1o_blk_dout_b[s1o_match_way_idx];
+
+   assign rdat = rdat_bypass_r ? rdat_byp : rdat_org;
 
 
    // Combined logic to maintain tags

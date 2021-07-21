@@ -17,13 +17,20 @@
 
 module ncpu32k_bypass_network(
    input                               clk,
+   output                              byp_stall,
    // From ARF
    input                               arf_1_rs1_re,
    input [`NCPU_REG_AW-1:0]            arf_1_rs1_addr,
    input [`NCPU_DW-1:0]                arf_1_rs1_dout,
+   input                               arf_1_rs2_re,
+   input [`NCPU_REG_AW-1:0]            arf_1_rs2_addr,
+   input [`NCPU_DW-1:0]                arf_1_rs2_dout,
    input                               arf_2_rs1_re,
    input [`NCPU_REG_AW-1:0]            arf_2_rs1_addr,
    input [`NCPU_DW-1:0]                arf_2_rs1_dout,
+   input                               arf_2_rs2_re,
+   input [`NCPU_REG_AW-1:0]            arf_2_rs2_addr,
+   input [`NCPU_DW-1:0]                arf_2_rs2_dout,
    // From scheduler
    input                               alu_2_operand1_frm_alu_1,
    input                               alu_2_operand2_frm_alu_1,
@@ -37,17 +44,28 @@ module ncpu32k_bypass_network(
    input [`NCPU_DW-1:0]                bru_operand2_nobyp,
    input [`NCPU_DW-1:0]                lsu_operand1_nobyp,
    input [`NCPU_DW-1:0]                lsu_operand2_nobyp,
+   input                               lsu_AVALID,
+   input                               lsu_in_slot_1,
    // From ALU #1
    input [`NCPU_DW-1:0]                wb_alu_1_dout,
+   // From stage 1 of backend
+   input                               s1i_slot_BVALID_1,
+   input                               s1i_slot_rd_we_1,
+   input [`NCPU_REG_AW-1:0]            s1i_slot_rd_addr_1,
+   input [`NCPU_DW-1:0]                s1i_slot_dout_1,
+   input                               s1i_slot_BVALID_2,
+   input                               s1i_slot_rd_we_2,
+   input [`NCPU_REG_AW-1:0]            s1i_slot_rd_addr_2,
+   input [`NCPU_DW-1:0]                s1i_slot_dout_2,
    // From stage 2 of backend
-   input                               s2o_slot_BVALID_nolsu_1,
-   input                               s2o_slot_rd_we_1,
-   input [`NCPU_REG_AW-1:0]            s2o_slot_rd_addr_1,
-   input [`NCPU_DW-1:0]                s2o_slot_dout_nolsu_1,
-   input                               s2o_slot_BVALID_nolsu_2,
-   input                               s2o_slot_rd_we_2,
-   input [`NCPU_REG_AW-1:0]            s2o_slot_rd_addr_2,
-   input [`NCPU_DW-1:0]                s2o_slot_dout_nolsu_2,
+   input                               s2i_slot_BVALID_1,
+   input                               s2i_slot_rd_we_1,
+   input [`NCPU_REG_AW-1:0]            s2i_slot_rd_addr_1,
+   input [`NCPU_DW-1:0]                s2i_slot_dout_1,
+   input                               s2i_slot_BVALID_2,
+   input                               s2i_slot_rd_we_2,
+   input [`NCPU_REG_AW-1:0]            s2i_slot_rd_addr_2,
+   input [`NCPU_DW-1:0]                s2i_slot_dout_2,
    // Output
    output [`NCPU_DW-1:0]               arf_1_rs1_dout_bypass,
    output [`NCPU_DW-1:0]               arf_1_rs2_dout_bypass,
@@ -61,19 +79,31 @@ module ncpu32k_bypass_network(
    output [`NCPU_DW-1:0]               lsu_operand2
 );
 
+   wire [4:1]                          byp_op_stall;
+
    //
    // *** Bypass path: Backend stage2->Backend stage1 ***
    // *** Bypass path: Backend stage1->Scheduler ***
    //
    `define BYPASS_OP_PORTS \
-      .wb_slot_1_BVALID             (s2o_slot_BVALID_nolsu_1), \
-      .wb_slot_1_rd_we              (s2o_slot_rd_we_1), \
-      .wb_slot_1_rd_addr            (s2o_slot_rd_addr_1), \
-      .wb_slot_1_dout               (s2o_slot_dout_nolsu_1), \
-      .wb_slot_2_BVALID             (s2o_slot_BVALID_nolsu_2), \
-      .wb_slot_2_rd_we              (s2o_slot_rd_we_2), \
-      .wb_slot_2_rd_addr            (s2o_slot_rd_addr_2), \
-      .wb_slot_2_dout               (s2o_slot_dout_nolsu_2)
+      .lsu_AVALID                      (lsu_AVALID), \
+      .lsu_in_slot_1                   (lsu_in_slot_1), \
+      .s1i_slot_1_BVALID               (s1i_slot_BVALID_1), \
+      .s1i_slot_1_rd_we                (s1i_slot_rd_we_1), \
+      .s1i_slot_1_rd_addr              (s1i_slot_rd_addr_1), \
+      .s1i_slot_1_dout                 (s1i_slot_dout_1), \
+      .s1i_slot_2_BVALID               (s1i_slot_BVALID_2), \
+      .s1i_slot_2_rd_we                (s1i_slot_rd_we_2), \
+      .s1i_slot_2_rd_addr              (s1i_slot_rd_addr_2), \
+      .s1i_slot_2_dout                 (s1i_slot_dout_2), \
+      .s2i_slot_1_BVALID               (s2i_slot_BVALID_1), \
+      .s2i_slot_1_rd_we                (s2i_slot_rd_we_1), \
+      .s2i_slot_1_rd_addr              (s2i_slot_rd_addr_1), \
+      .s2i_slot_1_dout                 (s2i_slot_dout_1), \
+      .s2i_slot_2_BVALID               (s2i_slot_BVALID_2), \
+      .s2i_slot_2_rd_we                (s2i_slot_rd_we_2), \
+      .s2i_slot_2_rd_addr              (s2i_slot_rd_addr_2), \
+      .s2i_slot_2_dout                 (s2i_slot_dout_2)
 
    ncpu32k_bypass_op BYPASS_OP_1
       (
@@ -82,6 +112,7 @@ module ncpu32k_bypass_network(
          .i_operand_rf_addr            (arf_1_rs1_addr),
          .i_operand                    (arf_1_rs1_dout),
          .o_operand                    (arf_1_rs1_dout_bypass),
+         .byp_op_stall                 (byp_op_stall[1]),
          `BYPASS_OP_PORTS
       );
    ncpu32k_bypass_op BYPASS_OP_2
@@ -91,6 +122,7 @@ module ncpu32k_bypass_network(
          .i_operand_rf_addr            (arf_1_rs2_addr),
          .i_operand                    (arf_1_rs2_dout),
          .o_operand                    (arf_1_rs2_dout_bypass),
+         .byp_op_stall                 (byp_op_stall[2]),
          `BYPASS_OP_PORTS
       );
    ncpu32k_bypass_op BYPASS_OP_3
@@ -100,6 +132,7 @@ module ncpu32k_bypass_network(
          .i_operand_rf_addr            (arf_2_rs1_addr),
          .i_operand                    (arf_2_rs1_dout),
          .o_operand                    (arf_2_rs1_dout_bypass),
+         .byp_op_stall                 (byp_op_stall[3]),
          `BYPASS_OP_PORTS
       );
    ncpu32k_bypass_op BYPASS_OP_4
@@ -109,9 +142,10 @@ module ncpu32k_bypass_network(
          .i_operand_rf_addr            (arf_2_rs2_addr),
          .i_operand                    (arf_2_rs2_dout),
          .o_operand                    (arf_2_rs2_dout_bypass),
+         .byp_op_stall                 (byp_op_stall[4]),
          `BYPASS_OP_PORTS
       );
-
+      
    
    //
    // *** Bypass path: ALU1->ALU2 ***
@@ -134,4 +168,6 @@ module ncpu32k_bypass_network(
    assign lsu_operand1 = lsu_operand1_frm_alu_1 ? wb_alu_1_dout : lsu_operand1_nobyp;
    assign lsu_operand2 = lsu_operand2_frm_alu_1 ? wb_alu_1_dout : lsu_operand2_nobyp;
 
+   assign byp_stall = |byp_op_stall;
+   
 endmodule

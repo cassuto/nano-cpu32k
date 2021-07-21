@@ -59,6 +59,7 @@ module ncpu32k_scheduler
    input                      idu_2_EITM,
    input                      idu_2_EIPF,
    input [`NCPU_AW-3:0]       idu_bpu_pc_nxt,
+   input                      idu_2_in_pred_path,
    // Slot #1
    output                     slot_1_rd_we,
    output [`NCPU_REG_AW-1:0]  slot_1_rd_addr,
@@ -72,7 +73,7 @@ module ncpu32k_scheduler
    output [`NCPU_AW-3:0]      slot_2_pc_4,
    output [BPU_UPD_DW-1:0]    slot_2_bpu_upd,
    output [`NCPU_AW-3:0]      slot_bpu_pc_nxt,
-   input                      slot_2_inv,
+   output                     slot_2_in_pred_path,
    // FU - ALU 1
    output                     alu_1_AVALID,
    output [`NCPU_ALU_IOPW-1:0] alu_1_opc_bus,
@@ -81,9 +82,9 @@ module ncpu32k_scheduler
    // FU - ALU 2
    output                     alu_2_AVALID,
    output [`NCPU_ALU_IOPW-1:0] alu_2_opc_bus,
-   output [`NCPU_DW-1:0]      alu_2_operand1,
+   output [`NCPU_DW-1:0]      alu_2_operand1_nobyp,
    output                     alu_2_operand1_frm_alu_1,
-   output [`NCPU_DW-1:0]      alu_2_operand2,
+   output [`NCPU_DW-1:0]      alu_2_operand2_nobyp,
    output                     alu_2_operand2_frm_alu_1,
    // FU - LPU
    output                     lpu_AVALID,
@@ -137,9 +138,16 @@ module ncpu32k_scheduler
    input [`NCPU_DW-1:0]       arf_2_rs1_dout,
    output                     arf_2_rs2_re,
    output [`NCPU_REG_AW-1:0]  arf_2_rs2_addr,
-   input [`NCPU_DW-1:0]       arf_2_rs2_dout
+   input [`NCPU_DW-1:0]       arf_2_rs2_dout,
+   // From Backend
+   input                      s1i_inv_slot_2,
+   // From bypass network
+   input                      byp_stall
 );
    wire                       pipe_cke;
+   wire                       fsm_cke;
+   wire                       slot_1_vld_nxt;
+   wire                       slot_2_vld_nxt;
    wire [`NCPU_IW-1:0]        id_insn [1:0];
    wire                       id_EITM [1:0];
    wire                       id_EIPF[1:0];
@@ -224,6 +232,7 @@ module ncpu32k_scheduler
    assign id_EIRQ[1] = 1'b0;
 
    assign pipe_cke = ~stall_bck;
+   assign fsm_cke = (pipe_cke & ~byp_stall);
 
    generate
       for(i=0; i<2; i=i+1)
@@ -328,6 +337,9 @@ module ncpu32k_scheduler
 
    nDFF_l #(`NCPU_AW-2) dff_slot_bpu_pc_nxt
       (clk, pipe_cke, idu_bpu_pc_nxt, slot_bpu_pc_nxt);
+      
+   nDFF_l #(1) dff_slot_2_in_pred_path
+      (clk, pipe_cke, idu_2_in_pred_path, slot_2_in_pred_path);
 
    assign arf_1_rs1_re     = pipe_cke & id_rf_rs1_re[0];
    assign arf_1_rs2_re     = pipe_cke & id_rf_rs2_re[0];
@@ -351,9 +363,12 @@ module ncpu32k_scheduler
    assign slot_2_pc_4      = fu_pc_4[1];
    assign slot_2_bpu_upd   = fu_bpu_upd[1];
 
+   // Issue insn only if operands are ready
+   assign slot_1_vld_nxt = (idu_1_insn_vld & ~byp_stall);
+   assign slot_2_vld_nxt = (idu_2_insn_vld & ~byp_stall);
 
    // Detect RAW dependency
-   assign slot_2_RAW_hazard = idu_1_insn_vld & idu_2_insn_vld & id_wb_regf[0] & (
+   assign slot_2_RAW_hazard = slot_1_vld_nxt & slot_2_vld_nxt & id_wb_regf[0] & (
                                  (id_rf_rs1_re[1] & (id_rf_rs1_addr[1] == id_wb_reg_addr[0])) |
                                  (id_rf_rs2_re[1] & (id_rf_rs2_addr[1] == id_wb_reg_addr[0]))
                               );
@@ -378,26 +393,26 @@ module ncpu32k_scheduler
                            slot_2_struct_hazard;
 
    // ALU1->ALU2
-   assign byp_alu_1_alu_2_rs1_nxt = (idu_1_insn_vld & idu_2_insn_vld &
+   assign byp_alu_1_alu_2_rs1_nxt = (slot_1_vld_nxt & slot_2_vld_nxt &
                                        alu_1_sel_nxt & alu_2_sel_nxt &
                                        id_wb_regf[0] & id_rf_rs1_re[1] & (id_rf_rs1_addr[1] == id_wb_reg_addr[0]));
-   assign byp_alu_1_alu_2_rs2_nxt = (idu_1_insn_vld & idu_2_insn_vld &
+   assign byp_alu_1_alu_2_rs2_nxt = (slot_1_vld_nxt & slot_2_vld_nxt &
                                        alu_1_sel_nxt & alu_2_sel_nxt &
                                        id_wb_regf[0] & id_rf_rs2_re[1] & (id_rf_rs2_addr[1] == id_wb_reg_addr[0]));
 
    // ALU1->BRU
-   assign byp_alu_1_bru_rs1_nxt = (idu_1_insn_vld & idu_2_insn_vld &
+   assign byp_alu_1_bru_rs1_nxt = (slot_1_vld_nxt & slot_2_vld_nxt &
                                     alu_1_sel_nxt & bru_sel_2_nxt &
                                     id_wb_regf[0] & id_rf_rs1_re[1] & (id_rf_rs1_addr[1] == id_wb_reg_addr[0]));
-   assign byp_alu_1_bru_rs2_nxt = (idu_1_insn_vld & idu_2_insn_vld &
+   assign byp_alu_1_bru_rs2_nxt = (slot_1_vld_nxt & slot_2_vld_nxt &
                                     alu_1_sel_nxt & bru_sel_2_nxt &
                                     id_wb_regf[0] & id_rf_rs2_re[1] & (id_rf_rs2_addr[1] == id_wb_reg_addr[0]));
 
    // ALU1->LSU
-   assign byp_alu_1_lsu_rs1_nxt = (idu_1_insn_vld & idu_2_insn_vld &
+   assign byp_alu_1_lsu_rs1_nxt = (slot_1_vld_nxt & slot_2_vld_nxt &
                                     alu_1_sel_nxt & lsu_sel_2_nxt &
                                     id_wb_regf[0] & id_rf_rs1_re[1] & (id_rf_rs1_addr[1] == id_wb_reg_addr[0]));
-   assign byp_alu_1_lsu_rs2_nxt = (idu_1_insn_vld & idu_2_insn_vld &
+   assign byp_alu_1_lsu_rs2_nxt = (slot_1_vld_nxt & slot_2_vld_nxt &
                                     alu_1_sel_nxt & lsu_sel_2_nxt &
                                     id_wb_regf[0] & id_rf_rs2_re[1] & (id_rf_rs2_addr[1] == id_wb_reg_addr[0]));
 
@@ -413,7 +428,7 @@ module ncpu32k_scheduler
    localparam [1:0] S_ISSUE_2 = 2'b11;
    localparam [1:0] S_ISSUE_NONE = 2'b10;
 
-   assign force_single_issue = (idu_2_insn_vld & ~flush & slot_2_hazard);
+   assign force_single_issue = (slot_2_vld_nxt & ~flush & slot_2_hazard);
 
    always @(*)
       case(issue_state_r)
@@ -424,10 +439,7 @@ module ncpu32k_scheduler
                issue_state_nxt = S_ISSUE_FULL;
 
          S_ISSUE_1:
-            if (slot_2_inv)
-               issue_state_nxt = S_ISSUE_NONE;
-            else
-               issue_state_nxt = S_ISSUE_2;
+            issue_state_nxt = S_ISSUE_2;
 
          S_ISSUE_NONE, S_ISSUE_2:
             // Allow skip S_ISSUE_FULL and goto S_ISSUE_1 directly.
@@ -441,30 +453,32 @@ module ncpu32k_scheduler
             issue_state_nxt = issue_state_r;
       endcase
 
+   // If bypass requires stalling, don't transfer status of FSM
    nDFF_lr #(2, S_ISSUE_FULL) dff_issue_state_r
-      (clk, rst_n, pipe_cke, issue_state_nxt, issue_state_r);
+      (clk, rst_n, fsm_cke, issue_state_nxt, issue_state_r);
 
-   assign sch_stall = (issue_state_nxt==S_ISSUE_1);
+   assign sch_stall = ((issue_state_r!=S_ISSUE_1) & force_single_issue); // TIMING FIX: this is equal to (issue_state_nxt==S_ISSUE_1);
 
+   // Issue the insn only if operands are ready (i.e., no stall from bypass network)
    assign slot_1_rdy = (issue_state_r==S_ISSUE_FULL) | (issue_state_r==S_ISSUE_1);
-   assign slot_2_rdy = (issue_state_r==S_ISSUE_FULL) | (issue_state_r==S_ISSUE_2);
+   assign slot_2_rdy = (issue_state_r==S_ISSUE_FULL) | ((issue_state_r==S_ISSUE_2) & ~s1i_inv_slot_2);
 
 
    nDFF_lr #(1) dff_slot_1_vld
-      (clk, rst_n, pipe_cke, idu_1_insn_vld & ~flush, slot_1_vld);
+      (clk, rst_n, pipe_cke, slot_1_vld_nxt & ~flush, slot_1_vld);
    nDFF_lr #(1) dff_slot_2_vld
-      (clk, rst_n, pipe_cke, idu_2_insn_vld & ~flush, slot_2_vld);
+      (clk, rst_n, pipe_cke, slot_2_vld_nxt & ~flush, slot_2_vld);
 
-   assign alu_1_sel_nxt = idu_1_insn_vld & (|id_alu_opc_bus[0]);
-   assign alu_2_sel_nxt = idu_2_insn_vld & (|id_alu_opc_bus[1]);
-   assign lpu_sel_1_nxt = idu_1_insn_vld & (|id_lpu_opc_bus[0]);
-   assign lpu_sel_2_nxt = idu_2_insn_vld & (|id_lpu_opc_bus[1]);
-   assign epu_sel_1_nxt = idu_1_insn_vld & (|id_epu_opc_bus[0]);
-   assign epu_sel_2_nxt = idu_2_insn_vld & (|id_epu_opc_bus[1]);
-   assign bru_sel_1_nxt = idu_1_insn_vld & (|id_bru_opc_bus[0]);
-   assign bru_sel_2_nxt = idu_2_insn_vld & (|id_bru_opc_bus[1]);
-   assign lsu_sel_1_nxt = idu_1_insn_vld & (id_op_lsu_barr[0] | id_op_lsu_load[0] | id_op_lsu_store[0]);
-   assign lsu_sel_2_nxt = idu_2_insn_vld & (id_op_lsu_barr[1] | id_op_lsu_load[1] | id_op_lsu_store[1]);
+   assign alu_1_sel_nxt = slot_1_vld_nxt & (|id_alu_opc_bus[0]);
+   assign alu_2_sel_nxt = slot_2_vld_nxt & (|id_alu_opc_bus[1]);
+   assign lpu_sel_1_nxt = slot_1_vld_nxt & (|id_lpu_opc_bus[0]);
+   assign lpu_sel_2_nxt = slot_2_vld_nxt & (|id_lpu_opc_bus[1]);
+   assign epu_sel_1_nxt = slot_1_vld_nxt & (|id_epu_opc_bus[0]);
+   assign epu_sel_2_nxt = slot_2_vld_nxt & (|id_epu_opc_bus[1]);
+   assign bru_sel_1_nxt = slot_1_vld_nxt & (|id_bru_opc_bus[0]);
+   assign bru_sel_2_nxt = slot_2_vld_nxt & (|id_bru_opc_bus[1]);
+   assign lsu_sel_1_nxt = slot_1_vld_nxt & (id_op_lsu_barr[0] | id_op_lsu_load[0] | id_op_lsu_store[0]);
+   assign lsu_sel_2_nxt = slot_2_vld_nxt & (id_op_lsu_barr[1] | id_op_lsu_load[1] | id_op_lsu_store[1]);
    
    nDFF_l #(1) dff_alu_1_sel_r
       (clk, pipe_cke, alu_1_sel_nxt, alu_1_sel_r);
@@ -527,25 +541,25 @@ module ncpu32k_scheduler
    assign alu_1_operand2   = rf_rs2_re_r[0] ? arf_1_rs2_dout : fu_imm32[0];
 
    assign alu_2_opc_bus    = fu_alu_opc_bus[1];
-   assign alu_2_operand1   = rf_rs1_re_r[1] ? arf_2_rs1_dout : fu_imm32[1];
-   assign alu_2_operand2   = rf_rs2_re_r[1] ? arf_2_rs2_dout : fu_imm32[1];
+   assign alu_2_operand1_nobyp   = rf_rs1_re_r[1] ? arf_2_rs1_dout : fu_imm32[1];
+   assign alu_2_operand2_nobyp   = rf_rs2_re_r[1] ? arf_2_rs2_dout : fu_imm32[1];
 
    assign lpu_opc_bus      = sel_1_lpu ? fu_lpu_opc_bus[0] : fu_lpu_opc_bus[1];
-   assign lpu_operand1     = sel_1_lpu ? alu_1_operand1 : alu_2_operand1;
-   assign lpu_operand2     = sel_1_lpu ? alu_1_operand2 : alu_2_operand2;
+   assign lpu_operand1     = sel_1_lpu ? alu_1_operand1 : alu_2_operand1_nobyp;
+   assign lpu_operand2     = sel_1_lpu ? alu_1_operand2 : alu_2_operand2_nobyp;
    assign lpu_in_slot_1    = sel_1_lpu;
 
    assign bru_pc           = sel_1_bru ? fu_pc[0] : fu_pc[1];
    assign bru_opc_bus      = sel_1_bru ? fu_bru_opc_bus[0] : fu_bru_opc_bus[1];
-   assign bru_operand1     = sel_1_bru ? alu_1_operand1 : alu_2_operand1;
-   assign bru_operand2     = sel_1_bru ? alu_1_operand2 : alu_2_operand2;
+   assign bru_operand1     = sel_1_bru ? alu_1_operand1 : alu_2_operand1_nobyp;
+   assign bru_operand2     = sel_1_bru ? alu_1_operand2 : alu_2_operand2_nobyp;
    assign bru_rel15        = sel_1_bru ? fu_imm32[0][14:0] : fu_imm32[1][14:0];
    assign bru_in_slot_1    = sel_1_bru;
 
    assign epu_pc           = sel_1_epu ? fu_pc[0] : fu_pc[1];
    assign epu_opc_bus      = sel_1_epu ? fu_epu_opc_bus[0] : fu_epu_opc_bus[1];
-   assign epu_operand1     = sel_1_epu ? alu_1_operand1 : alu_2_operand1;
-   assign epu_operand2     = sel_1_epu ? alu_1_operand2 : alu_2_operand2;
+   assign epu_operand1     = sel_1_epu ? alu_1_operand1 : alu_2_operand1_nobyp;
+   assign epu_operand2     = sel_1_epu ? alu_1_operand2 : alu_2_operand2_nobyp;
    assign epu_imm32        = sel_1_epu ? fu_imm32[0] : fu_imm32[1];
    assign epu_in_slot_1    = sel_1_epu;
 
@@ -572,8 +586,8 @@ module ncpu32k_scheduler
                      fu_lsu_store_size[1],
                      fu_lsu_load_size[1]
                   };
-   assign lsu_operand1     = sel_1_lsu ? alu_1_operand1 : alu_2_operand1;
-   assign lsu_operand2     = sel_1_lsu ? alu_1_operand2 : alu_2_operand2;
+   assign lsu_operand1     = sel_1_lsu ? alu_1_operand1 : alu_2_operand1_nobyp;
+   assign lsu_operand2     = sel_1_lsu ? alu_1_operand2 : alu_2_operand2_nobyp;
    assign lsu_imm32        = sel_1_lsu ? fu_imm32[0] : fu_imm32[1];
    assign lsu_in_slot_1    = sel_1_lsu;
 

@@ -73,6 +73,7 @@ module ncpu32k_frontend
       output                     idu_2_EITM,
       output                     idu_2_EIPF,
       output [`NCPU_AW-3:0]      idu_bpu_pc_nxt,
+      output                     idu_2_in_pred_path,
       // WB
       input                      bpu_wb,
       input                      bpu_wb_is_bcc,
@@ -260,7 +261,7 @@ module ncpu32k_frontend
    //
    assign fls_byp = (fls_state_r|flush);
    assign fls_tgt_byp = fls_state_r ? fls_tgt_r : flush_tgt;
-
+   
    assign idu_bpu_pc_nxt = (idu_1_jmprel)
                               ? idu_1_jmprel_tgt
                               : (idu_1_insn_rdy & (bpu_pred_pc_nxt[0] != idu_2_pc))
@@ -270,6 +271,8 @@ module ncpu32k_frontend
                                     : (idu_2_insn_rdy & (bpu_pred_pc_nxt[1] != idu_2_pc_4))
                                        ? bpu_pred_pc_nxt[1]
                                        : pc_r;
+   assign idu_2_in_pred_path = ~(idu_1_jmprel | (idu_1_insn_rdy & (bpu_pred_pc_nxt[0] != idu_2_pc))) |
+                              (idu_bpu_pc_nxt == idu_2_pc);
 
    assign fetch_pc = (fls_byp) ? fls_tgt_byp : idu_bpu_pc_nxt;
    assign fetch_pc_4 = fetch_pc + 'd1;
@@ -280,7 +283,7 @@ module ncpu32k_frontend
    // The insn in 1st slot is valid if its PC is aligned at the boundary of insn packet,
    // Otherwise we could issue only one insn, which is in 2rd slot.
    assign fetch_insn_1_vld = (fetch_pc[`NCPU_IBW_BYTES_LOG2-2-1:0] == {`NCPU_IBW_BYTES_LOG2-2{1'b0}});
-   assign fetch_insn_2_vld = 1'b1;
+   assign fetch_insn_2_vld = idu_2_in_pred_path;
 
    assign insn_1_pc = fetch_pc;
    assign insn_2_pc = (fetch_insn_1_vld) ? fetch_pc_4 : fetch_pc;

@@ -15,7 +15,7 @@
 
 `include "ncpu32k_config.h"
 
-module ncpu32k_bru
+module ncpu32k_bru_s1
 (
    // From scheduler
    input                      bru_AVALID,
@@ -28,53 +28,16 @@ module ncpu32k_bru
    // To WB
    output                     wb_bru_AVALID,
    output [`NCPU_DW-1:0]      wb_bru_dout,
-   output                     wb_bru_branch_taken,
-   output [`NCPU_AW-3:0]      wb_bru_branch_tgt,
    output                     wb_bru_is_bcc,
    output                     wb_bru_is_breg,
-   output                     wb_bru_in_slot_1
-);
-   wire                       cmp_eq;
-   wire                       cmp_gt_s, cmp_gt_u;
-   wire                       adder_carry_out;
-   wire                       adder_overflow;
-   wire [`NCPU_DW-1:0]        adder_op2;
-   wire [`NCPU_DW-1:0]        adder_dout;
-   wire                       bcc_taken;
-
-   //
-   // Comparator
-   //
-
-   // operand2 - operand1
-   assign adder_op2 = ~bru_operand1;
-   assign {adder_carry_out, adder_dout} = bru_operand2 + adder_op2 + {{`NCPU_DW-1{1'b0}}, 1'b1};
-   assign adder_overflow = (bru_operand2[`NCPU_DW-1] == adder_op2[`NCPU_DW-1]) &
-                          (bru_operand2[`NCPU_DW-1] ^ adder_dout[`NCPU_DW-1]);
-
-   // equal
-   assign cmp_eq = (bru_operand1 == bru_operand2);
-   // greater
-   assign cmp_gt_s = (adder_dout[`NCPU_DW-1] != adder_overflow);
-   assign cmp_gt_u = ~adder_carry_out;
-
-   assign bcc_taken = (bru_opc_bus[`NCPU_BRU_BEQ] & cmp_eq) |
-                        (bru_opc_bus[`NCPU_BRU_BNE] & ~cmp_eq) |
-                        (bru_opc_bus[`NCPU_BRU_BGTU] & cmp_gt_u) |
-                        (bru_opc_bus[`NCPU_BRU_BGT] & cmp_gt_s) |
-                        (bru_opc_bus[`NCPU_BRU_BLEU] & ~cmp_gt_u) |
-                        (bru_opc_bus[`NCPU_BRU_BLE] & ~cmp_gt_s);
-
-   assign wb_bru_branch_tgt =
-      // PC-relative 15b addressing
-      ((bru_pc + {{`NCPU_AW-2-15{bru_rel15[14]}}, bru_rel15[14:0]})  & {`NCPU_AW-2{bcc_taken}}) |
-      // PC-relative 25b addressing
-      ((bru_pc + bru_operand2[`NCPU_DW-1:2]) & {`NCPU_AW-2{bru_opc_bus[`NCPU_BRU_JMPREL]}}) |
-      // Absolute addressing (No align check)
-      (bru_operand1[`NCPU_AW-1:2] & {`NCPU_AW-2{bru_opc_bus[`NCPU_BRU_JMPREG]}});
-
-   assign wb_bru_branch_taken = (bcc_taken | bru_opc_bus[`NCPU_BRU_JMPREG] | bru_opc_bus[`NCPU_BRU_JMPREL]);
-
+   output                     wb_bru_in_slot_1,
+   output [`NCPU_DW-1:0]      wb_bru_operand1,
+   output [`NCPU_DW-1:0]      wb_bru_operand2,
+   output [`NCPU_BRU_IOPW-1:0] wb_bru_opc_bus,
+   output [`NCPU_AW-3:0]      wb_bru_pc,
+   output [14:0]              wb_bru_rel15
+   
+); 
    assign wb_bru_is_bcc = (bru_opc_bus[`NCPU_BRU_BEQ] |
                            bru_opc_bus[`NCPU_BRU_BNE] |
                            bru_opc_bus[`NCPU_BRU_BGTU] |
@@ -89,5 +52,11 @@ module ncpu32k_bru
    assign wb_bru_dout = {(bru_pc + 1'b1), 2'b00}; // Link addr
 
    assign wb_bru_in_slot_1 = bru_in_slot_1;
+   
+   assign wb_bru_operand1 = bru_operand1;
+   assign wb_bru_operand2 = bru_operand2;
+   assign wb_bru_opc_bus = bru_opc_bus;
+   assign wb_bru_pc = bru_pc;
+   assign wb_bru_rel15 = bru_rel15;
 
 endmodule

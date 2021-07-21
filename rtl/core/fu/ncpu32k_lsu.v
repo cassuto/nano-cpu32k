@@ -56,6 +56,7 @@ module ncpu32k_lsu
    input [`NCPU_DW-1:0]                lsu_imm32,
    input [`NCPU_AW-3:0]                lsu_pc,
    input                               lsu_in_slot_1,
+   input                               lsu_kill_req,
    // D-Bus Master
    input                               dbus_ARWREADY,
    output                              dbus_ARWVALID,
@@ -121,6 +122,7 @@ module ncpu32k_lsu
    wire                                misalign;
    wire [`NCPU_DW-1:0]                 din_8b;
    wire [`NCPU_DW-1:0]                 din_16b;
+   wire                                dc_kill_req;
    wire [`NCPU_AW-CONFIG_DMMU_PAGE_SIZE_LOG2-1:0] tlb_ppn;
    wire [3:0]                          we_msk_8b;
    wire [3:0]                          we_msk_16b;
@@ -195,6 +197,9 @@ module ncpu32k_lsu
 
    assign tlb_exc = (wb_lsu_EDTM|wb_lsu_EDPF|wb_lsu_EALIGN);
 
+   // Kill the request to D$ if MMU raised exceptions or cache was inhibited
+   assign dc_kill_req = (tlb_exc | tlb_uncached | lsu_kill_req);
+   
    ncpu32k_dcache
       #(
          .CONFIG_DBUS_DW               (CONFIG_DBUS_DW),
@@ -218,8 +223,7 @@ module ncpu32k_lsu
          .wmsk                         (dc_wmsk),
          .wdat                         (dc_wdat),
          .rdat                         (dc_rdat),
-         .tlb_exc                      (tlb_exc),
-         .tlb_uncached                 (tlb_uncached),
+         .kill_req                     (dc_kill_req),
          .tlb_ppn                      (tlb_ppn),
          .msr_dcid                     (msr_dcid),
          .msr_dcinv_nxt                (msr_dcinv_nxt),
@@ -278,7 +282,7 @@ module ncpu32k_lsu
          uncached_state_nxt = uncached_state_r;
          case (uncached_state_r)
          S_UNCACHED_IDLE:
-            if (wb_AVALID_tmp_r & ~lsu_flush & tlb_uncached)
+            if (wb_AVALID_tmp_r & ~lsu_flush & ~lsu_kill_req & tlb_uncached)
                uncached_state_nxt = S_UNCACHED_AVALID;
          S_UNCACHED_AVALID:
             if (uncached_dbus_AREADY)
