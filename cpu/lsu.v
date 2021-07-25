@@ -3,7 +3,11 @@ module lsu #(
 )
 (
    input [63:0] lsu_i_rop2,
-   /* verilator lint_off UNUSED */ input [63:0] lsu_i_alu_result,
+
+   /* verilator lint_off UNUSED */
+   input [63:0] lsu_i_alu_result,
+   /* verilator lint_on UNUSED */
+
    input lsu_op_load,
    input lsu_op_store,
    input lsu_sigext,
