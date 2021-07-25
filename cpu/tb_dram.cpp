@@ -16,6 +16,7 @@ static Vdram* dut;
 void test_write(int time, uint16_t addr, uint64_t dat)
 {
     dut->i_we = 0xff;
+    dut->i_re = 0;
     dut->i_addr = addr;
     dut->i_dat = dat;
 #ifdef VM_TRACE
@@ -39,6 +40,7 @@ void test_write(int time, uint16_t addr, uint64_t dat)
 void test_read(int time, uint16_t addr, uint64_t dat)
 {
     dut->i_we = 0;
+    dut->i_re = 1;
     dut->i_addr = addr;
 #ifdef VM_TRACE
     fp->dump(time * 3 + 0);

@@ -7,6 +7,7 @@ module dram #(
    output reg [63:0] o_dat,
    input reg [63:0] i_dat,
    input [7:0] i_we,
+   input i_re,
    input [DRAM_AW-1:0] i_addr
 );
 
@@ -35,7 +36,7 @@ module dram #(
                if (i_we[7])
                   dmem[i_addr][63:56] <= i_dat[63:56];
             end
-         else
+         else if (i_re)
             o_dat <= dmem[i_addr];
       end
 

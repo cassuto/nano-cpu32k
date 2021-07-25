@@ -5,6 +5,7 @@ module top(
    input rst
 );
    localparam IRAM_AW = 16; // (2^ILEN) * 64 KiB
+   localparam DRAM_AW = 16; // 64 KiB
 
    wire [IRAM_AW-1:0] iram_addr;
    wire [31:0] insn;
@@ -15,6 +16,10 @@ module top(
    wire [4:0] idu_o_rs2_addr;
    wire [`OP_SEL_W-1:0] idu_o_op_sel;
    wire [`ALU_OPW-1:0] idu_o_fu_sel;
+   wire idu_o_lsu_op_load;
+   wire idu_o_lsu_op_store;
+   wire idu_o_lsu_sigext;
+   wire [3:0] idu_o_lsu_size;
    wire idu_o_wb_sel;
    wire [11:0] idu_o_imm12;
    // To EXU
@@ -26,18 +31,59 @@ module top(
    wire [63:0] exu_i_rop2;
    wire [`OP_SEL_W-1:0] exu_i_op_sel;
    wire [`ALU_OPW-1:0] exu_i_fu_sel;
+   wire exu_i_lsu_op_load;
+   wire exu_i_lsu_op_store;
+   wire exu_i_lsu_sigext;
+   wire [3:0] exu_i_lsu_size;
    wire exu_i_wb_sel;
    wire [11:0] exu_i_imm12;
-   wire [63:0] exu_o_rd_dat;
+   wire [63:0] exu_o_alu_result;
+   wire lsu_i_wb_sel;
+   wire lsu_i_lsu_op_load;
+   wire lsu_i_lsu_op_store;
+   wire lsu_i_lsu_sigext;
+   wire [3:0] lsu_i_lsu_size;
+   wire [63:0] lsu_i_rop2;
 
-   wire [63:0] rf_rs1, rf_rs2;
+   wire [63:0] exu_i_rf_rs1, exu_i_rf_rs2;
    wire [63:0] rs1, rs2;
    
    wire [4:0] lsu_i_rd;
    wire lsu_i_rf_we;
-   wire [63:0] lsu_i_rd_dat;
-   wire [63:0] alu_result;
+   wire [63:0] lsu_i_alu_result;
 
+   wire wb_i_wb_sel;
+   wire [4:0] wb_i_rd;
+   wire wb_i_rf_we;
+   wire [63:0] wb_i_alu_result;
+   wire [63:0] wb_i_lsu_result;
+   wire [63:0] wb_i_rd_dat;
+
+   wire [DRAM_AW-1:0] dram_addr;
+   wire [7:0] dram_we;
+   wire dram_re;
+   wire [63:0] dram_din;
+   wire [63:0] dram_dout;
+
+   // Data RAM
+   dram
+      #(
+      .DRAM_AW       (DRAM_AW)
+      )
+   DRAM
+      (
+         .clk        (clk),
+         .rst        (rst),
+         .o_dat      (dram_dout),
+         .i_dat      (dram_din),
+         .i_we       (dram_we),
+         .i_re       (dram_re),
+         .i_addr     (dram_addr)
+      );
+
+   //////////////////////////////////////////////////////////////
+   // Stage #1: Fetch
+   //////////////////////////////////////////////////////////////
    pc
       #(
       .IRAM_AW       (IRAM_AW)
@@ -49,6 +95,7 @@ module top(
          .iram_addr  (iram_addr)
       );
 
+   // Insn RAM
    iram
       #(
       .IRAM_AW       (IRAM_AW)
@@ -61,6 +108,10 @@ module top(
          .o_insn     (insn)
       );
 
+   //////////////////////////////////////////////////////////////
+   // Stage #2: Decode
+   //////////////////////////////////////////////////////////////
+
    idu IDU
       (
          .i_insn     (insn),
@@ -70,6 +121,10 @@ module top(
          .o_rs2_addr (idu_o_rs2_addr),
          .op_sel     (idu_o_op_sel),
          .fu_sel     (idu_o_fu_sel),
+         .lsu_op_load(idu_o_lsu_op_load),
+         .lsu_op_store(idu_o_lsu_op_store),
+         .lsu_sigext (idu_o_lsu_sigext),
+         .lsu_size   (idu_o_lsu_size),
          .wb_sel     (idu_o_wb_sel),
          .imm12      (idu_o_imm12)
       );
@@ -84,6 +139,10 @@ module top(
       .idu_o_rs2_addr(idu_o_rs2_addr),
       .idu_o_op_sel  (idu_o_op_sel),
       .idu_o_fu_sel  (idu_o_fu_sel),
+      .idu_o_lsu_op_load(idu_o_lsu_op_load),
+      .idu_o_lsu_op_store(idu_o_lsu_op_store),
+      .idu_o_lsu_sigext (idu_o_lsu_sigext),
+      .idu_o_lsu_size (idu_o_lsu_size),
       .idu_o_wb_sel  (idu_o_wb_sel),
       .idu_o_imm12   (idu_o_imm12),
       .exu_i_rf_we   (exu_i_rf_we),
@@ -92,6 +151,10 @@ module top(
       .exu_i_rs2_addr(exu_i_rs2_addr),
       .exu_i_op_sel  (exu_i_op_sel),
       .exu_i_fu_sel  (exu_i_fu_sel),
+      .exu_i_lsu_op_load   (exu_i_lsu_op_load),
+      .exu_i_lsu_op_store  (exu_i_lsu_op_store),
+      .exu_i_lsu_sigext    (exu_i_lsu_sigext),
+      .exu_i_lsu_size      (exu_i_lsu_size),
       .exu_i_wb_sel  (exu_i_wb_sel),
       .exu_i_imm12   (exu_i_imm12)
    );
@@ -101,30 +164,42 @@ module top(
          .clk           (clk),
          .i_rs1_addr    (idu_o_rs1_addr),
          .i_rs2_addr    (idu_o_rs2_addr),
-         .rs1           (rf_rs1),
-         .rs2           (rf_rs2),
-         .i_rd          (lsu_i_rd),
-         .i_rf_we       (lsu_i_rf_we),
-         .i_rd_dat      (lsu_i_rd_dat)
+         .rs1           (exu_i_rf_rs1),
+         .rs2           (exu_i_rf_rs2),
+         .i_rd          (wb_i_rd),
+         .i_rf_we       (wb_i_rf_we),
+         .i_rd_dat      (wb_i_rd_dat)
       );
+
+   //////////////////////////////////////////////////////////////
+   // Stage #3: Execute
+   //////////////////////////////////////////////////////////////
 
    forward FORWARD_ROP1(
       .i_operand_addr   (exu_i_rs1_addr),
-      .i_rf_operand     (rf_rs1),
+      .i_rf_operand     (exu_i_rf_rs1),
       .o_operand        (exu_i_rop1),
       // Listening LSU
       .lsu_i_rd         (lsu_i_rd),
       .lsu_i_rf_we      (lsu_i_rf_we),
-      .lsu_i_rd_dat     (lsu_i_rd_dat)
+      .lsu_i_rd_dat     (lsu_i_alu_result), // FIXME stall pipeline if RAW
+      // Listening WB
+      .wb_i_rd          (wb_i_rd),
+      .wb_i_rf_we       (wb_i_rf_we),
+      .wb_i_rd_dat      (wb_i_rd_dat)
    );
    forward FORWARD_ROP2(
       .i_operand_addr   (exu_i_rs2_addr),
-      .i_rf_operand     (rf_rs2),
+      .i_rf_operand     (exu_i_rf_rs2),
       .o_operand        (exu_i_rop2),
       // Listening LSU
       .lsu_i_rd         (lsu_i_rd),
       .lsu_i_rf_we      (lsu_i_rf_we),
-      .lsu_i_rd_dat     (lsu_i_rd_dat)
+      .lsu_i_rd_dat     (lsu_i_alu_result), // FIXME stall pipeline if RAW
+      // Listening WB
+      .wb_i_rd          (wb_i_rd),
+      .wb_i_rf_we       (wb_i_rf_we),
+      .wb_i_rd_dat      (wb_i_rd_dat)
    );
 
    opmux OP_MUX
@@ -142,27 +217,78 @@ module top(
          .i_fu_sel      (exu_i_fu_sel),
          .i_operand1    (rs1),
          .i_operand2    (rs2),
-         .o_result      (alu_result)
-      );
-
-   wbmux WB_MUX
-      (
-         .wb_sel        (exu_i_wb_sel),
-         .alu_result    (alu_result),
-         .lsu_result    (64'b0), // TODO
-         .rd_dat        (exu_o_rd_dat)
+         .o_result      (exu_o_alu_result)
       );
 
    exu_lsu EXU_LSU
    (
       .clk              (clk),
       .rst              (rst),
+      .exu_i_lsu_op_load   (exu_i_lsu_op_load),
+      .exu_i_lsu_op_store  (exu_i_lsu_op_store),
+      .exu_i_lsu_sigext    (exu_i_lsu_sigext),
+      .exu_i_lsu_size      (exu_i_lsu_size),
+      .exu_i_wb_sel        (exu_i_wb_sel),
       .exu_i_rd         (exu_i_rd),
       .exu_i_rf_we      (exu_i_rf_we),
-      .exu_o_rd_dat     (exu_o_rd_dat),
+      .exu_o_alu_result    (exu_o_alu_result),
+      .exu_i_rop2          (exu_i_rop2),
+      .lsu_i_wb_sel        (lsu_i_wb_sel),
+      .lsu_i_lsu_op_load   (lsu_i_lsu_op_load),
+      .lsu_i_lsu_op_store  (lsu_i_lsu_op_store),
+      .lsu_i_lsu_sigext    (lsu_i_lsu_sigext),
+      .lsu_i_lsu_size      (lsu_i_lsu_size),
       .lsu_i_rd         (lsu_i_rd),
       .lsu_i_rf_we      (lsu_i_rf_we),
-      .lsu_i_rd_dat     (lsu_i_rd_dat)
+      .lsu_i_alu_result  (lsu_i_alu_result),
+      .lsu_i_rop2       (lsu_i_rop2)
+   );
+
+   //////////////////////////////////////////////////////////////
+   // Stage #4: Load & Store
+   //////////////////////////////////////////////////////////////
+
+   lsu LSU
+   (
+      .lsu_i_rop2       (lsu_i_rop2),
+      .lsu_i_alu_result (lsu_i_alu_result),
+      .lsu_op_load      (lsu_i_lsu_op_load),
+      .lsu_op_store     (lsu_i_lsu_op_store),
+      .lsu_sigext       (lsu_i_lsu_sigext),
+      .lsu_size         (lsu_i_lsu_size),
+      .wb_i_lsu_result  (wb_i_lsu_result),
+
+      .dram_addr        (dram_addr),
+      .dram_we          (dram_we),
+      .dram_re          (dram_re),
+      .dram_din         (dram_din),
+      .dram_dout        (dram_dout)
+   );
+
+   lsu_wb LSU_WB
+   (
+      .clk              (clk),
+      .rst              (rst),
+      .lsu_i_wb_sel     (lsu_i_wb_sel),
+      .lsu_i_rd         (lsu_i_rd),
+      .lsu_i_rf_we      (lsu_i_rf_we),
+      .lsu_i_alu_result (lsu_i_alu_result),
+      .wb_i_wb_sel      (wb_i_wb_sel),
+      .wb_i_rd          (wb_i_rd),
+      .wb_i_rf_we       (wb_i_rf_we),
+      .wb_i_alu_result  (wb_i_alu_result)
+   );
+
+   //////////////////////////////////////////////////////////////
+   // Stage #5: Write back
+   //////////////////////////////////////////////////////////////
+
+   wbmux WB_MUX
+   (
+      .wb_sel        (wb_i_wb_sel),
+      .alu_result    (wb_i_alu_result),
+      .lsu_result    (wb_i_lsu_result),
+      .rd_dat        (wb_i_rd_dat)
    );
 
 endmodule
