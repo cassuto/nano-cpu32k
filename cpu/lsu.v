@@ -22,7 +22,7 @@ module lsu #(
    input reg [63:0] dram_dout
 );
 
-   assign dram_addr = lsu_i_alu_result[DRAM_AW-1:0];
+   assign dram_addr = {lsu_i_alu_result[DRAM_AW-1:3], 3'b000};
 
    assign dram_we = {8{lsu_op_store}} & (
       (lsu_size==4'd1)
