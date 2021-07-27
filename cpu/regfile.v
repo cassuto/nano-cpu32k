@@ -6,7 +6,8 @@ module regfile(
    output [63:0] rs2,
    input [4:0] i_rd,
    input i_rf_we,
-   input [63:0] i_rd_dat
+   input [63:0] i_rd_dat,
+   output [63:0] o_regs[31:0]
 );
 
    reg [63:0] rf [31:0];
@@ -19,5 +20,7 @@ module regfile(
          begin
             rf[i_rd] <= i_rd_dat;
          end
+
+   assign o_regs = rf;
 
 endmodule

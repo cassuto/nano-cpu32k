@@ -2,6 +2,7 @@ module lsu #(
    DRAM_AW = 16
 )
 (
+   input lsu_i_valid,
    input [63:0] lsu_i_rop2,
 
    /* verilator lint_off UNUSED */
@@ -24,7 +25,7 @@ module lsu #(
 
    assign o_dram_addr = {lsu_i_alu_result[DRAM_AW-1:3], 3'b000};
 
-   assign o_dram_we = {8{lsu_op_store}} & (
+   assign o_dram_we = {8{lsu_i_valid & lsu_op_store}} & (
       (lsu_size==4'd1)
          ? {(o_dram_addr[2:0]==3'b111),(o_dram_addr[2:0]==3'b110),(o_dram_addr[2:0]==3'b101),(o_dram_addr[2:0]==3'b100),
             (o_dram_addr[2:0]==3'b011),(o_dram_addr[2:0]==3'b010),(o_dram_addr[2:0]==3'b001),(o_dram_addr[2:0]==3'b000)}
@@ -48,7 +49,7 @@ module lsu #(
                ? {lsu_i_rop2[31:0],lsu_i_rop2[31:0]}
                : lsu_i_rop2;
 
-   assign o_dram_re = lsu_op_load;
+   assign o_dram_re = lsu_i_valid & lsu_op_load;
 
    reg [7:0] res_8b; // b
    reg [15:0] res_16b; // h

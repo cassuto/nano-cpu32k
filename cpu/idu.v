@@ -2,6 +2,7 @@
 
 module idu(
    input [31:0] i_insn,
+   input i_valid,
    output o_rf_we,
    output [4:0] o_rd,
    output [4:0] o_rs1_addr,
@@ -87,7 +88,7 @@ module idu(
 
    assign wb_sel = op_addi;
 
-   assign o_valid = 1'b1;
+   assign o_valid = i_valid;
    assign o_insn = i_insn;
 
 endmodule

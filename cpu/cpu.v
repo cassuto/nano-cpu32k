@@ -11,12 +11,21 @@ module cpu #(
    output [IRAM_AW-1:0] o_iram_addr,
    output o_iram_re,
    input [31:0] i_iram_insn,
+   input i_iram_valid,
    // DRAM
    output [DRAM_AW-1:0] o_dram_addr,
    output [7:0] o_dram_we,
    output o_dram_re,
    output [63:0] o_dram_din,
-   input [63:0] i_dram_dout
+   input [63:0] i_dram_dout,
+   // Debug
+   output wb_i_valid,
+   output [63:0] wb_i_pc,
+   output [31:0] wb_i_insn,
+   output [4:0] wb_i_rd,
+   output wb_i_rf_we,
+   output [63:0] wb_i_rd_dat,
+   output [63:0] rf_regs [31:0]
 );
    // IDU
    wire idu_o_rf_we;
@@ -70,20 +79,8 @@ module cpu #(
    wire [31:0] lsu_i_insn;
    // WB
    wire wb_i_wb_sel;
-   wire [4:0] wb_i_rd;
-   wire wb_i_rf_we;
    wire [63:0] wb_i_alu_result;
    wire [63:0] wb_i_lsu_result;
-   wire [63:0] wb_i_rd_dat;
-`ifndef DIFFTEST
-   /* verilator lint_off UNUSED */
-`endif
-   wire wb_i_valid;
-   wire [63:0] wb_i_pc;
-   wire [31:0] wb_i_insn;
-`ifndef DIFFTEST
-   /* verilator lint_on UNUSED */
-`endif
 
    //////////////////////////////////////////////////////////////
    // Stage #1: Fetch
@@ -108,6 +105,7 @@ module cpu #(
    idu IDU
       (
          .i_insn     (i_iram_insn),
+         .i_valid    (i_iram_valid),
          .o_rf_we    (idu_o_rf_we),
          .o_rd       (idu_o_rd),
          .o_rs1_addr (idu_o_rs1_addr),
@@ -168,8 +166,9 @@ module cpu #(
          .rs1           (exu_i_rf_rs1),
          .rs2           (exu_i_rf_rs2),
          .i_rd          (wb_i_rd),
-         .i_rf_we       (wb_i_rf_we),
-         .i_rd_dat      (wb_i_rd_dat)
+         .i_rf_we       (wb_i_rf_we & wb_i_valid),
+         .i_rd_dat      (wb_i_rd_dat),
+         .o_regs        (rf_regs)
       );
 
    //////////////////////////////////////////////////////////////
@@ -257,6 +256,7 @@ module cpu #(
 
    lsu LSU
    (
+      .lsu_i_valid      (lsu_i_valid),
       .lsu_i_rop2       (lsu_i_rop2),
       .lsu_i_alu_result (lsu_i_alu_result),
       .lsu_op_load      (lsu_i_lsu_op_load),
@@ -303,22 +303,5 @@ module cpu #(
       .lsu_result    (wb_i_lsu_result),
       .rd_dat        (wb_i_rd_dat)
    );
-
-`ifdef DIFFTEST
-   DifftestInstrCommit U_inst_commit(
-      .clock         (clk),
-      .coreid        (8'd0),
-      .index         (8'd0),
-      .valid         (wb_i_valid),
-      .pc            (wb_i_pc),//64bit
-      .instr         (wb_i_insn),//32bit
-      .skip          (1'b0),
-      .isRVC         (1'b0),
-      .scFailed      (1'b0),
-      .wen           (wb_i_rf_we & (|wb_i_rd)),
-      .wdest         ({3'b0, wb_i_rd[4:0]}),//8bit
-      .wdata         (wb_i_rd_dat) //64bit
-   );
-`endif
 
 endmodule
