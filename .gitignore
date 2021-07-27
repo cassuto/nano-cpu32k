@@ -17,10 +17,17 @@
 !LICENSE
 !.gitignore
 **/build/
-myinfo.txt
 
 ; My files
 !*.vh
 !doc/*
 !doc/*/*
 !doc/*/*/*
+; End of my files
+
+**/build_test/
+**/difftest
+!difftest
+!NEMU
+myinfo.txt
+
