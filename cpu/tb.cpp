@@ -11,8 +11,8 @@ int main()
     if ((ret = tb_alu_main()))
         return ret;
 #endif
-#ifdef TESTBENCH_TOP
-   if ((ret = tb_top_main()))
+#ifdef TESTBENCH_CPU
+   if ((ret = tb_cpu_main()))
         return ret;
 #endif
 

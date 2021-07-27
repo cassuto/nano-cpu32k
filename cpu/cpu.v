@@ -1,6 +1,6 @@
 `include "defines.vh"
 
-module top(
+module cpu(
    input clk,
    input rst
 );

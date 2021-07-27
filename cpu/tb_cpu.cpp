@@ -1,8 +1,8 @@
 #include "tb.h"
-#ifdef TESTBENCH_TOP
+#ifdef TESTBENCH_CPU
 
 #include "verilated.h"
-#include "Vtop.h"  
+#include "Vcpu.h"  
 #include <cstdio>
 #include <cstdint>
 
@@ -11,7 +11,7 @@
 static VerilatedVcdC* fp;
 #endif
 
-static Vtop* dut;
+static Vcpu* dut;
 
 void reset(int time)
 {
@@ -49,9 +49,9 @@ void test(int time)
 #endif
 }
 
-int tb_top_main()
+int tb_cpu_main()
 {
-    dut = new Vtop;  //instantiating module top
+    dut = new Vcpu;  //instantiating module top
     
 #ifdef VM_TRACE
     ////// !!!  ATTENTION  !!!//////
