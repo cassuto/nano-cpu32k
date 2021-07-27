@@ -1,12 +1,23 @@
 `include "defines.vh"
 
-module cpu(
+module cpu #(
+   parameter IRAM_AW = 62,
+   parameter DRAM_AW = 64
+)
+(
    input clk,
-   input rst
+   input rst,
+   // IRAM
+   output [IRAM_AW-1:0] o_iram_addr,
+   output o_iram_re,
+   input [31:0] i_iram_insn,
+   // DRAM
+   output [DRAM_AW-1:0] o_dram_addr,
+   output [7:0] o_dram_we,
+   output o_dram_re,
+   output [63:0] o_dram_din,
+   input [63:0] i_dram_dout
 );
-   localparam IRAM_AW = 16; // (2^ILEN) * 64 KiB
-   localparam DRAM_AW = 16; // 64 KiB
-
    // IDU
    wire idu_o_rf_we;
    wire [4:0] idu_o_rd;
@@ -68,32 +79,6 @@ module cpu(
    wire [63:0] wb_i_pc;
    wire [31:0] wb_i_insn;
 
-   // IRAM
-   wire [IRAM_AW-1:0] iram_addr;
-   wire [31:0] insn;
-   // DRAM
-   wire [DRAM_AW-1:0] dram_addr;
-   wire [7:0] dram_we;
-   wire dram_re;
-   wire [63:0] dram_din;
-   wire [63:0] dram_dout;
-
-   // Data RAM
-   dram
-      #(
-      .DRAM_AW       (DRAM_AW)
-      )
-   DRAM
-      (
-         .clk        (clk),
-         .rst        (rst),
-         .o_dat      (dram_dout),
-         .i_dat      (dram_din),
-         .i_we       (dram_we),
-         .i_re       (dram_re),
-         .i_addr     (dram_addr)
-      );
-
    //////////////////////////////////////////////////////////////
    // Stage #1: Fetch
    //////////////////////////////////////////////////////////////
@@ -105,21 +90,9 @@ module cpu(
       (
          .clk           (clk),
          .rst           (rst),
-         .o_iram_addr   (iram_addr),
+         .o_iram_addr   (o_iram_addr),
+         .o_iram_re     (o_iram_re),
          .o_pc          (idu_o_pc)
-      );
-
-   // Insn RAM
-   iram
-      #(
-         .IRAM_AW       (IRAM_AW)
-      )
-   IRAM
-      (
-         .clk        (clk),
-         .rst        (rst),
-         .i_addr     (iram_addr[15:0]),
-         .o_insn     (insn)
       );
 
    //////////////////////////////////////////////////////////////
@@ -128,7 +101,7 @@ module cpu(
 
    idu IDU
       (
-         .i_insn     (insn),
+         .i_insn     (i_iram_insn),
          .o_rf_we    (idu_o_rf_we),
          .o_rd       (idu_o_rd),
          .o_rs1_addr (idu_o_rs1_addr),
@@ -286,11 +259,11 @@ module cpu(
       .lsu_size         (lsu_i_lsu_size),
       .wb_i_lsu_result  (wb_i_lsu_result),
 
-      .dram_addr        (dram_addr),
-      .dram_we          (dram_we),
-      .dram_re          (dram_re),
-      .dram_din         (dram_din),
-      .dram_dout        (dram_dout)
+      .o_dram_addr      (o_dram_addr),
+      .o_dram_we        (o_dram_we),
+      .o_dram_re        (o_dram_re),
+      .o_dram_din       (o_dram_din),
+      .i_dram_dout      (i_dram_dout)
    );
 
    lsu_wb LSU_WB
