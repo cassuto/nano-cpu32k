@@ -17,4 +17,8 @@
 !LICENSE
 !.gitignore
 **/build/
+**/build_test/
+**/difftest
+!difftest
+!NEMU
 myinfo.txt
