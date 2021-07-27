@@ -13,6 +13,9 @@ module idu_exu(
    input [3:0] idu_o_lsu_size,
    input idu_o_wb_sel,
    input [11:0] idu_o_imm12,
+   input idu_o_valid,
+   input [63:0] idu_o_pc,
+   input [31:0] idu_o_insn,
    output reg exu_i_rf_we,
    output reg [4:0] exu_i_rd,
    output reg [4:0] exu_i_rs1_addr,
@@ -24,7 +27,10 @@ module idu_exu(
    output reg exu_i_lsu_sigext,
    output reg [3:0] exu_i_lsu_size,
    output reg exu_i_wb_sel,
-   output reg [11:0] exu_i_imm12
+   output reg [11:0] exu_i_imm12,
+   output reg exu_i_valid,
+   output reg [63:0] exu_i_pc,
+   output reg [31:0] exu_i_insn
 );
 
    always @(posedge clk)
@@ -36,6 +42,7 @@ module idu_exu(
             exu_i_lsu_op_load <= 'b0;
             exu_i_lsu_op_store <= 'b0;
             exu_i_wb_sel <= 'b0;
+            exu_i_valid <= 'b0;
          end
       else
          begin
@@ -51,6 +58,9 @@ module idu_exu(
             exu_i_lsu_size <= idu_o_lsu_size;
             exu_i_wb_sel <= idu_o_wb_sel;
             exu_i_imm12 <= idu_o_imm12;
+            exu_i_valid <= idu_o_valid;
+            exu_i_pc <= idu_o_pc;
+            exu_i_insn <= idu_o_insn;
          end
 
 endmodule

@@ -1,19 +1,17 @@
-module pc #(
-   parameter IRAM_AW
-)
+module pc
 (
    input clk,
    input rst,
-   output [IRAM_AW-1:0] iram_addr
+   output [61:0] o_pc
 );
 
-   reg [IRAM_AW-1:0] pc_r;
-   wire [IRAM_AW-1:0] pc_nxt;
+   reg [61:0] pc_r;
+   wire [61:0] pc_nxt;
 
    always @(posedge clk)
       if (rst)
          begin
-            pc_r <= {IRAM_AW{1'b1}};
+            pc_r <= {62{1'b1}};
          end
       else
          begin
@@ -22,6 +20,6 @@ module pc #(
 
    assign pc_nxt = pc_r + 'b1;
 
-   assign iram_addr = pc_nxt;
+   assign o_pc = pc_nxt;
 
 endmodule

@@ -7,9 +7,7 @@ module cpu(
    localparam IRAM_AW = 16; // (2^ILEN) * 64 KiB
    localparam DRAM_AW = 16; // 64 KiB
 
-   wire [IRAM_AW-1:0] iram_addr;
-   wire [31:0] insn;
-   // From IDU
+   // IDU
    wire idu_o_rf_we;
    wire [4:0] idu_o_rd;
    wire [4:0] idu_o_rs1_addr;
@@ -22,13 +20,16 @@ module cpu(
    wire [3:0] idu_o_lsu_size;
    wire idu_o_wb_sel;
    wire [11:0] idu_o_imm12;
-   // To EXU
+   wire idu_o_valid;
+   wire [63:0] idu_o_pc;
+   wire [31:0] idu_o_insn;
+   // EXU
    wire exu_i_rf_we;
    wire [4:0] exu_i_rd;
    wire [4:0] exu_i_rs1_addr;
    wire [4:0] exu_i_rs2_addr;
-   wire [63:0] exu_i_rop1;
-   wire [63:0] exu_i_rop2;
+   wire [63:0] exu_i_rf_rs1;
+   wire [63:0] exu_i_rf_rs2;
    wire [`OP_SEL_W-1:0] exu_i_op_sel;
    wire [`ALU_OPW-1:0] exu_i_fu_sel;
    wire exu_i_lsu_op_load;
@@ -38,27 +39,39 @@ module cpu(
    wire exu_i_wb_sel;
    wire [11:0] exu_i_imm12;
    wire [63:0] exu_o_alu_result;
+   wire [63:0] exu_i_rop1, exu_i_rop2;
+   wire [63:0] exu_i_rs1, exu_i_rs2;
+   wire exu_i_valid;
+   wire [63:0] exu_i_pc;
+   wire [31:0] exu_i_insn;
+   // LSU
    wire lsu_i_wb_sel;
    wire lsu_i_lsu_op_load;
    wire lsu_i_lsu_op_store;
    wire lsu_i_lsu_sigext;
    wire [3:0] lsu_i_lsu_size;
    wire [63:0] lsu_i_rop2;
-
-   wire [63:0] exu_i_rf_rs1, exu_i_rf_rs2;
-   wire [63:0] rs1, rs2;
-   
    wire [4:0] lsu_i_rd;
    wire lsu_i_rf_we;
    wire [63:0] lsu_i_alu_result;
-
+   wire lsu_i_valid;
+   wire [63:0] lsu_i_pc;
+   wire [31:0] lsu_i_insn;
+   // WB
    wire wb_i_wb_sel;
    wire [4:0] wb_i_rd;
    wire wb_i_rf_we;
    wire [63:0] wb_i_alu_result;
    wire [63:0] wb_i_lsu_result;
    wire [63:0] wb_i_rd_dat;
+   wire wb_i_valid;
+   wire [63:0] wb_i_pc;
+   wire [31:0] wb_i_insn;
 
+   // IRAM
+   wire [IRAM_AW-1:0] iram_addr;
+   wire [31:0] insn;
+   // DRAM
    wire [DRAM_AW-1:0] dram_addr;
    wire [7:0] dram_we;
    wire dram_re;
@@ -84,21 +97,22 @@ module cpu(
    //////////////////////////////////////////////////////////////
    // Stage #1: Fetch
    //////////////////////////////////////////////////////////////
-   pc
+   ifu
       #(
-      .IRAM_AW       (IRAM_AW)
+         .IRAM_AW       (IRAM_AW)
       )
-   PC
+   IFU
       (
-         .clk        (clk),
-         .rst        (rst),
-         .iram_addr  (iram_addr)
+         .clk           (clk),
+         .rst           (rst),
+         .o_iram_addr   (iram_addr),
+         .o_pc          (idu_o_pc)
       );
 
    // Insn RAM
    iram
       #(
-      .IRAM_AW       (IRAM_AW)
+         .IRAM_AW       (IRAM_AW)
       )
    IRAM
       (
@@ -126,7 +140,9 @@ module cpu(
          .lsu_sigext (idu_o_lsu_sigext),
          .lsu_size   (idu_o_lsu_size),
          .wb_sel     (idu_o_wb_sel),
-         .imm12      (idu_o_imm12)
+         .imm12      (idu_o_imm12),
+         .o_valid    (idu_o_valid),
+         .o_insn     (idu_o_insn)
       );
 
    idu_exu IDU_EXU
@@ -145,6 +161,9 @@ module cpu(
       .idu_o_lsu_size (idu_o_lsu_size),
       .idu_o_wb_sel  (idu_o_wb_sel),
       .idu_o_imm12   (idu_o_imm12),
+      .idu_o_valid   (idu_o_valid),
+      .idu_o_pc      (idu_o_pc),
+      .idu_o_insn    (idu_o_insn),
       .exu_i_rf_we   (exu_i_rf_we),
       .exu_i_rd      (exu_i_rd),
       .exu_i_rs1_addr(exu_i_rs1_addr),
@@ -156,7 +175,10 @@ module cpu(
       .exu_i_lsu_sigext    (exu_i_lsu_sigext),
       .exu_i_lsu_size      (exu_i_lsu_size),
       .exu_i_wb_sel  (exu_i_wb_sel),
-      .exu_i_imm12   (exu_i_imm12)
+      .exu_i_imm12   (exu_i_imm12),
+      .exu_i_valid   (exu_i_valid),
+      .exu_i_pc      (exu_i_pc),
+      .exu_i_insn    (exu_i_insn)
    );
 
    regfile RF
@@ -204,44 +226,50 @@ module cpu(
 
    opmux OP_MUX
       (
-         .op_sel        (exu_i_op_sel),
-         .rf_rs1        (exu_i_rop1),
-         .rf_rs2        (exu_i_rop2),
-         .imm12         (exu_i_imm12),
-         .rs1           (rs1),
-         .rs2           (rs2)
+         .i_op_sel        (exu_i_op_sel),
+         .i_rop1          (exu_i_rop1),
+         .i_rop2          (exu_i_rop2),
+         .i_imm12         (exu_i_imm12),
+         .o_rs1           (exu_i_rs1),
+         .o_rs2           (exu_i_rs2)
       );
 
    alu ALU
       (
          .i_fu_sel      (exu_i_fu_sel),
-         .i_operand1    (rs1),
-         .i_operand2    (rs2),
+         .i_operand1    (exu_i_rs1),
+         .i_operand2    (exu_i_rs2),
          .o_result      (exu_o_alu_result)
       );
 
    exu_lsu EXU_LSU
    (
-      .clk              (clk),
-      .rst              (rst),
+      .clk                 (clk),
+      .rst                 (rst),
       .exu_i_lsu_op_load   (exu_i_lsu_op_load),
       .exu_i_lsu_op_store  (exu_i_lsu_op_store),
       .exu_i_lsu_sigext    (exu_i_lsu_sigext),
       .exu_i_lsu_size      (exu_i_lsu_size),
       .exu_i_wb_sel        (exu_i_wb_sel),
-      .exu_i_rd         (exu_i_rd),
-      .exu_i_rf_we      (exu_i_rf_we),
+      .exu_i_rd            (exu_i_rd),
+      .exu_i_rf_we         (exu_i_rf_we),
       .exu_o_alu_result    (exu_o_alu_result),
       .exu_i_rop2          (exu_i_rop2),
+      .exu_i_valid         (exu_i_valid),
+      .exu_i_pc            (exu_i_pc),
+      .exu_i_insn          (exu_i_insn),
       .lsu_i_wb_sel        (lsu_i_wb_sel),
       .lsu_i_lsu_op_load   (lsu_i_lsu_op_load),
       .lsu_i_lsu_op_store  (lsu_i_lsu_op_store),
       .lsu_i_lsu_sigext    (lsu_i_lsu_sigext),
       .lsu_i_lsu_size      (lsu_i_lsu_size),
-      .lsu_i_rd         (lsu_i_rd),
-      .lsu_i_rf_we      (lsu_i_rf_we),
-      .lsu_i_alu_result  (lsu_i_alu_result),
-      .lsu_i_rop2       (lsu_i_rop2)
+      .lsu_i_rd            (lsu_i_rd),
+      .lsu_i_rf_we         (lsu_i_rf_we),
+      .lsu_i_alu_result    (lsu_i_alu_result),
+      .lsu_i_rop2          (lsu_i_rop2),
+      .lsu_i_valid         (lsu_i_valid),
+      .lsu_i_pc            (lsu_i_pc),
+      .lsu_i_insn          (lsu_i_insn)
    );
 
    //////////////////////////////////////////////////////////////
@@ -273,10 +301,16 @@ module cpu(
       .lsu_i_rd         (lsu_i_rd),
       .lsu_i_rf_we      (lsu_i_rf_we),
       .lsu_i_alu_result (lsu_i_alu_result),
-      .wb_i_wb_sel      (wb_i_wb_sel),
+      .lsu_i_valid      (lsu_i_valid),
+      .lsu_i_pc         (lsu_i_pc),
+      .lsu_i_insn       (lsu_i_insn),
+      .wb_i_wb_sel      (lsu_i_wb_sel),
       .wb_i_rd          (wb_i_rd),
       .wb_i_rf_we       (wb_i_rf_we),
-      .wb_i_alu_result  (wb_i_alu_result)
+      .wb_i_alu_result  (wb_i_alu_result),
+      .wb_i_valid       (wb_i_valid),
+      .wb_i_pc          (wb_i_pc),
+      .wb_i_insn        (wb_i_insn)
    );
 
    //////////////////////////////////////////////////////////////
@@ -289,6 +323,21 @@ module cpu(
       .alu_result    (wb_i_alu_result),
       .lsu_result    (wb_i_lsu_result),
       .rd_dat        (wb_i_rd_dat)
+   );
+
+   DifftestInstrCommit U_inst_commit(
+      .clock         (clk),
+      .coreid        (8'd0),
+      .index         (8'd0),
+      .valid         (wb_i_valid),
+      .pc            (wb_i_pc),//64bit
+      .instr         (wb_i_insn),//32bit
+      .skip          (1'b0),
+      .isRVC         (1'b0),
+      .scFailed      (1'b0),
+      .wen           (wb_i_rf_we & (|wb_i_rd)),
+      .wdest         ({3'b0, wb_i_rd[4:0]}),//8bit
+      .wdata         (wb_i_rd_dat) //64bit
    );
 
 endmodule

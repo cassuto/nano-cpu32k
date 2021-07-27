@@ -13,7 +13,9 @@ module idu(
    output lsu_sigext,
    output [3:0] lsu_size,
    output wb_sel, // 0 = ALU, 1 = LSU
-   output [11:0] imm12
+   output [11:0] imm12,
+   output o_valid,
+   output [31:0] o_insn
 );
 
    wire [6:0] opcode;
@@ -84,5 +86,7 @@ module idu(
    assign lsu_sigext = (op_lb|op_lh|op_lw);
 
    assign wb_sel = op_addi;
+
+   assign o_valid = 1'b1;
 
 endmodule
