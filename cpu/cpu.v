@@ -75,9 +75,15 @@ module cpu #(
    wire [63:0] wb_i_alu_result;
    wire [63:0] wb_i_lsu_result;
    wire [63:0] wb_i_rd_dat;
+`ifndef DIFFTEST
+   /* verilator lint_off UNUSED */
+`endif
    wire wb_i_valid;
    wire [63:0] wb_i_pc;
    wire [31:0] wb_i_insn;
+`ifndef DIFFTEST
+   /* verilator lint_on UNUSED */
+`endif
 
    //////////////////////////////////////////////////////////////
    // Stage #1: Fetch
@@ -277,7 +283,7 @@ module cpu #(
       .lsu_i_valid      (lsu_i_valid),
       .lsu_i_pc         (lsu_i_pc),
       .lsu_i_insn       (lsu_i_insn),
-      .wb_i_wb_sel      (lsu_i_wb_sel),
+      .wb_i_wb_sel      (wb_i_wb_sel),
       .wb_i_rd          (wb_i_rd),
       .wb_i_rf_we       (wb_i_rf_we),
       .wb_i_alu_result  (wb_i_alu_result),
@@ -298,6 +304,7 @@ module cpu #(
       .rd_dat        (wb_i_rd_dat)
    );
 
+`ifdef DIFFTEST
    DifftestInstrCommit U_inst_commit(
       .clock         (clk),
       .coreid        (8'd0),
@@ -312,5 +319,6 @@ module cpu #(
       .wdest         ({3'b0, wb_i_rd[4:0]}),//8bit
       .wdata         (wb_i_rd_dat) //64bit
    );
+`endif
 
 endmodule

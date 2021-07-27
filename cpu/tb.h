@@ -3,10 +3,10 @@
 
 //#define TESTBENCH_DRAM
 //#define TESTBENCH_ALU
-#define TESTBENCH_CPU
+#define TESTBENCH_TOP
 
 extern int tb_dram_main();
 extern int tb_alu_main();
-extern int tb_cpu_main();
+extern int tb_top_main();
 
 #endif

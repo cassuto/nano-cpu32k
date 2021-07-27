@@ -88,5 +88,6 @@ module idu(
    assign wb_sel = op_addi;
 
    assign o_valid = 1'b1;
+   assign o_insn = i_insn;
 
 endmodule
