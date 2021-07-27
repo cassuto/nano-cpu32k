@@ -1,4 +1,4 @@
-`include "defines.vh"
+`include "defines.v"
 
 module alu(
    input [`ALU_OPW-1:0] i_fu_sel,

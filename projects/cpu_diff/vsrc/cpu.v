@@ -1,4 +1,4 @@
-`include "defines.vh"
+`include "defines.v"
 
 module cpu #(
    parameter IRAM_AW = 62,

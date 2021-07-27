@@ -1,4 +1,4 @@
-`include "defines.vh"
+`include "defines.v"
 
 module idu(
    input [31:0] i_insn,

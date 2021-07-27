@@ -1,4 +1,4 @@
-`include "defines.vh"
+`include "defines.v"
 
 module opmux(
    input [`OP_SEL_W-1:0] i_op_sel,

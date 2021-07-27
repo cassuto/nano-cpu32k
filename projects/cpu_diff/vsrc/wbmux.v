@@ -1,4 +1,4 @@
-`include "defines.vh"
+`include "defines.v"
 
 module wbmux(
    input wb_sel,
