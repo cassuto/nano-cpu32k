@@ -147,7 +147,7 @@ module cpu #(
       .clk           (clk),
       .rst           (rst),
       .flush         (flush),
-      .stall         (stall_from_forward),
+      .stall_from_forward (stall_from_forward),
       .idu_o_rf_we   (idu_o_rf_we),
       .idu_o_rd      (idu_o_rd),
       .idu_o_rs1_addr(idu_o_rs1_addr),
@@ -281,7 +281,6 @@ module cpu #(
    (
       .clk                 (clk),
       .rst                 (rst),
-      .stall               (stall_from_forward),
       .exu_i_lsu_op_load   (exu_i_lsu_op_load),
       .exu_i_lsu_op_store  (exu_i_lsu_op_store),
       .exu_i_lsu_sigext    (exu_i_lsu_sigext),

@@ -2,7 +2,7 @@ module idu_exu(
    input clk,
    input rst,
    input flush,
-   input stall,
+   input stall_from_forward,
    input idu_o_rf_we,
    input [4:0] idu_o_rd,
    input [4:0] idu_o_rs1_addr,
@@ -42,7 +42,7 @@ module idu_exu(
 );
 
    always @(posedge clk)
-      if (rst | flush)
+      if (rst | flush | stall_from_forward)
          begin
             exu_i_rf_we <= 'b0;
             exu_i_op_sel <= 'b0;
@@ -52,7 +52,7 @@ module idu_exu(
             exu_i_wb_sel <= 'b0;
             exu_i_valid <= 'b0;
          end
-      else if (~stall)
+      else
          begin
             exu_i_rf_we <= idu_o_rf_we;
             exu_i_rd <= idu_o_rd;
