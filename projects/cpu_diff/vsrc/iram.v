@@ -27,6 +27,6 @@ module iram #(
       end
 
    initial
-      $readmemh("../../testcase/addi.memh", imem, 0);
+      $readmemh("../../../testcase/addi.memh", imem, 0);
 
 endmodule
