@@ -13,19 +13,19 @@ module opmux(
 );
    assign o_rs1 = i_rop1;
 
-   wire [63:0] imm12_zext, imm12_sext, imm13_sext, imm20_sext, imm21_sext;
+   wire [63:0] imm12_zext, imm12_sext, imm13_sext, imm20_sext_sl12, imm21_sext_sl12;
 
    assign imm12_zext = {52'b0, i_imm12};
    assign imm12_sext = {{52{i_imm12[11]}}, i_imm12};
    assign imm13_sext = {{51{i_imm13[12]}}, i_imm13};
-   assign imm20_sext = {{44{i_imm20[19]}}, i_imm20};
-   assign imm21_sext = {{43{i_imm21[20]}}, i_imm21};
+   assign imm20_sext_sl12 = {{22{i_imm20[19]}}, i_imm20, 12'b0};
+   assign imm21_sext_sl12 = {{21{i_imm21[20]}}, i_imm21, 12'b0};
 
    assign o_rs2 = ({64{i_op_sel[`OP_SEL_IMM12_ZEXT]}} & imm12_zext) |
                ({64{i_op_sel[`OP_SEL_IMM12_SEXT]}} & imm12_sext) |
                ({64{i_op_sel[`OP_SEL_IMM13_SEXT]}} & imm13_sext) |
-               ({64{i_op_sel[`OP_SEL_IMM20_SEXT]}} & imm20_sext) |
-               ({64{i_op_sel[`OP_SEL_IMM21_SEXT]}} & imm21_sext) |
+               ({64{i_op_sel[`OP_SEL_IMM20_SEXT_SL12]}} & imm20_sext_sl12) |
+               ({64{i_op_sel[`OP_SEL_IMM21_SEXT_SL12]}} & imm21_sext_sl12) |
                ({64{i_op_sel[`OP_SEL_RF]}} & i_rop2); 
 
 endmodule

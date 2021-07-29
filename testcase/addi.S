@@ -9,3 +9,5 @@ addi x6, x5, 4
 addi x7, x6, 4
 addi x8, x7, 4
 addi x31, x8, 4
+
+lui x31, 0x80010
