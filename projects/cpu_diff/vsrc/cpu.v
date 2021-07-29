@@ -196,7 +196,7 @@ module cpu #(
 
    forward FORWARD_ROP1(
       .clk              (clk),
-      .i_re             (idu_o_rs2_re),
+      .i_re             (idu_o_rs1_re),
       .i_operand_addr   (idu_o_rs1_addr),
       .i_rf_operand     (exu_i_rf_rs1),
       .o_operand        (exu_i_rop1),
