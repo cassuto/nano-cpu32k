@@ -64,9 +64,9 @@ module idu(
    wire op_xori = (funct3 == 3'b100) & (opcode ==7'b0010011);
    wire op_ori = (funct3 == 3'b110) & (opcode ==7'b0010011);
    wire op_andi = (funct3 == 3'b111) & (opcode ==7'b0010011);
-   wire op_slli = (funct7[6:1] == 7'b000000) & (funct3 == 3'b001) & (opcode == 7'b0010011);
-   wire op_srli = (funct7[6:1] == 7'b000000) & (funct3 == 3'b101) & (opcode == 7'b0010011);
-   wire op_srai = (funct7[6:1] == 7'b010000) & (funct3 == 3'b101) & (opcode == 7'b0010011);
+   wire op_slli = (funct7[6:1] == 6'b000000) & (funct3 == 3'b001) & (opcode == 7'b0010011);
+   wire op_srli = (funct7[6:1] == 6'b000000) & (funct3 == 3'b101) & (opcode == 7'b0010011);
+   wire op_srai = (funct7[6:1] == 6'b010000) & (funct3 == 3'b101) & (opcode == 7'b0010011);
    wire op_add = (funct7 == 7'b0000000) & (funct3 == 3'b000) & (opcode == 7'b0110011);
    wire op_sub = (funct7 == 7'b0100000) & (funct3 == 3'b000) & (opcode == 7'b0110011);
    wire op_sll = (funct7 == 7'b0000000) & (funct3 == 3'b001) & (opcode == 7'b0110011);
