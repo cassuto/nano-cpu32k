@@ -43,8 +43,8 @@ module cpu #(
    wire [11:0] idu_o_imm12;
    wire [12:0] idu_o_imm13;
    wire [19:0] idu_o_imm20;
-   wire [19:0] idu_o_imm21;
-   wire [6:0] idu_o_shamt;
+   wire [20:0] idu_o_imm21;
+   wire [5:0] idu_o_shamt;
    wire idu_o_valid;
    wire [63:0] idu_o_pc;
    wire [31:0] idu_o_insn;
