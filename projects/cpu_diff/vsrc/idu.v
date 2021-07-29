@@ -134,9 +134,7 @@ module idu(
 
    assign o_rs1_addr = rs1;
 
-   assign o_rs2_addr = (lsu_op_store)
-                        ? rs2
-                        : 5'd0;
+   assign o_rs2_addr = (R_type|S_type|B_type) ? rs2 : 5'd0;
 
    assign op_sel[`OP_SEL_RF] = 'b0;
    assign op_sel[`OP_SEL_IMM12_SEXT] = op_addi|op_jalr|op_ori|lsu_op_load;
