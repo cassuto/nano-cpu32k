@@ -38,12 +38,12 @@ module forward(
 
    /////////////////////////////////////////////////////////////////////////////////////////
    // Execute stage
-   assign o_operand = raw_dep_wb_r
-                        ? wb_i_rd_dat_r
+   assign o_operand = raw_dep_exu_r 
+                        ? exu_i_rd_dat_r
                         : raw_dep_lsu_r
                            ? lsu_i_rd_dat_r
-                           : raw_dep_exu_r
-                              ? exu_i_rd_dat_r
+                           : raw_dep_wb_r
+                              ? wb_i_rd_dat_r
                               : i_rf_operand;
 
 endmodule
