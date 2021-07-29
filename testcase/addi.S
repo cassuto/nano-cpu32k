@@ -12,7 +12,9 @@ addi x31, x8, 4
 
 lui x31, 0x80010
 
+#
 # test jal and jalr
+#
 jal x31, l1
 addi x2, x0, 0xba
 l1:
@@ -23,3 +25,26 @@ addi x2, x0, 0xba
 l2:
 addi x2, x0, 0x456
 
+#
+# test bcc
+#
+lui x1, 0x80000
+lui x2, 0x70000
+beq x1,x2, bad
+li x3, 0x123
+bne x1,x2,ok1
+jal x31, bad
+ok1:
+blt x1,x2, ok2
+jal bad
+ok2:
+bge x1,x2, bad
+li x3, 0x123
+bltu x1,x2, ok3
+jal bad
+ok3:
+li x3, 0x123
+bgeu x1,x2, ok4
+jal bad
+ok4:
+li x3, 0x123
