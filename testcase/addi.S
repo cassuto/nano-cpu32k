@@ -58,7 +58,7 @@ li x3, 0xba
 #
 # test memory
 #
-li x30, 0x80
+li x30, 0x90
 sll x30, x30, 24 # x30=0x80000000
 
 addi x6, x30, 0xF0
