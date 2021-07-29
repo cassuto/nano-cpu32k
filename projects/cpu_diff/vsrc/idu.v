@@ -151,6 +151,7 @@ module idu(
    assign op_sel[`OP_SEL_IMM21_SEXT_SL12] = 'b0;
 
    assign fu_sel[`ALU_OP_LUI] = op_lui;
+   assign fu_sel[`ALU_OP_AUIPC] = op_auipc;
    assign fu_sel[`ALU_OP_ADD] = op_addi | lsu_op_load|lsu_op_store; // ALU is used as address generator
    assign fu_sel[`ALU_OP_SUB] = 'b0;
    assign fu_sel[`ALU_OP_AND] = 'b0;

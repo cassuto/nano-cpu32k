@@ -253,6 +253,7 @@ module cpu #(
    alu ALU
       (
          .i_fu_sel      (exu_i_fu_sel),
+         .i_pc          (exu_i_pc),
          .i_operand1    (exu_i_rs1),
          .i_operand2    (exu_i_rs2),
          .o_result      (exu_o_alu_result)

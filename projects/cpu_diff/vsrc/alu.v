@@ -2,15 +2,17 @@
 
 module alu(
    input [`ALU_OPW-1:0] i_fu_sel,
+   input [63:0] i_pc,
    input [63:0] i_operand1,
    input [63:0] i_operand2,
    output [63:0] o_result
 );
 
-   wire [63:0] out_lui, out_add, out_sub, out_and, out_or, out_xor;
+   wire [63:0] out_lui, out_auipc, out_add, out_sub, out_and, out_or, out_xor;
    wire [63:0] out_sll, out_srl;
 
    assign o_result = ({64{i_fu_sel[`ALU_OP_LUI]}} & out_lui) |
+                     ({64{i_fu_sel[`ALU_OP_AUIPC]}} & out_auipc) |
                      ({64{i_fu_sel[`ALU_OP_ADD]}} & out_add) |
                      ({64{i_fu_sel[`ALU_OP_SUB]}} & out_sub) |
                      ({64{i_fu_sel[`ALU_OP_AND]}} & out_and) |
@@ -20,6 +22,7 @@ module alu(
                      ({64{i_fu_sel[`ALU_OP_SRL]}} & out_srl);
 
    assign out_lui = i_operand2;
+   assign out_auipc = i_operand2 + i_pc;
 
    // Arithmetic
    assign out_add = i_operand1 + i_operand2;
