@@ -12,7 +12,7 @@ module alu(
 );
 
    wire [63:0] out_lui, out_auipc, out_jal, out_add, out_sub, out_and, out_or, out_xor;
-   wire [63:0] out_slti, out_sltiu, out_addw;
+   wire [63:0] out_slt, out_sltu, out_addw;
    wire [63:0] out_sll, out_srl, out_sra;
    wire [63:0] out_sllw, out_srlw, out_sraw, out_subw;
 
@@ -27,8 +27,8 @@ module alu(
                      ({64{i_fu_sel[`ALU_OP_SLL]}} & out_sll) |
                      ({64{i_fu_sel[`ALU_OP_SRL]}} & out_srl) |
                      ({64{i_fu_sel[`ALU_OP_SRA]}} & out_sra) |
-                     ({64{i_fu_sel[`ALU_OP_SLTI]}} & out_slti) |
-                     ({64{i_fu_sel[`ALU_OP_SLTIU]}} & out_sltiu) |
+                     ({64{i_fu_sel[`ALU_OP_SLT]}} & out_slt) |
+                     ({64{i_fu_sel[`ALU_OP_SLTU]}} & out_sltu) |
                      ({64{i_fu_sel[`ALU_OP_ADDW]}} & out_addw) |
                      ({64{i_fu_sel[`ALU_OP_SLLW]}} & out_sllw) |
                      ({64{i_fu_sel[`ALU_OP_SRLW]}} & out_srlw) |
@@ -64,8 +64,8 @@ module alu(
    assign out_jal = {i_pc[63:2] + 'b1, 2'b0};
 
    // Compator
-   assign out_slti = ($signed(i_operand1) < $signed(i_operand2)) ? 64'd1 : 64'd0;
-   assign out_sltiu = ($unsigned(i_operand1) < $unsigned(i_operand2)) ? 64'd1 : 64'd0;
+   assign out_slt = ($signed(i_operand1) < $signed(i_operand2)) ? 64'd1 : 64'd0;
+   assign out_sltu = ($unsigned(i_operand1) < $unsigned(i_operand2)) ? 64'd1 : 64'd0;
 
    reg bcc;
    always @(*)

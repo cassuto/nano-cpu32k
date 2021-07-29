@@ -20,8 +20,8 @@
 `define ALU_OP_BGE 14
 `define ALU_OP_BLTU 15
 `define ALU_OP_BGEU 16
-`define ALU_OP_SLTI 17
-`define ALU_OP_SLTIU 18
+`define ALU_OP_SLT 17
+`define ALU_OP_SLTU 18
 `define ALU_OP_ADDW 19
 `define ALU_OP_SRA 20
 `define ALU_OP_SLLW 21
