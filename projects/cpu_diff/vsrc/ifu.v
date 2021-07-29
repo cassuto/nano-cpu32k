@@ -4,6 +4,8 @@ module ifu #(
 (
    input clk,
    input rst,
+   input i_flush,
+   input [61:0] i_pc_tgt,
    output [IRAM_AW-1:0] o_iram_addr,
    output o_iram_re,
    output reg [63:0] o_pc
@@ -15,6 +17,8 @@ module ifu #(
    (
       .clk     (clk),
       .rst     (rst),
+      .flush   (i_flush),
+      .pc_tgt  (i_pc_tgt),
       .o_pc    (pc)
    );
 

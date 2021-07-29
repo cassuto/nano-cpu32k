@@ -90,6 +90,9 @@ module cpu #(
    wire wb_i_wb_sel;
    wire [63:0] wb_i_alu_result;
    wire [63:0] wb_i_lsu_result;
+   // Control
+   wire flush;
+   wire [61:0] pc_tgt;
 
    //////////////////////////////////////////////////////////////
    // Stage #1: Fetch
@@ -102,6 +105,8 @@ module cpu #(
       (
          .clk           (clk),
          .rst           (rst),
+         .i_flush       (flush),
+         .i_pc_tgt      (pc_tgt),
          .o_iram_addr   (o_iram_addr),
          .o_iram_re     (o_iram_re),
          .o_pc          (idu_o_pc)
@@ -141,6 +146,7 @@ module cpu #(
       (
       .clk           (clk),
       .rst           (rst),
+      .flush         (flush),
       .idu_o_rf_we   (idu_o_rf_we),
       .idu_o_rd      (idu_o_rd),
       .idu_o_rs1_addr(idu_o_rs1_addr),
@@ -256,7 +262,9 @@ module cpu #(
          .i_pc          (exu_i_pc),
          .i_operand1    (exu_i_rs1),
          .i_operand2    (exu_i_rs2),
-         .o_result      (exu_o_alu_result)
+         .o_result      (exu_o_alu_result),
+         .o_flush       (flush),
+         .o_pc_tgt      (pc_tgt)
       );
 
    exu_lsu EXU_LSU

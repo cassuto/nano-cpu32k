@@ -144,14 +144,22 @@ module idu(
                         : 5'd0;
 
    assign op_sel[`OP_SEL_RF] = 'b0;
-   assign op_sel[`OP_SEL_IMM12_SEXT] = op_addi;
+   assign op_sel[`OP_SEL_IMM12_SEXT] = op_addi|op_jalr;
    assign op_sel[`OP_SEL_IMM12_ZEXT] = 'b0;
    assign op_sel[`OP_SEL_IMM13_SEXT] = 'b0;
    assign op_sel[`OP_SEL_IMM20_SEXT_SL12] = op_lui|op_auipc;
-   assign op_sel[`OP_SEL_IMM21_SEXT_SL12] = 'b0;
+   assign op_sel[`OP_SEL_IMM21_SEXT] = op_jalr;
 
    assign fu_sel[`ALU_OP_LUI] = op_lui;
    assign fu_sel[`ALU_OP_AUIPC] = op_auipc;
+   assign fu_sel[`ALU_OP_JAL] = op_jal;
+   assign fu_sel[`ALU_OP_JALR] = op_jalr;
+   assign fu_sel[`ALU_OP_BEQ] = op_beq;
+   assign fu_sel[`ALU_OP_BNE] = op_bne;
+   assign fu_sel[`ALU_OP_BLT] = op_blt;
+   assign fu_sel[`ALU_OP_BGE] = op_bge;
+   assign fu_sel[`ALU_OP_BLTU] = op_bltu;
+   assign fu_sel[`ALU_OP_BGEU] = op_bgeu;
    assign fu_sel[`ALU_OP_ADD] = op_addi | lsu_op_load|lsu_op_store; // ALU is used as address generator
    assign fu_sel[`ALU_OP_SUB] = 'b0;
    assign fu_sel[`ALU_OP_AND] = 'b0;

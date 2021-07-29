@@ -5,14 +5,17 @@ module alu(
    input [63:0] i_pc,
    input [63:0] i_operand1,
    input [63:0] i_operand2,
-   output [63:0] o_result
+   output [63:0] o_result,
+   output o_flush,
+   output reg [61:0] o_pc_tgt
 );
 
-   wire [63:0] out_lui, out_auipc, out_add, out_sub, out_and, out_or, out_xor;
+   wire [63:0] out_lui, out_auipc, out_jal, out_add, out_sub, out_and, out_or, out_xor;
    wire [63:0] out_sll, out_srl;
 
    assign o_result = ({64{i_fu_sel[`ALU_OP_LUI]}} & out_lui) |
                      ({64{i_fu_sel[`ALU_OP_AUIPC]}} & out_auipc) |
+                     ({64{i_fu_sel[`ALU_OP_JAL] | i_fu_sel[`ALU_OP_JALR]}} & out_jal) |
                      ({64{i_fu_sel[`ALU_OP_ADD]}} & out_add) |
                      ({64{i_fu_sel[`ALU_OP_SUB]}} & out_sub) |
                      ({64{i_fu_sel[`ALU_OP_AND]}} & out_and) |
@@ -34,5 +37,17 @@ module alu(
    assign out_xor = i_operand1 ^ i_operand2;
    assign out_sll = i_operand1 << i_operand2[5:0];
    assign out_srl = i_operand1 >> i_operand2[5:0];
+
+   // Branch
+   assign out_jal = {i_pc[63:2] + 'b1, 2'b0};
+   assign o_flush = i_fu_sel[`ALU_OP_JAL] | i_fu_sel[`ALU_OP_JALR];
+
+   always @(*)
+      if (i_fu_sel[`ALU_OP_JAL])
+         o_pc_tgt = i_pc[63:2] + i_operand2[63:2];
+      else if (i_fu_sel[`ALU_OP_JALR])
+         o_pc_tgt = i_operand1[63:2] + i_operand2[63:2];
+      else
+         o_pc_tgt = 62'b0;
 
 endmodule
