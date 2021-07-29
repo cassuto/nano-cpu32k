@@ -4,7 +4,9 @@ module forward(
    input [4:0] i_operand_addr,
    input [63:0] i_rf_operand,
    output [63:0] o_operand,
+   output o_stall_from_forward,
    // LISTENING EXU
+   input exu_i_op_load,
    input [4:0] exu_i_rd,
    input exu_i_rf_we,
    input [63:0] exu_i_rd_dat,
@@ -21,6 +23,9 @@ module forward(
 );
    reg raw_dep_exu_r, raw_dep_lsu_alu_r, raw_dep_lsu_lsu_r, raw_dep_wb_r;
    reg [63:0] exu_i_rd_dat_r, lsu_i_rd_dat_r, lsu_i_lsu_dat_r, wb_i_rd_dat_r;
+
+   // Stall the frontend pipeline if it has RAW dependency with LSU
+   assign o_stall_from_forward = (exu_i_rf_we & exu_i_op_load & (i_operand_addr==exu_i_rd) & (|exu_i_rd));
 
    /////////////////////////////////////////////////////////////////////////////////////////
    // Decode stage

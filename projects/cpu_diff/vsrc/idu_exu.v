@@ -2,6 +2,7 @@ module idu_exu(
    input clk,
    input rst,
    input flush,
+   input stall,
    input idu_o_rf_we,
    input [4:0] idu_o_rd,
    input [4:0] idu_o_rs1_addr,
@@ -41,7 +42,7 @@ module idu_exu(
 );
 
    always @(posedge clk)
-      if (rst)
+      if (rst | flush)
          begin
             exu_i_rf_we <= 'b0;
             exu_i_op_sel <= 'b0;
@@ -51,24 +52,24 @@ module idu_exu(
             exu_i_wb_sel <= 'b0;
             exu_i_valid <= 'b0;
          end
-      else
+      else if (~stall)
          begin
-            exu_i_rf_we <= flush ? 'b0 : idu_o_rf_we;
+            exu_i_rf_we <= idu_o_rf_we;
             exu_i_rd <= idu_o_rd;
             exu_i_rs1_addr <= idu_o_rs1_addr;
             exu_i_rs2_addr <= idu_o_rs2_addr;
-            exu_i_op_sel <=  flush ? 'b0 : idu_o_op_sel;
-            exu_i_fu_sel <= flush ? 'b0 : idu_o_fu_sel;
-            exu_i_lsu_op_load <= flush ? 'b0 : idu_o_lsu_op_load;
-            exu_i_lsu_op_store <= flush ? 'b0 : idu_o_lsu_op_store;
+            exu_i_op_sel <=  idu_o_op_sel;
+            exu_i_fu_sel <= idu_o_fu_sel;
+            exu_i_lsu_op_load <= idu_o_lsu_op_load;
+            exu_i_lsu_op_store <= idu_o_lsu_op_store;
             exu_i_lsu_sigext <= idu_o_lsu_sigext;
             exu_i_lsu_size <= idu_o_lsu_size;
-            exu_i_wb_sel <= flush ? 'b0 : idu_o_wb_sel;
+            exu_i_wb_sel <= idu_o_wb_sel;
             exu_i_imm12 <= idu_o_imm12;
             exu_i_imm13 <= idu_o_imm13;
             exu_i_imm20 <= idu_o_imm20;
             exu_i_imm21 <= idu_o_imm21;
-            exu_i_valid <= flush ? 'b0 : idu_o_valid;
+            exu_i_valid <= idu_o_valid;
             exu_i_pc <= idu_o_pc;
             exu_i_insn <= idu_o_insn;
          end

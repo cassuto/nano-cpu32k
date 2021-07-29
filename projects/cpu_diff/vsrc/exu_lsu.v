@@ -1,7 +1,8 @@
 module exu_lsu(
    input clk,
    input rst,
-   
+   input stall,
+
    input exu_i_wb_sel,
    input exu_i_lsu_op_load,
    input exu_i_lsu_op_store,
@@ -39,16 +40,16 @@ module exu_lsu(
          end
       else
          begin
-            lsu_i_lsu_op_load <= exu_i_lsu_op_load;
-            lsu_i_lsu_op_store <= exu_i_lsu_op_store;
+            lsu_i_lsu_op_load <= ~stall & exu_i_lsu_op_load;
+            lsu_i_lsu_op_store <= ~stall & exu_i_lsu_op_store;
             lsu_i_lsu_sigext <= exu_i_lsu_sigext;
             lsu_i_lsu_size <= exu_i_lsu_size;
             lsu_i_rd <= exu_i_rd;
-            lsu_i_rf_we <= exu_i_rf_we;
+            lsu_i_rf_we <= ~stall & exu_i_rf_we;
             lsu_i_alu_result <= exu_o_alu_result;
             lsu_i_wb_sel <= exu_i_wb_sel;
             lsu_i_rop2 <= exu_i_rop2;
-            lsu_i_valid <= exu_i_valid;
+            lsu_i_valid <= ~stall & exu_i_valid;
             lsu_i_pc <= exu_i_pc;
             lsu_i_insn <= exu_i_insn;
          end

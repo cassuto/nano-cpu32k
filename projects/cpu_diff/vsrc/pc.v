@@ -3,6 +3,7 @@ module pc
    input clk,
    input rst,
    input flush,
+   input stall,
    input [61:0] pc_tgt,
    output [61:0] o_pc
 );
@@ -20,7 +21,11 @@ module pc
             pc_r <= pc_nxt;
          end
 
-   assign pc_nxt = flush ? pc_tgt : (pc_r + 'b1);
+   assign pc_nxt = (flush)
+                     ? pc_tgt
+                     : (stall)
+                        ? pc_r
+                        : (pc_r + 'b1);
 
    assign o_pc = pc_nxt;
 
