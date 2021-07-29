@@ -11,3 +11,5 @@ addi x8, x7, 4
 addi x31, x8, 4
 
 lui x31, 0x80010
+auipc x30, 0x70010
+auipc x29, 0x80200
