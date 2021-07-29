@@ -76,3 +76,10 @@ lhu x29, 8(x6)
 lw x29, 12(x6)
 lwu x29, 12(x6)
 ld x29, 16(x6)
+
+#
+# Test slti sltiu
+#
+li x1, 0x800
+slti x3, x1,0x7ff
+sltiu x3, x1,0x100

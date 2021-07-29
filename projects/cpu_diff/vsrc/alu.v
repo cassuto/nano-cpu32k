@@ -12,6 +12,7 @@ module alu(
 );
 
    wire [63:0] out_lui, out_auipc, out_jal, out_add, out_sub, out_and, out_or, out_xor;
+   wire [63:0] out_slti, out_sltiu;
    wire [63:0] out_sll, out_srl;
 
    assign o_result = ({64{i_fu_sel[`ALU_OP_LUI]}} & out_lui) |
@@ -23,7 +24,9 @@ module alu(
                      ({64{i_fu_sel[`ALU_OP_OR]}} & out_or) |
                      ({64{i_fu_sel[`ALU_OP_XOR]}} & out_xor) |
                      ({64{i_fu_sel[`ALU_OP_SLL]}} & out_sll) |
-                     ({64{i_fu_sel[`ALU_OP_SRL]}} & out_srl);
+                     ({64{i_fu_sel[`ALU_OP_SRL]}} & out_srl) |
+                     ({64{i_fu_sel[`ALU_OP_SLTI]}} & out_slti) |
+                     ({64{i_fu_sel[`ALU_OP_SLTIU]}} & out_sltiu);
 
    assign out_lui = i_operand2;
    assign out_auipc = i_operand2 + i_pc;
@@ -41,6 +44,10 @@ module alu(
 
    // Branch
    assign out_jal = {i_pc[63:2] + 'b1, 2'b0};
+
+   // Compator
+   assign out_slti = ($signed(i_operand1) < $signed(i_operand2)) ? 64'd1 : 64'd0;
+   assign out_sltiu = ($unsigned(i_operand1) < $unsigned(i_operand2)) ? 64'd1 : 64'd0;
 
    reg bcc;
    always @(*)

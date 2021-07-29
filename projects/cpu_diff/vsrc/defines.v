@@ -1,7 +1,7 @@
 `ifndef DEFINES_H_
 `define DEFINES_H_
 
-`define ALU_OPW 17
+`define ALU_OPW 19
 
 `define ALU_OP_ADD 0
 `define ALU_OP_SUB 1
@@ -20,6 +20,8 @@
 `define ALU_OP_BGE 14
 `define ALU_OP_BLTU 15
 `define ALU_OP_BGEU 16
+`define ALU_OP_SLTI 17
+`define ALU_OP_SLTIU 18
 
 `define OP_SEL_W 6
 
