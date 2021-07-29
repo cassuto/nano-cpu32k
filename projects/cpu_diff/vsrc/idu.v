@@ -137,7 +137,7 @@ module idu(
    assign o_rs2_addr = (R_type|S_type|B_type) ? rs2 : 5'd0;
 
    assign op_sel[`OP_SEL_RF] = (R_type); // B_type and S_type use `rop2` as operand
-   assign op_sel[`OP_SEL_IMM12_SEXT] = op_addi|op_addiw|op_jalr|lsu_op_load|lsu_op_store|op_xori|op_ori|op_andi;
+   assign op_sel[`OP_SEL_IMM12_SEXT] = op_addi|op_addiw|op_jalr|lsu_op_load|lsu_op_store|op_xori|op_ori|op_andi|op_slti|op_sltiu;
    assign op_sel[`OP_SEL_IMM12_ZEXT] = op_slli|op_srli|op_srai|op_slliw|op_srliw|op_sraiw;
    assign op_sel[`OP_SEL_IMM13_SEXT] = B_type;
    assign op_sel[`OP_SEL_IMM20_SEXT_SL12] = op_lui|op_auipc;
