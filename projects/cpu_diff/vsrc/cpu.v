@@ -185,6 +185,8 @@ module cpu #(
    regfile RF
       (
          .clk           (clk),
+         .i_rs1_re      (idu_o_rs1_re),
+         .i_rs2_re      (idu_o_rs2_re),
          .i_rs1_addr    (idu_o_rs1_addr),
          .i_rs2_addr    (idu_o_rs2_addr),
          .rs1           (exu_i_rf_rs1),
