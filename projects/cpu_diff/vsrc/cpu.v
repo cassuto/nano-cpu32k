@@ -84,6 +84,7 @@ module cpu #(
    wire lsu_i_valid;
    wire [63:0] lsu_i_pc;
    wire [31:0] lsu_i_insn;
+    wire [63:0] lsu_o_lsu_result;
    // WB
    wire wb_i_wb_sel;
    wire [63:0] wb_i_alu_result;
@@ -206,11 +207,13 @@ module cpu #(
       // Listening EXU
       .exu_i_rd         (exu_i_rd),
       .exu_i_rf_we      (exu_i_rf_we),
-      .exu_i_rd_dat     (exu_o_alu_result), // FIXME stall pipeline if LSU RAW
+      .exu_i_rd_dat     (exu_o_alu_result),
       // Listening LSU
       .lsu_i_rd         (lsu_i_rd),
       .lsu_i_rf_we      (lsu_i_rf_we),
-      .lsu_i_rd_dat     (lsu_i_alu_result), // FIXME stall pipeline if LSU RAW
+      .lsu_i_rd_dat     (lsu_i_alu_result),
+      .lsu_i_lsu_dat    (lsu_o_lsu_result),
+      .lsu_i_lsu_op_load   (lsu_i_lsu_op_load),
       // Listening WB
       .wb_i_rd          (wb_i_rd),
       .wb_i_rf_we       (wb_i_rf_we),
@@ -225,11 +228,13 @@ module cpu #(
       // Listening EXU
       .exu_i_rd         (exu_i_rd),
       .exu_i_rf_we      (exu_i_rf_we),
-      .exu_i_rd_dat     (exu_o_alu_result), // FIXME stall pipeline if LSU RAW
+      .exu_i_rd_dat     (exu_o_alu_result),
       // Listening LSU
       .lsu_i_rd         (lsu_i_rd),
       .lsu_i_rf_we      (lsu_i_rf_we),
-      .lsu_i_rd_dat     (lsu_i_alu_result), // FIXME stall pipeline if RAW
+      .lsu_i_rd_dat     (lsu_i_alu_result),
+      .lsu_i_lsu_dat    (lsu_o_lsu_result),
+      .lsu_i_lsu_op_load   (lsu_i_lsu_op_load),
       // Listening WB
       .wb_i_rd          (wb_i_rd),
       .wb_i_rf_we       (wb_i_rf_we),
@@ -307,7 +312,7 @@ module cpu #(
       .lsu_op_store     (lsu_i_lsu_op_store),
       .lsu_sigext       (lsu_i_lsu_sigext),
       .lsu_size         (lsu_i_lsu_size),
-      .wb_i_lsu_result  (wb_i_lsu_result),
+      .lsu_result       (lsu_o_lsu_result),
 
       .o_dram_addr      (o_dram_addr),
       .o_dram_we        (o_dram_we),
@@ -324,6 +329,7 @@ module cpu #(
       .lsu_i_rd         (lsu_i_rd),
       .lsu_i_rf_we      (lsu_i_rf_we),
       .lsu_i_alu_result (lsu_i_alu_result),
+      .lsu_o_lsu_result (lsu_o_lsu_result),
       .lsu_i_valid      (lsu_i_valid),
       .lsu_i_pc         (lsu_i_pc),
       .lsu_i_insn       (lsu_i_insn),
@@ -331,6 +337,7 @@ module cpu #(
       .wb_i_rd          (wb_i_rd),
       .wb_i_rf_we       (wb_i_rf_we),
       .wb_i_alu_result  (wb_i_alu_result),
+      .wb_i_lsu_result  (wb_i_lsu_result),
       .wb_i_valid       (wb_i_valid),
       .wb_i_pc          (wb_i_pc),
       .wb_i_insn        (wb_i_insn)

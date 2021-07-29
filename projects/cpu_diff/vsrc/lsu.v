@@ -13,7 +13,7 @@ module lsu #(
    input lsu_op_store,
    input lsu_sigext,
    input [3:0] lsu_size,
-   output reg [63:0] wb_i_lsu_result,
+   output reg [63:0] lsu_result,
 
    // RAM interface
    output [DRAM_AW-1:0] o_dram_addr,
@@ -105,15 +105,15 @@ module lsu #(
    always @(*)
       case (lsu_size)
       4'd1:
-         wb_i_lsu_result = {{64-8{lsu_sigext & res_8b[7]}}, res_8b[7:0]};
+         lsu_result = {{64-8{lsu_sigext & res_8b[7]}}, res_8b[7:0]};
       4'd2:
-         wb_i_lsu_result = {{64-16{lsu_sigext & res_16b[15]}}, res_16b[15:0]};
+         lsu_result = {{64-16{lsu_sigext & res_16b[15]}}, res_16b[15:0]};
       4'd4:
-         wb_i_lsu_result = {{64-32{lsu_sigext & res_32b[31]}}, res_32b[31:0]};
+         lsu_result = {{64-32{lsu_sigext & res_32b[31]}}, res_32b[31:0]};
       4'd8:
-         wb_i_lsu_result = res_64b;
+         lsu_result = res_64b;
       default:
-         wb_i_lsu_result = res_64b;
+         lsu_result = res_64b;
       endcase
 
 endmodule
