@@ -104,10 +104,10 @@ module SimTop(
             if (iram_re)
                iram_insn <= iram_addr[0] ? iram_dout_64b[63:32] : iram_dout_64b[31:0];
 
-            ram_write_helper(dram_addr >> 3, dram_din, dram_wmask, |dram_we);
+            ram_write_helper((dram_addr-64'h80000000) >> 3, dram_din, dram_wmask, |dram_we);
          end
 
-   assign dram_dout = ram_read_helper(dram_re, dram_addr >> 3);
+   assign dram_dout = ram_read_helper(dram_re, (dram_addr-64'h80000000) >> 3);
 
    //
    // Difftest
