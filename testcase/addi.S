@@ -52,3 +52,6 @@ bgeu x1,x2, ok4
 jal bad
 ok4:
 li x3, 0x123
+
+bad:
+li x3, 0xba
