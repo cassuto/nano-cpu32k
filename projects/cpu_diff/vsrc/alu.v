@@ -5,6 +5,7 @@ module alu(
    input [63:0] i_pc,
    input [63:0] i_operand1,
    input [63:0] i_operand2,
+   input [63:0] i_rop2,
    output [63:0] o_result,
    output o_flush,
    output reg [61:0] o_pc_tgt
@@ -46,17 +47,17 @@ module alu(
       begin
          bcc = 1'b0;
          if (i_fu_sel[`ALU_OP_BEQ])
-            bcc = (i_operand1 == i_operand2);
+            bcc = (i_operand1 == i_rop2);
          else if (i_fu_sel[`ALU_OP_BNE])
-            bcc = (i_operand1 != i_operand2);
+            bcc = (i_operand1 != i_rop2);
          else if (i_fu_sel[`ALU_OP_BLT])
-            bcc = ($signed(i_operand1) < $signed(i_operand2));
+            bcc = ($signed(i_operand1) < $signed(i_rop2));
          else if (i_fu_sel[`ALU_OP_BGE])
-            bcc = ($signed(i_operand1) >= $signed(i_operand2));
+            bcc = ($signed(i_operand1) >= $signed(i_rop2));
          else if (i_fu_sel[`ALU_OP_BLTU])
-            bcc = ($unsigned(i_operand1) < $unsigned(i_operand2));
+            bcc = ($unsigned(i_operand1) < $unsigned(i_rop2));
          else if (i_fu_sel[`ALU_OP_BGEU])
-            bcc = ($unsigned(i_operand1) >= $unsigned(i_operand2));
+            bcc = ($unsigned(i_operand1) >= $unsigned(i_rop2));
          else begin
             bcc = 1'b0;
          end

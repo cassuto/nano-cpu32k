@@ -264,6 +264,7 @@ module cpu #(
          .i_pc          (exu_i_pc),
          .i_operand1    (exu_i_rs1),
          .i_operand2    (exu_i_rs2),
+         .i_rop2        (exu_i_rop2),
          .o_result      (exu_o_alu_result),
          .o_flush       (flush),
          .o_pc_tgt      (pc_tgt)
