@@ -128,7 +128,9 @@ module idu(
    // Generate control signals
    //
 
-   assign o_rf_we = op_addi | lsu_op_load;
+   assign o_wb_sel = ~lsu_op_load;
+
+   assign o_rf_we = (R_type|I_type|U_type|J_type);
 
    assign o_rd = rd;
 
@@ -167,8 +169,6 @@ module idu(
                               ? 4'd4
                               : 4'd8;
    assign lsu_sigext = (op_lb|op_lh|op_lw);
-
-   assign o_wb_sel = op_addi;
 
    assign o_valid = i_valid;
    assign o_insn = i_insn;
