@@ -90,7 +90,7 @@ module SimTop(
                                 {8{dram_we[1]}},
                                 {8{dram_we[0]}} };
 
-   wire [63:0] iram_dout_64b = ram_read_helper(iram_re, {iram_addr,2'b00} >> 3);
+   wire [63:0] iram_dout_64b = ram_read_helper(iram_re, ({iram_addr,2'b00}-64'h80000000) >> 3);
 
    always @(posedge clock)
       if (rst)
@@ -146,7 +146,7 @@ module SimTop(
       .coreid        (8'd0),
       .index         (8'd0),
       .valid         (diff_valid_r),
-      .pc            (diff_pc_r + 64'h80000000),
+      .pc            (diff_pc_r),
       .instr         (diff_insn_r),
       .skip          (1'b0),
       .isRVC         (1'b0),

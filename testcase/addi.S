@@ -11,15 +11,13 @@ addi x8, x7, 4
 addi x31, x8, 4
 
 lui x31, 0x80010
-#auipc x30, 0x70010
-#auipc x29, 0x80200
 
 # test jal and jalr
 jal x31, l1
 addi x2, x0, 0xba
 l1:
 addi x1, x0, 0x123
-addi x30, x0, 0
+li x30, 0x3c
 jalr x31, 4(x30)
 addi x2, x0, 0xba
 l2:
