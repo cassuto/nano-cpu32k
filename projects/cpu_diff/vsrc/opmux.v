@@ -18,8 +18,8 @@ module opmux(
    assign imm12_zext = {52'b0, i_imm12};
    assign imm12_sext = {{52{i_imm12[11]}}, i_imm12};
    assign imm13_sext = {{51{i_imm13[12]}}, i_imm13};
-   assign imm20_sext_sl12 = {{22{i_imm20[19]}}, i_imm20, 12'b0};
-   assign imm21_sext_sl12 = {{21{i_imm21[20]}}, i_imm21, 12'b0};
+   assign imm20_sext_sl12 = {{32{i_imm20[19]}}, i_imm20, 12'b0};
+   assign imm21_sext_sl12 = {{31{i_imm21[20]}}, i_imm21, 12'b0};
 
    assign o_rs2 = ({64{i_op_sel[`OP_SEL_IMM12_ZEXT]}} & imm12_zext) |
                ({64{i_op_sel[`OP_SEL_IMM12_SEXT]}} & imm12_sext) |

@@ -19,7 +19,7 @@ module alu(
                      ({64{i_fu_sel[`ALU_OP_SLL]}} & out_sll) |
                      ({64{i_fu_sel[`ALU_OP_SRL]}} & out_srl);
 
-   assign out_lui = i_operand2[19:0];
+   assign out_lui = i_operand2;
 
    // Arithmetic
    assign out_add = i_operand1 + i_operand2;
