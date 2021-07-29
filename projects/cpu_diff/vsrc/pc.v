@@ -13,7 +13,7 @@ module pc
    always @(posedge clk)
       if (rst)
          begin
-            pc_r <= 64'h1fffffff;
+            pc_r <= 62'h1fffffff;
          end
       else
          begin
