@@ -53,9 +53,9 @@ module alu(
    assign out_srl = $unsigned(i_operand1) >> i_operand2[6:0];
    assign out_sra = $signed(i_operand1) >>> i_operand2[6:0];
 
-   wire [63:0] sll_32 = $unsigned(i_operand1) << i_operand2[5:0];
-   wire [63:0] srl_32 = $unsigned(i_operand1) >> i_operand2[5:0];
-   wire [63:0] sra_32 = $signed(i_operand1) >>> i_operand2[5:0];
+   wire [31:0] sll_32 = $unsigned(i_operand1[31:0]) << i_operand2[5:0];
+   wire [31:0] srl_32 = $unsigned(i_operand1[31:0]) >> i_operand2[5:0];
+   wire [31:0] sra_32 = $signed(i_operand1[31:0]) >>> i_operand2[5:0];
    assign out_sllw = {{32{sll_32[31]}}, sll_32[31:0]};
    assign out_srlw = {{32{srl_32[31]}}, srl_32[31:0]};
    assign out_sraw = {{32{sra_32[31]}}, sra_32[31:0]};
