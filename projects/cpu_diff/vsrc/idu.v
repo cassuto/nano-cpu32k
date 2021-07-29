@@ -141,7 +141,7 @@ module idu(
    assign op_sel[`OP_SEL_RF] = 'b0;
    assign op_sel[`OP_SEL_IMM12_SEXT] = op_addi|op_jalr|op_ori;
    assign op_sel[`OP_SEL_IMM12_ZEXT] = op_slli;
-   assign op_sel[`OP_SEL_IMM13_SEXT] = 'b0;
+   assign op_sel[`OP_SEL_IMM13_SEXT] = B_type;
    assign op_sel[`OP_SEL_IMM20_SEXT_SL12] = op_lui|op_auipc;
    assign op_sel[`OP_SEL_IMM21_SEXT] = op_jal;
 
