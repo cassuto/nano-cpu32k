@@ -40,7 +40,6 @@ module alu(
 
    // Branch
    assign out_jal = {i_pc[63:2] + 'b1, 2'b0};
-   assign o_flush = i_fu_sel[`ALU_OP_JAL] | i_fu_sel[`ALU_OP_JALR];
 
    reg bcc;
    always @(*)
@@ -62,6 +61,8 @@ module alu(
             bcc = 1'b0;
          end
       end
+
+   assign o_flush = i_fu_sel[`ALU_OP_JAL] | i_fu_sel[`ALU_OP_JALR] | bcc;
 
    always @(*)
       if (i_fu_sel[`ALU_OP_JAL] | bcc)
