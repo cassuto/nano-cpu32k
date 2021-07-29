@@ -11,10 +11,13 @@
 `define ALU_OP_SLL 5
 `define ALU_OP_SRL 6
 
-`define OP_SEL_W 3
+`define OP_SEL_W 6
 
 `define OP_SEL_RF 0
-`define OP_SEL_IMM_ZEXT 1
-`define OP_SEL_IMM_SEXT 2
+`define OP_SEL_IMM12_ZEXT 1
+`define OP_SEL_IMM12_SEXT 2
+`define OP_SEL_IMM13_SEXT 3
+`define OP_SEL_IMM20_SEXT 4
+`define OP_SEL_IMM21_SEXT 5
 
 `endif

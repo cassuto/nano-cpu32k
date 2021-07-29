@@ -32,6 +32,7 @@ module cpu #(
    wire [4:0] idu_o_rd;
    wire [4:0] idu_o_rs1_addr;
    wire [4:0] idu_o_rs2_addr;
+   wire idu_o_rs1_re, idu_o_rs2_re;
    wire [`OP_SEL_W-1:0] idu_o_op_sel;
    wire [`ALU_OPW-1:0] idu_o_fu_sel;
    wire idu_o_lsu_op_load;
@@ -40,6 +41,10 @@ module cpu #(
    wire [3:0] idu_o_lsu_size;
    wire idu_o_wb_sel;
    wire [11:0] idu_o_imm12;
+   wire [12:0] idu_o_imm13;
+   wire [19:0] idu_o_imm20;
+   wire [19:0] idu_o_imm21;
+   wire [6:0] idu_o_shamt;
    wire idu_o_valid;
    wire [63:0] idu_o_pc;
    wire [31:0] idu_o_insn;
@@ -58,6 +63,10 @@ module cpu #(
    wire [3:0] exu_i_lsu_size;
    wire exu_i_wb_sel;
    wire [11:0] exu_i_imm12;
+   wire [12:0] exu_i_imm13;
+   wire [19:0] exu_i_imm20;
+   wire [20:0] exu_i_imm21;
+   wire [5:0] exu_i_shmat;
    wire [63:0] exu_o_alu_result;
    wire [63:0] exu_i_rop1, exu_i_rop2;
    wire [63:0] exu_i_rs1, exu_i_rs2;
@@ -110,14 +119,20 @@ module cpu #(
          .o_rd       (idu_o_rd),
          .o_rs1_addr (idu_o_rs1_addr),
          .o_rs2_addr (idu_o_rs2_addr),
+         .o_rs1_re   (idu_o_rs1_re),
+         .o_rs2_re   (idu_o_rs2_re),
          .op_sel     (idu_o_op_sel),
          .fu_sel     (idu_o_fu_sel),
          .lsu_op_load(idu_o_lsu_op_load),
          .lsu_op_store(idu_o_lsu_op_store),
          .lsu_sigext (idu_o_lsu_sigext),
          .lsu_size   (idu_o_lsu_size),
-         .wb_sel     (idu_o_wb_sel),
-         .imm12      (idu_o_imm12),
+         .o_wb_sel   (idu_o_wb_sel),
+         .o_imm12    (idu_o_imm12),
+         .o_imm13    (idu_o_imm13),
+         .o_imm20    (idu_o_imm20),
+         .o_imm21    (idu_o_imm21),
+         .o_shamt    (idu_o_shamt),
          .o_valid    (idu_o_valid),
          .o_insn     (idu_o_insn)
       );
@@ -138,6 +153,10 @@ module cpu #(
       .idu_o_lsu_size (idu_o_lsu_size),
       .idu_o_wb_sel  (idu_o_wb_sel),
       .idu_o_imm12   (idu_o_imm12),
+      .idu_o_imm13   (idu_o_imm13),
+      .idu_o_imm20   (idu_o_imm20),
+      .idu_o_imm21   (idu_o_imm21),
+      .idu_o_shamt   (idu_o_shamt),
       .idu_o_valid   (idu_o_valid),
       .idu_o_pc      (idu_o_pc),
       .idu_o_insn    (idu_o_insn),
@@ -153,6 +172,10 @@ module cpu #(
       .exu_i_lsu_size      (exu_i_lsu_size),
       .exu_i_wb_sel  (exu_i_wb_sel),
       .exu_i_imm12   (exu_i_imm12),
+      .exu_i_imm13   (exu_i_imm13),
+      .exu_i_imm20   (exu_i_imm20),
+      .exu_i_imm21   (exu_i_imm21),
+      .exu_i_shmat   (exu_i_shmat),
       .exu_i_valid   (exu_i_valid),
       .exu_i_pc      (exu_i_pc),
       .exu_i_insn    (exu_i_insn)
@@ -171,27 +194,35 @@ module cpu #(
          .o_regs        (rf_regs)
       );
 
-   //////////////////////////////////////////////////////////////
-   // Stage #3: Execute
-   //////////////////////////////////////////////////////////////
-
    forward FORWARD_ROP1(
-      .i_operand_addr   (exu_i_rs1_addr),
+      .clk              (clk),
+      .i_re             (idu_o_rs2_re),
+      .i_operand_addr   (idu_o_rs1_addr),
       .i_rf_operand     (exu_i_rf_rs1),
       .o_operand        (exu_i_rop1),
+      // Listening EXU
+      .exu_i_rd         (exu_i_rd),
+      .exu_i_rf_we      (exu_i_rf_we),
+      .exu_i_rd_dat     (exu_o_alu_result), // FIXME stall pipeline if LSU RAW
       // Listening LSU
       .lsu_i_rd         (lsu_i_rd),
       .lsu_i_rf_we      (lsu_i_rf_we),
-      .lsu_i_rd_dat     (lsu_i_alu_result), // FIXME stall pipeline if RAW
+      .lsu_i_rd_dat     (lsu_i_alu_result), // FIXME stall pipeline if LSU RAW
       // Listening WB
       .wb_i_rd          (wb_i_rd),
       .wb_i_rf_we       (wb_i_rf_we),
       .wb_i_rd_dat      (wb_i_rd_dat)
    );
    forward FORWARD_ROP2(
-      .i_operand_addr   (exu_i_rs2_addr),
+      .clk              (clk),
+      .i_re             (idu_o_rs2_re),
+      .i_operand_addr   (idu_o_rs2_addr),
       .i_rf_operand     (exu_i_rf_rs2),
       .o_operand        (exu_i_rop2),
+      // Listening EXU
+      .exu_i_rd         (exu_i_rd),
+      .exu_i_rf_we      (exu_i_rf_we),
+      .exu_i_rd_dat     (exu_o_alu_result), // FIXME stall pipeline if LSU RAW
       // Listening LSU
       .lsu_i_rd         (lsu_i_rd),
       .lsu_i_rf_we      (lsu_i_rf_we),
@@ -201,6 +232,10 @@ module cpu #(
       .wb_i_rf_we       (wb_i_rf_we),
       .wb_i_rd_dat      (wb_i_rd_dat)
    );
+
+   //////////////////////////////////////////////////////////////
+   // Stage #3: Execute
+   //////////////////////////////////////////////////////////////
 
    opmux OP_MUX
       (
@@ -208,6 +243,9 @@ module cpu #(
          .i_rop1          (exu_i_rop1),
          .i_rop2          (exu_i_rop2),
          .i_imm12         (exu_i_imm12),
+         .i_imm13         (exu_i_imm13),
+         .i_imm20         (exu_i_imm20),
+         .i_imm21         (exu_i_imm21),
          .o_rs1           (exu_i_rs1),
          .o_rs2           (exu_i_rs2)
       );
