@@ -17,7 +17,6 @@ module idu_exu(
    input [12:0] idu_o_imm13,
    input [19:0] idu_o_imm20,
    input [20:0] idu_o_imm21,
-   input [5:0] idu_o_shamt,
    input idu_o_valid,
    input [63:0] idu_o_pc,
    input [31:0] idu_o_insn,
@@ -36,7 +35,6 @@ module idu_exu(
    output reg [12:0] exu_i_imm13,
    output reg [19:0] exu_i_imm20,
    output reg [20:0] exu_i_imm21,
-   output reg [5:0] exu_i_shmat,
    output reg exu_i_valid,
    output reg [63:0] exu_i_pc,
    output reg [31:0] exu_i_insn
@@ -70,7 +68,6 @@ module idu_exu(
             exu_i_imm13 <= idu_o_imm13;
             exu_i_imm20 <= idu_o_imm20;
             exu_i_imm21 <= idu_o_imm21;
-            exu_i_shmat <= idu_o_shamt;
             exu_i_valid <= flush ? 'b0 : idu_o_valid;
             exu_i_pc <= idu_o_pc;
             exu_i_insn <= idu_o_insn;

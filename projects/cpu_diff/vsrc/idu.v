@@ -20,7 +20,6 @@ module idu(
    output [12:0] o_imm13,
    output [19:0] o_imm20,
    output [20:0] o_imm21,
-   output [5:0] o_shamt,
    output o_valid,
    output [31:0] o_insn
 );
@@ -104,7 +103,7 @@ module idu(
    wire R_type = (op_add|op_sub|op_sll|op_slt|op_sltu|op_xor|op_srl|op_sra|op_or|op_and|
                   op_addw|op_subw|op_sllw|op_srlw|op_sraw);
    wire I_type = (op_jalr|op_lb|op_lh|op_lw|op_lbu|op_lhu|op_addi|op_slti|op_sltiu|op_xori|
-                  op_ori|op_andi|op_lwu|op_ld|op_addiw);
+                  op_ori|op_andi|op_lwu|op_ld|op_addiw|op_slli|op_srli|op_srai|op_slliw|op_srliw|op_sraiw);
    wire S_type = (op_sb|op_sh|op_sw|op_sd);
    wire B_type = (op_beq|op_bne|op_blt|op_bge|op_bltu|op_bgeu);
    wire U_type = (op_lui|op_auipc);
@@ -119,10 +118,6 @@ module idu(
    assign o_imm20 = i_insn[31:12]; /* U_type */
 
    assign o_imm21 = {i_insn[31], i_insn[19:12], i_insn[20], i_insn[30:21], 1'b0}; /* J_type*/
-
-   assign o_shamt = (op_slli|op_srli|op_srai)
-                     ? i_insn[25:20]
-                     : {1'b0, rs2};
 
    //
    // Generate control signals
