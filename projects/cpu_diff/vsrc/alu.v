@@ -35,8 +35,8 @@ module alu(
    assign out_and = i_operand1 & i_operand2;
    assign out_or = i_operand1 | i_operand2;
    assign out_xor = i_operand1 ^ i_operand2;
-   assign out_sll = i_operand1 << i_operand2[5:0];
-   assign out_srl = i_operand1 >> i_operand2[5:0];
+   assign out_sll = $unsigned(i_operand1) << i_operand2[6:0];
+   assign out_srl = $unsigned(i_operand1) >> i_operand2[6:0];
 
    // Branch
    assign out_jal = {i_pc[63:2] + 'b1, 2'b0};
