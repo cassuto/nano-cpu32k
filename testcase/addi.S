@@ -63,7 +63,7 @@ li x3, 0xba
 li x30, 0
 li x7, 0x10
 sll x7, x7, 16
-add x6, x30, x7 # x6=0x0f00000
+add x6, x30, x7 # x6=0x0100000
 
 li x5, 0x10
 sb x5, 4(x6)
