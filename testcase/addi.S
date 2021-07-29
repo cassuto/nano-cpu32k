@@ -17,8 +17,9 @@ jal x31, l1
 addi x2, x0, 0xba
 l1:
 addi x1, x0, 0x123
-li x30, 0x3c
+li x30, 0x3c  # = address(l2) - 4
 jalr x31, 4(x30)
 addi x2, x0, 0xba
 l2:
 addi x2, x0, 0x456
+

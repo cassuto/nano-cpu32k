@@ -42,8 +42,29 @@ module alu(
    assign out_jal = {i_pc[63:2] + 'b1, 2'b0};
    assign o_flush = i_fu_sel[`ALU_OP_JAL] | i_fu_sel[`ALU_OP_JALR];
 
+   reg bcc;
    always @(*)
-      if (i_fu_sel[`ALU_OP_JAL])
+      begin
+         bcc = 1'b0;
+         if (i_fu_sel[`ALU_OP_BEQ])
+            bcc = (i_operand1 == i_operand2);
+         else if (i_fu_sel[`ALU_OP_BNE])
+            bcc = (i_operand1 != i_operand2);
+         else if (i_fu_sel[`ALU_OP_BLT])
+            bcc = ($signed(i_operand1) < $signed(i_operand2));
+         else if (i_fu_sel[`ALU_OP_BGE])
+            bcc = ($signed(i_operand1) >= $signed(i_operand2));
+         else if (i_fu_sel[`ALU_OP_BLTU])
+            bcc = ($unsigned(i_operand1) < $unsigned(i_operand2));
+         else if (i_fu_sel[`ALU_OP_BGEU])
+            bcc = ($unsigned(i_operand1) >= $unsigned(i_operand2));
+         else begin
+            bcc = 1'b0;
+         end
+      end
+
+   always @(*)
+      if (i_fu_sel[`ALU_OP_JAL] | bcc)
          o_pc_tgt = i_pc[63:2] + i_operand2[63:2];
       else if (i_fu_sel[`ALU_OP_JALR])
          o_pc_tgt = i_operand1[63:2] + i_operand2[63:2];
