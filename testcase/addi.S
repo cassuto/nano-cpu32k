@@ -103,3 +103,15 @@ li x1, 0xF000000000000000
 sra x2, x1, x3
 srai x2, x1, 4
 sub x3, x2, x1
+
+li x1, 0xF0F0F0F080808080
+li x2, 0xABF0F0F080AB8080
+addw x3, x1,x2
+li x4, 16
+sllw x3, x1,x4
+slliw x3, x1,7
+srlw x3, x1,x4
+srliw x3, x1,7
+sraw x3, x1,x4
+sraiw x3, x1,7
+sub x3, x1, x2

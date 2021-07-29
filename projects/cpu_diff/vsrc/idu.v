@@ -163,7 +163,11 @@ module idu(
    assign fu_sel[`ALU_OP_SRA] = op_sra|op_srai;
    assign fu_sel[`ALU_OP_SLTI] = op_slti;
    assign fu_sel[`ALU_OP_SLTIU] = op_sltiu;
-   assign fu_sel[`ALU_OP_ADDIW] = op_addiw;
+   assign fu_sel[`ALU_OP_ADDW] = op_addiw|op_addw;
+   assign fu_sel[`ALU_OP_SLLW] = op_sllw|op_slliw;
+   assign fu_sel[`ALU_OP_SRLW] = op_srlw|op_srliw;
+   assign fu_sel[`ALU_OP_SRAW] = op_sraw|op_sraiw;
+   assign fu_sel[`ALU_OP_SUBW] = op_subw;
 
    assign lsu_op_load = op_lb|op_lbu | op_lh|op_lhu | op_lw|op_lwu |op_ld;
    assign lsu_op_store = op_sb|op_sh|op_sw|op_sd;

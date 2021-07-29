@@ -12,8 +12,9 @@ module alu(
 );
 
    wire [63:0] out_lui, out_auipc, out_jal, out_add, out_sub, out_and, out_or, out_xor;
-   wire [63:0] out_slti, out_sltiu, out_addiw;
+   wire [63:0] out_slti, out_sltiu, out_addw;
    wire [63:0] out_sll, out_srl, out_sra;
+   wire [63:0] out_sllw, out_srlw, out_sraw, out_subw;
 
    assign o_result = ({64{i_fu_sel[`ALU_OP_LUI]}} & out_lui) |
                      ({64{i_fu_sel[`ALU_OP_AUIPC]}} & out_auipc) |
@@ -28,7 +29,12 @@ module alu(
                      ({64{i_fu_sel[`ALU_OP_SRA]}} & out_sra) |
                      ({64{i_fu_sel[`ALU_OP_SLTI]}} & out_slti) |
                      ({64{i_fu_sel[`ALU_OP_SLTIU]}} & out_sltiu) |
-                     ({64{i_fu_sel[`ALU_OP_ADDIW]}} & out_addiw);
+                     ({64{i_fu_sel[`ALU_OP_ADDW]}} & out_addw) |
+                     ({64{i_fu_sel[`ALU_OP_SLLW]}} & out_sllw) |
+                     ({64{i_fu_sel[`ALU_OP_SRLW]}} & out_srlw) |
+                     ({64{i_fu_sel[`ALU_OP_SRAW]}} & out_sraw) |
+                     ({64{i_fu_sel[`ALU_OP_SUBW]}} & out_subw);
+
 
    assign out_lui = i_operand2;
    assign out_auipc = i_operand2 + i_pc;
@@ -36,7 +42,8 @@ module alu(
    // Arithmetic
    assign out_add = i_operand1 + i_operand2;
    assign out_sub = i_operand1 - i_operand2;
-   assign out_addiw = {{32{out_add[31]}}, out_add[31:0]};
+   assign out_addw = {{32{out_add[31]}}, out_add[31:0]};
+   assign out_subw = {{32{out_sub[31]}}, out_sub[31:0]};
 
    // Logic
    assign out_and = i_operand1 & i_operand2;
@@ -45,6 +52,13 @@ module alu(
    assign out_sll = $unsigned(i_operand1) << i_operand2[6:0];
    assign out_srl = $unsigned(i_operand1) >> i_operand2[6:0];
    assign out_sra = $signed(i_operand1) >>> i_operand2[6:0];
+
+   wire [63:0] sll_32 = $unsigned(i_operand1) << i_operand2[5:0];
+   wire [63:0] srl_32 = $unsigned(i_operand1) >> i_operand2[5:0];
+   wire [63:0] sra_32 = $signed(i_operand1) >>> i_operand2[5:0];
+   assign out_sllw = {{32{sll_32[31]}}, sll_32[31:0]};
+   assign out_srlw = {{32{srl_32[31]}}, srl_32[31:0]};
+   assign out_sraw = {{32{sra_32[31]}}, sra_32[31:0]};
 
    // Branch
    assign out_jal = {i_pc[63:2] + 'b1, 2'b0};
