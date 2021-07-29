@@ -66,4 +66,13 @@ add x6, x30, x7 # x6=0x80f00000
 
 li x5, 0x10
 sb x5, 4(x6)
+sh x5, 8(x6)
+sw x5, 12(x6)
+sd x5, 16(x6)
+
 lb x29, 4(x6)
+lh x29, 4(x6)
+lhu x29, 4(x6)
+lw x29, 4(x6)
+lwu x29, 4(x6)
+ld x29, 4(x6)
