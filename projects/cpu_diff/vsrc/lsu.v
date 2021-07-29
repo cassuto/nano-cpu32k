@@ -23,18 +23,22 @@ module lsu #(
    input reg [63:0] i_dram_dout
 );
 
-   assign o_dram_addr = {lsu_i_alu_result[DRAM_AW-1:3], 3'b000};
+   wire [DRAM_AW-1:0] va;
+
+   assign va = lsu_i_alu_result;
+
+   assign o_dram_addr = {va[DRAM_AW-1:3], 3'b000};
 
    assign o_dram_we = {8{lsu_i_valid & lsu_op_store}} & (
       (lsu_size==4'd1)
-         ? {(o_dram_addr[2:0]==3'b111),(o_dram_addr[2:0]==3'b110),(o_dram_addr[2:0]==3'b101),(o_dram_addr[2:0]==3'b100),
-            (o_dram_addr[2:0]==3'b011),(o_dram_addr[2:0]==3'b010),(o_dram_addr[2:0]==3'b001),(o_dram_addr[2:0]==3'b000)}
+         ? {(va[2:0]==3'b111),(va[2:0]==3'b110),(va[2:0]==3'b101),(va[2:0]==3'b100),
+            (va[2:0]==3'b011),(va[2:0]==3'b010),(va[2:0]==3'b001),(va[2:0]==3'b000)}
          : (lsu_size==4'd2)
-            ? {(o_dram_addr[2:1]==2'b11),(o_dram_addr[2:1]==2'b11),(o_dram_addr[2:1]==2'b10),(o_dram_addr[2:1]==2'b10),
-               (o_dram_addr[2:1]==2'b01),(o_dram_addr[2:1]==2'b01),(o_dram_addr[2:1]==2'b00),(o_dram_addr[2:1]==2'b00)}
+            ? {(va[2:1]==2'b11),(va[2:1]==2'b11),(va[2:1]==2'b10),(va[2:1]==2'b10),
+               (va[2:1]==2'b01),(va[2:1]==2'b01),(va[2:1]==2'b00),(va[2:1]==2'b00)}
             : (lsu_size==4'd4)
-               ? {o_dram_addr[2],o_dram_addr[2],o_dram_addr[2],o_dram_addr[2],
-                  ~o_dram_addr[2],~o_dram_addr[2],~o_dram_addr[2],~o_dram_addr[2]}
+               ? {va[2],va[2],va[2],va[2],
+                  ~va[2],~va[2],~va[2],~va[2]}
                : 8'b11111111
    );
 
@@ -58,7 +62,7 @@ module lsu #(
 
    always @(*)
       begin
-         case(o_dram_addr[2:0])
+         case(va[2:0])
          3'b000:
             res_8b = i_dram_dout[7:0];
          3'b001:
@@ -82,7 +86,7 @@ module lsu #(
 
    always @(*)
       begin
-         case(o_dram_addr[2:1])
+         case(va[2:1])
          2'b00:
             res_16b = i_dram_dout[15:0];
          2'b01:
@@ -98,7 +102,7 @@ module lsu #(
 
    always @(*)
       begin
-         res_32b = o_dram_addr[2] ? i_dram_dout[63:32] : i_dram_dout[31:0];
+         res_32b = va[2] ? i_dram_dout[63:32] : i_dram_dout[31:0];
          res_64b = i_dram_dout;
       end
 

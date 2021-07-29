@@ -77,6 +77,12 @@ lw x29, 12(x6)
 lwu x29, 12(x6)
 ld x29, 16(x6)
 
+sb x5, 4(x6)
+sb x5, 5(x6)
+sb x5, 6(x6)
+sb x5, 7(x6)
+lw x29, 4(x6)
+
 #
 # Test slti sltiu
 #
