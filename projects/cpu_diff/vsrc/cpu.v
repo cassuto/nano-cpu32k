@@ -304,7 +304,11 @@ module cpu #(
    // Stage #4: Load & Store
    //////////////////////////////////////////////////////////////
 
-   lsu LSU
+   lsu
+   #(
+      .DRAM_AW          (DRAM_AW)
+   )
+   LSU
    (
       .lsu_i_valid      (lsu_i_valid),
       .lsu_i_rop2       (lsu_i_rop2),

@@ -1,5 +1,5 @@
 module lsu #(
-   DRAM_AW = 16
+   DRAM_AW = 64
 )
 (
    input lsu_i_valid,
