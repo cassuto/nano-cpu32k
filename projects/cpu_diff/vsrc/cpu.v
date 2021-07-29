@@ -92,7 +92,7 @@ module cpu #(
    // Control
    wire flush;
    wire [61:0] pc_tgt;
-   wire stall_from_forward;
+   wire stall_from_forward_1, stall_from_forward_2, stall_from_forward;
 
    //////////////////////////////////////////////////////////////
    // Stage #1: Fetch
@@ -207,7 +207,7 @@ module cpu #(
       .i_operand_addr   (idu_o_rs1_addr),
       .i_rf_operand     (exu_i_rf_rs1),
       .o_operand        (exu_i_rop1),
-      .o_stall_from_forward (stall_from_forward),
+      .o_stall_from_forward (stall_from_forward_1),
       // Listening EXU
       .exu_i_op_load    (exu_i_lsu_op_load),
       .exu_i_rd         (exu_i_rd),
@@ -230,7 +230,7 @@ module cpu #(
       .i_operand_addr   (idu_o_rs2_addr),
       .i_rf_operand     (exu_i_rf_rs2),
       .o_operand        (exu_i_rop2),
-      .o_stall_from_forward (stall_from_forward),
+      .o_stall_from_forward (stall_from_forward_2),
       // Listening EXU
       .exu_i_op_load    (exu_i_lsu_op_load),
       .exu_i_rd         (exu_i_rd),
@@ -247,6 +247,8 @@ module cpu #(
       .wb_i_rf_we       (wb_i_rf_we),
       .wb_i_rd_dat      (wb_i_rd_dat)
    );
+
+   assign stall_from_forward = (stall_from_forward_1 | stall_from_forward_2);
 
    //////////////////////////////////////////////////////////////
    // Stage #3: Execute
