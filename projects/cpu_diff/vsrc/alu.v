@@ -35,7 +35,7 @@ module alu(
    // Arithmetic
    assign out_add = i_operand1 + i_operand2;
    assign out_sub = i_operand1 - i_operand2;
-   assign out_addiw = {{32{out_add[31]}}, out_add};
+   assign out_addiw = {{32{out_add[31]}}, out_add[31:0]};
 
    // Logic
    assign out_and = i_operand1 & i_operand2;
