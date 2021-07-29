@@ -83,3 +83,23 @@ ld x29, 16(x6)
 li x1, 0x800
 slti x3, x1,0x7ff
 sltiu x3, x1,0x100
+
+#
+# Test logics
+#
+li x3, 0xfe2
+and x2, x1, x3
+andi x2, x1, 0xbd
+or x2, x1, x3
+ori x2, x1, 0xbd
+xor x2, x1, x3
+xori x2, x1, 0xbd
+li x3, 21
+sll x2, x1, x3
+slli x2, x1, 4
+srl x2, x1, x3
+srli x2, x1, 4
+li x1, 0xF000000000000000
+sra x2, x1, x3
+srai x2, x1, 4
+sub x3, x2, x1

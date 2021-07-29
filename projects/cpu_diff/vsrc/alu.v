@@ -13,7 +13,7 @@ module alu(
 
    wire [63:0] out_lui, out_auipc, out_jal, out_add, out_sub, out_and, out_or, out_xor;
    wire [63:0] out_slti, out_sltiu, out_addiw;
-   wire [63:0] out_sll, out_srl;
+   wire [63:0] out_sll, out_srl, out_sra;
 
    assign o_result = ({64{i_fu_sel[`ALU_OP_LUI]}} & out_lui) |
                      ({64{i_fu_sel[`ALU_OP_AUIPC]}} & out_auipc) |
@@ -25,6 +25,7 @@ module alu(
                      ({64{i_fu_sel[`ALU_OP_XOR]}} & out_xor) |
                      ({64{i_fu_sel[`ALU_OP_SLL]}} & out_sll) |
                      ({64{i_fu_sel[`ALU_OP_SRL]}} & out_srl) |
+                     ({64{i_fu_sel[`ALU_OP_SRA]}} & out_sra) |
                      ({64{i_fu_sel[`ALU_OP_SLTI]}} & out_slti) |
                      ({64{i_fu_sel[`ALU_OP_SLTIU]}} & out_sltiu) |
                      ({64{i_fu_sel[`ALU_OP_ADDIW]}} & out_addiw);
@@ -43,6 +44,7 @@ module alu(
    assign out_xor = i_operand1 ^ i_operand2;
    assign out_sll = $unsigned(i_operand1) << i_operand2[6:0];
    assign out_srl = $unsigned(i_operand1) >> i_operand2[6:0];
+   assign out_sra = $signed(i_operand1) >> i_operand2[6:0];
 
    // Branch
    assign out_jal = {i_pc[63:2] + 'b1, 2'b0};

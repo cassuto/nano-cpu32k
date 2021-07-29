@@ -137,8 +137,8 @@ module idu(
    assign o_rs2_addr = (R_type|S_type|B_type) ? rs2 : 5'd0;
 
    assign op_sel[`OP_SEL_RF] = (R_type); // B_type and S_type use `rop2` as operand
-   assign op_sel[`OP_SEL_IMM12_SEXT] = op_addi|op_addiw|op_jalr|op_ori|lsu_op_load|lsu_op_store;
-   assign op_sel[`OP_SEL_IMM12_ZEXT] = op_slli;
+   assign op_sel[`OP_SEL_IMM12_SEXT] = op_addi|op_addiw|op_jalr|lsu_op_load|lsu_op_store|op_xori|op_ori|op_andi;
+   assign op_sel[`OP_SEL_IMM12_ZEXT] = op_slli|op_srli|op_srai|op_slliw|op_srliw|op_sraiw;
    assign op_sel[`OP_SEL_IMM13_SEXT] = B_type;
    assign op_sel[`OP_SEL_IMM20_SEXT_SL12] = op_lui|op_auipc;
    assign op_sel[`OP_SEL_IMM21_SEXT] = op_jal;
@@ -154,12 +154,13 @@ module idu(
    assign fu_sel[`ALU_OP_BLTU] = op_bltu;
    assign fu_sel[`ALU_OP_BGEU] = op_bgeu;
    assign fu_sel[`ALU_OP_ADD] = op_add|op_addi | lsu_op_load|lsu_op_store; // ALU is used as address generator
-   assign fu_sel[`ALU_OP_SUB] = 'b0;
-   assign fu_sel[`ALU_OP_AND] = 'b0;
+   assign fu_sel[`ALU_OP_SUB] = op_sub;
+   assign fu_sel[`ALU_OP_AND] = op_and|op_andi;
    assign fu_sel[`ALU_OP_OR] = op_or|op_ori;
-   assign fu_sel[`ALU_OP_XOR] = 'b0;
+   assign fu_sel[`ALU_OP_XOR] = op_xor|op_xori;
    assign fu_sel[`ALU_OP_SLL] = op_sll|op_slli;
-   assign fu_sel[`ALU_OP_SRL] = 'b0;
+   assign fu_sel[`ALU_OP_SRL] = op_srl|op_srli;
+   assign fu_sel[`ALU_OP_SRA] = op_sra|op_srai;
    assign fu_sel[`ALU_OP_SLTI] = op_slti;
    assign fu_sel[`ALU_OP_SLTIU] = op_sltiu;
    assign fu_sel[`ALU_OP_ADDIW] = op_addiw;
