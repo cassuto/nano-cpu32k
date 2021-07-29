@@ -155,7 +155,7 @@ module idu(
    assign fu_sel[`ALU_OP_BGE] = op_bge;
    assign fu_sel[`ALU_OP_BLTU] = op_bltu;
    assign fu_sel[`ALU_OP_BGEU] = op_bgeu;
-   assign fu_sel[`ALU_OP_ADD] = op_addi | lsu_op_load|lsu_op_store; // ALU is used as address generator
+   assign fu_sel[`ALU_OP_ADD] = op_add|op_addi | lsu_op_load|lsu_op_store; // ALU is used as address generator
    assign fu_sel[`ALU_OP_SUB] = 'b0;
    assign fu_sel[`ALU_OP_AND] = 'b0;
    assign fu_sel[`ALU_OP_OR] = op_or|op_ori;
