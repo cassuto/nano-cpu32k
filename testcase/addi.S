@@ -123,3 +123,5 @@ sraiw x3, x1,7
 sub x3, x1, x2
 
 addi	sp,sp,-32
+addi	sp,sp,1
+addi	sp,sp,-1
