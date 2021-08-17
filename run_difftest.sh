@@ -1,7 +1,7 @@
 #!/bin/sh
 #./build.sh -e cpu_diff -d -b -s -a "-i ../../../testcase/addi.bin --dump-wave" -m "EMU_TRACE=1" -w
-./build.sh -e cpu_diff -d -b -s -a "-e 9588 -i /mnt/oscpu/am-kernels/tests/cpu-tests/build/hello-str-riscv64-mycpu.bin --dump-wave" -m "EMU_TRACE=1" -w
-exit 0
+#./build.sh -e cpu_diff -d -b -s -a "-e 9588 -i /mnt/oscpu/am-kernels/tests/cpu-tests/build/hello-str-riscv64-mycpu.bin --dump-wave" -m "EMU_TRACE=1" -w
+#exit 0
 
 #./build.sh -e cpu_diff -d -b
 if [ $? -ne 0 ]; then
@@ -17,7 +17,6 @@ list="/mnt/oscpu/am-kernels/tests/cpu-tests/build/add-longlong-riscv64-mycpu.bin
 /mnt/oscpu/am-kernels/tests/cpu-tests/build/fact-riscv64-mycpu.bin
 /mnt/oscpu/am-kernels/tests/cpu-tests/build/fib-riscv64-mycpu.bin
 /mnt/oscpu/am-kernels/tests/cpu-tests/build/goldbach-riscv64-mycpu.bin
-/mnt/oscpu/am-kernels/tests/cpu-tests/build/hello-str-riscv64-mycpu.bin
 /mnt/oscpu/am-kernels/tests/cpu-tests/build/if-else-riscv64-mycpu.bin
 /mnt/oscpu/am-kernels/tests/cpu-tests/build/leap-year-riscv64-mycpu.bin
 /mnt/oscpu/am-kernels/tests/cpu-tests/build/load-store-riscv64-mycpu.bin
