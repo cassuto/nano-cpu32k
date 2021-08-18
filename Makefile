@@ -1,6 +1,5 @@
 .PHONY: lint sim build
 
-# Common parameters
 NUM_JOBS := 8
 SRC_DIR := rtl
 TESTBENCH_DIR := testbench
@@ -13,7 +12,7 @@ FLAGS := $(DEFS) $(INCS)
 
 # Simulation
 SIM_TOPLEVEL := simtop
-SIM_FLAGS := --exe --trace --assert -CFLAGS "-Wall" -j $(NUM_JOBS) -Mdir build/ -o emu
+SIM_FLAGS := +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -CFLAGS "-Wall" -j $(NUM_JOBS) -Mdir build/ -o emu
 SIM_SRCS := $(SRCS) \
 			$(TESTBENCH_DIR)/simtop.v
 SIM_CPPS := $(EM_DIR)/main.cc
@@ -22,12 +21,17 @@ SIM_CPPS := $(EM_DIR)/main.cc
 LINT_TOPLEVEL := ncpu64k
 LINT_SRCS := $(SRCS)
 
+# YSYX Information
+MYINFO_FILE := myinfo.txt
+ID :=$(shell sed '/^ID=/!d;s/.*=//' $(MYINFO_FILE))
+NAME :=$(shell sed '/^Name=/!d;s/.*=//' $(MYINFO_FILE))
+
 build:
-	verilator --cc -Wall --top-module $(SIM_TOPLEVEL) +define+IN_VERILATOR_SIM=1+ $(FLAGS) $(SIM_FLAGS) --build $(SIM_SRCS) $(SIM_CPPS)
+	verilator --cc -Wall --top-module $(SIM_TOPLEVEL) $(FLAGS) $(SIM_FLAGS) --build $(SIM_SRCS) $(SIM_CPPS)
 	git add . -A --ignore-errors
-	(echo $NAME && echo $ID && hostnamectl && date) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty  2>&1
+	(echo $(NAME) && echo $(ID) && hostnamectl && date) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty  2>&1
 	sync
-	
+
 sim: build
 	cd ./build && ./emu
 
