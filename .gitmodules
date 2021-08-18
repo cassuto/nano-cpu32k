@@ -1,6 +1,0 @@
-[submodule "difftest"]
-	path = difftest
-	url = https://github.com/OpenXiangShan/difftest.git
-[submodule "NEMU"]
-	path = NEMU
-	url = https://github.com/OpenXiangShan/NEMU.git
