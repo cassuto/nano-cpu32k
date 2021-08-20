@@ -27,7 +27,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module icache
 #(
    parameter CONFIG_AW = 0,
-   parameter CONFIG_DW = 0,
    parameter CONFIG_P_FETCH_WIDTH = 0,
    parameter CONFIG_P_PAGE_SIZE = 0,
    parameter CONFIG_IC_P_LINE = 0,
@@ -62,15 +61,15 @@ module icache
    output [3:0]                        axi_ar_cache_o,
    output [3:0]                        axi_ar_qos_o,
    output [3:0]                        axi_ar_region_o,
-
    output                              axi_r_ready_o,
    input                               axi_r_valid_i,
    input  [(1<<AXI_P_DW_BYTES)*8-1:0]  axi_r_data_i,
-   
+/* verilator lint_off UNUSED */
    input  [1:0]                        axi_r_resp_i, // unused
    input                               axi_r_last_i, // unused
    input  [AXI_ID_WIDTH-1:0]           axi_r_id_i, // unused
    input  [AXI_USER_WIDTH-1:0]         axi_r_user_i // unused
+/* verilator lint_on UNUSED */
 );
 
    localparam TAG_WIDTH                = (CONFIG_AW - CONFIG_IC_P_SETS - CONFIG_IC_P_LINE);
@@ -82,7 +81,6 @@ module icache
    localparam AXI_FETCH_SIZE           = (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES) ? PAYLOAD_P_DW_BYTES : AXI_P_DW_BYTES;
    
    // Stage 1 Input
-   wire [CONFIG_P_PAGE_SIZE-1:0]       s1i_vpo;
    reg [CONFIG_IC_P_SETS-1:0]          s1i_line_addr;
    reg [TAG_V_RAM_DW-1:0]              s1i_replace_tag_v;
    wire                                s1i_tag_v_we;
@@ -92,7 +90,6 @@ module icache
    // Stage 1 Output / Stage 2 Input
    wire s1o_valid;
    wire [PAYLOAD_DW-1:0]               s1o_payload             [(1<<CONFIG_IC_P_WAYS)-1:0];
-   wire [`NCPU_INSN_DW-1:0]            s1o_ins                 [(1<<CONFIG_IC_P_WAYS)-1:0][(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire [TAG_V_RAM_DW-1:0]             s1o_tag_v               [(1<<CONFIG_IC_P_WAYS)-1:0];
    wire [CONFIG_P_PAGE_SIZE-1:0]       s1o_vpo;
    wire [CONFIG_AW-1:0]                s2i_paddr;
@@ -101,7 +98,7 @@ module icache
    wire [(1<<CONFIG_IC_P_WAYS)-1:0]    s2i_hit;
    wire [CONFIG_IC_P_WAYS-1:0]         s2i_match_way_idx;
    wire                                s2i_get_dat;
-   wire [`NCPU_INSN_DW-1:0]            s2i_ins                 [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
+   wire [PAYLOAD_DW-1:0]               s2i_ins;
    // Stage 2 Output / Stage 3 Input
    wire                                s2o_valid;
    wire [CONFIG_AW-1:0]                s2o_paddr;
@@ -116,17 +113,16 @@ module icache
    // AXI
    wire                                ar_set, ar_clr;
    wire                                hds_axi_R;
+   wire [AXI_ADDR_WIDTH-1:0]           axi_ar_addr_nxt;
    
-   localparam [2:0] S_BOOT             = 4'd0;
-   localparam [2:0] S_IDLE             = 4'd1;
-   localparam [2:0] S_REPLACE          = 4'd2;
-   localparam [2:0] S_REFILL           = 4'd3;
+   localparam [2:0] S_BOOT             = 3'd0;
+   localparam [2:0] S_IDLE             = 3'd1;
+   localparam [2:0] S_REPLACE          = 3'd2;
+   localparam [2:0] S_REFILL           = 3'd3;
    
    genvar way, i, j;
    
    assign p_ce = (ce & ~stall_req);
-   
-   assign s1i_vpo = vpo[CONFIG_P_PAGE_SIZE-1:PAYLOAD_P_DW_BYTES];
    
    generate
       for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
@@ -161,26 +157,27 @@ module icache
                   .DIN  (s1i_replace_tag_v)
                );
                
-            generate
-               for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
-                  begin : gen_channels
-                     assign s1o_ins[way][i] = s1o_payload[i*`NCPU_INSN_DW +: `NCPU_INSN_DW];
-                  end
-            endgenerate
-            
             assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];
             
             assign s2i_hit[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS]) );
-      end
+         end
    endgenerate
    
    // Vector to index
-   s2i_match_way_idx
+   priority_encoder
+      #(
+         .P_DW (CONFIG_IC_P_WAYS)
+      )
+   U_ENC
+      (
+         .din (s2i_hit),
+         .dout (s2i_match_way_idx)
+      );
    
    assign s2i_paddr = {ppn_s2, s1o_vpo};
    
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(1'b1), .Q(s1o_valid) );
-   mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(s1i_vpo), .Q(s1o_vpo) );
+   mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
    
    mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
@@ -195,15 +192,17 @@ module icache
                   fsm_state_nxt = S_IDLE;
 
             S_IDLE:
-               if (s1o_valid & ~s2i_hit)
+               if (s1o_valid & ~|s2i_hit)
                   fsm_state_nxt = S_REPLACE;
-                  
+
             S_REPLACE:
                fsm_state_nxt = S_REFILL;
             
             S_REFILL:
                if (~|fsm_refill_cnt_nxt)
                   fsm_state_nxt = S_IDLE;
+            
+            default: ;
          endcase
       end
       
@@ -228,17 +227,7 @@ module icache
    
    mDFF_r # (.DW(CONFIG_IC_P_LINE)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .D(fsm_refill_cnt_nxt), .Q(fsm_refill_cnt) );
    
-   // MUX for tag RAM data
-   always @(*)
-      case (fsm_state_r)
-         S_BOOT:
-            s1i_replace_tag_v = 'b0;
-         default:
-            s1i_replace_tag_v = {s2o_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS] , 1'b1};
-      endcase
-      
-   assign s1i_tag_v_we = (fsm_state_r==S_REPLACE) | (fsm_state_r==S_BOOT);
-   
+
    // MUX for tag RAM addr 
    always @(*)
       case (fsm_state_r)
@@ -246,8 +235,19 @@ module icache
          S_REPLACE:
             s1i_line_addr = fsm_free_idx;
          default:
-            s1i_line_addr = s1i_vpo[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS]; // index
-      end
+            s1i_line_addr = vpo[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS]; // index
+      endcase
+      
+   // MUX for tag RAM din
+   always @(*)
+      case (fsm_state_r)
+         S_BOOT:
+            s1i_replace_tag_v = 'b0;
+         default:
+            s1i_replace_tag_v = {s2o_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS], 1'b1};
+      endcase
+      
+   assign s1i_tag_v_we = (fsm_state_r==S_REPLACE) | (fsm_state_r==S_BOOT);
         
    // MUX for payload RAM addr
    always @(*)
@@ -255,10 +255,10 @@ module icache
          S_REFILL:
             s1i_payload_addr = {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS], fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]};
          default:
-            s1i_payload_addr = s1i_vpo[PAYLOAD_P_DW_BYTES +: PAYLOAD_AW]; // {index,offset}
+            s1i_payload_addr = vpo[PAYLOAD_P_DW_BYTES +: PAYLOAD_AW]; // {index,offset}
       endcase
       
-   // Aligner for payload RAM data
+   // Aligner for payload RAM din
    generate
       for(i=0;i<PAYLOAD_DW/8;i=i+1)
          begin : gen_aligner
@@ -274,27 +274,27 @@ module icache
    
    // Output
    generate
-      for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
-         begin : gen_output
-            for(j=0;j<PAYLOAD_DW/8;j=j+1)
-               begin : gen_output_inner
-                  always @(*)
-                     case (fsm_state_r)
-                        S_REFILL:
-                           if (s2i_get_dat & s1i_payload_we[j])
-                              s2i_ins[i][j*8 +: 8] = s1i_payload_din[j*8 +: 8]; // Get data from AXI bus
-                           else
-                              s2i_ins[i][j*8 +: 8] = ins[i*`NCPU_INSN_DW + j*8 +: 8];
-                        default:
-                           s2i_ins[i][j*8 +: 8] = s1o_ins[s2i_match_way_idx][i][j*8 +: 8];
-                     endcase
-               end
-               
-            mDFF_l # (.DW(`NCPU_INSN_DW) ff_ins
-               (.CLK(clk), .LOAD(p_ce|(fsm_state_r==S_REFILL)), .D(s2i_ins[i]), .Q(ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW]) );
-               
-            assign valid[i] = (s2o_valid[i] & ~stall_req);
+      for(j=0;j<PAYLOAD_DW/8;j=j+1)
+         begin : gen_output_inner
+            always @(*)
+               case (fsm_state_r)
+                  S_REFILL:
+                     if (s2i_get_dat & s1i_payload_we[j])
+                        s2i_ins[j*8 +: 8] = s1i_payload_din[j*8 +: 8]; // Get data from AXI bus
+                     else
+                        s2i_ins[j*8 +: 8] = ins[j*8 +: 8];
+                  default:
+                     s2i_ins[j*8 +: 8] = s1o_payload[s2i_match_way_idx][j*8 +: 8]; // From the matched way
+               endcase
          end
+   endgenerate
+
+   mDFF_l # (.DW(PAYLOAD_DW)) ff_ins
+      (.CLK(clk), .LOAD(p_ce|(fsm_state_r==S_REFILL)), .D(s2i_ins), .Q(ins) );
+               
+   generate
+      for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
+         assign valid[i] = (s2o_valid & ~stall_req);
    endgenerate
    
    // AXI - AR
@@ -310,9 +310,12 @@ module icache
    assign axi_ar_region_o = 'b0;
    assign ar_set = (fsm_state_r==S_REPLACE);
    assign ar_clr = (axi_ar_ready_i & axi_ar_valid_o);
+   assign axi_ar_addr_nxt = {s2o_paddr[CONFIG_IC_P_LINE +: AXI_ADDR_WIDTH - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
    
-   mDFF_lr # (.DW(1)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(axi_ar_valid_o) );
-
+   mDFF_lr # (.DW(1)) ff_axi_ar_valid (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(axi_ar_valid_o) );
+   mDFF_lr # (.DW(AXI_ADDR_WIDTH)) ff_axi_ar_addr (.CLK(clk), .RST(rst), .LOAD(ar_set), .D(axi_ar_addr_nxt), .Q(axi_ar_addr_o) );
+   
+   
    // AXI - R
    assign axi_r_ready_o = (fsm_state_r == S_REFILL);
    assign hds_axi_R = (axi_r_valid_i & axi_r_ready_o);

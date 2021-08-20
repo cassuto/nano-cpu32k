@@ -24,16 +24,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module ncpu64k
+module ifu
 #(
-   parameter CONFIG_AW = 64,
-   parameter CONFIG_DW = 64,
-   parameter CONFIG_P_FETCH_WIDTH = 1,
-   parameter CONFIG_P_PAGE_SIZE = 13,
-   parameter CONFIG_IC_P_LINE = 6,
-   parameter CONFIG_IC_P_SETS = 6,
-   parameter CONFIG_IC_P_WAYS = 2,
-   parameter AXI_P_DW_BYTES    = 3,
+   parameter CONFIG_AW = 0,
+   parameter CONFIG_P_FETCH_WIDTH = 0,
+   parameter CONFIG_P_PAGE_SIZE = 0,
+   parameter CONFIG_IC_P_LINE = 0,
+   parameter CONFIG_IC_P_SETS = 0,
+   parameter CONFIG_IC_P_WAYS = 0,
+   parameter AXI_P_DW_BYTES  = 3,
    parameter AXI_ADDR_WIDTH    = 64,
    parameter AXI_ID_WIDTH      = 4,
    parameter AXI_USER_WIDTH    = 1
@@ -41,6 +40,9 @@ module ncpu64k
 (
    input                               clk,
    input                               rst,
+   // To fetch buffer
+   output [`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0] fbuf_ins,
+   output [(1<<CONFIG_P_FETCH_WIDTH)-1:0] fbuf_valid,
    // AXI Master
    input                               axi_ar_ready_i,
    output                              axi_ar_valid_o,
@@ -64,15 +66,25 @@ module ncpu64k
    input  [AXI_ID_WIDTH-1:0]           axi_r_id_i,
    input  [AXI_USER_WIDTH-1:0]         axi_r_user_i
 );
+
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   /* verilator lint_off UNUSED */
-   wire [`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0] fbuf_ins;// From U_IFU of ifu.v
-   wire [(1<<CONFIG_P_FETCH_WIDTH)-1:0] fbuf_valid;// From U_IFU of ifu.v
-   /* verilator lint_on UNUSED */
+   wire                 ic_stall_req;           // From U_ICACHE of icache.v
    // End of automatics
+   wire ic_ce;
+   wire [CONFIG_P_PAGE_SIZE-1:0] vpo;
+   wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2;
+   wire [CONFIG_AW-1:0] pc;
+   reg [CONFIG_AW-1:0] pc_nxt;
 
-   ifu
+/* icache AUTO_TEMPLATE (
+      .stall_req                       (ic_stall_req),
+      .ce                              (ic_ce),
+      .ins                             (fbuf_ins),
+      .valid                           (fbuf_valid),
+   )
+*/
+   icache
    #(/*AUTOINSTPARAM*/
      // Parameters
      .CONFIG_AW                         (CONFIG_AW),
@@ -85,11 +97,12 @@ module ncpu64k
      .AXI_ADDR_WIDTH                    (AXI_ADDR_WIDTH),
      .AXI_ID_WIDTH                      (AXI_ID_WIDTH),
      .AXI_USER_WIDTH                    (AXI_USER_WIDTH))
-   U_IFU
+   U_ICACHE
    (/*AUTOINST*/
     // Outputs
-    .fbuf_ins                           (fbuf_ins[`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0]),
-    .fbuf_valid                         (fbuf_valid[(1<<CONFIG_P_FETCH_WIDTH)-1:0]),
+    .stall_req                          (ic_stall_req),          // Templated
+    .ins                                (fbuf_ins),              // Templated
+    .valid                              (fbuf_valid),            // Templated
     .axi_ar_valid_o                     (axi_ar_valid_o),
     .axi_ar_addr_o                      (axi_ar_addr_o[AXI_ADDR_WIDTH-1:0]),
     .axi_ar_prot_o                      (axi_ar_prot_o[2:0]),
@@ -106,6 +119,9 @@ module ncpu64k
     // Inputs
     .clk                                (clk),
     .rst                                (rst),
+    .ce                                 (ic_ce),                 // Templated
+    .vpo                                (vpo[CONFIG_P_PAGE_SIZE-1:0]),
+    .ppn_s2                             (ppn_s2[CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0]),
     .axi_ar_ready_i                     (axi_ar_ready_i),
     .axi_r_valid_i                      (axi_r_valid_i),
     .axi_r_data_i                       (axi_r_data_i[(1<<AXI_P_DW_BYTES)*8-1:0]),
@@ -114,4 +130,19 @@ module ncpu64k
     .axi_r_id_i                         (axi_r_id_i[AXI_ID_WIDTH-1:0]),
     .axi_r_user_i                       (axi_r_user_i[AXI_USER_WIDTH-1:0]));
 
+   always @(*)
+      if (ic_stall_req)
+         pc_nxt = pc;
+      else
+         pc_nxt = pc + `NCPU_INSN_LEN;
+
+   mDFF_r # (.DW(CONFIG_AW)) ff_pc (.CLK(clk), .RST(rst), .D(pc_nxt), .Q(pc) );
+
+   assign vpo = pc_nxt[CONFIG_P_PAGE_SIZE-1:0];
+   
+   // TODO: TLB
+   mDFF_r # (.DW(CONFIG_AW-CONFIG_P_PAGE_SIZE)) ff_ppn_s2 (.CLK(clk), .RST(rst), .D(pc_nxt[CONFIG_P_PAGE_SIZE +: CONFIG_AW-CONFIG_P_PAGE_SIZE]), .Q(ppn_s2) );
+   
+   assign ic_ce = 'b1;
+   
 endmodule

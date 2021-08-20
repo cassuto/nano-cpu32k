@@ -7,7 +7,7 @@ EM_DIR := em
 SRCS := $(foreach x,${SRC_DIR}, $(wildcard $(addprefix ${x}/*,.v) ) )
 INCS = -I$(SRC_DIR)
 DEFS = +define+SYNTHESIS=1
-FLAGS := $(DEFS) $(INCS)
+FLAGS := $(DEFS) $(INCS) -Wno-UNUSED
 
 
 # Simulation
