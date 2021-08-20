@@ -22,49 +22,38 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/** @brief RAM block: Single Port & Synchronous (latency = 1)
- * Parameters:
- *       DW      Data width (bits), which indicates the word length.
- *       AW      Address width (bits)
- * Ports:
- *       [in]  CLK     Clock
- *       [in]  ADDR    Address
- *       [in]  RE      Read Enable (High active)
- *       [out] DOUT    Read data
- *       [in]  WE      Write Enable
- *       [in]  DIN     Write Data
- */
-module mRAM_s_s
-#(
-   parameter DW = 0,
-   parameter AW = 0
+`include "ncpu64k_config.vh"
+
+module mDFF # (
+   parameter DW = 1 // Data Width in bits
 )
 (
    input CLK,
-   input [AW-1:0] ADDR,
-   input RE,
-   output [DW-1:0] DOUT,
-   input WE,
-   input [DW-1:0] DIN
+   input [DW-1:0] D, // Data input
+   output reg [DW-1:0] Q // Data output
 );
-
-`ifdef NCPU_USE_TECHLIB
-   // TODO
-   
+   always @(posedge CLK) begin
+`ifdef SYNTHESIS
+         Q <= D;
 `else
-   // General RTL
-   reg [DW-1:0] mem_vector [(1<<AW)-1:0];
-   reg [DW-1:0] dff_rdat;
-   genvar i;
-   
-   always @(posedge CLK)
-      if (RE)
-         dff_rdat <= mem_vector[ADDR];
-   assign DOUT = dff_rdat;
-         
-   always @(posedge CLK)
-      if (WE)
-         mem_vector[ADDR] <= DIN;
+         Q <= #1 D;
 `endif
+   end
+
+   // synthesis translate_off
+`ifndef SYNTHESIS
+
+   // Assertions
+`ifdef NCPU_ENABLE_ASSERT
+`ifdef NCPU_CHECK_X
+   always @(posedge CLK) begin
+      if((^D) === 1'bx)
+         $fatal ("\n DFF: uncertain state! \n");
+   end
+`endif
+`endif
+
+`endif
+   // synthesis translate_on
 
 endmodule

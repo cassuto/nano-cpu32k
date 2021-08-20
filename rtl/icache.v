@@ -28,38 +28,304 @@ module icache
 #(
    parameter CONFIG_AW = 0,
    parameter CONFIG_DW = 0,
-   parameter CONFIG_ISSUE_WIDTH = 0,
+   parameter CONFIG_P_FETCH_WIDTH = 0,
    parameter CONFIG_P_PAGE_SIZE = 0,
    parameter CONFIG_IC_P_LINE = 0,
    parameter CONFIG_IC_P_SETS = 0,
-   parameter CONFIG_IC_P_WAYS = 0
+   parameter CONFIG_IC_P_WAYS = 0,
+   parameter AXI_P_DW_BYTES  = 3,
+   parameter AXI_ADDR_WIDTH    = 64,
+   parameter AXI_ID_WIDTH      = 4,
+   parameter AXI_USER_WIDTH    = 1
 )
 (
-   input                                           clk,
-   input                                           rst,
-   input                                           req,
-   input [CONFIG_P_PAGE_SIZE-1:0]                  vpo,
-   input [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0]        ppn_s2,
-   output [`NCPU_INSN_LEN-1:0]                     dout [CONFIG_ISSUE_WIDTH-1:0],
-   output                                          stall_req
+   input                               clk,
+   input                               rst,
+   input                               ce,
+   output                              stall_req,
+   input [CONFIG_P_PAGE_SIZE-1:0]      vpo,
+   input [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2,
+   output [`NCPU_INSN_DW * (1<<CONFIG_P_FETCH_WIDTH)-1:0] ins,
+   output [(1<<CONFIG_P_FETCH_WIDTH)-1:0] valid,
+   
+   // AXI Master
+   input                               axi_ar_ready_i,
+   output                              axi_ar_valid_o,
+   output [AXI_ADDR_WIDTH-1:0]         axi_ar_addr_o,
+   output [2:0]                        axi_ar_prot_o,
+   output [AXI_ID_WIDTH-1:0]           axi_ar_id_o,
+   output [AXI_USER_WIDTH-1:0]         axi_ar_user_o,
+   output [7:0]                        axi_ar_len_o,
+   output [2:0]                        axi_ar_size_o,
+   output [1:0]                        axi_ar_burst_o,
+   output                              axi_ar_lock_o,
+   output [3:0]                        axi_ar_cache_o,
+   output [3:0]                        axi_ar_qos_o,
+   output [3:0]                        axi_ar_region_o,
+
+   output                              axi_r_ready_o,
+   input                               axi_r_valid_i,
+   input  [(1<<AXI_P_DW_BYTES)*8-1:0]  axi_r_data_i,
+   
+   input  [1:0]                        axi_r_resp_i, // unused
+   input                               axi_r_last_i, // unused
+   input  [AXI_ID_WIDTH-1:0]           axi_r_id_i, // unused
+   input  [AXI_USER_WIDTH-1:0]         axi_r_user_i // unused
 );
 
-   localparam TAG_WIDTH = (CONFIG_AW-CONFIG_IC_P_SETS-CONFIG_IC_P_LINE);
-   localparam TAG_RAM_WIDTH = (TAG_WIDTH + 1); // V + TAG
+   localparam TAG_WIDTH                = (CONFIG_AW - CONFIG_IC_P_SETS - CONFIG_IC_P_LINE);
+   localparam TAG_V_RAM_AW             = (CONFIG_IC_P_SETS);
+   localparam TAG_V_RAM_DW             = (TAG_WIDTH + 1); // TAG + V
+   localparam PAYLOAD_AW               = (CONFIG_IC_P_SETS + CONFIG_IC_P_LINE - PAYLOAD_P_DW_BYTES);
+   localparam PAYLOAD_DW               = (`NCPU_INSN_DW * (1<<CONFIG_P_FETCH_WIDTH));
+   localparam PAYLOAD_P_DW_BYTES       = (`NCPU_P_INSN_LEN + CONFIG_P_FETCH_WIDTH); // = $clog2(PAYLOAD_DW/8)
+   localparam AXI_FETCH_SIZE           = (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES) ? PAYLOAD_P_DW_BYTES : AXI_P_DW_BYTES;
    
-   // Stage #1
-   wire [CONFIG_IC_P_SETS-1:0]                     s1i_line_addr;
+   // Stage 1 Input
+   wire [CONFIG_P_PAGE_SIZE-1:0]       s1i_vpo;
+   reg [CONFIG_IC_P_SETS-1:0]          s1i_line_addr;
+   reg [TAG_V_RAM_DW-1:0]              s1i_replace_tag_v;
+   wire                                s1i_tag_v_we;
+   reg [PAYLOAD_AW-1:0]                s1i_payload_addr;
+   wire [PAYLOAD_DW/8-1:0]             s1i_payload_we;
+   wire [PAYLOAD_DW-1:0]               s1i_payload_din;
+   // Stage 1 Output / Stage 2 Input
+   wire s1o_valid;
+   wire [PAYLOAD_DW-1:0]               s1o_payload             [(1<<CONFIG_IC_P_WAYS)-1:0];
+   wire [`NCPU_INSN_DW-1:0]            s1o_ins                 [(1<<CONFIG_IC_P_WAYS)-1:0][(1<<CONFIG_P_FETCH_WIDTH)-1:0];
+   wire [TAG_V_RAM_DW-1:0]             s1o_tag_v               [(1<<CONFIG_IC_P_WAYS)-1:0];
+   wire [CONFIG_P_PAGE_SIZE-1:0]       s1o_vpo;
+   wire [CONFIG_AW-1:0]                s2i_paddr;
+   wire [TAG_WIDTH-1:0]                s2i_tag                 [(1<<CONFIG_IC_P_WAYS)-1:0];
+   wire                                s2i_v                   [(1<<CONFIG_IC_P_WAYS)-1:0];
+   wire [(1<<CONFIG_IC_P_WAYS)-1:0]    s2i_hit;
+   wire [CONFIG_IC_P_WAYS-1:0]         s2i_match_way_idx;
+   wire                                s2i_get_dat;
+   wire [`NCPU_INSN_DW-1:0]            s2i_ins                 [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
+   // Stage 2 Output / Stage 3 Input
+   wire                                s2o_valid;
+   wire [CONFIG_AW-1:0]                s2o_paddr;
+   wire [`NCPU_INSN_DW-1:0]            s2o_ins                 [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
+   // FSM
+   reg [2:0]                           fsm_state_nxt;
+   wire [2:0]                          fsm_state_r;
+   wire [CONFIG_IC_P_SETS-1:0]         fsm_free_idx, fsm_free_idx_nxt;
+   wire [CONFIG_IC_P_LINE-1:0]         fsm_refill_cnt;
+   reg [CONFIG_IC_P_LINE-1:0]          fsm_refill_cnt_nxt;
+   wire                                p_ce;
+   // AXI
+   wire                                ar_set, ar_clr;
+   wire                                hds_axi_R;
    
-   assign s1i_line_addr = vpo[CONFIG_IC_P_SETS-1:0];
+   localparam [2:0] S_BOOT             = 4'd0;
+   localparam [2:0] S_IDLE             = 4'd1;
+   localparam [2:0] S_REPLACE          = 4'd2;
+   localparam [2:0] S_REFILL           = 4'd3;
+   
+   genvar way, i, j;
+   
+   assign p_ce = (ce & ~stall_req);
+   
+   assign s1i_vpo = vpo[CONFIG_P_PAGE_SIZE-1:PAYLOAD_P_DW_BYTES];
+   
+   generate
+      for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
+         begin : gen_ways
+            mRAM_s_s_be
+               #(
+                  .DW   (PAYLOAD_DW),
+                  .AW   (PAYLOAD_AW)
+               )
+            U_PAYLOAD_RAM
+               (
+                  .CLK  (clk),
+                  .ADDR (s1i_payload_addr),
+                  .RE   (p_ce),
+                  .DOUT (s1o_payload[way]),
+                  .WE   (s1i_payload_we),
+                  .DIN  (s1i_payload_din)
+               );
+               
+            mRAM_s_s
+               #(
+                  .DW   (TAG_V_RAM_DW),
+                  .AW   (TAG_V_RAM_AW)
+               )
+            U_TAG_V_RAM
+               (
+                  .CLK  (clk),
+                  .ADDR (s1i_line_addr),
+                  .RE   (p_ce),
+                  .DOUT (s1o_tag_v[way]),
+                  .WE   (s1i_tag_v_we),
+                  .DIN  (s1i_replace_tag_v)
+               );
+               
+            generate
+               for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
+                  begin : gen_channels
+                     assign s1o_ins[way][i] = s1o_payload[i*`NCPU_INSN_DW +: `NCPU_INSN_DW];
+                  end
+            endgenerate
+            
+            assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];
+            
+            assign s2i_hit[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS]) );
+      end
+   endgenerate
+   
+   // Vector to index
+   s2i_match_way_idx
+   
+   assign s2i_paddr = {ppn_s2, s1o_vpo};
+   
+   mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(1'b1), .Q(s1o_valid) );
+   mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(s1i_vpo), .Q(s1o_vpo) );
+   
+   mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
+   mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
+   
+   // Main FSM
+   always @(*)
+      begin
+         fsm_state_nxt = fsm_state_r;
+         case (fsm_state_r)
+            S_BOOT:
+               if (~|fsm_free_idx_nxt)
+                  fsm_state_nxt = S_IDLE;
 
+            S_IDLE:
+               if (s1o_valid & ~s2i_hit)
+                  fsm_state_nxt = S_REPLACE;
+                  
+            S_REPLACE:
+               fsm_state_nxt = S_REFILL;
+            
+            S_REFILL:
+               if (~|fsm_refill_cnt_nxt)
+                  fsm_state_nxt = S_IDLE;
+         endcase
+      end
+      
+   // Clock algorithm
+   assign fsm_free_idx_nxt = fsm_free_idx + 'b1;
    
+   mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_r) );
+   mDFF_r # (.DW(CONFIG_IC_P_SETS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_idx_nxt), .Q(fsm_free_idx) );
+   
+   // Refill counter
+   always @(*)
+      begin
+         fsm_refill_cnt_nxt = fsm_refill_cnt;
+         case (fsm_state_r)
+            S_REFILL:
+               if (hds_axi_R)
+                  fsm_refill_cnt_nxt = fsm_refill_cnt + (1<<AXI_FETCH_SIZE);
+            default:
+               fsm_refill_cnt_nxt = 'b0;
+         endcase
+      end
+   
+   mDFF_r # (.DW(CONFIG_IC_P_LINE)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .D(fsm_refill_cnt_nxt), .Q(fsm_refill_cnt) );
+   
+   // MUX for tag RAM data
+   always @(*)
+      case (fsm_state_r)
+         S_BOOT:
+            s1i_replace_tag_v = 'b0;
+         default:
+            s1i_replace_tag_v = {s2o_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS] , 1'b1};
+      endcase
+      
+   assign s1i_tag_v_we = (fsm_state_r==S_REPLACE) | (fsm_state_r==S_BOOT);
+   
+   // MUX for tag RAM addr 
+   always @(*)
+      case (fsm_state_r)
+         S_BOOT,
+         S_REPLACE:
+            s1i_line_addr = fsm_free_idx;
+         default:
+            s1i_line_addr = s1i_vpo[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS]; // index
+      end
+        
+   // MUX for payload RAM addr
+   always @(*)
+      case (fsm_state_r)
+         S_REFILL:
+            s1i_payload_addr = {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS], fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]};
+         default:
+            s1i_payload_addr = s1i_vpo[PAYLOAD_P_DW_BYTES +: PAYLOAD_AW]; // {index,offset}
+      endcase
+      
+   // Aligner for payload RAM data
+   generate
+      for(i=0;i<PAYLOAD_DW/8;i=i+1)
+         begin : gen_aligner
+            assign s1i_payload_we[i] = (fsm_state_r == S_REFILL) & (fsm_refill_cnt[PAYLOAD_P_DW_BYTES-1:0] == i);
+            assign s1i_payload_din[i*8 +: 8] = axi_r_data_i[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
+         end
+   endgenerate
+   
+   assign stall_req = (fsm_state_r != S_IDLE);
+   
+   assign s2i_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] == 
+                    fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);
+   
+   // Output
+   generate
+      for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
+         begin : gen_output
+            for(j=0;j<PAYLOAD_DW/8;j=j+1)
+               begin : gen_output_inner
+                  always @(*)
+                     case (fsm_state_r)
+                        S_REFILL:
+                           if (s2i_get_dat & s1i_payload_we[j])
+                              s2i_ins[i][j*8 +: 8] = s1i_payload_din[j*8 +: 8]; // Get data from AXI bus
+                           else
+                              s2i_ins[i][j*8 +: 8] = ins[i*`NCPU_INSN_DW + j*8 +: 8];
+                        default:
+                           s2i_ins[i][j*8 +: 8] = s1o_ins[s2i_match_way_idx][i][j*8 +: 8];
+                     endcase
+               end
+               
+            mDFF_l # (.DW(`NCPU_INSN_DW) ff_ins
+               (.CLK(clk), .LOAD(p_ce|(fsm_state_r==S_REFILL)), .D(s2i_ins[i]), .Q(ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW]) );
+               
+            assign valid[i] = (s2o_valid[i] & ~stall_req);
+         end
+   endgenerate
+   
+   // AXI - AR
+   assign axi_ar_prot_o = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
+   assign axi_ar_id_o = {AXI_ID_WIDTH{1'b0}};
+   assign axi_ar_user_o = {AXI_USER_WIDTH{1'b0}};
+   assign axi_ar_len_o = ((1<<(CONFIG_IC_P_LINE-AXI_FETCH_SIZE))-1);
+   assign axi_ar_size_o = AXI_FETCH_SIZE;
+   assign axi_ar_burst_o = `AXI_BURST_TYPE_INCR;
+   assign axi_ar_lock_o = 'b0;
+   assign axi_ar_cache_o = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
+   assign axi_ar_qos_o = 'b0;
+   assign axi_ar_region_o = 'b0;
+   assign ar_set = (fsm_state_r==S_REPLACE);
+   assign ar_clr = (axi_ar_ready_i & axi_ar_valid_o);
+   
+   mDFF_lr # (.DW(1)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(axi_ar_valid_o) );
 
+   // AXI - R
+   assign axi_r_ready_o = (fsm_state_r == S_REFILL);
+   assign hds_axi_R = (axi_r_valid_i & axi_r_ready_o);
+   
+   
    // synthesis translate_off
 `ifndef SYNTHESIS
    initial
       begin
          if (CONFIG_P_PAGE_SIZE < CONFIG_IC_P_LINE + CONFIG_IC_P_SETS)
-            $fatal(1, "Invalid size of icache (Must <= page size of I-MMU)");
+            $fatal(1, "Invalid size of icache (Must <= page size of MMU)");
+         if (CONFIG_IC_P_LINE < PAYLOAD_P_DW_BYTES)
+            $fatal(1, "Line size of icache is too small to accommodate with a fetching window");
          if ((1<<CONFIG_IBUS_BYTES_LOG2) != (CONFIG_IBUS_DW/8))
             $fatal(1, "Error value of CONFIG_IBUS_BYTES_LOG2");
          if ((1<<CONFIG_IC_DW_BYTES_LOG2) != (CONFIG_IC_DW/8))

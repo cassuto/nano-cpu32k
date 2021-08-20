@@ -22,7 +22,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/** @brief RAM block: Single Port & Synchronous (latency = 1)
+/** @brief RAM block: Single Port & Synchronous (latency = 1) & Byte Enable
  * Parameters:
  *       DW      Data width (bits), which indicates the word length.
  *       AW      Address width (bits)
@@ -31,10 +31,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *       [in]  ADDR    Address
  *       [in]  RE      Read Enable (High active)
  *       [out] DOUT    Read data
- *       [in]  WE      Write Enable
+ *       [in]  WE      Write Byte Enable (High active)
+ *                     (Where we [i] = = 1'b1 indicates that the i-th byte in
+ *                      the word should be written, and other words should
+ *                      remain unchanged)
  *       [in]  DIN     Write Data
  */
-module mRAM_s_s
+module mRAM_s_s_be
 #(
    parameter DW = 0,
    parameter AW = 0
@@ -44,7 +47,7 @@ module mRAM_s_s
    input [AW-1:0] ADDR,
    input RE,
    output [DW-1:0] DOUT,
-   input WE,
+   input [DW/8-1:0] WE,
    input [DW-1:0] DIN
 );
 
@@ -62,9 +65,12 @@ module mRAM_s_s
          dff_rdat <= mem_vector[ADDR];
    assign DOUT = dff_rdat;
          
-   always @(posedge CLK)
-      if (WE)
-         mem_vector[ADDR] <= DIN;
+   generate
+      for(i=0;i<DW;i=i+8)
+         always @(posedge CLK)
+            if (WE[i/8])
+               mem_vector[ADDR][i+:8] <= DIN[i+:8];
+   endgenerate
 `endif
 
 endmodule
