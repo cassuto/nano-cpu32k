@@ -44,6 +44,10 @@ module icache
    output                              stall_req,
    input [CONFIG_P_PAGE_SIZE-1:0]      vpo,
    input [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2,
+   input                               kill_req_s2,
+   input                               op_inv,
+   input [CONFIG_AW-1:0]               op_inv_paddr,
+   output                              op_stall_req,
    output [`NCPU_INSN_DW * (1<<CONFIG_P_FETCH_WIDTH)-1:0] ins,
    output [(1<<CONFIG_P_FETCH_WIDTH)-1:0] valid,
    
@@ -99,6 +103,7 @@ module icache
    wire [CONFIG_IC_P_WAYS-1:0]         s2i_match_way_idx;
    wire                                s2i_get_dat;
    wire [PAYLOAD_DW-1:0]               s2i_ins;
+   wire [CONFIG_AW-1:0]                s1o_op_inv_paddr;
    // Stage 2 Output / Stage 3 Input
    wire                                s2o_valid;
    wire [CONFIG_AW-1:0]                s2o_paddr;
@@ -119,10 +124,12 @@ module icache
    localparam [2:0] S_IDLE             = 3'd1;
    localparam [2:0] S_REPLACE          = 3'd2;
    localparam [2:0] S_REFILL           = 3'd3;
+   localparam [2:0] S_INVALIDATE       = 3'd4;
    
    genvar way, i, j;
    
    assign p_ce = (ce & ~stall_req);
+   assign s2i_paddr = {ppn_s2, s1o_vpo};
    
    generate
       for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
@@ -164,20 +171,11 @@ module icache
    endgenerate
    
    // Vector to index
-   priority_encoder
-      #(
-         .P_DW (CONFIG_IC_P_WAYS)
-      )
-   U_ENC
-      (
-         .din (s2i_hit),
-         .dout (s2i_match_way_idx)
-      );
-   
-   assign s2i_paddr = {ppn_s2, s1o_vpo};
+   priority_encoder  #(.P_DW (CONFIG_IC_P_WAYS)) U_ENC ( .din (s2i_hit), .dout (s2i_match_way_idx) );
    
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(1'b1), .Q(s1o_valid) );
    mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
+   mDFF_l # (.DW(CONFIG_AW)) ff_s1o_op_inv_paddr (.CLK(clk), .LOAD(p_ce), .D(op_inv_paddr), .Q(s1o_op_inv_paddr) );
    
    mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
@@ -192,7 +190,9 @@ module icache
                   fsm_state_nxt = S_IDLE;
 
             S_IDLE:
-               if (s1o_valid & ~|s2i_hit)
+               if (op_inv)
+                  fsm_state_nxt = S_INVALIDATE;
+               else if (s1o_valid & ~|s2i_hit & ~kill_req_s2)
                   fsm_state_nxt = S_REPLACE;
 
             S_REPLACE:
@@ -202,6 +202,8 @@ module icache
                if (~|fsm_refill_cnt_nxt)
                   fsm_state_nxt = S_IDLE;
             
+            S_INVALIDATE:
+               fsm_state_nxt = S_IDLE;
             default: ;
          endcase
       end
@@ -234,6 +236,8 @@ module icache
          S_BOOT,
          S_REPLACE:
             s1i_line_addr = fsm_free_idx;
+         S_INVALIDATE:
+            s1i_line_addr = s1o_op_inv_paddr[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS];
          default:
             s1i_line_addr = vpo[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS]; // index
       endcase
@@ -241,13 +245,14 @@ module icache
    // MUX for tag RAM din
    always @(*)
       case (fsm_state_r)
-         S_BOOT:
+         S_BOOT,
+         S_INVALIDATE:
             s1i_replace_tag_v = 'b0;
          default:
             s1i_replace_tag_v = {s2o_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS], 1'b1};
       endcase
       
-   assign s1i_tag_v_we = (fsm_state_r==S_REPLACE) | (fsm_state_r==S_BOOT);
+   assign s1i_tag_v_we = (fsm_state_r==S_BOOT) | (fsm_state_r==S_INVALIDATE) | (fsm_state_r==S_REPLACE);
         
    // MUX for payload RAM addr
    always @(*)
@@ -268,6 +273,8 @@ module icache
    endgenerate
    
    assign stall_req = (fsm_state_r != S_IDLE);
+   
+   assign op_stall_req = (op_inv | stall_req); // Stall the EXU if icache is temporarily unable to receive a new operation
    
    assign s2i_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] == 
                     fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);

@@ -66,7 +66,8 @@ module ifu
    input  [AXI_ID_WIDTH-1:0]           axi_r_id_i,
    input  [AXI_USER_WIDTH-1:0]         axi_r_user_i
 );
-
+   localparam P_FETCH_DW_BYTES         = (`NCPU_P_INSN_LEN + CONFIG_P_FETCH_WIDTH);
+   
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 ic_stall_req;           // From U_ICACHE of icache.v
@@ -74,8 +75,14 @@ module ifu
    wire ic_ce;
    wire [CONFIG_P_PAGE_SIZE-1:0] vpo;
    wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2;
+   wire kill_req_s2;
    wire [CONFIG_AW-1:0] pc;
    reg [CONFIG_AW-1:0] pc_nxt;
+   // Stage 1 Input
+   wire [CONFIG_AW-1:0] s1i_fetch_vaddr;
+   wire s1i_fetch_valid [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
+   // Stage 1 Output / Stage 2 Input
+   genvar i;
 
 /* icache AUTO_TEMPLATE (
       .stall_req                       (ic_stall_req),
@@ -138,10 +145,17 @@ module ifu
 
    mDFF_r # (.DW(CONFIG_AW)) ff_pc (.CLK(clk), .RST(rst), .D(pc_nxt), .Q(pc) );
 
-   assign vpo = pc_nxt[CONFIG_P_PAGE_SIZE-1:0];
+   assign s1i_fetch_vaddr = {pc_nxt[CONFIG_AW-1:P_FETCH_DW_BYTES], {P_FETCH_DW_BYTES{1'b0}}}; // Aligned by fetch window
+   
+   generate
+      for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
+         assign s1i_fetch_valid[i] = (pc_nxt[`NCPU_P_INSN_LEN +: CONFIG_P_FETCH_WIDTH] <= i);
+   endgenerate
+   
+   assign vpo = s1i_fetch_vaddr[CONFIG_P_PAGE_SIZE-1:0];
    
    // TODO: TLB
-   mDFF_r # (.DW(CONFIG_AW-CONFIG_P_PAGE_SIZE)) ff_ppn_s2 (.CLK(clk), .RST(rst), .D(pc_nxt[CONFIG_P_PAGE_SIZE +: CONFIG_AW-CONFIG_P_PAGE_SIZE]), .Q(ppn_s2) );
+   mDFF_r # (.DW(CONFIG_AW-CONFIG_P_PAGE_SIZE)) ff_ppn_s2 (.CLK(clk), .RST(rst), .D(s1i_fetch_vaddr[CONFIG_P_PAGE_SIZE +: CONFIG_AW-CONFIG_P_PAGE_SIZE]), .Q(ppn_s2) );
    
    assign ic_ce = 'b1;
    
