@@ -40,7 +40,6 @@ module icache
 (
    input                               clk,
    input                               rst,
-   input                               ce,
    output                              stall_req,
    input [CONFIG_P_PAGE_SIZE-1:0]      vpo,
    input [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2,
@@ -128,7 +127,7 @@ module icache
    
    genvar way, i, j;
    
-   assign p_ce = (ce & ~stall_req);
+   assign p_ce = (~stall_req);
    assign s2i_paddr = {ppn_s2, s1o_vpo};
    
    generate
@@ -199,7 +198,7 @@ module icache
                fsm_state_nxt = S_REFILL;
             
             S_REFILL:
-               if (~|fsm_refill_cnt_nxt)
+               if ((&fsm_refill_cnt) & hds_axi_R)
                   fsm_state_nxt = S_IDLE;
             
             S_INVALIDATE:
@@ -265,11 +264,17 @@ module icache
       
    // Aligner for payload RAM din
    generate
-      for(i=0;i<PAYLOAD_DW/8;i=i+1)
-         begin : gen_aligner
-            assign s1i_payload_we[i] = (fsm_state_r == S_REFILL) & (fsm_refill_cnt[PAYLOAD_P_DW_BYTES-1:0] == i);
-            assign s1i_payload_din[i*8 +: 8] = axi_r_data_i[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
+      if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
+         begin
+            assign s1i_payload_we = {PAYLOAD_DW/8{fsm_state_r == S_REFILL}};
+            assign s1i_payload_din = axi_r_data_i[(1<<PAYLOAD_P_DW_BYTES)*8-1:0];
          end
+      else
+         for(i=0;i<PAYLOAD_DW/8;i=i+1)
+            begin : gen_aligner
+               assign s1i_payload_we[i] = (fsm_state_r == S_REFILL) & (fsm_refill_cnt[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE] == (i/(1<<AXI_FETCH_SIZE)) );
+               assign s1i_payload_din[i*8 +: 8] = axi_r_data_i[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
+            end
    endgenerate
    
    assign stall_req = (fsm_state_r != S_IDLE);

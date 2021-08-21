@@ -72,7 +72,6 @@ module ifu
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 ic_stall_req;           // From U_ICACHE of icache.v
    // End of automatics
-   wire ic_ce;
    wire [CONFIG_P_PAGE_SIZE-1:0] vpo;
    wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2;
    wire kill_req_s2;
@@ -86,7 +85,6 @@ module ifu
 
 /* icache AUTO_TEMPLATE (
       .stall_req                       (ic_stall_req),
-      .ce                              (ic_ce),
       .ins                             (fbuf_ins),
       .valid                           (fbuf_valid),
    )
@@ -156,7 +154,5 @@ module ifu
    
    // TODO: TLB
    mDFF_r # (.DW(CONFIG_AW-CONFIG_P_PAGE_SIZE)) ff_ppn_s2 (.CLK(clk), .RST(rst), .D(s1i_fetch_vaddr[CONFIG_P_PAGE_SIZE +: CONFIG_AW-CONFIG_P_PAGE_SIZE]), .Q(ppn_s2) );
-   
-   assign ic_ce = 'b1;
    
 endmodule
