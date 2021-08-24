@@ -10,7 +10,7 @@ SRCS += $(foreach x,${LIB_DIR}, $(wildcard $(addprefix ${x}/*,.v) ) )
 INCS = -I$(SRC_DIR)
 DEFS = +define+SYNTHESIS=1
 FLAGS := $(DEFS) $(INCS) -Wno-UNUSED
-CFLAGS := -Wall -g -I../em
+CFLAGS := -Wall -g -I../em -D_WIN32=1
 
 # Simulation
 SIM_TOPLEVEL := simtop
