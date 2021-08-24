@@ -88,12 +88,12 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
         char buff[128], *p = buff;
         snprintf(buff, sizeof(buff), "DEBUG NUM PORT - %#x\n", val);
         while (*p)
-            debug_putc(*p++);
+            fprintf(stderr, "%c", *p++);
         return;
     }
 
     case MSR_DBGR_MSGPORT:
-        debug_putc(val);
+        fprintf(stderr, "%c", val);
         return;
     }
 
@@ -290,17 +290,17 @@ CPU::rmsr(msr_index_t index)
 
         /* MSR bank - ICA */
         case MSR_ICID:
-          ret = val_pack_field(ICID, SS, icache_p_sets);
-          ret |= val_pack_field(ICID, SL, icache_p_line);
-          ret |= val_pack_field(ICID, SW, icache_p_ways);
-          return ret;
-        
+            ret = val_pack_field(ICID, SS, icache_p_sets);
+            ret |= val_pack_field(ICID, SL, icache_p_line);
+            ret |= val_pack_field(ICID, SW, icache_p_ways);
+            return ret;
+
         /* MSR bank - DCA */
         case MSR_DCID:
-          ret = val_pack_field(DCID, SS, dcache_p_sets);
-          ret |= val_pack_field(DCID, SL, dcache_p_line);
-          ret |= val_pack_field(DCID, SW, dcache_p_ways);
-          return ret;
+            ret = val_pack_field(DCID, SS, dcache_p_sets);
+            ret |= val_pack_field(DCID, SL, dcache_p_line);
+            ret |= val_pack_field(DCID, SW, dcache_p_ways);
+            return ret;
 
         /* MSR bank - TSC */
         case MSR_TSR:
@@ -324,8 +324,8 @@ CPU::rmsr(msr_index_t index)
         case MSR_DBGR_TSCL:
             return 0xffffffff;
         case MSR_DBGR_TSCH:
-            icache->dump();
-            dcache->dump();
+            icache->dump('I');
+            dcache->dump('D');
             return 0xffffffff;
 
         default:

@@ -19,9 +19,12 @@ SIM_SRCS := $(SRCS) \
 			$(TESTBENCH_DIR)/simtop.v
 SIM_CPPS := $(EM_DIR)/main.cc \
 			$(EM_DIR)/cpu.cc \
+			$(EM_DIR)/cache.cc \
 			$(EM_DIR)/memory.cc \
 			$(EM_DIR)/mmu.cc \
-			$(EM_DIR)/msr.cc
+			$(EM_DIR)/msr.cc \
+			$(EM_DIR)/tsc.cc \
+			$(EM_DIR)/irqc.cc
 
 # Lint
 LINT_TOPLEVEL := ncpu64k

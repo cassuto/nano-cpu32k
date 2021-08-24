@@ -43,7 +43,8 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          bool dmmu_enable_uncached_seg_,
          int icache_p_ways_, int icache_p_sets_, int icache_p_line_,
          int dcache_p_ways_, int dcache_p_sets_, int dcache_p_line_,
-         size_t memory_size_, phy_addr_t mmio_phy_base_)
+         size_t memory_size_, phy_addr_t mmio_phy_base_,
+         int IRQ_TSC_)
     : msr(immu_tlb_count_, dmmu_tlb_count_),
       dmmu_tlb_count(dmmu_tlb_count_),
       immu_tlb_count(immu_tlb_count_),
@@ -56,7 +57,8 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       dcache_p_line(dcache_p_line_),
       mem(new Memory(memory_size_, mmio_phy_base_)),
       icache(new Cache(mem, true, icache_p_ways, icache_p_sets, icache_p_line)),
-      dcache(new Cache(mem, true, dcache_p_ways, dcache_p_sets, dcache_p_line))
+      dcache(new Cache(mem, true, dcache_p_ways, dcache_p_sets, dcache_p_line)),
+      IRQ_TSC(IRQ_TSC_)
 {
 }
 
@@ -90,16 +92,23 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
 cpu_word_t
 CPU::get_reg(uint16_t addr)
 {
+    if (addr >= 32)
+    {
+        fprintf(stderr, "cpu_get_reg() invalid register index at PC=%#x, index=%#x\n", pc, addr);
+        panic(1);
+    }
+    if (addr)
+        return regfile.r[addr];
+    else
+        return 0;
 }
 
 void CPU::reset(vm_addr_t reset_vect)
 {
     pc = reset_vect;
     std::memset(&regfile.r, 0, sizeof(regfile.r));
-    std::memset(&msr, 0, sizeof msr);
 
     /* Init MSR */
-    std::memset(&msr, 0, sizeof msr);
     msr.PSR.RM = 1;
 }
 

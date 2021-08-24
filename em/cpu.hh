@@ -74,6 +74,18 @@ public:
           DTLBL(new dtlbl_s[dmmu_tlb_count]),
           DTLBH(new dtlbh_s[dmmu_tlb_count])
     {
+        PSR.CY=
+        PSR.OV=
+        PSR.OE=
+        PSR.RM=
+        PSR.IRE=
+        PSR.IMME=
+        PSR.DMME=
+        PSR.ICAE=
+        PSR.DCAE=0;
+        TSR=0;
+        IMR=0;
+        IRR=0;
     }
     struct psr_s PSR;
     struct psr_s EPSR;
@@ -96,7 +108,8 @@ public:
         bool dmmu_enable_uncached_seg_,
         int icache_p_ways_, int icache_p_sets_, int icache_p_line_,
         int dcache_p_ways_, int dcache_p_sets_, int dcache_p_line_,
-        size_t memory_size_, phy_addr_t mmio_phy_base_);
+        size_t memory_size_, phy_addr_t mmio_phy_base_,
+        int IRQ_TSC_);
     ~CPU();
 
     void reset(vm_addr_t reset_vect);
@@ -118,6 +131,15 @@ private:
     cpu_word_t rmsr(msr_index_t index);
     void warn_illegal_access_reg(const char *reg);
 
+    /* tsc.cc */
+    void tsc_clk(int delta);
+    void tsc_update_tcr();
+
+    /* irqc.cc */
+    void irqc_set_interrupt(int channel, char raise);
+    int irqc_is_masked(int channel);
+    int irqc_handle_irqs();
+
 private:
     vm_addr_t pc;
     msr_s msr;
@@ -128,6 +150,7 @@ private:
     int dcache_p_ways, dcache_p_sets, dcache_p_line;
     Memory *mem;
     Cache *icache, *dcache;
+    int IRQ_TSC;
 };
 
 #endif // CPU_H_
