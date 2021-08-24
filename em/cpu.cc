@@ -27,18 +27,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "memory.hh"
 #include "cache.hh"
 
-static inline vm_signed_addr_t
-rel25_sig_ext(uint32_t rel25)
-{
-    return (((int32_t)(rel25 << INSN_LEN_SHIFT) ^ 0x4000000) - 0x4000000);
-}
-
-static inline vm_signed_addr_t
-rel15_sig_ext(uint16_t rel15)
-{
-    return (((int32_t)(rel15 << INSN_LEN_SHIFT) ^ 0x10000) - 0x10000);
-}
-
 CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          bool dmmu_enable_uncached_seg_,
          int icache_p_ways_, int icache_p_sets_, int icache_p_line_,
@@ -110,6 +98,18 @@ void CPU::reset(vm_addr_t reset_vect)
 
     /* Init MSR */
     msr.PSR.RM = 1;
+}
+
+static inline vm_signed_addr_t
+rel25_sig_ext(uint32_t rel25)
+{
+    return (((int32_t)(rel25 << INSN_LEN_SHIFT) ^ 0x4000000) - 0x4000000);
+}
+
+static inline vm_signed_addr_t
+rel15_sig_ext(uint16_t rel15)
+{
+    return (((int32_t)(rel15 << INSN_LEN_SHIFT) ^ 0x10000) - 0x10000);
 }
 
 vm_addr_t
@@ -543,7 +543,7 @@ flush_pc:
 void CPU::run_step()
 {
     vm_addr_t npc = step(pc);
-    printf("pc = %#x, npc=%#x\n", pc, npc);
+    //printf("pc = %#x, npc=%#x\n", pc, npc);
     pc = npc;
 }
 

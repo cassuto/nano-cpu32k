@@ -62,6 +62,7 @@ Cache::Cache(Memory *mem_, bool enabled, int p_ways, int p_sets, int p_line)
         for (int j = 0; j < (1L << m_P_SETS); ++j)
         {
             cache_v[k][j] = 0;
+            cache_dirty[k][j] = 0;
             cache_lru[k][j] = k;
             cache_addr[k][j] = 0;
             lines[k][j] = new uint8_t[(1L << m_P_LINE)];
@@ -146,6 +147,7 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
             for (phy_addr_t offset = 0; offset < line_size; offset++)
             {
                 lines[free_way_idx][entry_idx][offset] = mem->phy_readm8(line_paddr + offset);
+                printf("%02x ", lines[free_way_idx][entry_idx][offset]);
             }
         }
     }
