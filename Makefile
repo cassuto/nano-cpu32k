@@ -2,20 +2,26 @@
 
 NUM_JOBS := 8
 SRC_DIR := rtl
+LIB_DIR := rtl/lib
 TESTBENCH_DIR := testbench
 EM_DIR := em
 SRCS := $(foreach x,${SRC_DIR}, $(wildcard $(addprefix ${x}/*,.v) ) )
+SRCS += $(foreach x,${LIB_DIR}, $(wildcard $(addprefix ${x}/*,.v) ) )
 INCS = -I$(SRC_DIR)
 DEFS = +define+SYNTHESIS=1
 FLAGS := $(DEFS) $(INCS) -Wno-UNUSED
-
+CFLAGS := -Wall
 
 # Simulation
 SIM_TOPLEVEL := simtop
-SIM_FLAGS := +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -CFLAGS "-Wall" -j $(NUM_JOBS) -Mdir build/ -o emu
+SIM_FLAGS := +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -CFLAGS "$(CFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
 SIM_SRCS := $(SRCS) \
 			$(TESTBENCH_DIR)/simtop.v
-SIM_CPPS := $(EM_DIR)/main.cc
+SIM_CPPS := $(EM_DIR)/main.cc \
+			$(EM_DIR)/cpu.cc \
+			$(EM_DIR)/memory.cc \
+			$(EM_DIR)/mmu.cc \
+			$(EM_DIR)/msr.cc
 
 # Lint
 LINT_TOPLEVEL := ncpu64k
