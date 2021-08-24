@@ -23,6 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include "cpu.hh"
+#include <getopt.h>
 
 int
 main(int argc, char *argv[])
