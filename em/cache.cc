@@ -139,7 +139,6 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
         cache_v[free_way_idx][entry_idx] = 1;
         cache_addr[free_way_idx][entry_idx] = maddr;
         hit = 1;
-printf("miss\n");
         /* Refill */
         {
             phy_addr_t line_size = (1U << m_P_LINE);
@@ -149,6 +148,7 @@ printf("miss\n");
                 lines[free_way_idx][entry_idx][offset] = mem->phy_readm8(line_paddr + offset);
                 printf("%02x ", lines[free_way_idx][entry_idx][offset]);
             }
+            printf("\n");
         }
     }
     else
