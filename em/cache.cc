@@ -325,8 +325,8 @@ void Cache::invalidate(phy_addr_t pa)
 void Cache::dump(char prefix)
 {
     printf("%cCache dump:", prefix);
-    printf("\tHit: %llu\n", freq_hit);
-    printf("\tMiss: %llu\n", freq_miss);
-    printf("\t\tWriteback: %llu\n", freq_miss_writeback);
+    printf("\tHit: %lu\n", freq_hit);
+    printf("\tMiss: %lu\n", freq_miss);
+    printf("\t\tWriteback: %lu\n", freq_miss_writeback);
     printf("\tP(h) = %f%d\n", (float)freq_hit / (freq_hit + freq_miss) * 100);
 }
