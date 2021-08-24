@@ -20,6 +20,7 @@ typedef uint16_t msr_index_t;
 class Cache;
 class CPU;
 class Memory;
+class DeviceTree;
 
 #define EM_SUCCEEDED 0
 #define EM_FAULT 1
@@ -32,5 +33,9 @@ class Memory;
 #define CHUNK_SIZE 8192
 
 extern void panic(int code);
+
+#ifndef MIN
+#define MIN(x,y) ((x)<(y) ? (x) : (y)) /* Look out please! */
+#endif
 
 #endif // COMMON_H_

@@ -74,18 +74,18 @@ public:
           DTLBL(new dtlbl_s[dmmu_tlb_count]),
           DTLBH(new dtlbh_s[dmmu_tlb_count])
     {
-        PSR.CY=
-        PSR.OV=
-        PSR.OE=
-        PSR.RM=
-        PSR.IRE=
-        PSR.IMME=
-        PSR.DMME=
-        PSR.ICAE=
-        PSR.DCAE=0;
-        TSR=0;
-        IMR=0;
-        IRR=0;
+        PSR.CY =
+            PSR.OV =
+                PSR.OE =
+                    PSR.RM =
+                        PSR.IRE =
+                            PSR.IMME =
+                                PSR.DMME =
+                                    PSR.ICAE =
+                                        PSR.DCAE = 0;
+        TSR = 0;
+        IMR = 0;
+        IRR = 0;
     }
     struct psr_s PSR;
     struct psr_s EPSR;
@@ -118,6 +118,11 @@ public:
     void set_reg(uint16_t addr, cpu_word_t val);
     cpu_word_t get_reg(uint16_t addr);
 
+    /* irqc.cc */
+    void irqc_set_interrupt(int channel, char raise);
+    int irqc_is_masked(int channel);
+    int irqc_handle_irqs();
+
 private:
     vm_addr_t raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall);
     int check_vma_align(vm_addr_t va, int size);
@@ -134,11 +139,6 @@ private:
     /* tsc.cc */
     void tsc_clk(int delta);
     void tsc_update_tcr();
-
-    /* irqc.cc */
-    void irqc_set_interrupt(int channel, char raise);
-    int irqc_is_masked(int channel);
-    int irqc_handle_irqs();
 
 private:
     vm_addr_t pc;

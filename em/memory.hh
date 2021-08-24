@@ -3,12 +3,18 @@
 
 #include "common.hh"
 
-typedef void (*pfn_writem8)(phy_addr_t addr, uint8_t val, void *opaque);
-typedef void (*pfn_writem16)(phy_addr_t addr, uint16_t val, void *opaque);
-typedef void (*pfn_writem32)(phy_addr_t addr, uint32_t val, void *opaque);
-typedef uint8_t (*pfn_readm8)(phy_addr_t addr, void *opaque);
-typedef uint16_t (*pfn_readm16)(phy_addr_t addr, void *opaque);
-typedef uint32_t (*pfn_readm32)(phy_addr_t addr, void *opaque);
+class MMIOCallback
+{
+public:
+    MMIOCallback() {}
+    virtual ~MMIOCallback() {}
+    virtual void writem8(phy_addr_t addr, uint8_t val, void *opaque) {}
+    virtual void writem16(phy_addr_t addr, uint16_t val, void *opaque) {}
+    virtual void writem32(phy_addr_t addr, uint32_t val, void *opaque) {}
+    virtual uint8_t readm8(phy_addr_t addr, void *opaque) { return 0; }
+    virtual uint16_t readm16(phy_addr_t addr, void *opaque) { return 0; }
+    virtual uint32_t readm32(phy_addr_t addr, void *opaque) { return 0; }
+};
 
 class Memory
 {
@@ -17,12 +23,12 @@ public:
     ~Memory();
     int load_address_fp(FILE *fp, phy_addr_t baseaddr);
 
-    void mmio_register_writem8(phy_addr_t start_addr, phy_addr_t end_addr, pfn_writem8 callback, void *opaque);
-    void mmio_register_writem16(phy_addr_t start_addr, phy_addr_t end_addr, pfn_writem16 callback, void *opaque);
-    void mmio_register_writem32(phy_addr_t start_addr, phy_addr_t end_addr, pfn_writem32 callback, void *opaque);
-    void mmio_register_readm8(phy_addr_t start_addr, phy_addr_t end_addr, pfn_readm8 callback, void *opaque);
-    void mmio_register_readm16(phy_addr_t start_addr, phy_addr_t end_addr, pfn_readm16 callback, void *opaque);
-    void mmio_register_readm32(phy_addr_t start_addr, phy_addr_t end_addr, pfn_readm32 callback, void *opaque);
+    void mmio_register_writem8(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque);
+    void mmio_register_writem16(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque);
+    void mmio_register_writem32(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque);
+    void mmio_register_readm8(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque);
+    void mmio_register_readm16(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque);
+    void mmio_register_readm32(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque);
 
     void phy_writem8(phy_addr_t addr, uint8_t val);
     void phy_writem16(phy_addr_t addr, uint16_t val);
@@ -38,7 +44,7 @@ private:
         bool write;
         phy_addr_t start_addr;
         phy_addr_t end_addr;
-        void *callback;
+        MMIOCallback *callback;
         void *opaque;
         struct mmio_node *next;
     };
@@ -48,7 +54,7 @@ private:
                           bool write,
                           phy_addr_t start_addr,
                           phy_addr_t end_addr,
-                          void *callback,
+                          MMIOCallback *callback,
                           void *opaque);
 
 private:

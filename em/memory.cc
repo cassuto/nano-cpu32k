@@ -73,7 +73,7 @@ void Memory::mmio_append_node(mmio_node **doamin,
                               bool write,
                               phy_addr_t start_addr,
                               phy_addr_t end_addr,
-                              void *callback,
+                              MMIOCallback *callback,
                               void *opaque)
 {
     /* sanity check */
@@ -97,34 +97,34 @@ void Memory::mmio_append_node(mmio_node **doamin,
     fprintf(stderr, "MMIO Device (W=%d) is mapped at %#x ~ %#x\n", write, start_addr, end_addr);
 }
 
-void Memory::mmio_register_writem8(phy_addr_t start_addr, phy_addr_t end_addr, pfn_writem8 callback, void *opaque)
+void Memory::mmio_register_writem8(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
 {
-    mmio_append_node(&mmio8, 1, start_addr, end_addr, (void *)callback, opaque);
+    mmio_append_node(&mmio8, 1, start_addr, end_addr, callback, opaque);
 }
 
-void Memory::mmio_register_writem16(phy_addr_t start_addr, phy_addr_t end_addr, pfn_writem16 callback, void *opaque)
+void Memory::mmio_register_writem16(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
 {
-    mmio_append_node(&mmio16, 1, start_addr, end_addr, (void *)callback, opaque);
+    mmio_append_node(&mmio16, 1, start_addr, end_addr, callback, opaque);
 }
 
-void Memory::mmio_register_writem32(phy_addr_t start_addr, phy_addr_t end_addr, pfn_writem32 callback, void *opaque)
+void Memory::mmio_register_writem32(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
 {
-    mmio_append_node(&mmio32, 1, start_addr, end_addr, (void *)callback, opaque);
+    mmio_append_node(&mmio32, 1, start_addr, end_addr, callback, opaque);
 }
 
-void Memory::mmio_register_readm8(phy_addr_t start_addr, phy_addr_t end_addr, pfn_readm8 callback, void *opaque)
+void Memory::mmio_register_readm8(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
 {
-    mmio_append_node(&mmio8, 0, start_addr, end_addr, (void *)callback, opaque);
+    mmio_append_node(&mmio8, 0, start_addr, end_addr, callback, opaque);
 }
 
-void Memory::mmio_register_readm16(phy_addr_t start_addr, phy_addr_t end_addr, pfn_readm16 callback, void *opaque)
+void Memory::mmio_register_readm16(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
 {
-    mmio_append_node(&mmio16, 0, start_addr, end_addr, (void *)callback, opaque);
+    mmio_append_node(&mmio16, 0, start_addr, end_addr, callback, opaque);
 }
 
-void Memory::mmio_register_readm32(phy_addr_t start_addr, phy_addr_t end_addr, pfn_readm32 callback, void *opaque)
+void Memory::mmio_register_readm32(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
 {
-    mmio_append_node(&mmio32, 0, start_addr, end_addr, (void *)callback, opaque);
+    mmio_append_node(&mmio32, 0, start_addr, end_addr, callback, opaque);
 }
 
 /*
@@ -138,7 +138,7 @@ void Memory::phy_writem8(phy_addr_t addr, uint8_t val)
     struct mmio_node *mmio_handler = match_mmio_handler(mmio8, addr, 1);
     if (mmio_handler)
     {
-        ((pfn_writem8)mmio_handler->callback)(addr, val, mmio_handler->opaque);
+        mmio_handler->callback->writem8(addr, val, mmio_handler->opaque);
     }
     else
     {
@@ -161,7 +161,7 @@ void Memory::phy_writem16(phy_addr_t addr, uint16_t val)
     struct mmio_node *mmio_handler = match_mmio_handler(mmio16, addr, 1);
     if (mmio_handler)
     {
-        ((pfn_writem16)mmio_handler->callback)(addr, val, mmio_handler->opaque);
+        mmio_handler->callback->writem16(addr, val, mmio_handler->opaque);
     }
     else
     {
@@ -175,7 +175,7 @@ void Memory::phy_writem32(phy_addr_t addr, uint32_t val)
     struct mmio_node *mmio_handler = match_mmio_handler(mmio32, addr, 1);
     if (mmio_handler)
     {
-        ((pfn_writem32)mmio_handler->callback)(addr, val, mmio_handler->opaque);
+        mmio_handler->callback->writem32(addr, val, mmio_handler->opaque);
     }
     else
     {
@@ -192,7 +192,7 @@ Memory::phy_readm8(phy_addr_t addr)
     struct mmio_node *mmio_handler = match_mmio_handler(mmio8, addr, 0);
     if (mmio_handler)
     {
-        return ((pfn_readm8)mmio_handler->callback)(addr, mmio_handler->opaque);
+        return mmio_handler->callback->readm8(addr, mmio_handler->opaque);
     }
     else
     {
@@ -213,7 +213,7 @@ Memory::phy_readm16(phy_addr_t addr)
     struct mmio_node *mmio_handler = match_mmio_handler(mmio16, addr, 0);
     if (mmio_handler)
     {
-        return ((pfn_readm16)mmio_handler->callback)(addr, mmio_handler->opaque);
+        return mmio_handler->callback->readm16(addr, mmio_handler->opaque);
     }
     else
         return ((uint16_t)phy_readm8(addr + 1) << 8) | (uint16_t)phy_readm8(addr);
@@ -225,7 +225,7 @@ Memory::phy_readm32(phy_addr_t addr)
     struct mmio_node *mmio_handler = match_mmio_handler(mmio32, addr, 0);
     if (mmio_handler)
     {
-        return ((pfn_readm32)mmio_handler->callback)(addr, mmio_handler->opaque);
+        return mmio_handler->callback->readm32(addr, mmio_handler->opaque);
     }
     else
     {

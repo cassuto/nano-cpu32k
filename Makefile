@@ -10,7 +10,7 @@ SRCS += $(foreach x,${LIB_DIR}, $(wildcard $(addprefix ${x}/*,.v) ) )
 INCS = -I$(SRC_DIR)
 DEFS = +define+SYNTHESIS=1
 FLAGS := $(DEFS) $(INCS) -Wno-UNUSED
-CFLAGS := -Wall
+CFLAGS := -Wall -I../em
 
 # Simulation
 SIM_TOPLEVEL := simtop
@@ -24,7 +24,10 @@ SIM_CPPS := $(EM_DIR)/main.cc \
 			$(EM_DIR)/mmu.cc \
 			$(EM_DIR)/msr.cc \
 			$(EM_DIR)/tsc.cc \
-			$(EM_DIR)/irqc.cc
+			$(EM_DIR)/irqc.cc \
+			$(EM_DIR)/peripheral/device-tree.cc \
+			$(EM_DIR)/peripheral/pb-uart.cc \
+			$(EM_DIR)/peripheral/virt-uart.cc
 
 # Lint
 LINT_TOPLEVEL := ncpu64k
