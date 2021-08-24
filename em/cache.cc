@@ -207,7 +207,7 @@ void Cache::phy_writem16(phy_addr_t addr, uint16_t val)
     if (enabled)
     {
         int way, entry;
-        assert(addr & 0x1 == 0);
+        assert((addr & 0x1) == 0);
         access(addr, true, &way, &entry);
         lines[way][entry][addr & m_block_offset_mask] = val;
         lines[way][entry][(addr+1) & m_block_offset_mask] = (val>>8);
@@ -223,7 +223,7 @@ void Cache::phy_writem32(phy_addr_t addr, uint32_t val)
     if (enabled)
     {
         int way, entry;
-        assert(addr & 0x3 == 0);
+        assert((addr & 0x3) == 0);
         access(addr, true, &way, &entry);
         lines[way][entry][addr & m_block_offset_mask] = val;
         lines[way][entry][(addr+1) & m_block_offset_mask] = (val>>8);
@@ -246,7 +246,7 @@ uint8_t Cache::phy_readm8(phy_addr_t addr)
     }
     else
     {
-        mem->phy_readm8(addr);
+        return mem->phy_readm8(addr);
     }
 }
 
@@ -255,14 +255,14 @@ uint16_t Cache::phy_readm16(phy_addr_t addr)
     if (enabled)
     {
         int way, entry;
-        assert(addr & 0x1 == 0);
+        assert((addr & 0x1) == 0);
         access(addr, false, &way, &entry);
         return lines[way][entry][addr & m_block_offset_mask] |
                 (uint16_t(lines[way][entry+1][addr & m_block_offset_mask])<<8);
     }
     else
     {
-        mem->phy_readm16(addr);
+        return mem->phy_readm16(addr);
     }
 }
 
@@ -271,7 +271,7 @@ uint32_t Cache::phy_readm32(phy_addr_t addr)
     if (enabled)
     {
         int way, entry;
-        assert(addr & 0x3 == 0);
+        assert((addr & 0x3) == 0);
         access(addr, false, &way, &entry);
         return lines[way][entry][addr & m_block_offset_mask] |
                 (uint32_t(lines[way][entry+1][addr & m_block_offset_mask])<<8) |
@@ -280,7 +280,7 @@ uint32_t Cache::phy_readm32(phy_addr_t addr)
     }
     else
     {
-        mem->phy_readm32(addr);
+        return mem->phy_readm32(addr);
     }
 }
 
@@ -325,8 +325,8 @@ void Cache::invalidate(phy_addr_t pa)
 void Cache::dump(char prefix)
 {
     printf("%cCache dump:", prefix);
-    printf("\tHit: %lld\n", freq_hit);
-    printf("\tMiss: %lld\n", freq_miss);
-    printf("\t\tWriteback: %lld\n", freq_miss_writeback);
+    printf("\tHit: %llu\n", freq_hit);
+    printf("\tMiss: %llu\n", freq_miss);
+    printf("\t\tWriteback: %llu\n", freq_miss_writeback);
     printf("\tP(h) = %f%d\n", (float)freq_hit / (freq_hit + freq_miss) * 100);
 }
