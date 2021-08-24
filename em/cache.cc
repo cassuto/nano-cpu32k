@@ -328,5 +328,5 @@ void Cache::dump(char prefix)
     printf("\tHit: %lu\n", freq_hit);
     printf("\tMiss: %lu\n", freq_miss);
     printf("\t\tWriteback: %lu\n", freq_miss_writeback);
-    printf("\tP(h) = %f%d\n", (float)freq_hit / (freq_hit + freq_miss) * 100);
+    printf("\tP(h) = %f%%\n", (float)freq_hit / (freq_hit + freq_miss) * 100);
 }
