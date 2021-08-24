@@ -114,6 +114,7 @@ public:
 
     void reset(vm_addr_t reset_vect);
     vm_addr_t step(vm_addr_t pc);
+    void run_step();
 
     void set_reg(uint16_t addr, cpu_word_t val);
     cpu_word_t get_reg(uint16_t addr);
@@ -122,6 +123,8 @@ public:
     void irqc_set_interrupt(int channel, char raise);
     int irqc_is_masked(int channel);
     int irqc_handle_irqs();
+
+    inline Memory *memory() { return mem; }
 
 private:
     vm_addr_t raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall);

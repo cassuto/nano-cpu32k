@@ -129,6 +129,15 @@ CPU::step(vm_addr_t pc)
     phy_addr_t insn_pa;
     insn_t insn;
 
+    tsc_clk(1);
+
+    /* response asynchronous interrupts */
+    if (irqc_handle_irqs() == -EM_IRQ)
+    {
+        pc_nxt = raise_exception(pc, VECT_EIRQ, 0, 0);
+        goto handle_exception;
+    }
+
     switch (immu_translate_vma(pc, &insn_pa))
     {
     case -EM_PAGE_FAULT:
@@ -529,6 +538,11 @@ fetch_next:
 flush_pc:
     /* The only-one exit point */
     return pc_nxt;
+}
+
+void CPU::run_step()
+{
+    pc = step(pc);
 }
 
 /**
