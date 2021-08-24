@@ -146,9 +146,7 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
             for (phy_addr_t offset = 0; offset < line_size; offset++)
             {
                 lines[free_way_idx][entry_idx][offset] = mem->phy_readm8(line_paddr + offset);
-                printf("%02x ", lines[free_way_idx][entry_idx][offset]);
             }
-            printf("\n");
         }
     }
     else
@@ -260,7 +258,7 @@ uint16_t Cache::phy_readm16(phy_addr_t addr)
         assert((addr & 0x1) == 0);
         access(addr, false, &way, &entry);
         return lines[way][entry][addr & m_block_offset_mask] |
-                (uint16_t(lines[way][entry+1][addr & m_block_offset_mask])<<8);
+                (uint16_t(lines[way][entry][(addr+1) & m_block_offset_mask])<<8);
     }
     else
     {
@@ -276,9 +274,9 @@ uint32_t Cache::phy_readm32(phy_addr_t addr)
         assert((addr & 0x3) == 0);
         access(addr, false, &way, &entry);
         return lines[way][entry][addr & m_block_offset_mask] |
-                (uint32_t(lines[way][entry+1][addr & m_block_offset_mask])<<8) |
-                (uint32_t(lines[way][entry+2][addr & m_block_offset_mask])<<16) |
-                (uint32_t(lines[way][entry+3][addr & m_block_offset_mask])<<24);
+                (uint32_t(lines[way][entry][(addr+1) & m_block_offset_mask])<<8) |
+                (uint32_t(lines[way][entry][(addr+2) & m_block_offset_mask])<<16) |
+                (uint32_t(lines[way][entry][(addr+3) & m_block_offset_mask])<<24);
     }
     else
     {
