@@ -113,7 +113,7 @@ module bpu
             
             assign upd[i*BPU_UPD_DW +: BPU_UPD_DW] = {s1o_pht_count[i*PHT_DW +: PHT_DW][PHT_DW-1], s1o_pht_addr[i], s1o_btb_addr[i]};
          end
-   end
+   endgenerate
    
    mRF_1wnr
       #(

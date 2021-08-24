@@ -66,11 +66,11 @@ module ncpu64k
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   /* verilator lint_off UNUSED */
    wire [`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0] fbuf_ins;// From U_IFU of ifu.v
    wire [(1<<CONFIG_P_FETCH_WIDTH)-1:0] fbuf_valid;// From U_IFU of ifu.v
-   /* verilator lint_on UNUSED */
    // End of automatics
+   wire                               op_ic_inv;
+   wire [CONFIG_AW-1:0]               op_ic_inv_paddr;
 
    ifu
    #(/*AUTOINSTPARAM*/
@@ -106,6 +106,8 @@ module ncpu64k
     // Inputs
     .clk                                (clk),
     .rst                                (rst),
+    .op_ic_inv                          (op_ic_inv),
+    .op_ic_inv_paddr                    (op_ic_inv_paddr[CONFIG_AW-1:0]),
     .axi_ar_ready_i                     (axi_ar_ready_i),
     .axi_r_valid_i                      (axi_r_valid_i),
     .axi_r_data_i                       (axi_r_data_i[(1<<AXI_P_DW_BYTES)*8-1:0]),
@@ -114,4 +116,6 @@ module ncpu64k
     .axi_r_id_i                         (axi_r_id_i[AXI_ID_WIDTH-1:0]),
     .axi_r_user_i                       (axi_r_user_i[AXI_USER_WIDTH-1:0]));
 
+   assign op_ic_inv = 'b0;
+   assign op_ic_inv_paddr = 'b0;
 endmodule

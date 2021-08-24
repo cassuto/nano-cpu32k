@@ -43,6 +43,9 @@ module ifu
    // To fetch buffer
    output [`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0] fbuf_ins,
    output [(1<<CONFIG_P_FETCH_WIDTH)-1:0] fbuf_valid,
+   // From EXU
+   input                               op_ic_inv,
+   input [CONFIG_AW-1:0]               op_ic_inv_paddr,
    // AXI Master
    input                               axi_ar_ready_i,
    output                              axi_ar_valid_o,
@@ -71,6 +74,7 @@ module ifu
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 ic_stall_req;           // From U_ICACHE of icache.v
+   wire                 op_stall_req;           // From U_ICACHE of icache.v
    // End of automatics
    wire [CONFIG_P_PAGE_SIZE-1:0] vpo;
    wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2;
@@ -87,6 +91,8 @@ module ifu
       .stall_req                       (ic_stall_req),
       .ins                             (fbuf_ins),
       .valid                           (fbuf_valid),
+      .op_inv                          (op_ic_inv),
+      .op_inv_paddr                    (op_ic_inv_paddr),
    )
 */
    icache
@@ -106,6 +112,7 @@ module ifu
    (/*AUTOINST*/
     // Outputs
     .stall_req                          (ic_stall_req),          // Templated
+    .op_stall_req                       (op_stall_req),
     .ins                                (fbuf_ins),              // Templated
     .valid                              (fbuf_valid),            // Templated
     .axi_ar_valid_o                     (axi_ar_valid_o),
@@ -124,9 +131,11 @@ module ifu
     // Inputs
     .clk                                (clk),
     .rst                                (rst),
-    .ce                                 (ic_ce),                 // Templated
     .vpo                                (vpo[CONFIG_P_PAGE_SIZE-1:0]),
     .ppn_s2                             (ppn_s2[CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0]),
+    .kill_req_s2                        (kill_req_s2),
+    .op_inv                             (op_ic_inv),             // Templated
+    .op_inv_paddr                       (op_ic_inv_paddr),       // Templated
     .axi_ar_ready_i                     (axi_ar_ready_i),
     .axi_r_valid_i                      (axi_r_valid_i),
     .axi_r_data_i                       (axi_r_data_i[(1<<AXI_P_DW_BYTES)*8-1:0]),
@@ -154,5 +163,6 @@ module ifu
    
    // TODO: TLB
    mDFF_r # (.DW(CONFIG_AW-CONFIG_P_PAGE_SIZE)) ff_ppn_s2 (.CLK(clk), .RST(rst), .D(s1i_fetch_vaddr[CONFIG_P_PAGE_SIZE +: CONFIG_AW-CONFIG_P_PAGE_SIZE]), .Q(ppn_s2) );
+   assign kill_req_s2 = 'b0;
    
 endmodule
