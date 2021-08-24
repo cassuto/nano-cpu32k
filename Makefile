@@ -1,4 +1,4 @@
-.PHONY: lint sim build
+.PHONY: lint sim build clean
 
 NUM_JOBS := 8
 SRC_DIR := rtl
@@ -46,3 +46,6 @@ sim: build
 
 lint:
 	-verilator --lint-only -Wall --top-module $(LINT_TOPLEVEL) $(FLAGS) $(LINT_SRCS)
+
+clean:
+	-rm ./build/*.o ./build/*.d ./build/*.cpp ./build/*.h
