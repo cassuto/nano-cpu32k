@@ -89,7 +89,7 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
 {
     if (!enabled)
         return;
-
+printf("access %#x\n", pa);
     int entry_idx = (pa >> m_P_LINE) & ((1 << m_P_SETS) - 1);
     phy_addr_t maddr = pa >> (m_P_LINE + m_P_SETS);
 
