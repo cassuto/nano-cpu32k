@@ -542,7 +542,9 @@ flush_pc:
 
 void CPU::run_step()
 {
-    pc = step(pc);
+    vm_addr_t npc = step(pc);
+    printf("pc = %#x", pc);
+    pc = npc;
 }
 
 /**

@@ -88,12 +88,12 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
         char buff[128], *p = buff;
         snprintf(buff, sizeof(buff), "DEBUG NUM PORT - %#x\n", val);
         while (*p)
-            fprintf(stderr, "%c", *p++);
+            fprintf(stdout, "%c", *p++);
         return;
     }
 
     case MSR_DBGR_MSGPORT:
-        fprintf(stderr, "%c", val);
+        fprintf(stdout, "%c", val);
         return;
     }
 
