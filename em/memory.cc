@@ -25,7 +25,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "memory.hh"
 
 Memory::Memory(size_t memory_size_, phy_addr_t mmio_phy_base_)
-    : memory(new uint8_t[memory_size_]),
+    : mmio8(nullptr),
+      mmio16(nullptr),
+      mmio32(nullptr),
+      memory(new uint8_t[memory_size_]),
       memory_size(memory_size_),
       mmio_phy_base(mmio_phy_base_)
 {
