@@ -413,9 +413,6 @@ CPU::step(vm_addr_t pc)
     case INS32_OP_LDBU:
     {
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
-        if (pc==0x00022f4){
-            printf("c00022f4 va=%#x\n", va);
-        }
         phy_addr_t pa = 0;
         bool uncached = false;
         switch (dmmu_translate_vma(va, &pa, &uncached, 0))
@@ -427,18 +424,12 @@ CPU::step(vm_addr_t pc)
             pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
             goto handle_exception;
         }
-        if (pc==0x00022f4){
-            printf("c00022f4 pa=%#x uncached=%d\n", pa, uncached);
-        }
         cpu_unsigned_word_t readout;
         if (uncached)
             readout = (cpu_unsigned_word_t)mem->phy_readm8(pa);
         else
             readout = (cpu_unsigned_word_t)dcache->phy_readm8(pa);
         set_reg(rd, readout);
-        if (pc==0x00022f4){
-            printf("ok\n");
-        }
     }
     break;
     case INS32_OP_LDB:
@@ -558,7 +549,7 @@ flush_pc:
 void CPU::run_step()
 {
     vm_addr_t npc = step(pc);
-    printf("pc = %#x, npc=%#x\n", pc, npc);
+    //printf("pc = %#x, npc=%#x\n", pc, npc);
     pc = npc;
 }
 
