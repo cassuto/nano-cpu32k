@@ -36,6 +36,8 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
     : msr(immu_tlb_count_, dmmu_tlb_count_),
       dmmu_tlb_count(dmmu_tlb_count_),
       immu_tlb_count(immu_tlb_count_),
+      dmmu_tlb_count_log2(int(std::log2(dmmu_tlb_count_))),
+      immu_tlb_count_log2(int(std::log2(immu_tlb_count_))),
       dmmu_enable_uncached_seg(dmmu_enable_uncached_seg_),
       icache_p_ways(icache_p_ways_),
       icache_p_sets(icache_p_sets_),
@@ -521,7 +523,8 @@ CPU::step(vm_addr_t pc)
 
     case INS32_OP_MHI:
         set_reg(rd, (cpu_unsigned_word_t)uimm17 << 15);
-        if (pc==0x2030){
+        if (pc == 0x2030)
+        {
             printf("2030 r5=%x uimm17=%#x\n", get_reg(5), uimm17);
         }
         break;
@@ -559,6 +562,9 @@ void CPU::run_step()
 vm_addr_t
 CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall)
 {
+    if (vector == VECT_EDTM)
+        printf("VECT_EDTM pc=%#X\n lsa=%#x\n", pc, lsa);
+        
     msr.EPC = pc + (is_syscall ? INSN_LEN : 0);
     msr.ELSA = lsa;
     /* save old PSR */

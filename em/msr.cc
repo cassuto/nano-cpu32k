@@ -280,12 +280,12 @@ CPU::rmsr(msr_index_t index)
 
         /* MSR bank - IMM */
         case MSR_IMMID:
-            ret = val_pack_field(IMMID, STLB, int(std::log2(immu_tlb_count)));
+            ret = val_pack_field(IMMID, STLB, immu_tlb_count_log2);
             return ret;
 
         /* MSR bank - DMM */
         case MSR_DMMID:
-            ret = val_pack_field(DMMID, STLB, int(std::log2(dmmu_tlb_count)));
+            ret = val_pack_field(DMMID, STLB, dmmu_tlb_count_log2);
             return ret;
 
         /* MSR bank - ICA */

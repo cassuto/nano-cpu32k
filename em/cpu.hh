@@ -148,6 +148,7 @@ private:
     msr_s msr;
     struct regfile_s regfile;
     int dmmu_tlb_count, immu_tlb_count;
+    int dmmu_tlb_count_log2, immu_tlb_count_log2;
     bool dmmu_enable_uncached_seg;
     int icache_p_ways, icache_p_sets, icache_p_line;
     int dcache_p_ways, dcache_p_sets, dcache_p_line;
