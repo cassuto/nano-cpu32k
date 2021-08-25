@@ -38,7 +38,7 @@ extern void panic(int code);
 #define MIN(x,y) ((x)<(y) ? (x) : (y)) /* Look out please! */
 #endif
 
-#define CHECK_MEMORY_BOUND
-//#undef CHECK_MEMORY_BOUND
+//#define CHECK_MEMORY_BOUND
+#undef CHECK_MEMORY_BOUND
 
 #endif // COMMON_H_

@@ -30,13 +30,117 @@ public:
     void mmio_register_readm16(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque);
     void mmio_register_readm32(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque);
 
-    void phy_writem8(phy_addr_t addr, uint8_t val);
-    void phy_writem16(phy_addr_t addr, uint16_t val);
-    void phy_writem32(phy_addr_t addr, uint32_t val);
+    /*
+     * Physical Memory accessing functions, in little-endian.
+     * Note that there is not any address translation for physical memory.
+     * PhyMemory must be accessed through these funcs for CPU.
+     */
 
-    uint8_t phy_readm8(phy_addr_t addr);
-    uint16_t phy_readm16(phy_addr_t addr);
-    uint32_t phy_readm32(phy_addr_t addr);
+    inline void
+    phy_writem8(phy_addr_t addr, uint8_t val)
+    {
+        struct mmio_node *mmio_handler = match_mmio_handler(mmio8, addr, 1);
+        if (mmio_handler)
+        {
+            mmio_handler->callback->writem8(addr, val, mmio_handler->opaque);
+        }
+        else
+        {
+#ifdef CHECK_MEMORY_BOUND
+            if (addr < memory_size)
+                memory[addr] = val;
+            else
+            {
+                fprintf(stderr, "Memory out of bound. paddr=%#x\n", addr);
+                panic(1);
+            }
+#else
+            memory[addr] = val;
+#endif
+        }
+    }
+
+    inline void
+    phy_writem16(phy_addr_t addr, uint16_t val)
+    {
+        struct mmio_node *mmio_handler = match_mmio_handler(mmio16, addr, 1);
+        if (mmio_handler)
+        {
+            mmio_handler->callback->writem16(addr, val, mmio_handler->opaque);
+        }
+        else
+        {
+            phy_writem8(addr, uint8_t(val & 0x00ff));
+            phy_writem8(addr + 1, uint8_t(val >> 8));
+        }
+    }
+
+    inline void
+    phy_writem32(phy_addr_t addr, uint32_t val)
+    {
+        struct mmio_node *mmio_handler = match_mmio_handler(mmio32, addr, 1);
+        if (mmio_handler)
+        {
+            mmio_handler->callback->writem32(addr, val, mmio_handler->opaque);
+        }
+        else
+        {
+            phy_writem8(addr, uint8_t(val & 0xff));
+            phy_writem8(addr + 1, uint8_t((val >> 8) & 0xff));
+            phy_writem8(addr + 2, uint8_t((val >> 16) & 0xff));
+            phy_writem8(addr + 3, uint8_t(val >> 24));
+        }
+    }
+
+    inline uint8_t
+    phy_readm8(phy_addr_t addr)
+    {
+        struct mmio_node *mmio_handler = match_mmio_handler(mmio8, addr, 0);
+        if (mmio_handler)
+        {
+            return mmio_handler->callback->readm8(addr, mmio_handler->opaque);
+        }
+        else
+        {
+#ifdef CHECK_MEMORY_BOUND
+            if (addr >= memory_size)
+            {
+                fprintf(stderr, "Memory out of bound: paddr=%#x\n", addr);
+                panic(1);
+            }
+#endif
+            return memory[addr];
+        }
+    }
+
+    inline uint16_t
+    phy_readm16(phy_addr_t addr)
+    {
+        struct mmio_node *mmio_handler = match_mmio_handler(mmio16, addr, 0);
+        if (mmio_handler)
+        {
+            return mmio_handler->callback->readm16(addr, mmio_handler->opaque);
+        }
+        else
+            return ((uint16_t)phy_readm8(addr + 1) << 8) | (uint16_t)phy_readm8(addr);
+    }
+
+    inline uint32_t
+    phy_readm32(phy_addr_t addr)
+    {
+        struct mmio_node *mmio_handler = match_mmio_handler(mmio32, addr, 0);
+        if (mmio_handler)
+        {
+            return mmio_handler->callback->readm32(addr, mmio_handler->opaque);
+        }
+        else
+        {
+            return ((uint32_t)phy_readm8(addr + 3) << 24) |
+                   ((uint32_t)phy_readm8(addr + 2) << 16) |
+                   ((uint32_t)phy_readm8(addr + 1) << 8) |
+                   (uint32_t)phy_readm8(addr);
+        }
+    }
 
 private:
     struct mmio_node
