@@ -163,7 +163,7 @@ CPU::step(vm_addr_t pc)
 
     if (pc == 0x7f9ddad4)
         {
-            printf("0x7f9ddad4 pa=%#x\n", insn_pa);
+            printf("0x7f9ddad4 pa=%#x insn=%#x\n", insn_pa, insn);
         }
 
     /* Access ICache */
@@ -342,7 +342,7 @@ CPU::step(vm_addr_t pc)
         if (pc == 0x6f61c)
         {
             printf("STW 6f61c r1=%#x\n", get_reg(1));
-            pc_queue->dump();
+            //pc_queue->dump();
         }
         if (uncached)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
