@@ -30,6 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          bool dmmu_enable_uncached_seg_,
+         bool enable_icache_, bool enable_dcache_,
          int icache_p_ways_, int icache_p_sets_, int icache_p_line_,
          int dcache_p_ways_, int dcache_p_sets_, int dcache_p_line_,
          size_t memory_size_, phy_addr_t mmio_phy_base_,
@@ -40,6 +41,8 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       dmmu_tlb_count_log2(int(std::log2(dmmu_tlb_count_))),
       immu_tlb_count_log2(int(std::log2(immu_tlb_count_))),
       dmmu_enable_uncached_seg(dmmu_enable_uncached_seg_),
+      enable_icache(enable_icache_),
+      enable_dcache(enable_dcache_),
       icache_p_ways(icache_p_ways_),
       icache_p_sets(icache_p_sets_),
       icache_p_line(icache_p_line_),
@@ -47,8 +50,8 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       dcache_p_sets(dcache_p_sets_),
       dcache_p_line(dcache_p_line_),
       mem(new Memory(memory_size_, mmio_phy_base_)),
-      icache(new Cache(mem, true, icache_p_ways, icache_p_sets, icache_p_line)),
-      dcache(new Cache(mem, true, dcache_p_ways, dcache_p_sets, dcache_p_line)),
+      icache(new Cache(mem, enable_icache, icache_p_ways, icache_p_sets, icache_p_line)),
+      dcache(new Cache(mem, enable_dcache, dcache_p_ways, dcache_p_sets, dcache_p_line)),
       IRQ_TSC(IRQ_TSC_),
       pc_queue(new PCQueue())
 {
@@ -150,7 +153,8 @@ CPU::step(vm_addr_t pc)
 
     case -EM_TLB_MISS:
         pc_nxt = raise_exception(pc, VECT_EITM, pc, 0);
-        if(pc==0x7f9ddad4){
+        if (pc == 0x7f9ddad4)
+        {
             printf("hit\n");
             //pc_queue->dump();
         }
@@ -330,7 +334,8 @@ CPU::step(vm_addr_t pc)
             pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
             goto handle_exception;
         }
-        if(pc==0x6f61c){
+        if (pc == 0x6f61c)
+        {
             printf("STW 6f61c r1=%#x\n", get_reg(1));
             pc_queue->dump();
         }
@@ -541,8 +546,9 @@ CPU::step(vm_addr_t pc)
         {
             fprintf(stderr, "EINSN: opcode = %#x at pc %#x\n", opcode, pc);
         }
-        if (pc==0x7f9ddadc) {
-//pc_queue->dump();
+        if (pc == 0x7f9ddadc)
+        {
+            //pc_queue->dump();
         }
         pc_nxt = raise_exception(pc, VECT_EINSN, pc, 0);
         goto handle_exception;

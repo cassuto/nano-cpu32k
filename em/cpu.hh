@@ -106,6 +106,7 @@ class CPU
 public:
     CPU(int dmmu_tlb_count_, int immu_tlb_count_,
         bool dmmu_enable_uncached_seg_,
+        bool enable_icache_, bool enable_dcache_,
         int icache_p_ways_, int icache_p_sets_, int icache_p_line_,
         int dcache_p_ways_, int dcache_p_sets_, int dcache_p_line_,
         size_t memory_size_, phy_addr_t mmio_phy_base_,
@@ -150,6 +151,7 @@ private:
     int dmmu_tlb_count, immu_tlb_count;
     int dmmu_tlb_count_log2, immu_tlb_count_log2;
     bool dmmu_enable_uncached_seg;
+    bool enable_icache, enable_dcache;
     int icache_p_ways, icache_p_sets, icache_p_line;
     int dcache_p_ways, dcache_p_sets, dcache_p_line;
     Memory *mem;

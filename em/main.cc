@@ -43,6 +43,8 @@ static const struct option long_options[] = {
     {"mmio-phy-base", required_argument, NULL, 0},            /* 11 */
     {"irq-tsc", required_argument, NULL, 0},                  /* 12 */
     {"device-clk-div", required_argument, NULL, 0},           /* 13 */
+    {"enable-icache", required_argument, NULL, 0},            /* 14 */
+    {"enable-dcache", required_argument, NULL, 0},            /* 15 */
     {"bin-load-addr", required_argument, NULL, 'a'},
     {"bin-pathname", required_argument, NULL, 'b'},
     {"reset-vector", required_argument, NULL, 'r'},
@@ -61,6 +63,8 @@ public:
         dmmu_tlb_count = 128;
         immu_tlb_count = 128;
         dmmu_enable_uncached_seg = true;
+        enable_icache = true;
+        enable_dcache = true;
         icache_p_ways = 2;
         icache_p_sets = 6;
         icache_p_line = 6;
@@ -79,6 +83,7 @@ public:
     int ram_size;
     int dmmu_tlb_count, immu_tlb_count;
     bool dmmu_enable_uncached_seg;
+    bool enable_icache, enable_dcache;
     int icache_p_ways, icache_p_sets, icache_p_line;
     int dcache_p_ways, dcache_p_sets, dcache_p_line;
     phy_addr_t mmio_phy_base;
@@ -106,6 +111,17 @@ usage(const char *exec)
     return 1;
 }
 
+static bool
+parse_bool(const char *optarg, const char *paramname)
+{
+    if (strcmp(optarg, "true") && strcmp(optarg, "false"))
+    {
+        fprintf(stderr, "Invalid value for --%s\n", paramname);
+        exit(1);
+    }
+    return (strcmp(optarg, "true") == 0);
+}
+
 static int
 parse_args(int argc, char **argv)
 {
@@ -131,12 +147,7 @@ parse_args(int argc, char **argv)
                 args.immu_tlb_count = atoi(optarg);
                 break;
             case 4:
-                if (strcmp(optarg, "true") && strcmp(optarg, "false"))
-                {
-                    fprintf(stderr, "Invalid value for --dmmu-enable-uncached-seg\n");
-                    return usage(argv[0]);
-                }
-                args.dmmu_enable_uncached_seg = (strcmp(optarg, "true") == 0);
+                args.dmmu_enable_uncached_seg = parse_bool(optarg, long_options[4].name);
                 break;
             case 5:
                 args.icache_p_ways = atoi(optarg);
@@ -165,7 +176,12 @@ parse_args(int argc, char **argv)
             case 13:
                 args.device_clk_div = atol(optarg);
                 break;
-
+            case 14:
+                args.enable_icache = parse_bool(optarg, long_options[14].name);
+                break;
+            case 15:
+                args.enable_dcache = parse_bool(optarg, long_options[15].name);
+                break;
             default:
                 return usage(argv[0]);
             }
@@ -200,6 +216,7 @@ int main(int argc, char *argv[])
 
     emu_CPU = new CPU(args.dmmu_tlb_count, args.immu_tlb_count,
                       args.dmmu_enable_uncached_seg,
+                      args.enable_icache, args.enable_dcache,
                       args.icache_p_ways, args.icache_p_sets, args.icache_p_line,
                       args.dcache_p_ways, args.dcache_p_sets, args.dcache_p_line,
                       args.ram_size, args.mmio_phy_base,
