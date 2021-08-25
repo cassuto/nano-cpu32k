@@ -129,7 +129,8 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
             ++freq_miss_writeback;
 
             phy_addr_t line_size = (1U << m_P_LINE);
-            phy_addr_t line_paddr = (cache_addr[free_way_idx][entry_idx] << (m_P_LINE + m_P_SETS));
+            phy_addr_t line_paddr = (cache_addr[free_way_idx][entry_idx] << (m_P_LINE + m_P_SETS)) |
+                                    (phy_addr_t(entry_idx) << m_P_LINE);
             for (phy_addr_t offset = 0; offset < line_size; offset++)
             {
                 mem->phy_writem8(line_paddr + offset, lines[free_way_idx][entry_idx][offset]);
@@ -143,7 +144,8 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
         /* Refill */
         {
             phy_addr_t line_size = (1U << m_P_LINE);
-            phy_addr_t line_paddr = (maddr << (m_P_LINE + m_P_SETS));
+            phy_addr_t line_paddr = (maddr << (m_P_LINE + m_P_SETS)) |
+                                    (phy_addr_t(entry_idx) << m_P_LINE);
             printf("Burst %#x\n", line_paddr);
             for (phy_addr_t offset = 0; offset < line_size; offset++)
             {
@@ -214,7 +216,7 @@ void Cache::phy_writem16(phy_addr_t addr, uint16_t val)
         assert((addr & 0x1) == 0);
         access(addr, true, &way, &entry);
         lines[way][entry][addr & m_block_offset_mask] = val;
-        lines[way][entry][(addr+1) & m_block_offset_mask] = (val>>8);
+        lines[way][entry][(addr + 1) & m_block_offset_mask] = (val >> 8);
     }
     else
     {
@@ -230,9 +232,9 @@ void Cache::phy_writem32(phy_addr_t addr, uint32_t val)
         assert((addr & 0x3) == 0);
         access(addr, true, &way, &entry);
         lines[way][entry][addr & m_block_offset_mask] = val;
-        lines[way][entry][(addr+1) & m_block_offset_mask] = (val>>8);
-        lines[way][entry][(addr+2) & m_block_offset_mask] = (val>>16);
-        lines[way][entry][(addr+3) & m_block_offset_mask] = (val>>24);
+        lines[way][entry][(addr + 1) & m_block_offset_mask] = (val >> 8);
+        lines[way][entry][(addr + 2) & m_block_offset_mask] = (val >> 16);
+        lines[way][entry][(addr + 3) & m_block_offset_mask] = (val >> 24);
     }
     else
     {
@@ -262,7 +264,7 @@ uint16_t Cache::phy_readm16(phy_addr_t addr)
         assert((addr & 0x1) == 0);
         access(addr, false, &way, &entry);
         return lines[way][entry][addr & m_block_offset_mask] |
-                (uint16_t(lines[way][entry][(addr+1) & m_block_offset_mask])<<8);
+               (uint16_t(lines[way][entry][(addr + 1) & m_block_offset_mask]) << 8);
     }
     else
     {
@@ -278,9 +280,9 @@ uint32_t Cache::phy_readm32(phy_addr_t addr)
         assert((addr & 0x3) == 0);
         access(addr, false, &way, &entry);
         return lines[way][entry][addr & m_block_offset_mask] |
-                (uint32_t(lines[way][entry][(addr+1) & m_block_offset_mask])<<8) |
-                (uint32_t(lines[way][entry][(addr+2) & m_block_offset_mask])<<16) |
-                (uint32_t(lines[way][entry][(addr+3) & m_block_offset_mask])<<24);
+               (uint32_t(lines[way][entry][(addr + 1) & m_block_offset_mask]) << 8) |
+               (uint32_t(lines[way][entry][(addr + 2) & m_block_offset_mask]) << 16) |
+               (uint32_t(lines[way][entry][(addr + 3) & m_block_offset_mask]) << 24);
     }
     else
     {
@@ -298,12 +300,14 @@ void Cache::flush(phy_addr_t pa)
 
     for (int i = 0; i < (1L << m_P_WAYS); i++)
     {
-        if (cache_v[i][entry_idx] && cache_addr[i][entry_idx]==maddr) { /* hit */
+        if (cache_v[i][entry_idx] && cache_addr[i][entry_idx] == maddr)
+        { /* hit */
             if (cache_dirty[entry_idx][i])
             {
                 /* write back */
                 phy_addr_t line_size = (1U << m_P_LINE);
-                phy_addr_t line_paddr = (cache_addr[i][entry_idx] << (m_P_LINE + m_P_SETS));
+                phy_addr_t line_paddr = (cache_addr[i][entry_idx] << (m_P_LINE + m_P_SETS)) |
+                                        (phy_addr_t(entry_idx) << m_P_LINE);
                 for (phy_addr_t offset = 0; offset < line_size; offset++)
                 {
                     mem->phy_writem8(line_paddr + offset, lines[i][entry_idx][offset]);
