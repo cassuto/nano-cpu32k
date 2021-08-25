@@ -345,7 +345,7 @@ CPU::step(vm_addr_t pc)
             //pc_queue->dump();
         }
         if ((pa==0x1623ad4) && true) {
-        printf("w %#x val=%#x pc=%#x\n", pa, (uint32_t)get_reg(rd), pc);
+        printf("w va=%#x pa=%#x val=%#x pc=%#x\n", va, pa, (uint32_t)get_reg(rd), pc);
         //pc_queue->dump();
     }
         if (uncached)
