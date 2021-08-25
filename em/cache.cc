@@ -90,10 +90,6 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
     if (!enabled)
         return;
 
-    if ((pa==0x1623ad4) && store) {
-        printf("w %#x\n", pa);
-    }
-
     int entry_idx = (pa >> m_P_LINE) & ((1 << m_P_SETS) - 1);
     phy_addr_t maddr = pa >> (m_P_LINE + m_P_SETS);
 
@@ -236,6 +232,10 @@ void Cache::phy_writem32(phy_addr_t addr, uint32_t val)
         lines[way][entry][(addr + 1) & m_block_offset_mask] = (val >> 8);
         lines[way][entry][(addr + 2) & m_block_offset_mask] = (val >> 16);
         lines[way][entry][(addr + 3) & m_block_offset_mask] = (val >> 24);
+
+            if ((addr==0x1623ad4) && true) {
+        printf("w %#x val=%#x\n", addr, val);
+    }
     }
     else
     {
