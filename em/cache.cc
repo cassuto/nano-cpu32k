@@ -314,7 +314,7 @@ void Cache::flush(phy_addr_t pa)
                     printf("fls pa=%#x\n", line_paddr);
                     for (phy_addr_t offset = 0; offset < line_size; offset++)
                     {
-                        printf("%#x ", lines[i][entry_idx][offset]);
+                        printf("%#x = %#x\n", line_paddr+offset, lines[i][entry_idx][offset]);
                     }
                     printf("\n");
                 }
