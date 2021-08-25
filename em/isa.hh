@@ -258,9 +258,9 @@
 #define MSR_ICID_SS_SHIFT 0
 #define MSR_ICID_SS 0xf
 #define MSR_ICID_SL_SHIFT 4
-#define MSR_ICID_SL (1 << MSR_ICID_SL_SHIFT)
+#define MSR_ICID_SL (0xf << MSR_ICID_SL_SHIFT)
 #define MSR_ICID_SW_SHIFT 8
-#define MSR_ICID_SW (1 << MSR_ICID_SW_SHIFT)
+#define MSR_ICID_SW (0xf << MSR_ICID_SW_SHIFT)
 #define MSR_ICINV (MSR_BANK_ICA + (1 << 1))
 
 /*********************************************************************
@@ -272,9 +272,9 @@
 #define MSR_DCID_SS_SHIFT 0
 #define MSR_DCID_SS 0xf
 #define MSR_DCID_SL_SHIFT 4
-#define MSR_DCID_SL (1 << MSR_DCID_SL_SHIFT)
+#define MSR_DCID_SL (0xf << MSR_DCID_SL_SHIFT)
 #define MSR_DCID_SW_SHIFT 8
-#define MSR_DCID_SW (1 << MSR_DCID_SW_SHIFT)
+#define MSR_DCID_SW (0xf << MSR_DCID_SW_SHIFT)
 #define MSR_DCINV (MSR_BANK_DCA + (1 << 1))
 #define MSR_DCFLS (MSR_BANK_DCA + (1 << 2))
 
