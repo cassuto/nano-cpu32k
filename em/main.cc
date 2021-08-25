@@ -61,10 +61,10 @@ public:
         dmmu_tlb_count = 128;
         immu_tlb_count = 128;
         dmmu_enable_uncached_seg = true;
-        icache_p_ways = 6;
+        icache_p_ways = 2;
         icache_p_sets = 6;
         icache_p_line = 6;
-        dcache_p_ways = 6;
+        dcache_p_ways = 2;
         dcache_p_sets = 6;
         dcache_p_line = 6;
         mmio_phy_base = 0x80000000;
