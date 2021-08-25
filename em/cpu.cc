@@ -158,6 +158,10 @@ CPU::step(vm_addr_t pc)
     icache->getDelay(insn_pa, /*store*/ 0);
 #endif
     insn = (insn_t)icache->phy_readm32(insn_pa);
+    
+        if(pc==0x002224){
+        printf("insn 002224 = %#x\n", insn);
+    }
 
     pc_nxt = pc + INSN_LEN;
 
@@ -537,10 +541,6 @@ pc_queue->dump();
         }
         pc_nxt = raise_exception(pc, VECT_EINSN, pc, 0);
         goto handle_exception;
-    }
-
-    if(pc==0x002224){
-        printf("insn 002224 = %#x\n", insn);
     }
 
     goto fetch_next;
