@@ -344,6 +344,10 @@ CPU::step(vm_addr_t pc)
             printf("STW 6f61c r1=%#x\n", get_reg(1));
             //pc_queue->dump();
         }
+        if ((pa==0x1623ad4) && true) {
+        printf("w %#x val=%#x pc=%#x\n", pa, (uint32_t)get_reg(rd), pc);
+        pc_queue->dump();
+    }
         if (uncached)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else

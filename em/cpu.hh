@@ -126,6 +126,7 @@ public:
     int irqc_handle_irqs();
 
     inline Memory *memory() { return mem; }
+    inline vm_addr_t get_pc() { return pc; }
 
 private:
     vm_addr_t raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall);
