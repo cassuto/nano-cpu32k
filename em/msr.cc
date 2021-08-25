@@ -138,12 +138,9 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             break;
         /* MSR bank - DCA */
         case MSR_DCINV:
-        //printf("d INV paddr=%#x\n", val);
             dcache->invalidate(val);
             break;
         case MSR_DCFLS:
-        if(val==0x1623ad4)
-        printf("d FLS paddr=%#x\n", val);
             dcache->flush(val);
             break;
 
