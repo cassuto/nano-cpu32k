@@ -42,7 +42,7 @@ void PCQueue::push(vm_addr_t pc, insn_t insn)
     }
     else
     {
-        std::memmove(pc_queue, &pc_queue[1], (sizeof(uint32_t) * n_pc_queue) - sizeof(uint32_t));
+        std::memmove(pc_queue, &pc_queue[1], (sizeof(info) * n_pc_queue) - sizeof(info));
         pc_queue[n_pc_queue - 1] = info(pc, insn);
     }
 }

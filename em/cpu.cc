@@ -531,7 +531,7 @@ CPU::step(vm_addr_t pc)
     default:
         if (opcode != INS32_OP_LDWA && opcode != INS32_OP_STWA)
         {
-            fprintf(stderr, "invaild insn: %#x at pc %#x\n", opcode, pc);
+            fprintf(stderr, "EINSN: opcode = %#x at pc %#x\n", opcode, pc);
         }
         if (pc==0x7f9ddadc) {
 pc_queue->dump();
