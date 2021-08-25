@@ -158,10 +158,7 @@ CPU::step(vm_addr_t pc)
     icache->getDelay(insn_pa, /*store*/ 0);
 #endif
     insn = (insn_t)icache->phy_readm32(insn_pa);
-    
-        if(pc==0x002224){
-        printf("insn 002224 = %#x\n", insn);
-    }
+    pc_queue->push(pc, insn);
 
     pc_nxt = pc + INSN_LEN;
 
@@ -554,7 +551,6 @@ flush_pc:
 void CPU::run_step()
 {
     vm_addr_t npc = step(pc);
-    pc_queue->push(pc);
     //printf("pc = %#x, npc=%#x\n", pc, npc);
     pc = npc;
 }

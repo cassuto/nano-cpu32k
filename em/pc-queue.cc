@@ -26,7 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 PCQueue::PCQueue()
 {
-    pc_queue = new uint32_t[n_pc_queue];
+    pc_queue = new info[n_pc_queue];
     pc_queue_pos = 0;
 }
 PCQueue::~PCQueue()
@@ -34,16 +34,16 @@ PCQueue::~PCQueue()
     delete pc_queue;
 }
 
-void PCQueue::push(uint32_t pc)
+void PCQueue::push(vm_addr_t pc, insn_t insn)
 {
     if (pc_queue_pos < n_pc_queue)
     {
-        pc_queue[pc_queue_pos++] = pc;
+        pc_queue[pc_queue_pos++] = info(pc, insn);
     }
     else
     {
-        std::memmove(pc_queue, &pc_queue[1], (sizeof(uint32_t)*n_pc_queue) - sizeof(uint32_t));
-        pc_queue[n_pc_queue - 1] = pc;
+        std::memmove(pc_queue, &pc_queue[1], (sizeof(uint32_t) * n_pc_queue) - sizeof(uint32_t));
+        pc_queue[n_pc_queue - 1] = info(pc, insn);
     }
 }
 
@@ -51,6 +51,6 @@ void PCQueue::dump()
 {
     for (int i = 0; i < pc_queue_pos; i++)
     {
-        fprintf(stderr, "[%d] pc=%#08x\n", i, pc_queue[i]);
+        fprintf(stderr, "[%d] pc=%#08x insn=%#08x\n", i, pc_queue[i].pc, pc_queue[i].insn);
     }
 }

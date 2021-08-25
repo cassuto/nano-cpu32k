@@ -8,12 +8,28 @@ class PCQueue
 public:
     PCQueue();
     ~PCQueue();
-    void push(uint32_t pc);
+    void push(vm_addr_t pc, insn_t insn);
     void dump();
 
 private:
+    class info
+    {
+    public:
+        info()
+            : pc(0),
+              insn(0)
+        {
+        }
+        info(vm_addr_t pc_, insn_t insn_)
+            : pc(pc_),
+              insn(insn_)
+        {
+        }
+        vm_addr_t pc;
+        insn_t insn;
+    };
     const int n_pc_queue = 16;
-    uint32_t *pc_queue;
+    info *pc_queue;
     int pc_queue_pos;
 };
 
