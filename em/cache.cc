@@ -310,6 +310,15 @@ void Cache::flush(phy_addr_t pa)
                     mem->phy_writem8(line_paddr + offset, lines[i][entry_idx][offset]);
                 }
 
+                if(pa==0x1623AC0){
+                    printf("fls pa=%#x\n", line_paddr);
+                    for (phy_addr_t offset = 0; offset < line_size; offset++)
+                    {
+                        printf("%#x ", lines[i][entry_idx][offset]);
+                    }
+                    printf("\n");
+                }
+
                 cache_dirty[entry_idx][i] = 0;
             }
         }
