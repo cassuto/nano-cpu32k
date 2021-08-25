@@ -413,6 +413,9 @@ CPU::step(vm_addr_t pc)
     case INS32_OP_LDBU:
     {
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
+        if (pc==0xc00022f4){
+            printf("c00022f4 va=%#x\n", va);
+        }
         phy_addr_t pa = 0;
         bool uncached = false;
         switch (dmmu_translate_vma(va, &pa, &uncached, 0))
