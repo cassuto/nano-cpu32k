@@ -28,14 +28,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 static const int cpuid_ver = 1;
 static const int cpuid_rev = 0;
-static const char enable_imm = 1;
-static const char enable_dmm = 1;
-static const char enable_icache = 0;
-static const char enable_dcache = 0;
-static const char enable_dbg = 1;
-static const char enable_fpu = 0;
-static const char enable_tsc = 1;
-static const char enable_irqc = 1;
+static const bool enable_imm = 1;
+static const bool enable_dmm = 1;
+static const bool enable_icache = 0;
+static const bool enable_dcache = 0;
+static const bool enable_dbg = 1;
+static const bool enable_fpu = 0;
+static const bool enable_tsc = 1;
+static const bool enable_irqc = 1;
 
 #define normalize_bit(val) (val ? 1 : 0)
 

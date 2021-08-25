@@ -21,6 +21,7 @@ class Cache;
 class CPU;
 class Memory;
 class DeviceTree;
+class PCQueue;
 
 #define EM_SUCCEEDED 0
 #define EM_FAULT 1

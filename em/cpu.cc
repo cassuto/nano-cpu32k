@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "cpu.hh"
 #include "memory.hh"
 #include "cache.hh"
+#include "pc-queue.hh"
 
 CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          bool dmmu_enable_uncached_seg_,
@@ -48,7 +49,8 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       mem(new Memory(memory_size_, mmio_phy_base_)),
       icache(new Cache(mem, true, icache_p_ways, icache_p_sets, icache_p_line)),
       dcache(new Cache(mem, true, dcache_p_ways, dcache_p_sets, dcache_p_line)),
-      IRQ_TSC(IRQ_TSC_)
+      IRQ_TSC(IRQ_TSC_),
+      pc_queue(new PCQueue())
 {
 }
 
@@ -528,7 +530,10 @@ CPU::step(vm_addr_t pc)
     default:
         if (opcode != INS32_OP_LDWA && opcode != INS32_OP_STWA)
         {
-            printf("invaild insn: %#x at pc %#x\n", opcode, pc);
+            fprintf(stderr, "invaild insn: %#x at pc %#x\n", opcode, pc);
+        }
+        if (pc==0x7f9cbaf4) {
+pc_queue->dump();
         }
         pc_nxt = raise_exception(pc, VECT_EINSN, pc, 0);
         goto handle_exception;
@@ -545,6 +550,7 @@ flush_pc:
 void CPU::run_step()
 {
     vm_addr_t npc = step(pc);
+    pc_queue->push(pc);
     //printf("pc = %#x, npc=%#x\n", pc, npc);
     pc = npc;
 }

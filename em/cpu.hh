@@ -155,6 +155,7 @@ private:
     Memory *mem;
     Cache *icache, *dcache;
     int IRQ_TSC;
+    PCQueue *pc_queue;
 };
 
 #endif // CPU_H_
