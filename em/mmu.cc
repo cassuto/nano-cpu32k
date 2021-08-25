@@ -36,8 +36,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @retval -EM_PAGE_FAULT Exception of Page Fault. 
  * @retval >= 0              No exception.
  */
-int
-CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool store_insn)
+int CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool store_insn)
 {
     *uncached = false;
     if (msr.PSR.DMME)
@@ -63,17 +62,54 @@ CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool store
                 }
             }
             *pa = (msr.DTLBH[offset].PPN << PPN_SHIFT) | (va & ((1 << PPN_SHIFT) - 1));
-
             /* If DMMU is disabled, UNC bit in page entry is not functioned.
              * Uncached segment is always functioned as long as physical addr is valid
              * and is within 0x80000000~0x8FFFFFFF
              */
             if (dmmu_enable_uncached_seg)
                 /* Without any exception */
-                *uncached = msr.DTLBH[offset].NC || ((msr.DTLBH[offset].PPN>>(32-PPN_SHIFT-4))==0x8);
+                *uncached = (msr.DTLBH[offset].NC) || ((msr.DTLBH[offset].PPN >> (32 - PPN_SHIFT - 4)) == 0x8);
             else
-                *uncached = msr.DTLBH[offset].NC;
-                
+                *uncached = (msr.DTLBH[offset].NC);
+        }
+        else
+        {
+            return -EM_TLB_MISS;
+        }
+    }
+    else
+    {
+        /* no translation */
+        *pa = va;
+        if (dmmu_enable_uncached_seg)
+            *uncached = ((va >> (32 - 4)) == 0x8);
+    }
+
+    return 0;
+}
+
+/**
+ * Translate virtual address to physical address.
+ * @param [in] va Target Virtual Address
+ * @param [out] pa Indicate where to store the physical address.
+ * @retval -EM_TLB_MISS   Exception of TLB MISS
+ * @retval -EM_PAGE_FAULT Exception of Page Fault. 
+ * @retval >= 0              No exception.
+ */
+int CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa)
+{
+    if (msr.PSR.IMME)
+    {
+        vm_addr_t vpn = va >> VPN_SHIFT;
+        int offset = vpn & (immu_tlb_count - 1);
+        if (msr.ITLBL[offset].V && msr.ITLBL[offset].VPN == vpn)
+        {
+            if ((msr.PSR.RM && !msr.ITLBH[offset].RX) ||
+                (!msr.PSR.RM && !msr.ITLBH[offset].UX))
+            {
+                return -EM_PAGE_FAULT;
+            }
+            *pa = (msr.ITLBH[offset].PPN << PPN_SHIFT) | (va & ((1 << PPN_SHIFT) - 1));
             return 0;
         }
         else
@@ -88,43 +124,3 @@ CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool store
     }
     return 0;
 }
-
-
-/**
- * Translate virtual address to physical address.
- * @param [in] va Target Virtual Address
- * @param [out] pa Indicate where to store the physical address.
- * @retval -EM_TLB_MISS   Exception of TLB MISS
- * @retval -EM_PAGE_FAULT Exception of Page Fault. 
- * @retval >= 0              No exception.
- */
-int
-CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa)
-{
-  if (msr.PSR.IMME)
-    {
-      vm_addr_t vpn = va >> VPN_SHIFT;
-      int offset = vpn & (immu_tlb_count-1);
-      if (msr.ITLBL[offset].V && msr.ITLBL[offset].VPN == vpn)
-        {
-          if ((msr.PSR.RM && !msr.ITLBH[offset].RX) ||
-              (!msr.PSR.RM && !msr.ITLBH[offset].UX))
-            {
-              return -EM_PAGE_FAULT;
-            }
-          *pa = (msr.ITLBH[offset].PPN << PPN_SHIFT) | (va & ((1<<PPN_SHIFT)-1));
-          return 0;
-        }
-      else
-        {
-          return -EM_TLB_MISS;
-        }
-    }
-  else
-    {
-      /* no translation */
-      *pa = va;
-    }
-  return 0;
-}
-
