@@ -532,7 +532,7 @@ CPU::step(vm_addr_t pc)
         {
             fprintf(stderr, "invaild insn: %#x at pc %#x\n", opcode, pc);
         }
-        if (pc==0x7f9cbaf4) {
+        if (pc==0x7f9ddadc) {
 pc_queue->dump();
         }
         pc_nxt = raise_exception(pc, VECT_EINSN, pc, 0);
