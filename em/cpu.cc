@@ -539,6 +539,10 @@ pc_queue->dump();
         goto handle_exception;
     }
 
+    if(pc==0x002224){
+        printf("insn 002224 = %#x\n", insn);
+    }
+
     goto fetch_next;
 handle_exception:
 fetch_next:
