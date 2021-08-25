@@ -12,7 +12,7 @@ static HANDLE ser;
 int virt_uart_init(const char *filename)
 {
 #ifdef _WIN32
-    ser = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    ser = CreateFileA(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     if (ser == INVALID_HANDLE_VALUE)
     {
         fprintf(stderr, "failed to open virtual UART\n");
