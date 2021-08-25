@@ -30,8 +30,6 @@ static const int cpuid_ver = 1;
 static const int cpuid_rev = 0;
 static const bool enable_imm = 1;
 static const bool enable_dmm = 1;
-static const bool enable_icache = 0;
-static const bool enable_dcache = 0;
 static const bool enable_dbg = 1;
 static const bool enable_fpu = 0;
 static const bool enable_tsc = 1;
@@ -140,9 +138,11 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             break;
         /* MSR bank - DCA */
         case MSR_DCINV:
+            assert(0);
             dcache->invalidate(val);
             break;
         case MSR_DCFLS:
+        printf("d FLS paddr=%#x\n", val);
             dcache->flush(val);
             break;
 
