@@ -150,6 +150,9 @@ CPU::step(vm_addr_t pc)
 
     case -EM_TLB_MISS:
         pc_nxt = raise_exception(pc, VECT_EITM, pc, 0);
+        if(pc==0x006f69c){
+            printf("hit\n");
+        }
         goto handle_exception;
     }
 
