@@ -293,7 +293,7 @@ CPU::rmsr(msr_index_t index)
             ret = val_pack_field(ICID, SS, icache_p_sets);
             ret |= val_pack_field(ICID, SL, icache_p_line);
             ret |= val_pack_field(ICID, SW, icache_p_ways);
-            printf("ICID=%#x\n", ret);
+            printf("ICID=%#x icache_p_line=%d\n", ret, icache_p_line);
             return ret;
 
         /* MSR bank - DCA */
