@@ -330,6 +330,9 @@ CPU::step(vm_addr_t pc)
             pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
             goto handle_exception;
         }
+        if(pc==0x6f61c){
+            printf("STW 6f61c r1=%#x\n", get_reg(1));
+        }
         if (uncached)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
