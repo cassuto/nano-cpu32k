@@ -152,7 +152,7 @@ CPU::step(vm_addr_t pc)
         pc_nxt = raise_exception(pc, VECT_EITM, pc, 0);
         if(pc==0x7f9ddad4){
             printf("hit\n");
-            pc_queue->dump();
+            //pc_queue->dump();
         }
         goto handle_exception;
     }
@@ -332,6 +332,7 @@ CPU::step(vm_addr_t pc)
         }
         if(pc==0x6f61c){
             printf("STW 6f61c r1=%#x\n", get_reg(1));
+            pc_queue->dump();
         }
         if (uncached)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
@@ -541,7 +542,7 @@ CPU::step(vm_addr_t pc)
             fprintf(stderr, "EINSN: opcode = %#x at pc %#x\n", opcode, pc);
         }
         if (pc==0x7f9ddadc) {
-pc_queue->dump();
+//pc_queue->dump();
         }
         pc_nxt = raise_exception(pc, VECT_EINSN, pc, 0);
         goto handle_exception;
