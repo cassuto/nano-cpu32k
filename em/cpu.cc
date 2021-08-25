@@ -562,9 +562,6 @@ void CPU::run_step()
 vm_addr_t
 CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall)
 {
-    if (vector == VECT_EDTM)
-        printf("VECT_EDTM pc=%#X\n lsa=%#x\n", pc, lsa);
-        
     msr.EPC = pc + (is_syscall ? INSN_LEN : 0);
     msr.ELSA = lsa;
     /* save old PSR */

@@ -93,8 +93,8 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
     int entry_idx = (pa >> m_P_LINE) & ((1 << m_P_SETS) - 1);
     phy_addr_t maddr = pa >> (m_P_LINE + m_P_SETS);
 
-    char hit = 0;
-    char dirty = 0;
+    bool hit = false;
+    bool dirty = false;
     int lru_thresh = 0;
     int free_way_idx = -1;
 
@@ -105,7 +105,8 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
 
         if (match[i])
         {
-            hit = 1;
+            assert(!hit);
+            hit = true;
         }
         if (sfree[i])
         {
@@ -113,7 +114,7 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
         }
         if (sfree[i] & cache_dirty[entry_idx][i])
         {
-            dirty = 1;
+            dirty = true;
         }
     }
 
@@ -143,10 +144,13 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
         {
             phy_addr_t line_size = (1U << m_P_LINE);
             phy_addr_t line_paddr = (maddr << (m_P_LINE + m_P_SETS));
+            printf("Burst %#x\n", line_paddr);
             for (phy_addr_t offset = 0; offset < line_size; offset++)
             {
                 lines[free_way_idx][entry_idx][offset] = mem->phy_readm8(line_paddr + offset);
+                printf("%#x ", lines[free_way_idx][entry_idx][offset]);
             }
+            printf("\n");
         }
     }
     else
