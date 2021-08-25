@@ -136,14 +136,14 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
 
         /* MSR bank - ICA */
         case MSR_ICINV:
-            //icache->invalidate(val);
+            icache->invalidate(val);
             break;
         /* MSR bank - DCA */
         case MSR_DCINV:
-            //dcache->invalidate(val);
+            dcache->invalidate(val);
             break;
         case MSR_DCFLS:
-            //dcache->flush(val);
+            dcache->flush(val);
             break;
 
         /* MSR bank - TSC */
