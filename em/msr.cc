@@ -138,7 +138,7 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             break;
         /* MSR bank - DCA */
         case MSR_DCINV:
-            assert(0);
+        printf("d INV paddr=%#x\n", val);
             dcache->invalidate(val);
             break;
         case MSR_DCFLS:
