@@ -18,7 +18,7 @@ DRAMSIM3_HOME = em/third-party/DRAMsim3
 LIB_DRAMSIM3 = $(DRAMSIM3_HOME)/build/libdramsim3.a
 EM_CXXFLAGS += -I../$(DRAMSIM3_HOME)/src
 EM_CXXFLAGS += -DWITH_DRAMSIM3 -DDRAMSIM3_CONFIG=\\\"$(DRAMSIM3_HOME)/configs/XiangShan.ini\\\" -DDRAMSIM3_OUTDIR=\\\"$(BUILD_DIR)\\\"
-EM_LDFLAGS  += -L../$(LIB_DRAMSIM3)
+EM_LDFLAGS  += ../$(LIB_DRAMSIM3)
 
 INCS = -I$(SRC_DIR)
 DEFS = +define+SYNTHESIS=1
@@ -26,11 +26,12 @@ FLAGS = $(DEFS) $(INCS) -Wno-UNUSED
 CFLAGS = -Wall -g -I../em $(EM_CXXFLAGS)
 LDFLAGS = -g $(EM_LDFLAGS)
 
-# Simulation
+# Simulation (Difftest)
 SIM_TOPLEVEL := simtop
-SIM_FLAGS := +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -CFLAGS "$(CFLAGS)" -LDFLAGS "$(LDFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
+SIM_FLAGS := +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -LDFLAGS "$(LDFLAGS)" -CFLAGS "$(CFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
 SIM_SRCS := $(SRCS) \
 			$(TESTBENCH_DIR)/simtop.v
+# CPU Model
 SIM_CPPS := $(EM_DIR)/main.cc \
 			$(EM_DIR)/cpu.cc \
 			$(EM_DIR)/cache.cc \
@@ -39,10 +40,14 @@ SIM_CPPS := $(EM_DIR)/main.cc \
 			$(EM_DIR)/msr.cc \
 			$(EM_DIR)/tsc.cc \
 			$(EM_DIR)/irqc.cc \
-			$(EM_DIR)/pc-queue.cc \
-			$(EM_DIR)/peripheral/device-tree.cc \
+			$(EM_DIR)/pc-queue.cc
+# Peripherals
+SIM_CPPS += $(EM_DIR)/peripheral/device-tree.cc \
 			$(EM_DIR)/peripheral/pb-uart.cc \
 			$(EM_DIR)/peripheral/virt-uart.cc
+# Third-party lib
+SIM_CPPS += $(EM_DIR)/third-party/axi4.cc \
+			$(EM_DIR)/third-party/dram-axi4-model.cc
 
 # Lint
 LINT_TOPLEVEL := ncpu64k
