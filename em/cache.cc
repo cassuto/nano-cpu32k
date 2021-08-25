@@ -146,13 +146,10 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
             phy_addr_t line_size = (1U << m_P_LINE);
             phy_addr_t line_paddr = (maddr << (m_P_LINE + m_P_SETS)) |
                                     (phy_addr_t(entry_idx) << m_P_LINE);
-            printf("Burst %#x\n", line_paddr);
             for (phy_addr_t offset = 0; offset < line_size; offset++)
             {
                 lines[free_way_idx][entry_idx][offset] = mem->phy_readm8(line_paddr + offset);
-                printf("%#x ", lines[free_way_idx][entry_idx][offset]);
             }
-            printf("\n");
         }
     }
     else
