@@ -161,6 +161,11 @@ CPU::step(vm_addr_t pc)
         goto handle_exception;
     }
 
+    if (pc == 0x7f9ddad4)
+        {
+            printf("0x7f9ddad4 pa=%#x\n", insn_pa);
+        }
+
     /* Access ICache */
 #ifdef MODEL_ICACHE_DELAY
     icache->getDelay(insn_pa, /*store*/ 0);
