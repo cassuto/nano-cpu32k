@@ -90,7 +90,7 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
     if (!enabled)
         return;
 
-    if (pa==0x1623ad4) {
+    if ((pa==0x1623ad4) && store) {
         printf("w %#x\n", pa);
     }
 
