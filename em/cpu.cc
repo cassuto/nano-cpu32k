@@ -152,6 +152,7 @@ CPU::step(vm_addr_t pc)
         pc_nxt = raise_exception(pc, VECT_EITM, pc, 0);
         if(pc==0x7f9ddad4){
             printf("hit\n");
+            pc_queue->dump();
         }
         goto handle_exception;
     }
