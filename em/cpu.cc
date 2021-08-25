@@ -428,7 +428,7 @@ CPU::step(vm_addr_t pc)
             goto handle_exception;
         }
         if (pc==0x00022f4){
-            printf("c00022f4 pa=%#x\n", pa);
+            printf("c00022f4 pa=%#x uncached=%d\n", pa, uncached);
         }
         cpu_unsigned_word_t readout;
         if (uncached)
