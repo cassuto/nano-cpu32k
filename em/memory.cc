@@ -150,7 +150,7 @@ void Memory::phy_writem8(phy_addr_t addr, uint8_t val)
             memory[addr] = val;
         else
         {
-            fprintf(stderr, "WriteM8 out of bound.\n");
+            fprintf(stderr, "Memory out of bound. paddr=%#x\n", addr);
             panic(1);
         }
 #else
@@ -202,7 +202,7 @@ Memory::phy_readm8(phy_addr_t addr)
 #ifdef CHECK_MEMORY_BOUND
         if (addr >= memory_size)
         {
-            fprintf(stderr, "Memory out of bound: paddr=%#x", addr);
+            fprintf(stderr, "Memory out of bound: paddr=%#x\n", addr);
             panic(1);
         }
 #endif
