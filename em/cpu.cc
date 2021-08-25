@@ -161,17 +161,17 @@ CPU::step(vm_addr_t pc)
         goto handle_exception;
     }
 
-    if (pc == 0x7f9ddad4 || pc==0x7f9ddadc)
-        {
-            printf("pc=%#x pa=%#x insn=%#x\n", pc, insn_pa, insn);
-        }
-
     /* Access ICache */
 #ifdef MODEL_ICACHE_DELAY
     icache->getDelay(insn_pa, /*store*/ 0);
 #endif
     insn = (insn_t)icache->phy_readm32(insn_pa);
     pc_queue->push(pc, insn);
+
+        if (pc == 0x7f9ddad4 || pc==0x7f9ddadc)
+        {
+            printf("pc=%#x pa=%#x insn=%#x\n", pc, insn_pa, insn);
+        }
 
     pc_nxt = pc + INSN_LEN;
 
