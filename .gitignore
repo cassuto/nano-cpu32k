@@ -2,3 +2,6 @@ build/
 *.*~
 myinfo.txt
 .vscode/
+*.exe
+*.
+*.stackdump

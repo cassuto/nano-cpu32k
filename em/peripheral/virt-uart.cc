@@ -1,5 +1,5 @@
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 #include <Windows.h>
 static HANDLE ser;
 #else
@@ -11,7 +11,7 @@ static HANDLE ser;
 
 int virt_uart_init(const char *filename)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
     ser = CreateFileA(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     if (ser == INVALID_HANDLE_VALUE)
     {
@@ -62,7 +62,7 @@ int virt_uart_init(const char *filename)
 
 void virt_uart_putch(char ch)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
     WriteFile(ser, &ch, 1, NULL, NULL);
 #endif
 }
@@ -77,7 +77,7 @@ void virt_uart_write(const char *buf)
 
 int virt_uart_poll_read(char *buf, int n)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
     COMSTAT stat;
     DWORD error;
 
