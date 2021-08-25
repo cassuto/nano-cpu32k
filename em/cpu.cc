@@ -74,13 +74,6 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
     if (addr)
     {
         regfile.r[addr] = val;
-#ifdef TRACE_STACK_POINTER
-        if (addr == ADDR_SP)
-            trace_stack_pointer_mov(cpu_pc, val);
-#endif
-#ifdef TRACE_REGFILE
-        trace_regfile(cpu_pc, addr, val);
-#endif
     }
 }
 
@@ -157,9 +150,6 @@ CPU::step(vm_addr_t pc)
     }
 
     /* Access ICache */
-#ifdef MODEL_ICACHE_DELAY
-    icache->getDelay(insn_pa, /*store*/ 0);
-#endif
     insn = (insn_t)icache->phy_readm32(insn_pa);
     pc_queue->push(pc, insn);
 

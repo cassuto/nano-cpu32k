@@ -1,0 +1,3 @@
+[submodule "em/third-party/DRAMsim3"]
+	path = em/third-party/DRAMsim3
+	url = https://github.com/OpenXiangShan/DRAMsim3.git

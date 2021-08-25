@@ -142,6 +142,21 @@ public:
         }
     }
 
+    inline uint64_t
+    dram_readm64(uint64_t idx)
+    {
+        /* FIXME: support big-endian host machines */
+        return *(((uint64_t *)memory)+idx);
+    }
+    inline void
+    dram_writem64(uint64_t idx, uint64_t val)
+    {
+        /* FIXME: support big-endian host machines */
+        *(((uint64_t *)memory)+idx) = val;
+    }
+
+    inline size_t get_size() const { return memory_size; } /* in bytes */
+
 private:
     struct mmio_node
     {
