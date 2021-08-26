@@ -48,7 +48,7 @@ module icache
    input [CONFIG_AW-1:0]               op_inv_paddr,
    output                              op_stall_req,
    output [`NCPU_INSN_DW * (1<<CONFIG_P_FETCH_WIDTH)-1:0] ins,
-   output [(1<<CONFIG_P_FETCH_WIDTH)-1:0] valid,
+   output                              valid,
    
    // AXI Master
    input                               axi_ar_ready_i,
@@ -109,7 +109,7 @@ module icache
    wire [`NCPU_INSN_DW-1:0]            s2o_ins                 [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    // FSM
    reg [2:0]                           fsm_state_nxt;
-   wire [2:0]                          fsm_state_r;
+   wire [2:0]                          fsm_state_ff;
    wire [CONFIG_IC_P_SETS-1:0]         fsm_free_idx, fsm_free_idx_nxt;
    wire [CONFIG_IC_P_LINE-1:0]         fsm_refill_cnt;
    reg [CONFIG_IC_P_LINE-1:0]          fsm_refill_cnt_nxt;
@@ -182,8 +182,8 @@ module icache
    // Main FSM
    always @(*)
       begin
-         fsm_state_nxt = fsm_state_r;
-         case (fsm_state_r)
+         fsm_state_nxt = fsm_state_ff;
+         case (fsm_state_ff)
             S_BOOT:
                if (~|fsm_free_idx_nxt)
                   fsm_state_nxt = S_IDLE;
@@ -210,14 +210,14 @@ module icache
    // Clock algorithm
    assign fsm_free_idx_nxt = fsm_free_idx + 'b1;
    
-   mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_r) );
+   mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
    mDFF_r # (.DW(CONFIG_IC_P_SETS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_idx_nxt), .Q(fsm_free_idx) );
    
    // Refill counter
    always @(*)
       begin
          fsm_refill_cnt_nxt = fsm_refill_cnt;
-         case (fsm_state_r)
+         case (fsm_state_ff)
             S_REFILL:
                if (hds_axi_R)
                   fsm_refill_cnt_nxt = fsm_refill_cnt + (1<<AXI_FETCH_SIZE);
@@ -231,7 +231,7 @@ module icache
 
    // MUX for tag RAM addr 
    always @(*)
-      case (fsm_state_r)
+      case (fsm_state_ff)
          S_BOOT,
          S_REPLACE:
             s1i_line_addr = fsm_free_idx;
@@ -243,7 +243,7 @@ module icache
       
    // MUX for tag RAM din
    always @(*)
-      case (fsm_state_r)
+      case (fsm_state_ff)
          S_BOOT,
          S_INVALIDATE:
             s1i_replace_tag_v = 'b0;
@@ -251,11 +251,11 @@ module icache
             s1i_replace_tag_v = {s2o_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS], 1'b1};
       endcase
       
-   assign s1i_tag_v_we = (fsm_state_r==S_BOOT) | (fsm_state_r==S_INVALIDATE) | (fsm_state_r==S_REPLACE);
+   assign s1i_tag_v_we = (fsm_state_ff==S_BOOT) | (fsm_state_ff==S_INVALIDATE) | (fsm_state_ff==S_REPLACE);
         
    // MUX for payload RAM addr
    always @(*)
-      case (fsm_state_r)
+      case (fsm_state_ff)
          S_REFILL:
             s1i_payload_addr = {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS], fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]};
          default:
@@ -266,18 +266,18 @@ module icache
    generate
       if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
          begin
-            assign s1i_payload_we = {PAYLOAD_DW/8{fsm_state_r == S_REFILL}};
+            assign s1i_payload_we = {PAYLOAD_DW/8{fsm_state_ff == S_REFILL}};
             assign s1i_payload_din = axi_r_data_i[(1<<PAYLOAD_P_DW_BYTES)*8-1:0];
          end
       else
          for(i=0;i<PAYLOAD_DW/8;i=i+1)
             begin : gen_aligner
-               assign s1i_payload_we[i] = (fsm_state_r == S_REFILL) & (fsm_refill_cnt[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE] == (i/(1<<AXI_FETCH_SIZE)) );
+               assign s1i_payload_we[i] = (fsm_state_ff == S_REFILL) & (fsm_refill_cnt[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE] == (i/(1<<AXI_FETCH_SIZE)) );
                assign s1i_payload_din[i*8 +: 8] = axi_r_data_i[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
             end
    endgenerate
    
-   assign stall_req = (fsm_state_r != S_IDLE);
+   assign stall_req = (fsm_state_ff != S_IDLE);
    
    assign op_stall_req = (op_inv | stall_req); // Stall the EXU if icache is temporarily unable to receive a new operation
    
@@ -289,7 +289,7 @@ module icache
       for(j=0;j<PAYLOAD_DW/8;j=j+1)
          begin : gen_output_inner
             always @(*)
-               case (fsm_state_r)
+               case (fsm_state_ff)
                   S_REFILL:
                      if (s2i_get_dat & s1i_payload_we[j])
                         s2i_ins[j*8 +: 8] = s1i_payload_din[j*8 +: 8]; // Get data from AXI bus
@@ -302,12 +302,9 @@ module icache
    endgenerate
 
    mDFF_l # (.DW(PAYLOAD_DW)) ff_ins
-      (.CLK(clk), .LOAD(p_ce|(fsm_state_r==S_REFILL)), .D(s2i_ins), .Q(ins) );
+      (.CLK(clk), .LOAD(p_ce|(fsm_state_ff==S_REFILL)), .D(s2i_ins), .Q(ins) );
                
-   generate
-      for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
-         assign valid[i] = (s2o_valid & ~stall_req);
-   endgenerate
+   assign valid = (s2o_valid & ~stall_req);
    
    // AXI - AR
    assign axi_ar_prot_o = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
@@ -320,16 +317,16 @@ module icache
    assign axi_ar_cache_o = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
    assign axi_ar_qos_o = 'b0;
    assign axi_ar_region_o = 'b0;
-   assign ar_set = (fsm_state_r==S_REPLACE);
+   assign ar_set = (fsm_state_ff==S_REPLACE);
    assign ar_clr = (axi_ar_ready_i & axi_ar_valid_o);
-   assign axi_ar_addr_nxt = {s2o_paddr[CONFIG_IC_P_LINE +: AXI_ADDR_WIDTH - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
+   assign axi_ar_addr_nxt = {{AXI_ADDR_WIDTH-CONFIG_AW{1'b0}}, s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_AW - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
    
    mDFF_lr # (.DW(1)) ff_axi_ar_valid (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(axi_ar_valid_o) );
    mDFF_lr # (.DW(AXI_ADDR_WIDTH)) ff_axi_ar_addr (.CLK(clk), .RST(rst), .LOAD(ar_set), .D(axi_ar_addr_nxt), .Q(axi_ar_addr_o) );
    
    
    // AXI - R
-   assign axi_r_ready_o = (fsm_state_r == S_REFILL);
+   assign axi_r_ready_o = (fsm_state_ff == S_REFILL);
    assign hds_axi_R = (axi_r_valid_i & axi_r_ready_o);
    
    

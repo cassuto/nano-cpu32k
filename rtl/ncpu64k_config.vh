@@ -1,6 +1,9 @@
 `ifndef NCPU64K_CONFIG_H_
 `define NCPU64K_CONFIG_H_
 
+/* Synthesis switch */
+//`define SYNTHESIS
+
 /* Asynchronous/synchronous reset */
 //`define NCPU_RST_ASYNC
 `undef NCPU_RST_ASYNC
@@ -73,5 +76,14 @@
 `define AXI_SIZE_BYTES_32                                   3'b101
 `define AXI_SIZE_BYTES_64                                   3'b110
 `define AXI_SIZE_BYTES_128                                  3'b111
+
+/* Frontend exception */
+`define FNT_EXC_W 2
+`define FNT_EXC_EITM 0
+`define FNT_EXC_EIPF 1
+
+/* BPU packet width */
+`define BPU_UPD_W (2 + CONFIG_PHT_P_NUM + CONFIG_BTB_P_NUM + 1)
+`define BPU_UPD_TAKEN 0
 
 `endif

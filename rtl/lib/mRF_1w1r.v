@@ -39,7 +39,7 @@ module mRF_1w1r
    input [DW-1:0] WDATA
 );
    reg [DW-1:0] regfile [(1<<AW)-1:0];
-   reg ff_dout;
+   reg [DW-1:0] ff_dout;
    
    always @(posedge CLK)
       begin

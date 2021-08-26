@@ -40,7 +40,7 @@ module mRF_1wnr
    input [DW-1:0] WDATA
 );
    reg [DW-1:0] regfile [(1<<AW)-1:0];
-   reg ff_dout [NUM_READ-1:0];
+   reg [DW-1:0] ff_dout [NUM_READ-1:0];
    genvar i;
    
    always @(posedge CLK)
