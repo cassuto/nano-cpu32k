@@ -299,8 +299,10 @@ int main(int argc, char *argv[])
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU);
         for (int i = 0; i < 1000; i++)
         {
-            if (emu->clk())
+            if (emu->clk()) {
+                fprintf(stderr, "RTL: go finish!\n");
                 break;
+            }
         }
     }
     break;
