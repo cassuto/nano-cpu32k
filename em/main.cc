@@ -254,6 +254,7 @@ parse_args(int argc, char **argv)
 
 int main(int argc, char *argv[])
 {
+    int retcode = 0;
     if (parse_args(argc, argv))
         return 1;
 
@@ -300,7 +301,7 @@ int main(int argc, char *argv[])
         for (int i = 0; i < 1000; i++)
         {
             if (emu->clk()) {
-                fprintf(stderr, "RTL: go finish!\n");
+                retcode = -1;
                 break;
             }
         }
@@ -313,7 +314,7 @@ int main(int argc, char *argv[])
     }
     break;
     }
-    fprintf(stderr, "Normally exit with code = 0\n");
+    fprintf(stderr, "Normally exit with code = \n", retcode);
     return 0;
 }
 
