@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cmath>
 #include <cassert>
+#include <string>
 
 typedef int32_t cpu_word_t;
 typedef uint32_t cpu_unsigned_word_t;
@@ -22,6 +23,7 @@ class CPU;
 class Memory;
 class DeviceTree;
 class PCQueue;
+class DRAM;
 
 #define EM_SUCCEEDED 0
 #define EM_FAULT 1

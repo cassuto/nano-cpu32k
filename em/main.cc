@@ -24,12 +24,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cpu.hh"
 #include "memory.hh"
+#include "emu.hh"
 #include "peripheral/device-tree.hh"
 #include <string>
 #include <getopt.h>
 
 static const struct option long_options[] = {
-    {"no-RTL", no_argument, NULL, 0},                         /* 0 */
+    {"mode", required_argument, NULL, 0},                     /* 0 */
     {"ram-size", required_argument, NULL, 0},                 /* 1 */
     {"dmmu-tlb-count", required_argument, NULL, 0},           /* 2 */
     {"immu-tlb-count", required_argument, NULL, 0},           /* 3 */
@@ -45,11 +46,21 @@ static const struct option long_options[] = {
     {"device-clk-div", required_argument, NULL, 0},           /* 13 */
     {"enable-icache", required_argument, NULL, 0},            /* 14 */
     {"enable-dcache", required_argument, NULL, 0},            /* 15 */
+    {"wave-begin", required_argument, NULL, 0},               /* 16 */
+    {"wave-end", required_argument, NULL, 0},                 /* 17 */
     {"bin-load-addr", required_argument, NULL, 'a'},
     {"bin-pathname", required_argument, NULL, 'b'},
     {"reset-vector", required_argument, NULL, 'r'},
+    {"dump-wave", required_argument, NULL, 'd'},
     {"help", no_argument, NULL, 'h'},
     {0, 0, NULL, 0}};
+
+enum Mode
+{
+    ModeStandalone = 0,
+    ModeSimulateOnly,
+    ModeDifftest
+};
 
 class Args
 {
@@ -57,7 +68,7 @@ public:
     Args()
     {
         /* Default settings */
-        no_rtl = false;
+        mode = ModeDifftest;
         reset_vector = 0x0;
         ram_size = 32 * 1024 * 1024;
         dmmu_tlb_count = 128;
@@ -75,9 +86,12 @@ public:
         IRQ_TSC = 0;
         bin_load_addr = 0x0;
         device_clk_div = 100;
+        vcdfile = "dump.vcd";
+        wave_begin = 0;
+        wave_end = 10000;
     }
 
-    bool no_rtl;
+    Mode mode;
     std::string bin_pathname;
     phy_addr_t reset_vector;
     int ram_size;
@@ -90,12 +104,16 @@ public:
     int IRQ_TSC;
     phy_addr_t bin_load_addr;
     uint64_t device_clk_div;
+    std::string vcdfile;
+    uint64_t wave_begin;
+    uint64_t wave_end;
 };
 
 static const char *optstirng = "-b:a:r:";
 static Args args;
 static CPU *emu_CPU;
 static DeviceTree *emu_dev;
+static Emu *emu;
 static uint64_t device_clk;
 
 static int
@@ -122,6 +140,22 @@ parse_bool(const char *optarg, const char *paramname)
     return (strcmp(optarg, "true") == 0);
 }
 
+static Mode
+parse_mode(const char *optarg)
+{
+    if (strcmp(optarg, "standalone") == 0)
+        return ModeStandalone;
+    else if (strcmp(optarg, "simulate-only") == 0)
+        return ModeSimulateOnly;
+    else if (strcmp(optarg, "difftest") == 0)
+        return ModeDifftest;
+    else
+    {
+        fprintf(stderr, "Invalid value for --mode\n");
+        exit(1);
+    }
+}
+
 static int
 parse_args(int argc, char **argv)
 {
@@ -135,7 +169,7 @@ parse_args(int argc, char **argv)
             switch (long_index)
             {
             case 0:
-                args.no_rtl = true;
+                args.mode = parse_mode(optarg);
                 break;
             case 1:
                 args.ram_size = atoi(optarg);
@@ -182,6 +216,12 @@ parse_args(int argc, char **argv)
             case 15:
                 args.enable_dcache = parse_bool(optarg, long_options[15].name);
                 break;
+            case 16:
+                args.wave_begin = atol(optarg);
+                break;
+            case 17:
+                args.wave_end = atol(optarg);
+                break;
             default:
                 return usage(argv[0]);
             }
@@ -195,6 +235,9 @@ parse_args(int argc, char **argv)
             break;
         case 'r':
             args.reset_vector = atoll(optarg);
+            break;
+        case 'd':
+            args.vcdfile = optarg;
             break;
         default:
             return usage(argv[0]);
@@ -233,17 +276,42 @@ int main(int argc, char *argv[])
 
     emu_CPU->reset(args.reset_vector);
 
-    for (;;)
+    switch (args.mode)
     {
-        /* step device */
-        if (++device_clk == args.device_clk_div)
-        {
-            device_clk = 0;
-            emu_dev->step();
-        }
-        emu_CPU->run_step();
-    }
+    case ModeStandalone:
+    {
 
+        for (;;)
+        {
+            /* step device */
+            if (++device_clk == args.device_clk_div)
+            {
+                device_clk = 0;
+                emu_dev->step();
+            }
+            emu_CPU->run_step();
+        }
+    }
+    break;
+
+    case ModeSimulateOnly:
+    {
+        emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU);
+        for (int i = 0; i < 1000; i++)
+        {
+            if (emu->clk())
+                break;
+        }
+    }
+    break;
+
+    case ModeDifftest:
+    {
+        exit(1);
+    }
+    break;
+    }
+    fprintf(stderr, "Normally exit with code = 0\n");
     return 0;
 }
 

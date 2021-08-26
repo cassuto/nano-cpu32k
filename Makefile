@@ -40,7 +40,8 @@ SIM_CPPS := $(EM_DIR)/main.cc \
 			$(EM_DIR)/msr.cc \
 			$(EM_DIR)/tsc.cc \
 			$(EM_DIR)/irqc.cc \
-			$(EM_DIR)/pc-queue.cc
+			$(EM_DIR)/pc-queue.cc \
+			$(EM_DIR)/emu.cc
 # Peripherals
 SIM_CPPS += $(EM_DIR)/peripheral/device-tree.cc \
 			$(EM_DIR)/peripheral/pb-uart.cc \
