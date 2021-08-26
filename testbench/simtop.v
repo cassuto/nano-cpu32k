@@ -166,7 +166,10 @@ module simtop
    
    assign axi_w_ready_i                                  = `AXI_TOP_INTERFACE(w_ready);
    assign `AXI_TOP_INTERFACE(w_valid)              = axi_w_valid_o;
-   assign `AXI_TOP_INTERFACE(w_bits_data)          = axi_w_data_o;
+   assign `AXI_TOP_INTERFACE(w_bits_data)[0]       = axi_w_data_o;
+   assign `AXI_TOP_INTERFACE(w_bits_data)[1]       = 'b0;
+   assign `AXI_TOP_INTERFACE(w_bits_data)[2]       = 'b0;
+   assign `AXI_TOP_INTERFACE(w_bits_data)[3]       = 'b0;
    assign `AXI_TOP_INTERFACE(w_bits_strb)          = axi_w_strb_o;
    assign `AXI_TOP_INTERFACE(w_bits_last)          = axi_w_last_o;
    
