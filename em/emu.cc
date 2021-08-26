@@ -105,4 +105,5 @@ bool Emu::clk()
     dram->dramsim3_helper_falling(axi);
     axi_set_dut_ptr(dut_ptr, axi);
 #endif
+    return false;
 }
