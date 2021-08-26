@@ -93,7 +93,6 @@ bool Emu::clk()
         bool in_range = (wave_begin <= cycles) && (cycles <= wave_end);
         if (in_range)
         {
-            printf("%lu\n",cycles);
             trace_fp->dump(cycles);
         }
     }
@@ -110,4 +109,12 @@ bool Emu::clk()
     cycles++;
 
     return false;
+}
+
+void Emu::finish()
+{
+#if VM_TRACE == 1
+    if (trace_fp)
+        trace_fp->close();
+#endif
 }

@@ -16,6 +16,7 @@ public:
 
     void reset(int cycles);
     bool clk();
+    void finish();
 
 private:
     Vsimtop *dut_ptr;
