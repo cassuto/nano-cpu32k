@@ -88,7 +88,6 @@ bool Emu::clk()
     dut_ptr->eval();
 
 #if VM_TRACE == 1
-printf("%lu\n", cycles);
     if (trace_fp)
     {
         bool in_range = (wave_begin <= cycles) && (cycles <= wave_end);
@@ -106,5 +105,8 @@ printf("%lu\n", cycles);
     dram->dramsim3_helper_falling(axi);
     axi_set_dut_ptr(dut_ptr, axi);
 #endif
+
+    cycles++;
+
     return false;
 }

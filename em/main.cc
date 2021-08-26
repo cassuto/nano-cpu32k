@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
     }
     break;
     }
-    fprintf(stderr, "Normally exit with code = \n", retcode);
+    fprintf(stderr, "Normally exit with code = %d\n", retcode);
     return 0;
 }
 
