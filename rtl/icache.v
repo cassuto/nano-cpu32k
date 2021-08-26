@@ -67,9 +67,9 @@ module icache
    output                              axi_r_ready_o,
    input                               axi_r_valid_i,
    input  [(1<<AXI_P_DW_BYTES)*8-1:0]  axi_r_data_i,
+   input                               axi_r_last_i,
 /* verilator lint_off UNUSED */
    input  [1:0]                        axi_r_resp_i, // unused
-   input                               axi_r_last_i, // unused
    input  [AXI_ID_WIDTH-1:0]           axi_r_id_i, // unused
    input  [AXI_USER_WIDTH-1:0]         axi_r_user_i // unused
 /* verilator lint_on UNUSED */
@@ -117,6 +117,7 @@ module icache
    // AXI
    wire                                ar_set, ar_clr;
    wire                                hds_axi_R;
+   wire                                hds_axi_R_last;
    wire [AXI_ADDR_WIDTH-1:0]           axi_ar_addr_nxt;
    
    localparam [2:0] S_BOOT             = 3'd0;
@@ -198,7 +199,7 @@ module icache
                fsm_state_nxt = S_REFILL;
             
             S_REFILL:
-               if ((&fsm_refill_cnt) & hds_axi_R)
+               if (hds_axi_R_last)
                   fsm_state_nxt = S_IDLE;
             
             S_INVALIDATE:
@@ -328,6 +329,7 @@ module icache
    // AXI - R
    assign axi_r_ready_o = (fsm_state_ff == S_REFILL);
    assign hds_axi_R = (axi_r_valid_i & axi_r_ready_o);
+   assign hds_axi_R_last = (hds_axi_R & axi_r_last_i);
    
    
    // synthesis translate_off
