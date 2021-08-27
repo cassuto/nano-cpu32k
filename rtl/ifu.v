@@ -53,7 +53,7 @@ module ifu
    output [CONFIG_AW * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc,
    output [`FNT_EXC_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc,
    output [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd,
-   // From EXU
+   // From EX
    input                               icop_inv,
    input [CONFIG_AW-1:0]               icop_inv_paddr,
    input                               bpu_wb,
@@ -63,7 +63,7 @@ module ifu
    input [CONFIG_AW-3:0]               bpu_wb_pc,
    input [CONFIG_AW-3:0]               bpu_wb_npc_act,
    input [`BPU_UPD_W-1:0]              bpu_wb_upd,
-   // To EXU
+   // To EX
    output                              icop_stall_req,
    // AXI Master
    input                               axi_ar_ready_i,

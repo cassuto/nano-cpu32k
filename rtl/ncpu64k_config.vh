@@ -86,4 +86,70 @@
 `define BPU_UPD_W (2 + CONFIG_PHT_P_NUM + CONFIG_BTB_P_NUM + 1)
 `define BPU_UPD_TAKEN 0
 
+
+/* Exception Vector Table */
+`define NCPU_ERST_VECTOR 32'h0
+`define NCPU_EINSN_VECTOR 32'h4
+`define NCPU_EIRQ_VECTOR 32'h8
+`define NCPU_ESYSCALL_VECTOR 32'hc
+`define NCPU_EBUS_VECTOR 32'h10
+`define NCPU_EIPF_VECTOR 32'h14
+`define NCPU_EDPF_VECTOR 32'h18
+`define NCPU_EITM_VECTOR 32'h1c
+`define NCPU_EDTM_VECTOR 32'h20
+`define NCPU_EALIGN_VECTOR 32'h24
+
+
+/* Internal OPC (one-hot encoding) */
+
+// Single-cycle operations
+`define NCPU_ALU_IOPW 9 // Bitwidth
+`define NCPU_ALU_ADD 0
+`define NCPU_ALU_SUB 1
+`define NCPU_ALU_MHI 2
+`define NCPU_ALU_AND 3
+`define NCPU_ALU_OR 4
+`define NCPU_ALU_XOR 5
+`define NCPU_ALU_LSL 6
+`define NCPU_ALU_LSR 7
+`define NCPU_ALU_ASR 8
+
+// Branch operations
+`define NCPU_BRU_IOPW 8
+`define NCPU_BRU_BEQ 0
+`define NCPU_BRU_BNE 1
+`define NCPU_BRU_BGT 2
+`define NCPU_BRU_BGTU 3
+`define NCPU_BRU_BLE 4
+`define NCPU_BRU_BLEU 5
+`define NCPU_BRU_JMPREG 6
+`define NCPU_BRU_JMPREL 7
+
+// Multi-clks-latency operations
+`define NCPU_LPU_IOPW 5 // Bitwidth
+`define NCPU_LPU_MUL 0
+`define NCPU_LPU_DIV 1
+`define NCPU_LPU_DIVU 2
+`define NCPU_LPU_MOD 3
+`define NCPU_LPU_MODU 4
+
+// FPU
+`define NCPU_FPU_IOPW 1
+
+// EPU (Exception and Extended Processor Unit)
+`define NCPU_EPU_IOPW 8
+`define NCPU_EPU_WMSR 0
+`define NCPU_EPU_RMSR 1
+`define NCPU_EPU_ESYSCALL 2
+`define NCPU_EPU_ERET 3
+`define NCPU_EPU_EITM 4
+`define NCPU_EPU_EIPF 5
+`define NCPU_EPU_EIRQ 6
+`define NCPU_EPU_EINSN (`NCPU_EPU_IOPW-1)
+
+`define NCPU_REGNO_LNK 1 // the only one machine-dependent register
+
+/* Regfile index width */
+`define NCPU_REG_AW 5
+
 `endif
