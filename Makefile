@@ -1,5 +1,7 @@
 .PHONY: lint sim build clean
 
+GTKWAVE = e:/gtkwave-win32/gtkwave/bin/gtkwave
+
 NUM_JOBS := 8
 SRC_DIR := rtl
 LIB_DIR := rtl/lib
@@ -66,7 +68,8 @@ build: # $(LIB_DRAMSIM3)
 	sync
 
 sim: build
-	cd ./build && ./emu
+	./build/emu --mode=simulate-only -b ./build/vmlinux.bin --dump-wave=./build/dump.vcd
+	$(GTKWAVE) ./build/dump.vcd
 
 lint:
 	-verilator --lint-only -Wall --top-module $(LINT_TOPLEVEL) $(FLAGS) $(LINT_SRCS)

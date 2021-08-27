@@ -324,7 +324,7 @@ module icache
    assign ar_clr = (axi_ar_ready_i & axi_ar_valid_o);
    assign refill_paddr = {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_AW - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
    
-   // Address adapter (truncate or zero filling)
+   // Address adapter (truncate or fill zero)
    generate
       if (AXI_ADDR_WIDTH > CONFIG_AW)
          assign axi_ar_addr_nxt = {{AXI_ADDR_WIDTH-CONFIG_AW{1'b0}}, refill_paddr};
