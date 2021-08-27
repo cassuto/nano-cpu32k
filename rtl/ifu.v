@@ -236,7 +236,7 @@ module ifu
    always @(*)
       begin
          s1i_valid_msk[0] = 'b1;
-         for(j=0;j<FW;j=j+1)
+         for(j=1;j<FW;j=j+1)
             s1i_valid_msk[j] = s1i_valid_msk[j-1] & ~s1o_bpu_taken[j-1];
       end
    
