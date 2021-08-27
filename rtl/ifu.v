@@ -252,7 +252,7 @@ module ifu
    always @(*)
       if (flush)
          pc_nxt = flush_tgt;
-      else if (ic_stall_req)
+      else if (~p_ce)
          pc_nxt = pc;
       else if (pred_branch_taken)
          pc_nxt = {s1o_bpu_npc[s1o_bpu_taken_inst_idx], 2'b00};

@@ -87,7 +87,7 @@ module icache
    reg [CONFIG_IC_P_SETS-1:0]          s1i_line_addr;
    reg [TAG_V_RAM_DW-1:0]              s1i_replace_tag_v;
    wire                                s1i_tag_v_re;
-   reg                                 s1i_tag_v_we            [(1<<CONFIG_IC_P_WAYS)-1:0];
+   wire                                s1i_tag_v_we            [(1<<CONFIG_IC_P_WAYS)-1:0];
    wire                                s1i_payload_re;
    reg [PAYLOAD_AW-1:0]                s1i_payload_addr;
    wire [PAYLOAD_DW/8-1:0]             s1i_payload_we;
@@ -219,18 +219,18 @@ module icache
             default: ;
          endcase
       end
-
+      
    // Clock algorithm
    assign fsm_free_way_nxt = fsm_free_way + 'b1;
-
+   
    mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
    mDFF_r # (.DW(CONFIG_IC_P_WAYS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
-
+   
    // Boot counter
    assign fsm_boot_cnt_nxt = fsm_boot_cnt + 'b1;
-
+   
    mDFF_r # (.DW(CONFIG_IC_P_SETS)) ff_fsm_boot_cnt_nxt (.CLK(clk), .RST(rst), .D(fsm_boot_cnt_nxt), .Q(fsm_boot_cnt) );
-
+   
    // Refill counter
    always @(*)
       begin
@@ -243,7 +243,7 @@ module icache
                fsm_refill_cnt_nxt = 'b0;
          endcase
       end
-
+   
    mDFF_r # (.DW(CONFIG_IC_P_LINE)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .D(fsm_refill_cnt_nxt), .Q(fsm_refill_cnt) );
    
 
@@ -275,16 +275,9 @@ module icache
    // tag RAM write enable
    generate
       for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
-         always @(*)
-            case (fsm_state_ff)
-               S_BOOT,
-               S_INVALIDATE:
-                  s1i_tag_v_we[way] = 'b1;
-               S_REPLACE:
-                  s1i_tag_v_we[way] = (way == fsm_free_way);
-               default:
-                  s1i_tag_v_we[way] = 'b0;
-            endcase
+         assign s1i_tag_v_we[way] = (fsm_state_ff==S_BOOT) |
+                                    (fsm_state_ff==S_INVALIDATE) |
+                                    ((fsm_state_ff==S_REPLACE) & (way == fsm_free_way));
    endgenerate
 
    // MUX for payload RAM addr
