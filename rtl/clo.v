@@ -36,7 +36,7 @@ module clo
       begin
          count = 'b0;
          for(j=0;j<(1<<P_DW);j++)
-            count = count + bitmap[j];
+            count = count + {{P_DW{1'b0}}, bitmap[j]};
       end
 
 endmodule

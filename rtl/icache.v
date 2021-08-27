@@ -273,7 +273,8 @@ module icache
       else
          for(i=0;i<PAYLOAD_DW/8;i=i+1)
             begin : gen_aligner
-               assign s1i_payload_we[i] = (fsm_state_ff == S_REFILL) & (fsm_refill_cnt[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE] == (i/(1<<AXI_FETCH_SIZE)) );
+               assign s1i_payload_we[i] = (fsm_state_ff == S_REFILL) &
+                                          (fsm_refill_cnt[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE] == i[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE]);
                assign s1i_payload_din[i*8 +: 8] = axi_r_data_i[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
             end
    endgenerate
