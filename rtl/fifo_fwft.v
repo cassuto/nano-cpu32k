@@ -60,7 +60,7 @@ module fifo_fwft
                   (ff_w_ptr[DEPTH_WIDTH-1:0] != ff_r_ptr[DEPTH_WIDTH-1:0]); // Not full
    assign valid = (ff_w_ptr != ff_r_ptr); // Not empty
 
-   assign fwft_nxt = (~state_r & valid & push);
+   assign fwft_nxt = (~state_r & ~valid & push);
    assign clr_state = (state_r & pop);
 
    // FWFT FSM
