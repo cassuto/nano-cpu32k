@@ -86,12 +86,14 @@ module icache
    // Stage 1 Input
    reg [CONFIG_IC_P_SETS-1:0]          s1i_line_addr;
    reg [TAG_V_RAM_DW-1:0]              s1i_replace_tag_v;
-   wire                                s1i_tag_v_we;
+   wire                                s1i_tag_v_we            [(1<<CONFIG_IC_P_WAYS)-1:0];
    reg [PAYLOAD_AW-1:0]                s1i_payload_addr;
    wire [PAYLOAD_DW/8-1:0]             s1i_payload_we;
    wire [PAYLOAD_DW-1:0]               s1i_payload_din;
    // Stage 1 Output / Stage 2 Input
-   wire s1o_valid;
+   wire [CONFIG_IC_P_SETS-1:0]         s1o_line_addr;
+   wire [PAYLOAD_AW-1:0]               s1o_payload_addr;
+   wire                                s1o_valid;
    wire [PAYLOAD_DW-1:0]               s1o_payload             [(1<<CONFIG_IC_P_WAYS)-1:0];
    wire [TAG_V_RAM_DW-1:0]             s1o_tag_v               [(1<<CONFIG_IC_P_WAYS)-1:0];
    wire [CONFIG_P_PAGE_SIZE-1:0]       s1o_vpo;
@@ -110,7 +112,8 @@ module icache
    // FSM
    reg [2:0]                           fsm_state_nxt;
    wire [2:0]                          fsm_state_ff;
-   wire [CONFIG_IC_P_SETS-1:0]         fsm_free_idx, fsm_free_idx_nxt;
+   wire [CONFIG_IC_P_WAYS-1:0]         fsm_free_way, fsm_free_way_nxt;
+   wire [CONFIG_IC_P_SETS-1:0]         fsm_boot_cnt, fsm_boot_cnt_nxt;
    wire [CONFIG_IC_P_LINE-1:0]         fsm_refill_cnt;
    reg [CONFIG_IC_P_LINE-1:0]          fsm_refill_cnt_nxt;
    wire                                p_ce;
@@ -126,6 +129,7 @@ module icache
    localparam [2:0] S_REPLACE          = 3'd2;
    localparam [2:0] S_REFILL           = 3'd3;
    localparam [2:0] S_INVALIDATE       = 3'd4;
+   localparam [2:0] S_RELOAD_S1O           = 3'd5;
    
    genvar way, i, j;
    
@@ -144,7 +148,7 @@ module icache
                (
                   .CLK  (clk),
                   .ADDR (s1i_payload_addr),
-                  .RE   (p_ce),
+                  .RE   (p_ce | (fsm_state_ff==S_RELOAD_S1O)),
                   .DOUT (s1o_payload[way]),
                   .WE   (s1i_payload_we),
                   .DIN  (s1i_payload_din)
@@ -159,9 +163,9 @@ module icache
                (
                   .CLK  (clk),
                   .ADDR (s1i_line_addr),
-                  .RE   (p_ce),
+                  .RE   (p_ce | (fsm_state_ff==S_RELOAD_S1O)),
                   .DOUT (s1o_tag_v[way]),
-                  .WE   (s1i_tag_v_we),
+                  .WE   (s1i_tag_v_we[way]),
                   .DIN  (s1i_replace_tag_v)
                );
                
@@ -177,6 +181,8 @@ module icache
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(1'b1), .Q(s1o_valid) );
    mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s1o_op_inv_paddr (.CLK(clk), .LOAD(p_ce), .D(op_inv_paddr), .Q(s1o_op_inv_paddr) );
+   mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s1o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
+   mDFF_l # (.DW(PAYLOAD_AW)) ff_s1o_payload_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_payload_addr), .Q(s1o_payload_addr) );
    
    mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
@@ -187,7 +193,7 @@ module icache
          fsm_state_nxt = fsm_state_ff;
          case (fsm_state_ff)
             S_BOOT:
-               if (~|fsm_free_idx_nxt)
+               if (~|fsm_free_way_nxt)
                   fsm_state_nxt = S_IDLE;
 
             S_IDLE:
@@ -201,19 +207,27 @@ module icache
             
             S_REFILL:
                if (hds_axi_R_last)
-                  fsm_state_nxt = S_IDLE;
+                  fsm_state_nxt = S_RELOAD_S1O;
             
             S_INVALIDATE:
+               fsm_state_nxt = S_IDLE;
+               
+            S_RELOAD_S1O:
                fsm_state_nxt = S_IDLE;
             default: ;
          endcase
       end
       
    // Clock algorithm
-   assign fsm_free_idx_nxt = fsm_free_idx + 'b1;
+   assign fsm_free_way_nxt = fsm_free_way + 'b1;
    
    mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
-   mDFF_r # (.DW(CONFIG_IC_P_SETS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_idx_nxt), .Q(fsm_free_idx) );
+   mDFF_r # (.DW(CONFIG_IC_P_WAYS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
+   
+   // Boot counter
+   assign fsm_boot_cnt_nxt = fsm_boot_cnt + 'b1;
+   
+   mDFF_r # (.DW(CONFIG_IC_P_SETS)) ff_fsm_boot_cnt_nxt (.CLK(clk), .RST(rst), .D(fsm_boot_cnt_nxt), .Q(fsm_boot_cnt) );
    
    // Refill counter
    always @(*)
@@ -234,11 +248,12 @@ module icache
    // MUX for tag RAM addr 
    always @(*)
       case (fsm_state_ff)
-         S_BOOT,
-         S_REPLACE:
-            s1i_line_addr = fsm_free_idx;
+         S_BOOT:
+            s1i_line_addr = fsm_boot_cnt;
          S_INVALIDATE:
             s1i_line_addr = s1o_op_inv_paddr[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS];
+         S_RELOAD_S1O:
+            s1i_line_addr = s1o_line_addr;
          default:
             s1i_line_addr = vpo[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS]; // index
       endcase
@@ -253,13 +268,21 @@ module icache
             s1i_replace_tag_v = {s2o_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS], 1'b1};
       endcase
       
-   assign s1i_tag_v_we = (fsm_state_ff==S_BOOT) | (fsm_state_ff==S_INVALIDATE) | (fsm_state_ff==S_REPLACE);
-        
+   // tag RAM write enable
+   generate
+      for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
+         assign s1i_tag_v_we[way] = (fsm_state_ff==S_BOOT) |
+                                    (fsm_state_ff==S_INVALIDATE) |
+                                    ((fsm_state_ff==S_REPLACE) & (way == fsm_free_way));
+   endgenerate
+
    // MUX for payload RAM addr
    always @(*)
       case (fsm_state_ff)
          S_REFILL:
             s1i_payload_addr = {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS], fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]};
+         S_RELOAD_S1O:
+            s1i_payload_addr = s1o_payload_addr;
          default:
             s1i_payload_addr = vpo[PAYLOAD_P_DW_BYTES +: PAYLOAD_AW]; // {index,offset}
       endcase
