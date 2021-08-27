@@ -128,7 +128,10 @@ module iq
                                  iq_pc_unpacked[tail_inv[i]],
                                  iq_exc_unpacked[tail_inv[i]],
                                  iq_bpu_upd_unpacked[tail_inv[i]]};
-            assign que_pop[i]  = ({1'b0, head_r[i]} < id_pop_cnt);
+            if (P_BANKS == CONFIG_P_ISSUE_WIDTH)
+               assign que_pop[i]  = ({1'b0, head_r[i]} < id_pop_cnt);
+            else
+               assign que_pop[i]  = ({1'b0, head_r[i]} < {{P_BANKS-CONFIG_P_ISSUE_WIDTH{1'b0}}, id_pop_cnt});
             assign que_push[i] = ({1'b0, tail_r[i]} < iq_push_cnt);
          end
    endgenerate
