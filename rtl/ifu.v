@@ -189,8 +189,8 @@ module ifu
     .axi_ar_ready_i                     (axi_ar_ready_i),
     .axi_r_valid_i                      (axi_r_valid_i),
     .axi_r_data_i                       (axi_r_data_i[(1<<AXI_P_DW_BYTES)*8-1:0]),
-    .axi_r_resp_i                       (axi_r_resp_i[1:0]),
     .axi_r_last_i                       (axi_r_last_i),
+    .axi_r_resp_i                       (axi_r_resp_i[1:0]),
     .axi_r_id_i                         (axi_r_id_i[AXI_ID_WIDTH-1:0]),
     .axi_r_user_i                       (axi_r_user_i[AXI_USER_WIDTH-1:0]));
 

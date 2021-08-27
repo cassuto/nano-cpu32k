@@ -44,6 +44,8 @@ module id
    input                               clk,
    input                               rst,
    input                               flush,
+   input                               stall,
+   output                              iq_stall_req,
    // From frontend
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid,
    output [CONFIG_P_ISSUE_WIDTH:0]      id_pop_cnt,
@@ -52,56 +54,66 @@ module id
    input [`FNT_EXC_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc,
    input [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd,
    // IRQ
-   input                               id_irq
+   input                               id_irq,
    // To EX
-   
+   output [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_alu_opc_bus,
+   output [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lpu_opc_bus,
+   output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_epu_opc_bus,
+   output [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_bru_opc_bus,
+   output [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lsu_opc_bus,
+   output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_imm,
+   output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand1,
+   output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand2,
+   // Regfile
+   output [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] arf_RE,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_REG_AW-1:0] arf_RADDR,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0] arf_RDATA
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    
-   wire                                single_issue                  [IW-1:0];
-   wire [CONFIG_DW-1:0]                imm                           [IW-1:0];
-   wire [`NCPU_ALU_IOPW-1:0]           alu_opc_bus                   [IW-1:0];
-   wire [`NCPU_LPU_IOPW-1:0]           lpu_opc_bus                   [IW-1:0];
-   wire [`NCPU_EPU_IOPW-1:0]           epu_opc_bus                   [IW-1:0];
-   wire [`NCPU_BRU_IOPW-1:0]           bru_opc_bus                   [IW-1:0];
-   wire                                op_lsu_load                   [IW-1:0];
-   wire                                op_lsu_store                  [IW-1:0];
-   wire                                lsu_sign_ext                  [IW-1:0];
-   wire                                op_lsu_barr                   [IW-1:0];
-   wire [2:0]                          lsu_store_size                [IW-1:0];
-   wire [2:0]                          lsu_load_size                 [IW-1:0];
+   wire                                p_ce;
+   reg [IW-1:0]                        valid_msk;
+   wire [IW-1:0]                       valid;
+   wire [IW-1:0]                       single_fu;
+   wire [IW-1:0]                       raw_dep;
    wire                                rf_we                         [IW-1:0];
    wire [`NCPU_REG_AW-1:0]             rf_waddr                      [IW-1:0];
    wire                                rf_rs1_re                     [IW-1:0];
    wire [`NCPU_REG_AW-1:0]             rf_rs1_addr                   [IW-1:0];
    wire                                rf_rs2_re                     [IW-1:0];
    wire [`NCPU_REG_AW-1:0]             rf_rs2_addr                   [IW-1:0];
-   
+   wire [CONFIG_DW-1:0]                rop1, rop2;
    genvar i;
+   integer j, k;
    
    generate
       for(i=0;i<IW;i=i+1)
-         begin
+         begin : gen_dec
             id_dec
-               #(/*AUTOINSTPARAM*/)
+               #(/*AUTOINSTPARAM*/
+                 // Parameters
+                 .CONFIG_AW             (CONFIG_AW),
+                 .CONFIG_DW             (CONFIG_DW),
+                 .CONFIG_ENABLE_MUL     (CONFIG_ENABLE_MUL),
+                 .CONFIG_ENABLE_DIV     (CONFIG_ENABLE_DIV),
+                 .CONFIG_ENABLE_DIVU    (CONFIG_ENABLE_DIVU),
+                 .CONFIG_ENABLE_MOD     (CONFIG_ENABLE_MOD),
+                 .CONFIG_ENABLE_MODU    (CONFIG_ENABLE_MODU),
+                 .CONFIG_ENABLE_ASR     (CONFIG_ENABLE_ASR))
             U_DEC
                (
                   .id_valid            (id_valid[i]),
                   .id_ins              (id_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW]),
                   .id_exc              (id_exc[i*`FNT_EXC_W]),
                   .id_irq              (id_irq),
-                  .single_issue        (single_issue[i]),
-                  .imm                 (imm[i]),
-                  .alu_opc_bus         (alu_opc_bus[i]),
-                  .lpu_opc_bus         (lpu_opc_bus[i]),
-                  .epu_opc_bus         (epu_opc_bus[i]),
-                  .bru_opc_bus         (bru_opc_bus[i]),
-                  .op_lsu_load         (op_lsu_load[i]),
-                  .op_lsu_store        (op_lsu_store[i]),
-                  .lsu_sign_ext        (lsu_sign_ext[i]),
-                  .op_lsu_barr         (op_lsu_barr[i]),
-                  .lsu_store_size      (lsu_store_size[i]),
-                  .lsu_load_size       (lsu_load_size[i]),
+                  .single_fu           (single_fu[i]),
+                  
+                  .alu_opc_bus         (ex_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
+                  .lpu_opc_bus         (ex_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]),
+                  .epu_opc_bus         (ex_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
+                  .bru_opc_bus         (ex_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
+                  .lsu_opc_bus         (ex_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
+                  .imm                 (ex_imm[i*CONFIG_DW +: CONFIG_DW]),
                   .rf_we               (rf_we[i]),
                   .rf_waddr            (rf_waddr[i]),
                   .rf_rs1_re           (rf_rs1_re[i]),
@@ -111,5 +123,49 @@ module id
                );
          end
    endgenerate
+   
+   // Detect RAW hazard in the issue window
+   always @(*)
+      for(k=0;k<IW;k=k+1)
+         begin
+            raw_dep[k] = 'b0;
+            for(j=0;j<k;j=j+1)
+               raw_dep[k] = raw_dep[k] | (rf_we[j] &
+                                          ((rf_rs1_re[k] & (rf_rs1_addr[k]==rf_waddr[j])) |
+                                             (rf_rs2_re[k] & (rf_rs2_addr[k]==rf_waddr[j]))));
+         end
+   
+   always @(*)
+      begin
+         valid_msk[0] = 'b1;
+         for(j=1;j<IW;j=j+1)
+            valid_msk[j] = valid_msk[j-1] & ~single_fu[j] & ~raw_dep[j];
+      end
+      
+   assign valid = (valid_msk & id_valid);
+   
+   // Count the number of inst that is being issued
+   clo #(.P_DW(CONFIG_P_FETCH_WIDTH)) U_CLO (.bitmap(valid), .count(id_pop_cnt) );
 
+   assign p_ce = (~stall);
+   
+   // Read the operand from ARF
+   // ARF has 1 cycle latency before output the result
+   generate
+      for(i=0;i<IW;i=i+1)
+         begin
+            assign arf_RE[i] = (p_ce & rf_rs1_re[i]);
+            assign arf_RE[(i<<1)] = (p_ce & rf_rs2_re[i]);
+            assign arf_RADDR[i*`NCPU_REG_AW +: `NCPU_REG_AW] = rf_rs1_addr[i];
+            assign arf_RADDR[(i<<1)*`NCPU_REG_AW +: `NCPU_REG_AW] = rf_rs2_addr[i];
+            
+            assign rop1[i] = arf_RDATA[i*CONFIG_DW +: CONFIG_DW];
+            assign rop2[i] = arf_RDATA[(i<<1)*CONFIG_DW +: CONFIG_DW];
+            
+            // TODO bypass
+            assign ex_operand1[i*CONFIG_DW +: CONFIG_DW] = rop1[i];
+            assign ex_operand2[i*CONFIG_DW +: CONFIG_DW] = rop2[i];
+         end
+   endgenerate
+   
 endmodule

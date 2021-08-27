@@ -102,18 +102,13 @@ module id_dec
    input [`NCPU_INSN_DW-1:0]           id_ins,
    input [`FNT_EXC_W-1:0]              id_exc,
    input                               id_irq,
-   output                              single_issue,
-   output [CONFIG_DW-1:0]              imm,
+   output                              single_fu,
    output [`NCPU_ALU_IOPW-1:0]         alu_opc_bus,
    output [`NCPU_LPU_IOPW-1:0]         lpu_opc_bus,
    output [`NCPU_EPU_IOPW-1:0]         epu_opc_bus,
    output [`NCPU_BRU_IOPW-1:0]         bru_opc_bus,
-   output                              op_lsu_load,
-   output                              op_lsu_store,
-   output                              lsu_sign_ext,
-   output                              op_lsu_barr,
-   output [2:0]                        lsu_store_size,
-   output [2:0]                        lsu_load_size,
+   output [`NCPU_LSU_IOPW-1:0]         lsu_opc_bus,
+   output [CONFIG_DW-1:0]              imm,
    output                              rf_we,
    output [`NCPU_REG_AW-1:0]           rf_waddr,
    output                              rf_rs1_re,
@@ -126,7 +121,6 @@ module id_dec
    wire [4:0]                          f_rd;
    wire [4:0]                          f_rs1;
    wire [4:0]                          f_rs2;
-   wire [3:0]                          f_cond;
    wire [14:0]                         f_imm15;
    wire [16:0]                         f_imm17;
    wire [24:0]                         f_rel25;
@@ -194,11 +188,10 @@ module id_dec
    
    assign msk = ((~|id_dec) & id_valid);
    
-   assign f_opcode = idu_insn[6:0] & {7{msk}};
+   assign f_opcode = idu_insn[6:0] & {7{msk}}; // 7'b000000 is `add r0,r0,r0`, i.e., NOP.
    assign f_rd = idu_insn[11:7];
    assign f_rs1 = idu_insn[16:12];
    assign f_rs2 = idu_insn[21:17];
-   assign f_cond = idu_insn[25:22] & {4{msk}};
    assign f_imm15 = idu_insn[31:17];
    assign f_imm17 = idu_insn[28:12];
    assign f_rel25 = idu_insn[31:7];
@@ -322,14 +315,19 @@ module id_dec
    // 2 = 16bit
    // 3 = 32bit
    // 4 = 64bit
-   assign lsu_store_size = op_stb ? 3'd1 : op_sth ? 3'd2 : op_stw ? 3'd3 : 3'd0;
-   assign lsu_load_size = (op_ldb|op_ldbu) ? 3'd1 : (op_ldh|op_ldhu) ? 3'd2 : (op_ldwu) ? 3'd3 : 3'd0;
+   assign lsu_opc_bus[`NCPU_LSU_SIZE] = (op_ldb|op_ldbu|op_stb)
+                                          ? 3'd1
+                                          : (op_ldh|op_ldhu|op_sth)
+                                             ? 3'd2
+                                             : (op_ldwu|op_stw)
+                                                ? 3'd3
+                                                : 3'd0;
 
-   assign lsu_sign_ext = (op_ldb | op_ldh);
+   assign lsu_opc_bus[`NCPU_LSU_SIGN_EXT] = (op_ldb | op_ldh);
 
-   assign op_lsu_load = (op_ldb|op_ldbu|op_ldh|op_ldhu|op_ldwu);
-   assign op_lsu_store = (op_stb|op_sth|op_stw);
-   assign op_lsu_barr = (f_opcode == `NCPU_OP_MBARR);
+   assign lsu_opc_bus[`NCPU_LSU_LOAD] = (op_ldb|op_ldbu|op_ldh|op_ldhu|op_ldwu);
+   assign lsu_opc_bus[`NCPU_LSU_STORE] = (op_stb|op_sth|op_stw);
+   assign lsu_opc_bus[`NCPU_LSU_BARR] = (f_opcode == `NCPU_OP_MBARR);
 
    // EPU opcodes excluding EINSN 
    assign epu_opc_no_EINSN[`NCPU_EPU_WMSR] = op_wmsr;
@@ -351,21 +349,21 @@ module id_dec
          // BRU opcodes
          (|bru_opc_bus) |
          // LSU insns
-         op_lsu_load | op_lsu_store | op_lsu_barr |
+         (lsu_opc_bus[`NCPU_LSU_LOAD] | lsu_opc_bus[`NCPU_LSU_STORE] | lsu_opc_bus[`NCPU_LSU_BARR]) |
          // EPU opcodes
          (|epu_opc_no_EINSN)
       );
    assign epu_opc_bus[`NCPU_EPU_EINSN-1:0] = epu_opc_no_EINSN[`NCPU_EPU_EINSN-1:0];
 
-   // Insn that forces to single issue
-   assign single_issue =
+   // Insn that has only one FU
+   assign single_fu =
       (
          // LPU opcodes
          (|lpu_opc_bus) |
          // BRU opcodes
          (|bru_opc_bus) |
          // LSU insns
-         op_lsu_load | op_lsu_store | op_lsu_barr |
+         (lsu_opc_bus[`NCPU_LSU_LOAD] | lsu_opc_bus[`NCPU_LSU_STORE] | lsu_opc_bus[`NCPU_LSU_BARR]) |
          // EPU opcodes
          (|epu_opc_bus)
       );
@@ -375,13 +373,13 @@ module id_dec
       (
          op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |
          op_add_i |
-         op_lsu_load |
+         lsu_opc_bus[`NCPU_LSU_LOAD] |
          op_rmsr
       );
    // Insn that uses rs1, rs2 and imm15 as operand
    assign insn_rd_rs1_imm15 =
       (
-         op_lsu_store |
+         lsu_opc_bus[`NCPU_LSU_STORE] |
          op_wmsr |
          bcc
       );
@@ -390,25 +388,27 @@ module id_dec
    // Insn that uses rel25 as operand
    assign insn_rel25 = (op_jmp_i | op_jmp_lnk_i);
    // Insn that requires signed imm15.
-   assign use_simm15 = (op_xor_i | op_add_i | op_lsu_load | op_lsu_store);
+   assign use_simm15 = (op_xor_i | op_add_i | lsu_opc_bus[`NCPU_LSU_LOAD] | lsu_opc_bus[`NCPU_LSU_STORE]);
    // Insns that have no register operands.
-   assign insn_no_rops = (op_mhi | op_lsu_barr | op_syscall | op_ret | op_jmp_i | op_jmp_lnk_i);
+   assign insn_no_rops = (op_mhi | lsu_opc_bus[`NCPU_LSU_BARR] | op_syscall | op_ret | op_jmp_i | op_jmp_lnk_i);
    // Insns that do not writeback ARF
-   assign not_wb = (op_jmp_i | bcc | 
-                        op_lsu_store | op_lsu_barr |
-                        op_wmsr | epu_opc_bus[`NCPU_EPU_ESYSCALL] | epu_opc_bus[`NCPU_EPU_ERET] |
-                        epu_opc_bus[`NCPU_EPU_EITM] | epu_opc_bus[`NCPU_EPU_EIPF] |
-                        epu_opc_bus[`NCPU_EPU_EINSN] |
-                        epu_opc_bus[`NCPU_EPU_EIRQ]);
+   assign not_wb =
+      (
+         op_jmp_i | bcc | 
+         lsu_opc_bus[`NCPU_LSU_STORE] | lsu_opc_bus[`NCPU_LSU_BARR] |
+         op_wmsr | epu_opc_bus[`NCPU_EPU_ESYSCALL] | epu_opc_bus[`NCPU_EPU_ERET] |
+         epu_opc_bus[`NCPU_EPU_EITM] | epu_opc_bus[`NCPU_EPU_EIPF] |
+         epu_opc_bus[`NCPU_EPU_EINSN] |
+         epu_opc_bus[`NCPU_EPU_EIRQ]
+      );
 
    // Do not write r0 (nil)
    assign rf_we = ~not_wb & (|rf_waddr);
    assign rf_waddr = (op_jmp_lnk_i) ? `NCPU_REGNO_LNK : f_rd;
 
-   assign read_rd_as_rs2 = (op_lsu_store | op_wmsr | bcc);
+   assign read_rd_as_rs2 = (lsu_opc_bus[`NCPU_LSU_STORE] | op_wmsr | bcc);
 
    // Request operand(s) from regfile when needed
-   // Regfile could be considered as a stage of the pipeline
    assign rf_rs1_re = ~insn_no_rops;
    assign rf_rs1_addr = f_rs1;
    assign rf_rs2_re = ((~insn_rs1_imm15 & ~insn_uimm17 & ~insn_rel25 & ~insn_no_rops) | read_rd_as_rs2);

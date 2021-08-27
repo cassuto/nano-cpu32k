@@ -70,10 +70,12 @@ module fifo_fwft
 
    assign dout = state_r ? dat_r : rf_dout_byp;
    
-   mRF_1w1r
+   mRF_nwnr
       #(
          .DW (DW),
-         .AW (DEPTH_WIDTH)
+         .AW (DEPTH_WIDTH),
+         .NUM_READ   (1),
+         .NUM_WRITE  (1)
       )
    U_RF
       (

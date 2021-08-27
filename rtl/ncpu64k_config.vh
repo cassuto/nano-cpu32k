@@ -133,9 +133,6 @@
 `define NCPU_LPU_MOD 3
 `define NCPU_LPU_MODU 4
 
-// FPU
-`define NCPU_FPU_IOPW 1
-
 // EPU (Exception and Extended Processor Unit)
 `define NCPU_EPU_IOPW 8
 `define NCPU_EPU_WMSR 0
@@ -146,6 +143,15 @@
 `define NCPU_EPU_EIPF 5
 `define NCPU_EPU_EIRQ 6
 `define NCPU_EPU_EINSN (`NCPU_EPU_IOPW-1)
+
+// LSU
+`define NCPU_LSU_IOPW 7
+`define NCPU_LSU_LOAD 0
+`define NCPU_LSU_STORE 1
+`define NCPU_LSU_BARR 2
+`define NCPU_LSU_SIGN_EXT 3
+`define NCPU_LSU_SIZE 6:4
+
 
 `define NCPU_REGNO_LNK 1 // the only one machine-dependent register
 

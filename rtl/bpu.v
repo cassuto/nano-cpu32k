@@ -117,11 +117,12 @@ module bpu
          end
    endgenerate
    
-   mRF_1wnr
+   mRF_nwnr
       #(
          .DW         (PHT_DW),
          .AW         (CONFIG_PHT_P_NUM),
-         .NUM_READ   (1<<CONFIG_P_FETCH_WIDTH)
+         .NUM_READ   (1<<CONFIG_P_FETCH_WIDTH),
+         .NUM_WRITE  (1)
       )
    U_PHT
       (
@@ -134,11 +135,12 @@ module bpu
          .WDATA      (wb_pht_din)
       );
       
-   mRF_1wnr
+   mRF_nwnr
       #(
          .DW         (BTB_DW),
          .AW         (CONFIG_BTB_P_NUM),
-         .NUM_READ   (1<<CONFIG_P_FETCH_WIDTH)
+         .NUM_READ   (1<<CONFIG_P_FETCH_WIDTH),
+         .NUM_WRITE  (1)
       )
    U_BTB
       (
