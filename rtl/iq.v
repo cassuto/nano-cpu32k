@@ -74,6 +74,7 @@ module iq
    wire [CONFIG_AW-1:0]                iq_pc_unpacked                [FW-1:0];
    wire [`FNT_EXC_W-1:0]               iq_exc_unpacked               [FW-1:0];
    wire [`BPU_UPD_W-1:0]               iq_bpu_upd_unpacked           [FW-1:0];
+   wire [P_BANKS:0]                    pop_cnt_adapt;
    genvar i;
 
    generate
@@ -120,6 +121,14 @@ module iq
          end
    endgenerate
    
+   // Width adapter
+   generate
+      if (P_BANKS == CONFIG_P_ISSUE_WIDTH)
+         assign pop_cnt_adapt = id_pop_cnt;
+      else
+         assign pop_cnt_adapt = {{P_BANKS-CONFIG_P_ISSUE_WIDTH{1'b0}}, id_pop_cnt};
+   endgenerate
+   
    // MUX for FIFO input
    generate
       for(i=0;i<BANKS;i=i+1)
@@ -128,15 +137,12 @@ module iq
                                  iq_pc_unpacked[tail_inv[i]],
                                  iq_exc_unpacked[tail_inv[i]],
                                  iq_bpu_upd_unpacked[tail_inv[i]]};
-            if (P_BANKS == CONFIG_P_ISSUE_WIDTH)
-               assign que_pop[i]  = ({1'b0, head_r[i]} < id_pop_cnt);
-            else
-               assign que_pop[i]  = ({1'b0, head_r[i]} < {{P_BANKS-CONFIG_P_ISSUE_WIDTH{1'b0}}, id_pop_cnt});
+            assign que_pop[i]  = ({1'b0, head_r[i]} < pop_cnt_adapt);
             assign que_push[i] = ({1'b0, tail_r[i]} < iq_push_cnt);
          end
    endgenerate
    
-   assign head_nxt = (head_ff + id_pop_cnt[P_BANKS-1:0]) & {P_BANKS{~flush}};
+   assign head_nxt = (head_ff + pop_cnt_adapt[P_BANKS-1:0]) & {P_BANKS{~flush}};
    assign tail_nxt = (tail_ff + iq_push_cnt[P_BANKS-1:0]) & {P_BANKS{~flush}};
    
    mDFF_r #(.DW(P_BANKS)) ff_head (.CLK(clk), .RST(rst), .D(head_nxt), .Q(head_ff) );

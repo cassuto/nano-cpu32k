@@ -114,6 +114,7 @@ module icache
    wire [CONFIG_IC_P_LINE-1:0]         fsm_refill_cnt;
    reg [CONFIG_IC_P_LINE-1:0]          fsm_refill_cnt_nxt;
    wire                                p_ce;
+   wire [CONFIG_AW-1:0]                refill_paddr;
    // AXI
    wire                                ar_set, ar_clr;
    wire                                hds_axi_R;
@@ -321,7 +322,17 @@ module icache
    assign axi_ar_region_o = 'b0;
    assign ar_set = (fsm_state_ff==S_REPLACE);
    assign ar_clr = (axi_ar_ready_i & axi_ar_valid_o);
-   assign axi_ar_addr_nxt = {{AXI_ADDR_WIDTH-CONFIG_AW{1'b0}}, s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_AW - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
+   assign refill_paddr = {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_AW - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
+   
+   // Address adapter (truncate or zero filling)
+   generate
+      if (AXI_ADDR_WIDTH > CONFIG_AW)
+         assign axi_ar_addr_nxt = {{AXI_ADDR_WIDTH-CONFIG_AW{1'b0}}, refill_paddr};
+      else if (AXI_ADDR_WIDTH < CONFIG_AW)
+         assign axi_ar_addr_nxt = refill_paddr[AXI_ADDR_WIDTH-1:0];
+      else
+         assign axi_ar_addr_nxt = refill_paddr;
+   endgenerate
    
    mDFF_lr # (.DW(1)) ff_axi_ar_valid (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(axi_ar_valid_o) );
    mDFF_lr # (.DW(AXI_ADDR_WIDTH)) ff_axi_ar_addr (.CLK(clk), .RST(rst), .LOAD(ar_set), .D(axi_ar_addr_nxt), .Q(axi_ar_addr_o) );
