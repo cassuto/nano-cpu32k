@@ -257,7 +257,7 @@ module ifu
       else if (pred_branch_taken)
          pc_nxt = {s1o_bpu_npc[s1o_bpu_taken_inst_idx], 2'b00};
       else
-         pc_nxt = pc + {{CONFIG_AW-CONFIG_P_FETCH_WIDTH-1{1'b0}}, (s1o_push_cnt<<`NCPU_P_INSN_LEN)};
+         pc_nxt = pc + {{CONFIG_AW-CONFIG_P_FETCH_WIDTH-1-`NCPU_P_INSN_LEN{1'b0}}, s1o_push_cnt, {`NCPU_P_INSN_LEN{1'b0}}};
 
    // PC Register
    mDFF_r # (.DW(CONFIG_AW)) ff_pc (.CLK(clk), .RST(rst), .D(pc_nxt), .Q(pc) );
