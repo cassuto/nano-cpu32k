@@ -26,20 +26,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module ifu
 #(
-   parameter CONFIG_AW = 0,
-   parameter CONFIG_P_FETCH_WIDTH = 0,
-   parameter CONFIG_P_ISSUE_WIDTH = 0,
-   parameter CONFIG_P_IQ_DEPTH = 0,
-   parameter CONFIG_P_PAGE_SIZE = 0,
-   parameter CONFIG_IC_P_LINE = 0,
-   parameter CONFIG_IC_P_SETS = 0,
-   parameter CONFIG_IC_P_WAYS = 0,
-   parameter CONFIG_PHT_P_NUM = 0,
-   parameter CONFIG_BTB_P_NUM = 0,
-   parameter AXI_P_DW_BYTES = 0,
-   parameter AXI_ADDR_WIDTH = 0,
-   parameter AXI_ID_WIDTH = 0,
-   parameter AXI_USER_WIDTH = 0
+   parameter                           CONFIG_AW = 0,
+   parameter                           CONFIG_P_FETCH_WIDTH = 0,
+   parameter                           CONFIG_P_ISSUE_WIDTH = 0,
+   parameter                           CONFIG_P_IQ_DEPTH = 0,
+   parameter                           CONFIG_P_PAGE_SIZE = 0,
+   parameter                           CONFIG_IC_P_LINE = 0,
+   parameter                           CONFIG_IC_P_SETS = 0,
+   parameter                           CONFIG_IC_P_WAYS = 0,
+   parameter                           CONFIG_PHT_P_NUM = 0,
+   parameter                           CONFIG_BTB_P_NUM = 0,
+   parameter                           AXI_P_DW_BYTES = 0,
+   parameter                           AXI_ADDR_WIDTH = 0,
+   parameter                           AXI_ID_WIDTH = 0,
+   parameter                           AXI_USER_WIDTH = 0
 )
 (
    input                               clk,

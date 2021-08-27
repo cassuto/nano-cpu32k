@@ -2,7 +2,9 @@
 `define NCPU64K_CONFIG_H_
 
 /* Synthesis switch */
+//`ifndef SYNTHESIS
 //`define SYNTHESIS
+//`endif
 
 /* Asynchronous/synchronous reset */
 //`define NCPU_RST_ASYNC

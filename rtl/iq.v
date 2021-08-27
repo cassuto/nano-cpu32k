@@ -26,12 +26,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module iq
 #(
-   parameter CONFIG_AW = 32,
-   parameter CONFIG_P_FETCH_WIDTH = 2,
-   parameter CONFIG_P_ISSUE_WIDTH = 2,
-   parameter CONFIG_P_IQ_DEPTH = 4, // Depth per fetch channel
-   parameter CONFIG_PHT_P_NUM = 0,
-   parameter CONFIG_BTB_P_NUM = 0
+   parameter                           CONFIG_AW = 32,
+   parameter                           CONFIG_P_FETCH_WIDTH = 2,
+   parameter                           CONFIG_P_ISSUE_WIDTH = 2,
+   parameter                           CONFIG_P_IQ_DEPTH = 4, // Depth per fetch channel
+   parameter                           CONFIG_PHT_P_NUM = 0,
+   parameter                           CONFIG_BTB_P_NUM = 0
 )
 (
    input                               clk,

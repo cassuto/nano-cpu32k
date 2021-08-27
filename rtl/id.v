@@ -26,19 +26,19 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module id
 #(
-   parameter CONFIG_AW = 0,
-   parameter CONFIG_DW = 0,
-   parameter CONFIG_P_ISSUE_WIDTH = 0,
-   parameter CONFIG_PHT_P_NUM = 0,
-   parameter CONFIG_BTB_P_NUM = 0,
-   parameter CONFIG_AW = 0,
-   parameter CONFIG_DW = 0,
-   parameter CONFIG_ENABLE_MUL = 0,
-   parameter CONFIG_ENABLE_DIV = 0,
-   parameter CONFIG_ENABLE_DIVU = 0,
-   parameter CONFIG_ENABLE_MOD = 0,
-   parameter CONFIG_ENABLE_MODU = 0,
-   parameter CONFIG_ENABLE_ASR = 0
+   parameter                           CONFIG_AW = 0,
+   parameter                           CONFIG_DW = 0,
+   parameter                           CONFIG_P_ISSUE_WIDTH = 0,
+   parameter                           CONFIG_PHT_P_NUM = 0,
+   parameter                           CONFIG_BTB_P_NUM = 0,
+   parameter                           CONFIG_AW = 0,
+   parameter                           CONFIG_DW = 0,
+   parameter                           CONFIG_ENABLE_MUL = 0,
+   parameter                           CONFIG_ENABLE_DIV = 0,
+   parameter                           CONFIG_ENABLE_DIVU = 0,
+   parameter                           CONFIG_ENABLE_MOD = 0,
+   parameter                           CONFIG_ENABLE_MODU = 0,
+   parameter                           CONFIG_ENABLE_ASR = 0
 )
 (
    input                               clk,
@@ -52,7 +52,7 @@ module id
    input [`NCPU_INSN_DW * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins,
    input [CONFIG_AW * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc,
    input [`FNT_EXC_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc,
-   input [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd,
+   input [`BPU_UPD_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd,
    // IRQ
    input                               id_irq,
    // To EX
@@ -62,6 +62,7 @@ module id
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_epu_opc_bus,
    output [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_bru_opc_bus,
    output [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lsu_opc_bus,
+   output [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_bpu_upd,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_imm,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand1,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand2,
@@ -185,5 +186,6 @@ module id
    mDFF_l # (.DW(`NCPU_EPU_IOPW*IW)) ff_ex_epu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_epu_opc_bus), .Q(ex_epu_opc_bus) );
    mDFF_l # (.DW(`NCPU_BRU_IOPW*IW)) ff_ex_bru_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_bru_opc_bus), .Q(ex_bru_opc_bus) );
    mDFF_l # (.DW(`NCPU_LSU_IOPW*IW)) ff_ex_lsu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_lsu_opc_bus), .Q(ex_lsu_opc_bus) );
+   mDFF_l # (.DW(`BPU_UPD_W*IW)) ff_ex_bpu_upd (.CLK(clk), .LOAD(p_ce), .D(id_bpu_upd), .Q(ex_bpu_upd) );
    
 endmodule

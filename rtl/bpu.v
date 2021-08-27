@@ -26,10 +26,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module bpu
 #(
-   parameter CONFIG_PHT_P_NUM = 0,
-   parameter CONFIG_BTB_P_NUM = 0,
-   parameter CONFIG_AW = 0,
-   parameter CONFIG_P_FETCH_WIDTH = 0
+   parameter                                    CONFIG_PHT_P_NUM = 0,
+   parameter                                    CONFIG_BTB_P_NUM = 0,
+   parameter                                    CONFIG_AW = 0,
+   parameter                                    CONFIG_P_FETCH_WIDTH = 0
 )
 (
    input                                        clk,
