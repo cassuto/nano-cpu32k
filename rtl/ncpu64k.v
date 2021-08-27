@@ -28,7 +28,7 @@ module ncpu64k
 #(
    parameter CONFIG_AW = 32,
    parameter CONFIG_DW = 32,
-   parameter CONFIG_P_FETCH_WIDTH = 2,
+   parameter CONFIG_P_FETCH_WIDTH = 1,
    parameter CONFIG_P_ISSUE_WIDTH = 1,
    parameter CONFIG_P_PAGE_SIZE = 13,
    parameter CONFIG_IC_P_LINE = 6,
