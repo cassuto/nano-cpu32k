@@ -24,41 +24,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module mDFF # (
-   parameter DW = 1 // Data Width in bits
-)
+module ex
 (
-   input CLK,
-   input [DW-1:0] D, // Data input
-   output reg [DW-1:0] Q // Data output
+   input                               clk,
+   input                               rst
 );
-   always @(posedge CLK) begin
-`ifdef SYNTHESIS
-         Q <= D;
-`else
-         Q <= #1 D;
-`endif
-   end
-
-   // synthesis translate_off
-`ifndef SYNTHESIS
-
-   integer i;
-   initial
-      for(i=0;i<DW;i=i+1)
-         Q[i] = {$random}[0]; // random value since there is no reset port
-
-   // Assertions
-`ifdef NCPU_ENABLE_ASSERT
-`ifdef NCPU_CHECK_X
-   always @(posedge CLK) begin
-      if((^D) === 1'bx)
-         $fatal ("\n DFF: uncertain state! \n");
-   end
-`endif
-`endif
-
-`endif
-   // synthesis translate_on
 
 endmodule

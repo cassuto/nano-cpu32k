@@ -56,6 +56,7 @@ module id
    // IRQ
    input                               id_irq,
    // To EX
+   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0]                ex_valid,
    output [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_alu_opc_bus,
    output [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lpu_opc_bus,
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_epu_opc_bus,
@@ -76,6 +77,12 @@ module id
    wire [IW-1:0]                       valid;
    wire [IW-1:0]                       single_fu;
    wire [IW-1:0]                       raw_dep;
+   wire [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_alu_opc_bus;
+   wire [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_lpu_opc_bus;
+   wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_epu_opc_bus;
+   wire [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_bru_opc_bus;
+   wire [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_lsu_opc_bus;
+   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_imm;
    wire                                rf_we                         [IW-1:0];
    wire [`NCPU_REG_AW-1:0]             rf_waddr                      [IW-1:0];
    wire                                rf_rs1_re                     [IW-1:0];
@@ -108,12 +115,12 @@ module id
                   .id_irq              (id_irq),
                   .single_fu           (single_fu[i]),
                   
-                  .alu_opc_bus         (ex_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
-                  .lpu_opc_bus         (ex_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]),
-                  .epu_opc_bus         (ex_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
-                  .bru_opc_bus         (ex_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
-                  .lsu_opc_bus         (ex_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
-                  .imm                 (ex_imm[i*CONFIG_DW +: CONFIG_DW]),
+                  .alu_opc_bus         (s1i_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
+                  .lpu_opc_bus         (s1i_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]),
+                  .epu_opc_bus         (s1i_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
+                  .bru_opc_bus         (s1i_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
+                  .lsu_opc_bus         (s1i_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
+                  .imm                 (s1i_imm[i*CONFIG_DW +: CONFIG_DW]),
                   .rf_we               (rf_we[i]),
                   .rf_waddr            (rf_waddr[i]),
                   .rf_rs1_re           (rf_rs1_re[i]),
@@ -167,5 +174,16 @@ module id
             assign ex_operand2[i*CONFIG_DW +: CONFIG_DW] = rop2[i];
          end
    endgenerate
+   
+   
+   //
+   // Pipeline stage
+   //
+   mDFF_lr # (.DW(IW)) ff_ex_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(valid & {IW{~flush}}), .Q(ex_valid) );
+   mDFF_l # (.DW(`NCPU_ALU_IOPW*IW)) ff_ex_alu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_alu_opc_bus), .Q(ex_alu_opc_bus) );
+   mDFF_l # (.DW(`NCPU_LPU_IOPW*IW)) ff_ex_lpu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_lpu_opc_bus), .Q(ex_lpu_opc_bus) );
+   mDFF_l # (.DW(`NCPU_EPU_IOPW*IW)) ff_ex_epu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_epu_opc_bus), .Q(ex_epu_opc_bus) );
+   mDFF_l # (.DW(`NCPU_BRU_IOPW*IW)) ff_ex_bru_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_bru_opc_bus), .Q(ex_bru_opc_bus) );
+   mDFF_l # (.DW(`NCPU_LSU_IOPW*IW)) ff_ex_lsu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_lsu_opc_bus), .Q(ex_lsu_opc_bus) );
    
 endmodule

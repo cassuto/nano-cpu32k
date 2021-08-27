@@ -45,6 +45,11 @@ module mDFF_l # (
    // synthesis translate_off
 `ifndef SYNTHESIS
 
+   integer i;
+   initial
+      for(i=0;i<DW;i=i+1)
+         Q[i] = {$random}[0]; // random value since there is no reset port
+
    // Assertions
 `ifdef NCPU_ENABLE_ASSERT
 `ifdef NCPU_CHECK_X
