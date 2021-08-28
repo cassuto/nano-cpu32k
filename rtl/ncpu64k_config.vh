@@ -26,6 +26,7 @@
 `define NCPU_P_INSN_LEN 2 /* $clog2(4) */
 `define NCPU_INSN_LEN (`NCPU_P_INSN_LEN<<1)
 `define NCPU_INSN_DW (`NCPU_INSN_LEN*8)
+`define PC_W (CONFIG_AW-`NCPU_P_INSN_LEN)
 
 /* Use technology library */
 //`define NCPU_USE_TECHLIB
@@ -85,8 +86,9 @@
 `define FNT_EXC_EIPF 1
 
 /* BPU packet width */
-`define BPU_UPD_W (2 + CONFIG_PHT_P_NUM + CONFIG_BTB_P_NUM + 1)
+`define BPU_UPD_W (2 + CONFIG_PHT_P_NUM + CONFIG_BTB_P_NUM + `PC_W + 1)
 `define BPU_UPD_TAKEN 0
+`define BPU_UPD_TGT `PC_W+1:1
 
 
 /* Exception Vector Table */

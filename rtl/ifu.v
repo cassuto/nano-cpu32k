@@ -50,7 +50,7 @@ module ifu
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid,
    input [CONFIG_P_ISSUE_WIDTH:0]      id_pop_cnt,
    output [`NCPU_INSN_DW * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins,
-   output [CONFIG_AW * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc,
+   output [`PC_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc,
    output [`FNT_EXC_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc,
    output [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd,
    // From EX
@@ -60,8 +60,8 @@ module ifu
    input                               bpu_wb_is_bcc,
    input                               bpu_wb_is_breg,
    input                               bpu_wb_bcc_taken,
-   input [CONFIG_AW-3:0]               bpu_wb_pc,
-   input [CONFIG_AW-3:0]               bpu_wb_npc_act,
+   input [`PC_W-1:0]                   bpu_wb_pc,
+   input [`PC_W-1:0]                   bpu_wb_npc_act,
    input [`BPU_UPD_W-1:0]              bpu_wb_upd,
    // To EX
    output                              icop_stall_req,
@@ -101,34 +101,33 @@ module ifu
    wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2;
    wire                                kill_req_s2;
    wire                                pred_branch_taken;
+   wire [`PC_W-1:0]                    pred_branch_tgt;
    wire [CONFIG_AW-1:0]                pc;
    reg [CONFIG_AW-1:0]                 pc_nxt;
    // Stage 1 Input
    wire [CONFIG_AW-1:0]                s1i_fetch_vaddr;
    wire [FW-1:0]                       s1i_fetch_valid;
    reg [FW-1:0]                        s1i_valid_msk;
-   wire [CONFIG_AW-1:0]                s1i_pc                           [FW-1:0];
-   wire [(CONFIG_AW-2)*FW-1:0]         s1i_bpu_pc;
+   wire [`PC_W-1:0]                    s1i_pc                           [FW-1:0];
+   wire [`PC_W*FW-1:0]                 s1i_bpu_pc;
    wire [CONFIG_P_FETCH_WIDTH:0]       s1i_push_cnt;
    // Stage 2 Input / Stage 1 Output
-   wire [CONFIG_AW-1:0]                s1o_pc                           [FW-1:0];
+   wire [`PC_W-1:0]                    s1o_pc                           [FW-1:0];
    wire [`FNT_EXC_W-1:0]               s1o_exc;
    wire [CONFIG_P_FETCH_WIDTH:0]       s1o_push_cnt;
-   wire [(CONFIG_AW-2)*FW-1:0]         s1o_bpu_npc_packed;
-   wire [CONFIG_AW-3:0]                s1o_bpu_npc                      [FW-1:0];
+   wire [`PC_W*FW-1:0]                 s1o_bpu_npc_packed;
    wire [`BPU_UPD_W*FW-1:0]            s1o_bpu_upd_packed;
    wire [`BPU_UPD_W-1:0]               s1o_bpu_upd                      [FW-1:0];
    wire [FW-1:0]                       s1o_bpu_taken;
-   wire [CONFIG_P_FETCH_WIDTH-1:0]     s1o_bpu_taken_inst_idx;
    wire [`BPU_UPD_W-1:0]               s2i_bpu_upd                      [FW-1:0];
    // Stage 3 Input / Stage 2 Output
-   wire [CONFIG_AW-1:0]                s2o_pc                           [FW-1:0];
+   wire [`PC_W-1:0]                    s2o_pc                           [FW-1:0];
    wire [`FNT_EXC_W-1:0]               s2o_exc;
    wire [`BPU_UPD_W-1:0]               s2o_bpu_upd                      [FW-1:0];
    wire                                s2o_valid;
    wire [CONFIG_P_FETCH_WIDTH:0]       s2o_push_cnt;
    wire [`NCPU_INSN_DW*FW-1:0]         iq_ins;
-   wire [CONFIG_AW*FW-1:0]             iq_pc;
+   wire [`PC_W*FW-1:0]                 iq_pc;
    wire [`FNT_EXC_W*FW-1:0]            iq_exc;
    wire [`BPU_UPD_W*FW-1:0]            iq_bpu_upd;
    wire [CONFIG_P_FETCH_WIDTH:0]       iq_push_cnt;
@@ -223,14 +222,11 @@ module ifu
    generate
       for(i=0;i<FW;i=i+1)
          begin
-            assign s1i_bpu_pc[i*(CONFIG_AW-2) +: (CONFIG_AW-2)] = s1i_pc[i][CONFIG_AW-1:2]; // Aligned at 4byte boundary
+            assign s1i_bpu_pc[i*`PC_W +: `PC_W] = s1i_pc[i];
             assign s1o_bpu_upd[i] = s1o_bpu_upd_packed[i*`BPU_UPD_W +: `BPU_UPD_W];
             assign s1o_bpu_taken[i] = s1o_bpu_upd[i][`BPU_UPD_TAKEN];
-            assign s1o_bpu_npc[i] = s1o_bpu_npc_packed[i*(CONFIG_AW-2) +: (CONFIG_AW-2)];
          end
    endgenerate
-
-   priority_encoder  #(.P_DW (CONFIG_P_FETCH_WIDTH)) U_ENC_BP (.din(s1o_bpu_taken), .dout(s1o_bpu_taken_inst_idx) );
 
    // Generate valid mask
    always @(*)
@@ -246,7 +242,7 @@ module ifu
          assign s1i_fetch_valid[i] = (pc_nxt[`NCPU_P_INSN_LEN +: CONFIG_P_FETCH_WIDTH] <= i);
    endgenerate
    
-   assign pred_branch_taken = (|s1o_bpu_taken);
+   pmux #(.SELW(FW), .DW(`PC_W)) U_PMUX_BNPC (.sel(s1o_bpu_taken), .din(s1o_bpu_npc_packed), .dout(pred_branch_tgt), .valid(pred_branch_taken) );
    
    // NPC Generator
    always @(*)
@@ -255,7 +251,7 @@ module ifu
       else if (~p_ce)
          pc_nxt = pc;
       else if (pred_branch_taken)
-         pc_nxt = {s1o_bpu_npc[s1o_bpu_taken_inst_idx], 2'b00};
+         pc_nxt = {pred_branch_tgt, 2'b00};
       else
          pc_nxt = pc + {{CONFIG_AW-CONFIG_P_FETCH_WIDTH-1-`NCPU_P_INSN_LEN{1'b0}}, s1o_push_cnt, {`NCPU_P_INSN_LEN{1'b0}}};
 
@@ -286,13 +282,13 @@ module ifu
    generate
       for(i=0;i<FW;i=i+1)
          begin
-            assign s1i_pc[i] = pc_nxt + (i<<`NCPU_P_INSN_LEN);
+            assign s1i_pc[i] = pc_nxt[CONFIG_AW-1: `NCPU_P_INSN_LEN] + i;
          
-            mDFF_lr # (.DW(CONFIG_AW)) ff_s1o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
-            mDFF_lr # (.DW(CONFIG_AW)) ff_s2o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_pc[i]), .Q(s2o_pc[i]) );
+            mDFF_lr # (.DW(`PC_W)) ff_s1o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
+            mDFF_lr # (.DW(`PC_W)) ff_s2o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_pc[i]), .Q(s2o_pc[i]) );
             mDFF_lr # (.DW(`BPU_UPD_W)) ff_s2o_bpu_upd (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_bpu_upd[i]), .Q(s2o_bpu_upd[i]) );
             
-            assign iq_pc[i*CONFIG_AW +: CONFIG_AW] = s2o_pc[i];
+            assign iq_pc[i*`PC_W +: `PC_W] = s2o_pc[i];
             assign iq_exc[i*`FNT_EXC_W +: `FNT_EXC_W] = s2o_exc;
             assign iq_bpu_upd[i*`BPU_UPD_W +: `BPU_UPD_W] = s2o_bpu_upd[i];
          end
@@ -316,7 +312,7 @@ module ifu
     .iq_ready                           (iq_ready),
     .id_valid                           (id_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
     .id_ins                             (id_ins[`NCPU_INSN_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-    .id_pc                              (id_pc[CONFIG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+    .id_pc                              (id_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
     .id_exc                             (id_exc[`FNT_EXC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
     .id_bpu_upd                         (id_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
     // Inputs
@@ -324,7 +320,7 @@ module ifu
     .rst                                (rst),
     .flush                              (flush),
     .iq_ins                             (iq_ins[`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0]),
-    .iq_pc                              (iq_pc[CONFIG_AW*(1<<CONFIG_P_FETCH_WIDTH)-1:0]),
+    .iq_pc                              (iq_pc[`PC_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0]),
     .iq_exc                             (iq_exc[`FNT_EXC_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0]),
     .iq_bpu_upd                         (iq_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0]),
     .iq_push_cnt                        (iq_push_cnt[CONFIG_P_FETCH_WIDTH:0]),

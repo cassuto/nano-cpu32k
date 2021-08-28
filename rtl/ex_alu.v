@@ -29,10 +29,12 @@ module ex_alu
    parameter                           CONFIG_DW = 0
 )
 (
-   input                               clk,
    input [`NCPU_ALU_IOPW-1:0]          ex_alu_opc_bus,
    input [CONFIG_DW-1:0]               ex_operand1,
    input [CONFIG_DW-1:0]               ex_operand2,
+   // From ex_add
+   input [CONFIG_DW-1:0]               add_sum,
+   // Result
    output [CONFIG_DW-1:0]              alu_result
 );
    wire [CONFIG_DW-1:0]                dat_adder;
@@ -52,9 +54,7 @@ module ex_alu
    //
    // Adder
    //
-   assign dat_adder = (ex_alu_opc_bus[`NCPU_ALU_ADD])
-                        ? ex_operand1 + ex_operand2
-                        : ex_operand1 - ex_operand2;
+   assign dat_adder = add_sum;
    assign sel_adder = (ex_alu_opc_bus[`NCPU_ALU_ADD] | ex_alu_opc_bus[`NCPU_ALU_SUB]);
 
    //

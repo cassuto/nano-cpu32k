@@ -38,7 +38,7 @@ module iq
    input                               rst,
    input                               flush,
    input [`NCPU_INSN_DW * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_ins,
-   input [CONFIG_AW * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_pc,
+   input [`PC_W * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_pc,
    input [`FNT_EXC_W * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_exc,
    input [`BPU_UPD_W * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_bpu_upd,
    input [CONFIG_P_FETCH_WIDTH:0]      iq_push_cnt,
@@ -47,13 +47,13 @@ module iq
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid,
    input [CONFIG_P_ISSUE_WIDTH:0]      id_pop_cnt,
    output [`NCPU_INSN_DW * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins,
-   output [CONFIG_AW * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc,
+   output [`PC_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc,
    output [`FNT_EXC_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc,
    output [`BPU_UPD_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd
 );
    localparam FW                       = (1<<CONFIG_P_FETCH_WIDTH);
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
-   localparam FIFO_DW                  = (`NCPU_INSN_DW + CONFIG_AW + `FNT_EXC_W + `BPU_UPD_W); // INST + PC + EXC + BPU
+   localparam FIFO_DW                  = (`NCPU_INSN_DW + `PC_W + `FNT_EXC_W + `BPU_UPD_W); // INST + PC + EXC + BPU
    localparam P_BANKS                  = (CONFIG_P_FETCH_WIDTH);
    localparam BANKS                    = (1<<P_BANKS);
 
@@ -71,7 +71,7 @@ module iq
    wire                                que_push                      [BANKS-1:0];
    wire                                que_pop                       [BANKS-1:0];
    wire [`NCPU_INSN_DW-1:0]            iq_ins_unpacked               [FW-1:0];
-   wire [CONFIG_AW-1:0]                iq_pc_unpacked                [FW-1:0];
+   wire [`PC_W-1:0]                    iq_pc_unpacked                [FW-1:0];
    wire [`FNT_EXC_W-1:0]               iq_exc_unpacked               [FW-1:0];
    wire [`BPU_UPD_W-1:0]               iq_bpu_upd_unpacked           [FW-1:0];
    wire [P_BANKS:0]                    pop_cnt_adapt;
@@ -115,7 +115,7 @@ module iq
       for(i=0;i<FW;i=i+1)
          begin
             assign iq_ins_unpacked[i] = iq_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW];
-            assign iq_pc_unpacked[i] = iq_pc[i*CONFIG_AW +: CONFIG_AW];
+            assign iq_pc_unpacked[i] = iq_pc[i*`PC_W +: `PC_W];
             assign iq_exc_unpacked[i] = iq_exc[i*`FNT_EXC_W +: `FNT_EXC_W];
             assign iq_bpu_upd_unpacked[i] = iq_bpu_upd[i*`BPU_UPD_W +: `BPU_UPD_W];
          end
@@ -176,7 +176,7 @@ module iq
       for(i=0;i<(1<<CONFIG_P_ISSUE_WIDTH);i=i+1)
          begin : gen_pop
             assign {id_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW],
-                     id_pc[i*CONFIG_AW +: CONFIG_AW],
+                     id_pc[i*`PC_W +: `PC_W],
                      id_exc[i*`FNT_EXC_W +: `FNT_EXC_W],
                      id_bpu_upd[i*`BPU_UPD_W +: `BPU_UPD_W] } = que_dout[head_l[i]];
             assign id_valid[i] = que_valid[head_l[i]];

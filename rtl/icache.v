@@ -96,16 +96,17 @@ module icache
    wire [CONFIG_IC_P_SETS-1:0]         s1o_line_addr;
    wire [PAYLOAD_AW-1:0]               s1o_payload_addr;
    wire                                s1o_valid;
-   wire [PAYLOAD_DW-1:0]               s1o_payload             [(1<<CONFIG_IC_P_WAYS)-1:0];
+   wire [PAYLOAD_DW*(1<<CONFIG_IC_P_WAYS)-1:0] s1o_payload;
+   wire [PAYLOAD_DW-1:0]               s1o_match_payload;
    wire [TAG_V_RAM_DW-1:0]             s1o_tag_v               [(1<<CONFIG_IC_P_WAYS)-1:0];
    wire [CONFIG_P_PAGE_SIZE-1:0]       s1o_vpo;
    wire [CONFIG_AW-1:0]                s2i_paddr;
    wire [TAG_WIDTH-1:0]                s2i_tag                 [(1<<CONFIG_IC_P_WAYS)-1:0];
    wire                                s2i_v                   [(1<<CONFIG_IC_P_WAYS)-1:0];
-   wire [(1<<CONFIG_IC_P_WAYS)-1:0]    s2i_hit;
-   wire [CONFIG_IC_P_WAYS-1:0]         s2i_match_way_idx;
+   wire [(1<<CONFIG_IC_P_WAYS)-1:0]    s2i_hit_vec;
+   wire                                s2i_hit;
    wire                                s2i_get_dat;
-   wire [PAYLOAD_DW-1:0]               s2i_ins;
+   reg [PAYLOAD_DW-1:0]                s2i_ins;
    wire [CONFIG_AW-1:0]                s1o_op_inv_paddr;
    // Stage 2 Output / Stage 3 Input
    wire                                s2o_valid;
@@ -151,7 +152,7 @@ module icache
                   .CLK  (clk),
                   .ADDR (s1i_payload_addr),
                   .RE   (s1i_payload_re),
-                  .DOUT (s1o_payload[way]),
+                  .DOUT (s1o_payload[way*PAYLOAD_DW +: PAYLOAD_DW]),
                   .WE   (s1i_payload_we),
                   .DIN  (s1i_payload_din)
                );
@@ -173,12 +174,12 @@ module icache
                
             assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];
             
-            assign s2i_hit[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS]) );
+            assign s2i_hit_vec[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS]) );
          end
    endgenerate
    
-   // Vector to index
-   priority_encoder  #(.P_DW (CONFIG_IC_P_WAYS)) U_ENC ( .din (s2i_hit), .dout (s2i_match_way_idx) );
+   // Sel the dout of matched way
+   pmux #(.SELW(1<<CONFIG_IC_P_WAYS), .DW(PAYLOAD_DW)) U_PMUX_BNPC (.sel(s2i_hit_vec), .din(s1o_payload), .dout(s1o_match_payload), .valid(s2i_hit) );
    
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(1'b1), .Q(s1o_valid) );
    mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
@@ -201,7 +202,7 @@ module icache
             S_IDLE:
                if (op_inv)
                   fsm_state_nxt = S_INVALIDATE;
-               else if (s1o_valid & ~|s2i_hit & ~kill_req_s2)
+               else if (s1o_valid & ~s2i_hit & ~kill_req_s2)
                   fsm_state_nxt = S_REPLACE;
 
             S_REPLACE:
@@ -328,7 +329,7 @@ module icache
                      else
                         s2i_ins[j*8 +: 8] = ins[j*8 +: 8];
                   default:
-                     s2i_ins[j*8 +: 8] = s1o_payload[s2i_match_way_idx][j*8 +: 8]; // From the matched way
+                     s2i_ins[j*8 +: 8] = s1o_match_payload[j*8 +: 8]; // From the matched way
                endcase
          end
    endgenerate

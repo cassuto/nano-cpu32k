@@ -101,7 +101,7 @@ module ncpu64k
    wire [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd;// From U_IFU of ifu.v
    wire [`FNT_EXC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc;// From U_IFU of ifu.v
    wire [`NCPU_INSN_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins;// From U_IFU of ifu.v
-   wire [CONFIG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc;// From U_IFU of ifu.v
+   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc;// From U_IFU of ifu.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid;// From U_IFU of ifu.v
    // End of automatics
    wire                                flush;
@@ -113,8 +113,8 @@ module ncpu64k
    wire                                bpu_wb_is_bcc;
    wire                                bpu_wb_is_breg;
    wire                                bpu_wb_bcc_taken;
-   wire [CONFIG_AW-3:0]                bpu_wb_pc;
-   wire [CONFIG_AW-3:0]                bpu_wb_npc_act;
+   wire [`PC_W:0]                      bpu_wb_pc;
+   wire [`PC_W:0]                      bpu_wb_npc_act;
    wire [`BPU_UPD_W-1:0]               bpu_wb_upd;
 
    ifu
@@ -139,7 +139,7 @@ module ncpu64k
     // Outputs
     .id_valid                           (id_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
     .id_ins                             (id_ins[`NCPU_INSN_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-    .id_pc                              (id_pc[CONFIG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+    .id_pc                              (id_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
     .id_exc                             (id_exc[`FNT_EXC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
     .id_bpu_upd                         (id_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
     .icop_stall_req                     (icop_stall_req),
@@ -168,8 +168,8 @@ module ncpu64k
     .bpu_wb_is_bcc                      (bpu_wb_is_bcc),
     .bpu_wb_is_breg                     (bpu_wb_is_breg),
     .bpu_wb_bcc_taken                   (bpu_wb_bcc_taken),
-    .bpu_wb_pc                          (bpu_wb_pc[CONFIG_AW-3:0]),
-    .bpu_wb_npc_act                     (bpu_wb_npc_act[CONFIG_AW-3:0]),
+    .bpu_wb_pc                          (bpu_wb_pc[`PC_W-1:0]),
+    .bpu_wb_npc_act                     (bpu_wb_npc_act[`PC_W-1:0]),
     .bpu_wb_upd                         (bpu_wb_upd[`BPU_UPD_W-1:0]),
     .axi_ar_ready_i                     (axi_ar_ready_i),
     .axi_r_valid_i                      (axi_r_valid_i),

@@ -24,22 +24,23 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module clo
+module ex_add
 #(
-   parameter P_DW = 0
+   parameter                           CONFIG_DW = 0
 )
 (
-   input [(1<<P_DW)-1:0] bitmap,
-   output reg [P_DW:0] count
+   input [CONFIG_DW-1:0]               a,
+   input [CONFIG_DW-1:0]               b,
+   input                               s,
+   output [CONFIG_DW-1:0]              sum,
+   output                              carry,
+   output                              overflow
 );
-   integer j;
-   
-   // Adder chain
-   always @(*)
-      begin
-         count = 'b0;
-         for(j=0;j<(1<<P_DW);j=j+1)
-            count = count + {{P_DW{1'b0}}, bitmap[j]};
-      end
+   wire [CONFIG_DW-1:0]                op2;
+
+   assign op2 = (s) ? (~b + 'b1) : b;
+   assign {carry, sum} = a + op2;
+   assign overflow = ((b[CONFIG_DW-1] == op2[CONFIG_DW-1]) &
+                        (b[CONFIG_DW-1] ^ sum[CONFIG_DW-1]));
 
 endmodule

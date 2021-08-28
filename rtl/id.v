@@ -50,7 +50,7 @@ module id
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid,
    output [CONFIG_P_ISSUE_WIDTH:0]      id_pop_cnt,
    input [`NCPU_INSN_DW * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins,
-   input [CONFIG_AW * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc,
+   input [`PC_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc,
    input [`FNT_EXC_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc,
    input [`BPU_UPD_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd,
    // IRQ
@@ -63,9 +63,12 @@ module id
    output [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_bru_opc_bus,
    output [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lsu_opc_bus,
    output [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_bpu_upd,
+   output [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_pc,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_imm,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand1,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand2,
+   output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_waddr,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_we,
    // Regfile
    output [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] arf_RE,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_REG_AW-1:0] arf_RADDR,
@@ -84,12 +87,13 @@ module id
    wire [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_bru_opc_bus;
    wire [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_lsu_opc_bus;
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_imm;
-   wire                                rf_we                         [IW-1:0];
-   wire [`NCPU_REG_AW-1:0]             rf_waddr                      [IW-1:0];
+   wire [IW-1:0]                       rf_we;
+   wire [`NCPU_REG_AW*IW-1:0]          rf_waddr;
    wire                                rf_rs1_re                     [IW-1:0];
    wire [`NCPU_REG_AW-1:0]             rf_rs1_addr                   [IW-1:0];
    wire                                rf_rs2_re                     [IW-1:0];
    wire [`NCPU_REG_AW-1:0]             rf_rs2_addr                   [IW-1:0];
+   wire                                s1o_rf_rs2_re                 [IW-1:0];
    wire [CONFIG_DW-1:0]                rop1, rop2;
    genvar i;
    integer j, k;
@@ -123,7 +127,7 @@ module id
                   .lsu_opc_bus         (s1i_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
                   .imm                 (s1i_imm[i*CONFIG_DW +: CONFIG_DW]),
                   .rf_we               (rf_we[i]),
-                  .rf_waddr            (rf_waddr[i]),
+                  .rf_waddr            (rf_waddr[i*`NCPU_REG_AW +:`NCPU_REG_AW ]),
                   .rf_rs1_re           (rf_rs1_re[i]),
                   .rf_rs1_addr         (rf_rs1_addr[i]),
                   .rf_rs2_re           (rf_rs2_re[i]),
@@ -139,8 +143,8 @@ module id
             raw_dep[k] = 'b0;
             for(j=0;j<k;j=j+1)
                raw_dep[k] = raw_dep[k] | (rf_we[j] &
-                                          ((rf_rs1_re[k] & (rf_rs1_addr[k]==rf_waddr[j])) |
-                                             (rf_rs2_re[k] & (rf_rs2_addr[k]==rf_waddr[j]))));
+                                          ((rf_rs1_re[k] & (rf_rs1_addr[k]==rf_waddr[j*`NCPU_REG_AW +:`NCPU_REG_AW ])) |
+                                             (rf_rs2_re[k] & (rf_rs2_addr[k]==rf_waddr[j*`NCPU_REG_AW +:`NCPU_REG_AW ]))));
          end
    
    always @(*)
@@ -172,7 +176,7 @@ module id
             
             // TODO bypass
             assign ex_operand1[i*CONFIG_DW +: CONFIG_DW] = rop1[i];
-            assign ex_operand2[i*CONFIG_DW +: CONFIG_DW] = rop2[i];
+            assign ex_operand2[i*CONFIG_DW +: CONFIG_DW] = (s1o_rf_rs2_re[i]) ? rop2[i] : ex_imm[i*CONFIG_DW +: CONFIG_DW];
          end
    endgenerate
    
@@ -187,5 +191,10 @@ module id
    mDFF_l # (.DW(`NCPU_BRU_IOPW*IW)) ff_ex_bru_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_bru_opc_bus), .Q(ex_bru_opc_bus) );
    mDFF_l # (.DW(`NCPU_LSU_IOPW*IW)) ff_ex_lsu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_lsu_opc_bus), .Q(ex_lsu_opc_bus) );
    mDFF_l # (.DW(`BPU_UPD_W*IW)) ff_ex_bpu_upd (.CLK(clk), .LOAD(p_ce), .D(id_bpu_upd), .Q(ex_bpu_upd) );
+   mDFF_l # (.DW(`PC_W*IW)) ff_ex_pc (.CLK(clk), .LOAD(p_ce), .D(id_pc), .Q(ex_pc) );
+   mDFF_l # (.DW(CONFIG_DW*IW)) ff_ex_imm (.CLK(clk), .LOAD(p_ce), .D(s1i_imm), .Q(ex_imm) );
+   mDFF_l # (.DW(1)) ff_s1o_rf_rs2_re (.CLK(clk), .LOAD(p_ce), .D(rf_rs2_re), .Q(s1o_rf_rs2_re) );
+   mDFF_l # (.DW(IW)) ff_ex_rf_we (.CLK(clk), .LOAD(p_ce), .D(rf_we), .Q(ex_rf_we) );
+   mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_ex_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(rf_waddr), .Q(ex_rf_waddr) );
    
 endmodule
