@@ -78,9 +78,9 @@ module icache
    localparam TAG_WIDTH                = (CONFIG_AW - CONFIG_IC_P_SETS - CONFIG_IC_P_LINE);
    localparam TAG_V_RAM_AW             = (CONFIG_IC_P_SETS);
    localparam TAG_V_RAM_DW             = (TAG_WIDTH + 1); // TAG + V
-   localparam PAYLOAD_AW               = (CONFIG_IC_P_SETS + CONFIG_IC_P_LINE - PAYLOAD_P_DW_BYTES);
    localparam PAYLOAD_DW               = (`NCPU_INSN_DW * (1<<CONFIG_P_FETCH_WIDTH));
    localparam PAYLOAD_P_DW_BYTES       = (`NCPU_P_INSN_LEN + CONFIG_P_FETCH_WIDTH); // = $clog2(PAYLOAD_DW/8)
+   localparam PAYLOAD_AW               = (CONFIG_IC_P_SETS + CONFIG_IC_P_LINE - PAYLOAD_P_DW_BYTES);
    localparam AXI_FETCH_SIZE           = (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES) ? PAYLOAD_P_DW_BYTES : AXI_P_DW_BYTES;
    
    // Stage 1 Input
@@ -109,9 +109,9 @@ module icache
    reg [PAYLOAD_DW-1:0]                s2i_ins;
    wire [CONFIG_AW-1:0]                s1o_op_inv_paddr;
    // Stage 2 Output / Stage 3 Input
+   wire [CONFIG_IC_P_SETS-1:0]         s2o_line_addr;
    wire                                s2o_valid;
    wire [CONFIG_AW-1:0]                s2o_paddr;
-   wire [`NCPU_INSN_DW-1:0]            s2o_ins                 [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    // FSM
    reg [2:0]                           fsm_state_nxt;
    wire [2:0]                          fsm_state_ff;
@@ -186,6 +186,7 @@ module icache
    mDFF_l # (.DW(CONFIG_AW)) ff_s1o_op_inv_paddr (.CLK(clk), .LOAD(p_ce), .D(op_inv_paddr), .Q(s1o_op_inv_paddr) );
    mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s1o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
    mDFF_l # (.DW(PAYLOAD_AW)) ff_s1o_payload_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_payload_addr), .Q(s1o_payload_addr) );
+   mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s2o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
    
    mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
@@ -196,7 +197,7 @@ module icache
          fsm_state_nxt = fsm_state_ff;
          case (fsm_state_ff)
             S_BOOT:
-               if (~|fsm_free_way_nxt)
+               if (~|fsm_boot_cnt_nxt)
                   fsm_state_nxt = S_IDLE;
 
             S_IDLE:
@@ -255,6 +256,8 @@ module icache
             s1i_line_addr = fsm_boot_cnt;
          S_INVALIDATE:
             s1i_line_addr = s1o_op_inv_paddr[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS];
+         S_REPLACE:
+            s1i_line_addr = s2o_line_addr;
          S_RELOAD_S1O:
             s1i_line_addr = s1o_line_addr;
          default:
@@ -334,8 +337,7 @@ module icache
          end
    endgenerate
 
-   mDFF_l # (.DW(PAYLOAD_DW)) ff_ins
-      (.CLK(clk), .LOAD(p_ce|(fsm_state_ff==S_REFILL)), .D(s2i_ins), .Q(ins) );
+   mDFF_l # (.DW(PAYLOAD_DW)) ff_ins (.CLK(clk), .LOAD(p_ce|(fsm_state_ff==S_REFILL)), .D(s2i_ins), .Q(ins) );
                
    assign valid = (s2o_valid & ~stall_req);
    
