@@ -26,20 +26,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module ifu
 #(
-   parameter                           CONFIG_AW = 0,
-   parameter                           CONFIG_P_FETCH_WIDTH = 0,
-   parameter                           CONFIG_P_ISSUE_WIDTH = 0,
-   parameter                           CONFIG_P_IQ_DEPTH = 0,
-   parameter                           CONFIG_P_PAGE_SIZE = 0,
-   parameter                           CONFIG_IC_P_LINE = 0,
-   parameter                           CONFIG_IC_P_SETS = 0,
-   parameter                           CONFIG_IC_P_WAYS = 0,
-   parameter                           CONFIG_PHT_P_NUM = 0,
-   parameter                           CONFIG_BTB_P_NUM = 0,
-   parameter                           AXI_P_DW_BYTES = 0,
-   parameter                           AXI_ADDR_WIDTH = 0,
-   parameter                           AXI_ID_WIDTH = 0,
-   parameter                           AXI_USER_WIDTH = 0
+   parameter                           CONFIG_AW = 32,
+   parameter                           CONFIG_P_FETCH_WIDTH = 1,
+   parameter                           CONFIG_P_ISSUE_WIDTH = 1,
+   parameter                           CONFIG_P_IQ_DEPTH = 4,
+   parameter                           CONFIG_P_PAGE_SIZE = 13,
+   parameter                           CONFIG_IC_P_LINE = 6,
+   parameter                           CONFIG_IC_P_SETS = 6,
+   parameter                           CONFIG_IC_P_WAYS = 2,
+   parameter                           CONFIG_PHT_P_NUM = 9,
+   parameter                           CONFIG_BTB_P_NUM = 9,
+   parameter                           AXI_P_DW_BYTES = 3,
+   parameter                           AXI_ADDR_WIDTH = 64,
+   parameter                           AXI_ID_WIDTH = 4,
+   parameter                           AXI_USER_WIDTH = 1
 )
 (
    input                               clk,
@@ -263,7 +263,7 @@ module ifu
    assign s1i_fetch_vaddr = {pc_nxt[CONFIG_AW-1:P_FETCH_DW_BYTES], {P_FETCH_DW_BYTES{1'b0}}}; // Aligned by fetch window
    
    // Count the number of valid inst
-   clo #(.P_DW(CONFIG_P_FETCH_WIDTH)) U_CLO (.bitmap(s1i_fetch_valid & s1i_valid_msk), .count(s1i_push_cnt) );
+   popcnt #(.P_DW(CONFIG_P_FETCH_WIDTH)) U_CLO (.bitmap(s1i_fetch_valid & s1i_valid_msk), .count(s1i_push_cnt) );
    
    assign vpo = s1i_fetch_vaddr[CONFIG_P_PAGE_SIZE-1:0];
    
