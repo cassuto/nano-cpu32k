@@ -116,7 +116,8 @@ module icache
    reg [2:0]                           fsm_state_nxt;
    wire [2:0]                          fsm_state_ff;
    wire [CONFIG_IC_P_WAYS-1:0]         fsm_free_way, fsm_free_way_nxt;
-   wire [CONFIG_IC_P_SETS-1:0]         fsm_boot_cnt, fsm_boot_cnt_nxt;
+   wire [CONFIG_IC_P_SETS-1:0]         fsm_boot_cnt;
+   wire [CONFIG_IC_P_SETS:0]           fsm_boot_cnt_nxt_carry;
    wire [CONFIG_IC_P_LINE-1:0]         fsm_refill_cnt;
    reg [CONFIG_IC_P_LINE-1:0]          fsm_refill_cnt_nxt;
    wire                                p_ce;
@@ -197,7 +198,7 @@ module icache
          fsm_state_nxt = fsm_state_ff;
          case (fsm_state_ff)
             S_BOOT:
-               if (~|fsm_boot_cnt_nxt)
+               if (fsm_boot_cnt_nxt_carry[CONFIG_IC_P_SETS])
                   fsm_state_nxt = S_IDLE;
 
             S_IDLE:
@@ -229,22 +230,16 @@ module icache
    mDFF_r # (.DW(CONFIG_IC_P_WAYS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
    
    // Boot counter
-   assign fsm_boot_cnt_nxt = fsm_boot_cnt + 'b1;
+   assign fsm_boot_cnt_nxt_carry = fsm_boot_cnt + 'b1;
    
-   mDFF_r # (.DW(CONFIG_IC_P_SETS)) ff_fsm_boot_cnt_nxt (.CLK(clk), .RST(rst), .D(fsm_boot_cnt_nxt), .Q(fsm_boot_cnt) );
+   mDFF_r # (.DW(CONFIG_IC_P_SETS)) ff_fsm_boot_cnt_nxt (.CLK(clk), .RST(rst), .D(fsm_boot_cnt_nxt_carry[CONFIG_IC_P_SETS-1:0]), .Q(fsm_boot_cnt) );
    
    // Refill counter
    always @(*)
-      begin
+      if (hds_axi_R)
+         fsm_refill_cnt_nxt = fsm_refill_cnt + (1<<AXI_FETCH_SIZE);
+      else
          fsm_refill_cnt_nxt = fsm_refill_cnt;
-         case (fsm_state_ff)
-            S_REFILL:
-               if (hds_axi_R)
-                  fsm_refill_cnt_nxt = fsm_refill_cnt + (1<<AXI_FETCH_SIZE);
-            default:
-               fsm_refill_cnt_nxt = 'b0;
-         endcase
-      end
    
    mDFF_r # (.DW(CONFIG_IC_P_LINE)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .D(fsm_refill_cnt_nxt), .Q(fsm_refill_cnt) );
    
@@ -267,11 +262,10 @@ module icache
    // MUX for tag RAM din
    always @(*)
       case (fsm_state_ff)
-         S_BOOT,
-         S_INVALIDATE:
-            s1i_replace_tag_v = 'b0;
-         default:
+         S_REPLACE:
             s1i_replace_tag_v = {s2o_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS], 1'b1};
+         default: // S_BOOT, S_INVALIDATE:
+            s1i_replace_tag_v = 'b0;
       endcase
       
    assign s1i_tag_v_re = (p_ce | (fsm_state_ff==S_RELOAD_S1O));
