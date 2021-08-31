@@ -42,7 +42,8 @@ module bpu
    input                                        bpu_wb,
    input                                        bpu_wb_is_bcc,
    input                                        bpu_wb_is_breg,
-   input                                        bpu_wb_bcc_taken,
+   input                                        bpu_wb_is_brel,
+   input                                        bpu_wb_taken,
    input [`PC_W-1:0]                            bpu_wb_pc,
    input [`PC_W-1:0]                            bpu_wb_npc_act,
    input [`BPU_UPD_W-1:0]                       bpu_wb_upd
@@ -162,7 +163,7 @@ module bpu
    
    // MUX for the PHT counter
    always @(*)
-      if (bpu_wb_bcc_taken)
+      if (bpu_wb_taken)
          wb_pht_din = (wb_pht_count_org == 2'b11)
                         ? 2'b11
                         : wb_pht_count_org + 'b1;
@@ -171,12 +172,12 @@ module bpu
                         ? 2'b00
                         : wb_pht_count_org - 'b1;
       
-   assign wb_btb_we = (bpu_wb & bpu_wb_is_breg);
+   assign wb_btb_we = (bpu_wb & (bpu_wb_is_breg | bpu_wb_is_brel));
    
    assign wb_btb_din = {bpu_wb_npc_act, bpu_wb_pc[`PC_W-1:CONFIG_BTB_P_NUM], bpu_wb_is_bcc, 1'b1};
 
    // Update Global History Shift Register
-   assign GHSR_nxt = wb_pht_we ? {GHSR_ff[CONFIG_PHT_P_NUM-2:0], bpu_wb_bcc_taken}: GHSR_ff;
+   assign GHSR_nxt = wb_pht_we ? {GHSR_ff[CONFIG_PHT_P_NUM-2:0], bpu_wb_taken}: GHSR_ff;
 
    mDFF_lr #(.DW(CONFIG_PHT_P_NUM)) ff_GHSR (.CLK(clk), .RST(rst), .LOAD(wb_pht_we), .D(GHSR_nxt), .Q(GHSR_ff) );
 

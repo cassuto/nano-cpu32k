@@ -45,7 +45,6 @@ module id
    input                               rst,
    input                               flush,
    input                               stall,
-   output                              iq_stall_req,
    // From frontend
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid,
    output [CONFIG_P_ISSUE_WIDTH:0]      id_pop_cnt,
@@ -54,7 +53,7 @@ module id
    input [`FNT_EXC_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc,
    input [`BPU_UPD_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd,
    // IRQ
-   input                               id_irq,
+   input                               irq_async,
    // To EX
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0]                ex_valid,
    output [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_alu_opc_bus,
@@ -69,6 +68,18 @@ module id
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand2,
    output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_waddr,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_we,
+   // RO
+   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_dout,
+   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_dout,
+   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_wdat,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_we,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_we,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_we,
+   input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_waddr,
+   input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_waddr,
+   input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_waddr,
+   input ro_ex_s1_load0,
+   input ro_ex_s2_load0,
    // Regfile
    output [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] arf_RE,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_REG_AW-1:0] arf_RADDR,
@@ -94,7 +105,9 @@ module id
    wire                                rf_rs2_re                     [IW-1:0];
    wire [`NCPU_REG_AW-1:0]             rf_rs2_addr                   [IW-1:0];
    wire                                s1o_rf_rs2_re                 [IW-1:0];
+   wire [CONFIG_DW*2*IW-1:0]           byp_dout;
    wire [CONFIG_DW-1:0]                rop1, rop2;
+   wire [IW-1:0]                       raw_load0;
    genvar i;
    integer j, k;
    
@@ -117,7 +130,7 @@ module id
                   .id_valid            (id_valid[i]),
                   .id_ins              (id_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW]),
                   .id_exc              (id_exc[i*`FNT_EXC_W]),
-                  .id_irq              (id_irq),
+                  .irq_async           (irq_async),
                   .single_fu           (single_fu[i]),
                   
                   .alu_opc_bus         (s1i_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
@@ -140,7 +153,7 @@ module id
    always @(*)
       for(k=0;k<IW;k=k+1)
          begin
-            raw_dep[k] = 'b0;
+            raw_dep[k] = raw_load0[k];
             for(j=0;j<k;j=j+1)
                raw_dep[k] = raw_dep[k] | (rf_we[j] &
                                           ((rf_rs1_re[k] & (rf_rs1_addr[k]==rf_waddr[j*`NCPU_REG_AW +:`NCPU_REG_AW ])) |
@@ -149,37 +162,63 @@ module id
    
    always @(*)
       begin
-         valid_msk[0] = 'b1;
+         valid_msk[0] = ~raw_dep[0];
          for(j=1;j<IW;j=j+1)
             valid_msk[j] = valid_msk[j-1] & ~single_fu[j] & ~raw_dep[j];
       end
       
+   // Issue NOPs if RO is not ready.
    assign valid = (valid_msk & id_valid);
    
-   // Count the number of inst that is being issued
-   clo #(.P_DW(CONFIG_P_FETCH_WIDTH)) U_CLO (.bitmap(valid), .count(id_pop_cnt) );
+   // Count the number of inst that will be issued
+   popcnt #(.DW(IW), .P_DW(CONFIG_P_ISSUE_WIDTH)) U_CLO (.bitmap(valid & {IW{p_ce}}), .count(id_pop_cnt) );
 
    assign p_ce = (~stall);
+   
+   id_ro
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_AW                      (CONFIG_AW),
+        .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH))
+   U_RO
+      (
+         .clk        (clk),
+         .ro_ex_s1_rf_dout    (ro_ex_s1_rf_dout),
+         .ro_ex_s2_rf_dout    (ro_ex_s2_rf_dout),
+         .ro_ex_s3_rf_wdat    (ro_ex_s3_rf_wdat),
+         .ro_ex_s1_rf_we      (ro_ex_s1_rf_we),
+         .ro_ex_s2_rf_we      (ro_ex_s2_rf_we),
+         .ro_ex_s3_rf_we      (ro_ex_s3_rf_we),
+         .ro_ex_s1_rf_waddr   (ro_ex_s1_rf_waddr),
+         .ro_ex_s2_rf_waddr   (ro_ex_s2_rf_waddr),
+         .ro_ex_s3_rf_waddr   (ro_ex_s3_rf_waddr),
+         .ro_ex_s1_load0      (ro_ex_s1_load0),
+         .ro_ex_s2_load0      (ro_ex_s2_load0),
+         .raddr               (arf_RADDR),
+         .re                  (arf_RE),
+         .rf_din              (arf_RDATA),
+         .byp_dout            (byp_dout),
+         .raw_load0           (raw_load0)
+      );
    
    // Read the operand from ARF
    // ARF has 1 cycle latency before output the result
    generate
       for(i=0;i<IW;i=i+1)
          begin
-            assign arf_RE[i] = (p_ce & rf_rs1_re[i]);
-            assign arf_RE[(i<<1)] = (p_ce & rf_rs2_re[i]);
-            assign arf_RADDR[i*`NCPU_REG_AW +: `NCPU_REG_AW] = rf_rs1_addr[i];
-            assign arf_RADDR[(i<<1)*`NCPU_REG_AW +: `NCPU_REG_AW] = rf_rs2_addr[i];
+            assign arf_RE[(i<<1)] = (p_ce & rf_rs1_re[i]);
+            assign arf_RE[(i<<1)+1] = (p_ce & rf_rs2_re[i]);
+            assign arf_RADDR[(i<<1)*`NCPU_REG_AW +: `NCPU_REG_AW] = rf_rs1_addr[i];
+            assign arf_RADDR[((i<<1)+1)*`NCPU_REG_AW +: `NCPU_REG_AW] = rf_rs2_addr[i];
             
-            assign rop1[i] = arf_RDATA[i*CONFIG_DW +: CONFIG_DW];
-            assign rop2[i] = arf_RDATA[(i<<1)*CONFIG_DW +: CONFIG_DW];
+            assign rop1[i] = byp_dout[(i<<1)*CONFIG_DW +: CONFIG_DW];
+            assign rop2[i] = byp_dout[((i<<1)+1)*CONFIG_DW +: CONFIG_DW];
             
-            // TODO bypass
             assign ex_operand1[i*CONFIG_DW +: CONFIG_DW] = rop1[i];
             assign ex_operand2[i*CONFIG_DW +: CONFIG_DW] = (s1o_rf_rs2_re[i]) ? rop2[i] : ex_imm[i*CONFIG_DW +: CONFIG_DW];
          end
    endgenerate
-   
    
    //
    // Pipeline stage

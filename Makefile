@@ -29,10 +29,10 @@ CFLAGS = -Wall -g -I../em $(EM_CXXFLAGS)
 LDFLAGS = -g $(EM_LDFLAGS)
 
 # Simulation (Difftest)
-SIM_TOPLEVEL := simtop
+SIM_TOPLEVEL := ncpu64k # simtop
 SIM_FLAGS := +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -LDFLAGS "$(LDFLAGS)" -CFLAGS "$(CFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
-SIM_SRCS := $(SRCS) \
-			$(TESTBENCH_DIR)/simtop.v
+SIM_SRCS := $(SRCS) # \
+			#$(TESTBENCH_DIR)/simtop.v
 # CPU Model
 SIM_CPPS := $(EM_DIR)/main.cc \
 			$(EM_DIR)/cpu.cc \

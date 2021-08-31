@@ -67,7 +67,7 @@ module fifo_fwft
 
    // FWFT FSM
    mDFF_lr #(.DW(DW)) ff_dat (.CLK(clk), .RST(rst), .LOAD(fwft_nxt), .D(din), .Q(dat_r) );
-   mDFF_lr #(.DW(DW)) ff_din (.CLK(clk), .RST(rst), .LOAD(pop), .D(din), .Q(din_r) );
+   mDFF_l #(.DW(DW)) ff_din (.CLK(clk), .LOAD(pop), .D(din), .Q(din_r) );
    mDFF_lr #(.DW(1)) ff_state (.CLK(clk),.RST(rst), .LOAD(fwft_nxt|clr_state|flush), .D((fwft_nxt|~clr_state) & ~flush), .Q(state_r) );
 
    assign dout = state_r ? dat_r : rf_dout_byp;

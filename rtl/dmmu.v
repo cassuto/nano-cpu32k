@@ -48,11 +48,11 @@ module dmmu
    // DMMID
    output [CONFIG_DW-1:0]              msr_dmmid,
    // DTLBL
-   input [`NCPU_TLB_AW-1:0]            msr_dmm_tlbl_idx,
+   input [CONFIG_DTLB_P_SETS-1:0]      msr_dmm_tlbl_idx,
    input [CONFIG_DW-1:0]               msr_dmm_tlbl_nxt,
    input                               msr_dmm_tlbl_we,
    // DTLBH
-   input [`NCPU_TLB_AW-1:0]            msr_dmm_tlbh_idx,
+   input [CONFIG_DTLB_P_SETS-1:0]      msr_dmm_tlbh_idx,
    input [CONFIG_DW-1:0]               msr_dmm_tlbh_nxt,
    input                               msr_dmm_tlbh_we
 );

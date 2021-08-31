@@ -156,10 +156,114 @@
 `define NCPU_LSU_SIGN_EXT 3
 `define NCPU_LSU_SIZE 6:4
 
-
 `define NCPU_REGNO_LNK 1 // the only one machine-dependent register
 
 /* Regfile index width */
 `define NCPU_REG_AW 5
+
+/* PSR register bitwidth */
+`define NCPU_PSR_DW 10
+
+/* PSR write enable bitwidth */
+`ifdef NCPU_ENABLE_MSGPORT
+`define NCPU_WMSR_WE_W (16+`NCPU_MSR_BANK_OFF_AW)
+`else
+`define NCPU_WMSR_WE_W (14+`NCPU_MSR_BANK_OFF_AW)
+`endif
+
+
+/*******************************************************************************
+ * Start of MSR definitions
+ ******************************************************************************/
+
+// PSR register bitwidth
+`define NCPU_PSR_DW 10
+
+`define NCPU_MSR_BANK_OFF_AW 9
+`define NCPU_MSR_BANK_AW (14-9) // 14 is the bitwidth of imm14
+
+// MSR Banks
+`define NCPU_MSR_BANK_PS	0
+`define NCPU_MSR_BANK_IMM	1
+`define NCPU_MSR_BANK_DMM	2
+`define NCPU_MSR_BANK_IC	3
+`define NCPU_MSR_BANK_DC	4
+`define NCPU_MSR_BANK_DBG	5
+`define NCPU_MSR_BANK_IRQC	6
+`define NCPU_MSR_BANK_TSC	7
+
+//
+// PS (One-hot encoding)
+//
+
+// PS - PSR
+`define NCPU_MSR_PSR	0
+// PS - CPUID
+`define NCPU_MSR_CPUID 1
+// PS - EPSR
+`define NCPU_MSR_EPSR 2
+// PS - EPC
+`define NCPU_MSR_EPC	3
+// PS - ELSA
+`define NCPU_MSR_ELSA 4
+// PS.COREID
+`define NCPU_MSR_COREID 5
+
+//
+// IMM
+//
+
+// IMM TLB (8th bit = TLB sel)
+`define NCPU_MSR_IMM_TLBSEL 8
+// TLBH (7th bit = TLBH sel)
+`define NCPU_MSR_IMM_TLBH_SEL 7
+
+//
+// DMM
+//
+
+// DMM TLB (8th bit = TLB sel)
+`define NCPU_MSR_DMM_TLBSEL 8
+// TLBH (7th bit = TLBH sel)
+`define NCPU_MSR_DMM_TLBH_SEL 7
+
+//
+// IC (ICache)
+//
+
+// IC - ID
+`define NCPU_MSR_IC_ID 0
+// IC - INV
+`define NCPU_MSR_IC_INV 1
+
+//
+// DC (ICache)
+//
+
+// DC - ID
+`define NCPU_MSR_DC_ID 0
+// DC - INV
+`define NCPU_MSR_DC_INV 1
+// DC - FLS
+`define NCPU_MSR_DC_FLS 2
+
+
+/* IRQC (One-hot encoding) */
+`define NCPU_MSR_IRQC_IMR 0
+`define NCPU_MSR_IRQC_IRR 1
+
+/* TSC */
+`define NCPU_MSR_TSC_TSR 0
+`define NCPU_MSR_TSC_TCR 1
+
+`define NCPU_TSC_CNT_DW 28
+`define NCPU_MSR_TSC_TCR_EN 28
+`define NCPU_MSR_TSC_TCR_I 29
+`define NCPU_MSR_TSC_TCR_P 30
+`define NCPU_MSR_TSC_TCR_RB1 31
+
+/*******************************************************************************
+ * End of MSR definitions
+ ******************************************************************************/
 
 `endif

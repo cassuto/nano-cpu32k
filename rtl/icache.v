@@ -41,37 +41,40 @@ module icache
    input                               clk,
    input                               rst,
    output                              stall_req,
+   output                              stall_ex_req,
    input [CONFIG_P_PAGE_SIZE-1:0]      vpo,
    input [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2,
    input                               kill_req_s2,
-   input                               op_inv,
-   input [CONFIG_AW-1:0]               op_inv_paddr,
-   output                              op_stall_req,
    output [`NCPU_INSN_DW * (1<<CONFIG_P_FETCH_WIDTH)-1:0] ins,
    output                              valid,
-   
-   // AXI Master
-   input                               axi_ar_ready_i,
-   output                              axi_ar_valid_o,
-   output [AXI_ADDR_WIDTH-1:0]         axi_ar_addr_o,
-   output [2:0]                        axi_ar_prot_o,
-   output [AXI_ID_WIDTH-1:0]           axi_ar_id_o,
-   output [AXI_USER_WIDTH-1:0]         axi_ar_user_o,
-   output [7:0]                        axi_ar_len_o,
-   output [2:0]                        axi_ar_size_o,
-   output [1:0]                        axi_ar_burst_o,
-   output                              axi_ar_lock_o,
-   output [3:0]                        axi_ar_cache_o,
-   output [3:0]                        axi_ar_qos_o,
-   output [3:0]                        axi_ar_region_o,
-   output                              axi_r_ready_o,
-   input                               axi_r_valid_i,
-   input  [(1<<AXI_P_DW_BYTES)*8-1:0]  axi_r_data_i,
-   input                               axi_r_last_i,
+   // ICID
+   output [CONFIG_DW-1:0]              msr_icid,
+   // ICINV
+   input [CONFIG_DW-1:0]               msr_icinv_nxt,
+   input                               msr_icinv_we,
+
+   // AXI Master (Inst Bus)
+   input                               ibus_ARREADY,
+   output                              ibus_ARVALID,
+   output [AXI_ADDR_WIDTH-1:0]         ibus_ARADDR,
+   output [2:0]                        ibus_ARPROT,
+   output [AXI_ID_WIDTH-1:0]           ibus_ARID,
+   output [AXI_USER_WIDTH-1:0]         ibus_ARUSER,
+   output [7:0]                        ibus_ARLEN,
+   output [2:0]                        ibus_ARSIZE,
+   output [1:0]                        ibus_ARBURST,
+   output                              ibus_ARLOCK,
+   output [3:0]                        ibus_ARCACHE,
+   output [3:0]                        ibus_ARQOS,
+   output [3:0]                        ibus_ARREGION,
+   output                              ibus_RREADY,
+   input                               ibus_RVALID,
+   input  [(1<<AXI_P_DW_BYTES)*8-1:0]  ibus_RDATA,
+   input                               ibus_RLAST,
 /* verilator lint_off UNUSED */
-   input  [1:0]                        axi_r_resp_i, // unused
-   input  [AXI_ID_WIDTH-1:0]           axi_r_id_i, // unused
-   input  [AXI_USER_WIDTH-1:0]         axi_r_user_i // unused
+   input  [1:0]                        ibus_RRESP, // unused
+   input  [AXI_ID_WIDTH-1:0]           ibus_RID, // unused
+   input  [AXI_USER_WIDTH-1:0]         ibus_RUSER // unused
 /* verilator lint_on UNUSED */
 );
 
@@ -82,7 +85,7 @@ module icache
    localparam PAYLOAD_P_DW_BYTES       = (`NCPU_P_INSN_LEN + CONFIG_P_FETCH_WIDTH); // = $clog2(PAYLOAD_DW/8)
    localparam PAYLOAD_AW               = (CONFIG_IC_P_SETS + CONFIG_IC_P_LINE - PAYLOAD_P_DW_BYTES);
    localparam AXI_FETCH_SIZE           = (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES) ? PAYLOAD_P_DW_BYTES : AXI_P_DW_BYTES;
-   
+
    // Stage 1 Input
    reg [CONFIG_IC_P_SETS-1:0]          s1i_line_addr;
    reg [TAG_V_RAM_DW-1:0]              s1i_replace_tag_v;
@@ -127,19 +130,19 @@ module icache
    wire                                hds_axi_R;
    wire                                hds_axi_R_last;
    wire [AXI_ADDR_WIDTH-1:0]           axi_ar_addr_nxt;
-   
+
    localparam [2:0] S_BOOT             = 3'd0;
    localparam [2:0] S_IDLE             = 3'd1;
    localparam [2:0] S_REPLACE          = 3'd2;
    localparam [2:0] S_REFILL           = 3'd3;
    localparam [2:0] S_INVALIDATE       = 3'd4;
    localparam [2:0] S_RELOAD_S1O       = 3'd5;
-   
+
    genvar way, i, j;
-   
+
    assign p_ce = (~stall_req);
    assign s2i_paddr = {ppn_s2, s1o_vpo};
-   
+
    generate
       for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
          begin : gen_ways
@@ -157,7 +160,7 @@ module icache
                   .WE   (s1i_payload_we),
                   .DIN  (s1i_payload_din)
                );
-               
+
             mRAM_s_s
                #(
                   .DW   (TAG_V_RAM_DW),
@@ -172,26 +175,26 @@ module icache
                   .WE   (s1i_tag_v_we[way]),
                   .DIN  (s1i_replace_tag_v)
                );
-               
+
             assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];
-            
+
             assign s2i_hit_vec[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS]) );
          end
    endgenerate
-   
+
    // Sel the dout of matched way
    pmux #(.SELW(1<<CONFIG_IC_P_WAYS), .DW(PAYLOAD_DW)) U_PMUX_BNPC (.sel(s2i_hit_vec), .din(s1o_payload), .dout(s1o_match_payload), .valid(s2i_hit) );
-   
+
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(1'b1), .Q(s1o_valid) );
    mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
-   mDFF_l # (.DW(CONFIG_AW)) ff_s1o_op_inv_paddr (.CLK(clk), .LOAD(p_ce), .D(op_inv_paddr), .Q(s1o_op_inv_paddr) );
+   mDFF_l # (.DW(CONFIG_AW)) ff_s1o_op_inv_paddr (.CLK(clk), .LOAD(p_ce), .D(msr_icinv_nxt), .Q(s1o_op_inv_paddr) );
    mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s1o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
    mDFF_l # (.DW(PAYLOAD_AW)) ff_s1o_payload_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_payload_addr), .Q(s1o_payload_addr) );
    mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s2o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
-   
+
    mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
-   
+
    // Main FSM
    always @(*)
       begin
@@ -202,49 +205,49 @@ module icache
                   fsm_state_nxt = S_IDLE;
 
             S_IDLE:
-               if (op_inv)
+               if (msr_icinv_we)
                   fsm_state_nxt = S_INVALIDATE;
                else if (s1o_valid & ~s2i_hit & ~kill_req_s2)
                   fsm_state_nxt = S_REPLACE;
 
             S_REPLACE:
                fsm_state_nxt = S_REFILL;
-            
+
             S_REFILL:
                if (hds_axi_R_last)
                   fsm_state_nxt = S_RELOAD_S1O;
-            
+
             S_INVALIDATE:
                fsm_state_nxt = S_IDLE;
-               
+
             S_RELOAD_S1O:
                fsm_state_nxt = S_IDLE;
             default: ;
          endcase
       end
-      
+
    // Clock algorithm
    assign fsm_free_way_nxt = fsm_free_way + 'b1;
-   
+
    mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
    mDFF_r # (.DW(CONFIG_IC_P_WAYS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
-   
+
    // Boot counter
    assign fsm_boot_cnt_nxt_carry = fsm_boot_cnt + 'b1;
-   
+
    mDFF_r # (.DW(CONFIG_IC_P_SETS)) ff_fsm_boot_cnt_nxt (.CLK(clk), .RST(rst), .D(fsm_boot_cnt_nxt_carry[CONFIG_IC_P_SETS-1:0]), .Q(fsm_boot_cnt) );
-   
+
    // Refill counter
    always @(*)
       if (hds_axi_R)
          fsm_refill_cnt_nxt = fsm_refill_cnt + (1<<AXI_FETCH_SIZE);
       else
          fsm_refill_cnt_nxt = fsm_refill_cnt;
-   
-   mDFF_r # (.DW(CONFIG_IC_P_LINE)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .D(fsm_refill_cnt_nxt), .Q(fsm_refill_cnt) );
-   
 
-   // MUX for tag RAM addr 
+   mDFF_r # (.DW(CONFIG_IC_P_LINE)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .D(fsm_refill_cnt_nxt), .Q(fsm_refill_cnt) );
+
+
+   // MUX for tag RAM addr
    always @(*)
       case (fsm_state_ff)
          S_BOOT:
@@ -258,7 +261,7 @@ module icache
          default:
             s1i_line_addr = vpo[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS]; // index
       endcase
-      
+
    // MUX for tag RAM din
    always @(*)
       case (fsm_state_ff)
@@ -267,9 +270,9 @@ module icache
          default: // S_BOOT, S_INVALIDATE:
             s1i_replace_tag_v = 'b0;
       endcase
-      
+
    assign s1i_tag_v_re = (p_ce | (fsm_state_ff==S_RELOAD_S1O));
-   
+
    // tag RAM write enable
    generate
       for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
@@ -288,32 +291,32 @@ module icache
          default:
             s1i_payload_addr = vpo[PAYLOAD_P_DW_BYTES +: PAYLOAD_AW]; // {index,offset}
       endcase
-      
+
    assign s1i_payload_re = s1i_tag_v_re;
-      
+
    // Aligner for payload RAM din
    generate
       if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
          begin
             assign s1i_payload_we = {PAYLOAD_DW/8{fsm_state_ff == S_REFILL}};
-            assign s1i_payload_din = axi_r_data_i[(1<<PAYLOAD_P_DW_BYTES)*8-1:0];
+            assign s1i_payload_din = ibus_RDATA[(1<<PAYLOAD_P_DW_BYTES)*8-1:0];
          end
       else
          for(i=0;i<PAYLOAD_DW/8;i=i+1)
             begin : gen_aligner
                assign s1i_payload_we[i] = (fsm_state_ff == S_REFILL) &
                                           (fsm_refill_cnt[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE] == i[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE]);
-               assign s1i_payload_din[i*8 +: 8] = axi_r_data_i[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
+               assign s1i_payload_din[i*8 +: 8] = ibus_RDATA[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
             end
    endgenerate
-   
+
    assign stall_req = (fsm_state_ff != S_IDLE);
-   
-   assign op_stall_req = (op_inv | stall_req); // Stall the EXU if icache is temporarily unable to receive a new operation
-   
-   assign s2i_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] == 
+
+   assign stall_ex_req = (msr_icinv_we | stall_req); // Stall the EX if icache is temporarily unable to receive a new operation
+
+   assign s2i_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] ==
                     fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);
-   
+
    // Output
    generate
       for(j=0;j<PAYLOAD_DW/8;j=j+1)
@@ -332,24 +335,24 @@ module icache
    endgenerate
 
    mDFF_l # (.DW(PAYLOAD_DW)) ff_ins (.CLK(clk), .LOAD(p_ce|(fsm_state_ff==S_REFILL)), .D(s2i_ins), .Q(ins) );
-               
+
    assign valid = (s2o_valid & ~stall_req);
-   
+
    // AXI - AR
-   assign axi_ar_prot_o = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
-   assign axi_ar_id_o = {AXI_ID_WIDTH{1'b0}};
-   assign axi_ar_user_o = {AXI_USER_WIDTH{1'b0}};
-   assign axi_ar_len_o = ((1<<(CONFIG_IC_P_LINE-AXI_FETCH_SIZE))-1);
-   assign axi_ar_size_o = AXI_FETCH_SIZE;
-   assign axi_ar_burst_o = `AXI_BURST_TYPE_INCR;
-   assign axi_ar_lock_o = 'b0;
-   assign axi_ar_cache_o = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
-   assign axi_ar_qos_o = 'b0;
-   assign axi_ar_region_o = 'b0;
+   assign ibus_ARPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
+   assign ibus_ARID = {AXI_ID_WIDTH{1'b0}};
+   assign ibus_ARUSER = {AXI_USER_WIDTH{1'b0}};
+   assign ibus_ARLEN = ((1<<(CONFIG_IC_P_LINE-AXI_FETCH_SIZE))-1);
+   assign ibus_ARSIZE = AXI_FETCH_SIZE;
+   assign ibus_ARBURST = `AXI_BURST_TYPE_INCR;
+   assign ibus_ARLOCK = 'b0;
+   assign ibus_ARCACHE = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
+   assign ibus_ARQOS = 'b0;
+   assign ibus_ARREGION = 'b0;
    assign ar_set = (fsm_state_ff==S_REPLACE);
-   assign ar_clr = (axi_ar_ready_i & axi_ar_valid_o);
+   assign ar_clr = (ibus_ARREADY & ibus_ARVALID);
    assign refill_paddr = {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_AW - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
-   
+
    // Address adapter (truncate or fill zero)
    generate
       if (AXI_ADDR_WIDTH > CONFIG_AW)
@@ -359,17 +362,22 @@ module icache
       else
          assign axi_ar_addr_nxt = refill_paddr;
    endgenerate
-   
-   mDFF_lr # (.DW(1)) ff_axi_ar_valid (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(axi_ar_valid_o) );
-   mDFF_lr # (.DW(AXI_ADDR_WIDTH)) ff_axi_ar_addr (.CLK(clk), .RST(rst), .LOAD(ar_set), .D(axi_ar_addr_nxt), .Q(axi_ar_addr_o) );
-   
-   
+
+   mDFF_lr # (.DW(1)) ff_axi_ar_valid (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(ibus_ARVALID) );
+   mDFF_lr # (.DW(AXI_ADDR_WIDTH)) ff_axi_ar_addr (.CLK(clk), .RST(rst), .LOAD(ar_set), .D(axi_ar_addr_nxt), .Q(ibus_ARADDR) );
+
+
    // AXI - R
-   assign axi_r_ready_o = (fsm_state_ff == S_REFILL);
-   assign hds_axi_R = (axi_r_valid_i & axi_r_ready_o);
-   assign hds_axi_R_last = (hds_axi_R & axi_r_last_i);
-   
-   
+   assign ibus_RREADY = (fsm_state_ff == S_REFILL);
+   assign hds_axi_R = (ibus_RVALID & ibus_RREADY);
+   assign hds_axi_R_last = (hds_axi_R & ibus_RLAST);
+
+   // ICID Register
+   assign msr_icid[3:0] = CONFIG_IC_P_SETS[3:0];
+   assign msr_icid[7:4] = CONFIG_IC_P_LINE[3:0];
+   assign msr_icid[11:8] = CONFIG_IC_P_WAYS[3:0];
+   assign msr_icid[31:12] = 20'b0;
+
    // synthesis translate_off
 `ifndef SYNTHESIS
    initial

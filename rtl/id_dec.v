@@ -101,7 +101,7 @@ module id_dec
    input                               id_valid,
    input [`NCPU_INSN_DW-1:0]           id_ins,
    input [`FNT_EXC_W-1:0]              id_exc,
-   input                               id_irq,
+   input                               irq_async,
    output                              single_fu,
    output [`NCPU_ALU_IOPW-1:0]         alu_opc_bus,
    output [`NCPU_LPU_IOPW-1:0]         lpu_opc_bus,
@@ -334,9 +334,9 @@ module id_dec
    assign epu_opc_no_EINSN[`NCPU_EPU_RMSR] = op_rmsr;
    assign epu_opc_no_EINSN[`NCPU_EPU_ESYSCALL] = op_syscall;
    assign epu_opc_no_EINSN[`NCPU_EPU_ERET] = op_ret;
-   assign epu_opc_no_EINSN[`NCPU_EPU_EITM] = (id_exc[`FNT_EXC_EITM] & ~id_irq);
-   assign epu_opc_no_EINSN[`NCPU_EPU_EIPF] = (id_exc[`FNT_EXC_EIPF] & ~id_irq);
-   assign epu_opc_no_EINSN[`NCPU_EPU_EIRQ] = id_irq;
+   assign epu_opc_no_EINSN[`NCPU_EPU_EITM] = (id_exc[`FNT_EXC_EITM] & ~irq_async);
+   assign epu_opc_no_EINSN[`NCPU_EPU_EIPF] = (id_exc[`FNT_EXC_EIPF] & ~irq_async);
+   assign epu_opc_no_EINSN[`NCPU_EPU_EIRQ] = irq_async;
    assign epu_opc_no_EINSN[`NCPU_EPU_EINSN] = 1'b0;
 
    // Insn is to be emulated

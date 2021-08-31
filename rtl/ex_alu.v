@@ -26,7 +26,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module ex_alu
 #(
-   parameter                           CONFIG_DW = 0
+   parameter                           CONFIG_DW = 0,
+   parameter                           CONFIG_ENABLE_MUL = 0,
+   parameter                           CONFIG_ENABLE_DIV = 0,
+   parameter                           CONFIG_ENABLE_DIVU = 0,
+   parameter                           CONFIG_ENABLE_MOD = 0,
+   parameter                           CONFIG_ENABLE_MODU = 0,
+   parameter                           CONFIG_ENABLE_ASR = 0
 )
 (
    input [`NCPU_ALU_IOPW-1:0]          ex_alu_opc_bus,
@@ -43,7 +49,6 @@ module ex_alu
    wire [CONFIG_DW-1:0]                dat_xor;
    wire [CONFIG_DW-1:0]                dat_shifter;
    wire [CONFIG_DW-1:0]                dat_move;
-   wire [CONFIG_DW-1:0]                dat_branch;
    wire                                sel_adder;
    wire                                sel_and;
    wire                                sel_or;

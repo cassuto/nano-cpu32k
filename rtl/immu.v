@@ -45,11 +45,11 @@ module immu
    // IMMID
    output [CONFIG_DW-1:0]              msr_immid,
    // TLBL
-   input [`NCPU_TLB_AW-1:0]            msr_imm_tlbl_idx,
+   input [CONFIG_ITLB_P_SETS-1:0]      msr_imm_tlbl_idx,
    input [CONFIG_DW-1:0]               msr_imm_tlbl_nxt,
    input                               msr_imm_tlbl_we,
    // TLBH
-   input [`NCPU_TLB_AW-1:0]            msr_imm_tlbh_idx,
+   input [CONFIG_ITLB_P_SETS-1:0]      msr_imm_tlbh_idx,
    input [CONFIG_DW-1:0]               msr_imm_tlbh_nxt,
    input                               msr_imm_tlbh_we
 );

@@ -70,7 +70,7 @@ module dcache
    input                               dbus_RVALID,
    input  [(1<<AXI_P_DW_BYTES)*8-1:0]  dbus_RDATA,
    input                               dbus_RLAST,
-   
+
    input                               dbus_AWREADY,
    output                              dbus_AWVALID,
    output [AXI_ADDR_WIDTH-1:0]         dbus_AWADDR,
@@ -94,7 +94,7 @@ module dcache
 
    output                              dbus_BREADY,
    input                               dbus_BVALID,
-   
+
 /* verilator lint_off UNUSED */
    input  [1:0]                        dbus_RRESP, // unused
    input  [AXI_ID_WIDTH-1:0]           dbus_RID, // unused
@@ -115,7 +115,7 @@ module dcache
    localparam PAYLOAD_P_DW_BYTES       = (CONFIG_P_DW-3); // = $clog2(PAYLOAD_DW/8)
    localparam PAYLOAD_AW               = (CONFIG_DC_P_SETS + CONFIG_DC_P_LINE - PAYLOAD_P_DW_BYTES);
    localparam AXI_FETCH_SIZE           = (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES) ? PAYLOAD_P_DW_BYTES : AXI_P_DW_BYTES;
-   
+
    // Stage 1 Input
    reg [CONFIG_DC_P_SETS-1:0]          s1i_line_addr;
    reg [TAG_V_RAM_DW-1:0]              s1i_replace_tag_v;
@@ -150,7 +150,6 @@ module dcache
    wire                                s2i_hit;
    wire                                s2i_get_dat;
    wire [CONFIG_DC_P_WAYS-1:0]         s2o_fsm_free_way;
-   wire []
    // Stage 2 Output / Stage 3 Input
    wire                                s2o_fls;
    wire [CONFIG_DC_P_SETS-1:0]         s2o_line_addr;
@@ -175,7 +174,7 @@ module dcache
    wire [CONFIG_AW-1:0]                refill_paddr;
    // AXI
    reg                                 ar_set, aw_set;
-   wire                                ar_clr, aw_clr
+   wire                                ar_clr, aw_clr;
    wire                                wvalid_set, wvalid_clr;
    wire                                wlast_set, wlast_clr;
    wire                                hds_axi_R;
@@ -184,7 +183,7 @@ module dcache
    wire                                hds_axi_W_last;
    wire                                hds_axi_B;
    wire [AXI_ADDR_WIDTH-1:0]           axi_arw_addr_nxt;
-   
+
    localparam [3:0] S_BOOT             = 4'd0;
    localparam [3:0] S_IDLE             = 4'd1;
    localparam [3:0] S_REPLACE          = 4'd2;
@@ -192,18 +191,18 @@ module dcache
    localparam [3:0] S_WRITEBACK        = 4'd4;
    localparam [3:0] S_INVALIDATE       = 4'd5;
    localparam [3:0] S_RELOAD_S1O_S2O   = 4'd6;
-   
+
    genvar way, i, j;
-   
+
    assign p_ce = (~stall_req);
-   
+
    generate
       for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
          begin : gen_ways
             wire rf_d, rf_d_ff;
             wire rf_conflict;
             wire rf_bypass;
-            
+
             mRAM_s_s_be
                #(
                   .DW   (PAYLOAD_DW),
@@ -218,7 +217,7 @@ module dcache
                   .WE   (s2i_payload_we),
                   .DIN  (s2i_payload_din)
                );
-               
+
             mRAM_s_s
                #(
                   .DW   (TAG_V_RAM_DW),
@@ -250,29 +249,29 @@ module dcache
                   .WADDR   (s2i_d_waddr),
                   .WDATA   (s2i_d_wdat)
                );
-               
+
             // Bypass D flag
-            assign rf_conflict = (s1i_line_addr == s2i_d_waddr) & s2i_d_we[way]);
-            
+            assign rf_conflict = ((s1i_line_addr == s2i_d_waddr) & s2i_d_we[way]);
+
             mDFF_lr #(.DW(1)) ff_bypass (.CLK(clk), .RST(rst), .LOAD(rf_conflict | s1i_tag_v_re), .D(rf_conflict | ~s1i_tag_v_re), .Q(rf_bypass) );
             mDFF_l #(.DW(1)) ff_rd_d (.CLK(clk), .LOAD(s1i_tag_v_re), .D(s2i_d_wdat), .Q(rf_d_ff) );
-            
+
             assign s1o_d[way] = rf_bypass ? rf_d_ff : rf_d;
-               
+
             assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];
-            
+
             assign s2i_hit_vec[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_DC_P_LINE+CONFIG_DC_P_SETS]) );
          end
    endgenerate
-   
+
    // Sel the dout of matched way
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) U_PMUX_BNPC (.sel(s2o_hit_vec), .din(s2o_payload), .dout(s2o_match_payload), .valid(s2i_hit) );
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) U_PMUX_BNPC (.sel(s2o_hit_vec), .din(s2o_d), .dout(s2o_match_dirty), .valid() /* unused */ );
-   
+
    assign s1o_free_dirty = s1o_d[fsm_free_way];
-   
+
    assign s2o_wb_payload = s2o_payload[s2o_fsm_free_way];
-   
+
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(req), .Q(s1o_valid) );
    mDFF_lr # (.DW(1)) ff_s1o_inv (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(inv), .Q(s1o_inv) );
    mDFF_lr # (.DW(1)) ff_s1o_fls (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(fls), .Q(s1o_fls) );
@@ -283,12 +282,12 @@ module dcache
    mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_hit_vec (.CLK(clk), .LOAD(p_ce), .D(s2i_hit_vec), .Q(s2o_hit_vec) );
    mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s2o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
    mDFF_l # (.DW(CONFIG_DC_P_WAYS)) ff_s2o_fsm_free_way (.CLK(clk), .LOAD(p_ce), .D(fsm_free_way), .Q(s2o_fsm_free_way) );
-   
+
    mDFF_lr # (.DW(1)) ff_s2o_fls (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_fls), .Q(s2o_fls) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
    mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_d (.CLK(clk), .LOAD(p_ce), .D(s1o_d), .Q(s2o_d) );
    mDFF_l # (.DW(1)) ff_s2o_free_dirty (.CLK(clk), .LOAD(p_ce), .D(s1o_free_dirty), .Q(s2o_free_dirty) );
-   
+
    // Main FSM
    always @(*)
       begin
@@ -315,30 +314,30 @@ module dcache
                   ar_set = ~s2o_free_dirty;
                   aw_set = s2o_free_dirty;
                end
-            
+
             S_WRITEBACK:
                if (hds_axi_B)
                   begin
                      fsm_state_nxt = (s2o_fls) ? S_IDLE : S_REFILL;
                      ar_set = ~s2o_fls;
                   end
-            
+
             S_REFILL:
                if (hds_axi_R_last)
                   fsm_state_nxt = S_RELOAD_S1O_S2O;
-            
+
             S_INVALIDATE:
                fsm_state_nxt = S_IDLE;
-               
+
             S_RELOAD_S1O_S2O:
                fsm_state_nxt = S_IDLE;
-               
+
            S_FLUSH:
                begin
                   fsm_state_nxt = (s2o_match_dirty) ? S_WRITEBACK : S_IDLE;
                   aw_set = s2o_match_dirty;
                end
-               
+
             default: ;
          endcase
       end
@@ -348,28 +347,28 @@ module dcache
 
    // Clock algorithm
    assign fsm_free_way_nxt = fsm_free_way + 'b1;
-   
+
    mDFF_r # (.DW(4), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
    mDFF_r # (.DW(CONFIG_DC_P_WAYS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
-   
+
    // Boot counter
    assign fsm_boot_cnt_nxt_carry = fsm_boot_cnt + 'b1;
-   
+
    mDFF_r # (.DW(CONFIG_DC_P_SETS)) ff_fsm_boot_cnt_nxt (.CLK(clk), .RST(rst), .D(fsm_boot_cnt_nxt_carry[CONFIG_DC_P_SETS-1:0]), .Q(fsm_boot_cnt) );
-   
+
    // Refill counter
    always @(*)
       if (hds_axi_R | s2i_wb_re)
          fsm_refill_cnt_nxt = fsm_refill_cnt_nxt_carry[CONFIG_DC_P_LINE-1:0];
       else
          fsm_refill_cnt_nxt = fsm_refill_cnt;
-   
-   assign fsm_refill_cnt_nxt_carry = (fsm_refill_cnt + (1<<AXI_FETCH_SIZE));
-   
-   mDFF_r # (.DW(CONFIG_DC_P_LINE)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .D(fsm_refill_cnt_nxt), .Q(fsm_refill_cnt) );
-   
 
-   // MUX for tag RAM addr 
+   assign fsm_refill_cnt_nxt_carry = (fsm_refill_cnt + (1<<AXI_FETCH_SIZE));
+
+   mDFF_r # (.DW(CONFIG_DC_P_LINE)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .D(fsm_refill_cnt_nxt), .Q(fsm_refill_cnt) );
+
+
+   // MUX for tag RAM addr
    always @(*)
       case (fsm_state_ff)
          S_BOOT:
@@ -382,7 +381,7 @@ module dcache
          default:
             s1i_line_addr = vpo[CONFIG_DC_P_LINE +: CONFIG_DC_P_SETS]; // index
       endcase
-      
+
    // MUX for tag RAM din
    always @(*)
       case (fsm_state_ff)
@@ -391,9 +390,9 @@ module dcache
          default: // S_BOOT, S_INVALIDATE:
             s1i_replace_tag_v = 'b0;
       endcase
-      
+
    assign s1i_tag_v_re = (p_ce | (fsm_state_ff==S_RELOAD_S1O_S2O));
-   
+
    // tag RAM write enable
    generate
       for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
@@ -402,7 +401,7 @@ module dcache
                                     ((fsm_state_ff==S_REPLACE) & (way == s2o_fsm_free_way));
    endgenerate
 
-   // MUX for D flag RAM addr 
+   // MUX for D flag RAM addr
    always @(*)
       case (fsm_state_ff)
          S_IDLE:
@@ -410,7 +409,7 @@ module dcache
          default:
             s2i_d_waddr = s1i_line_addr;
       endcase
-      
+
    // MUX for D flag RAM din
    always @(*)
       case (fsm_state_ff)
@@ -419,16 +418,15 @@ module dcache
          default: // S_BOOT, S_INVALIDATE, S_REPLACE:
             s2i_d_wdat = 'b0;
       endcase
-   
+
    // D flag RAM write enable
    generate
       for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
          assign s2i_d_we[way] = (s1i_tag_v_we[way] | s2i_ready);
    endgenerate
-   
+
    // MUX for physical addr tag to match
    assign s2i_paddr = {ppn_s2, s1o_vpo};
-      endcase
 
    // MUX for payload RAM addr
    always @(*)
@@ -440,7 +438,7 @@ module dcache
          default:
             s2i_payload_addr = s1o_vpo[PAYLOAD_P_DW_BYTES +: PAYLOAD_AW]; // {index,offset}
       endcase
-      
+
    // MUX for payload RAM din
    always @(*)
       case (fsm_state_ff)
@@ -449,7 +447,7 @@ module dcache
          default:
             s2i_payload_din = s2i_wb_din;
       endcase
-      
+
    assign s2i_payload_re = (p_ce |
                               ((fsm_state_ff==S_WRITEBACK) & s2i_wb_re) |
                               (fsm_state_ff==S_RELOAD_S1O_S2O));
@@ -457,13 +455,13 @@ module dcache
    // MUX for payload RAM we
    assign s2i_payload_we = ({CONFIG_DW/8{s2i_ready}} & s1o_wmsk) |
                            s2i_wb_we;
-   
+
    // Aligner for payload RAM din
    generate
       if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
          begin
-            assign s2i_wb_we = {PAYLOAD_DW/8{fsm_state_ff == S_REFILL}};
-            assign s2i_wb_din = axi_r_data_i[(1<<PAYLOAD_P_DW_BYTES)*8-1:0];
+            assign s2i_wb_we = {{(1<<AXI_P_DW_BYTES)-PAYLOAD_DW/8{1'b0}}, {PAYLOAD_DW/8{fsm_state_ff == S_REFILL}}}; // FIXME?
+            assign s2i_wb_din = {{(1<<(AXI_P_DW_BYTES-PAYLOAD_P_DW_BYTES)){8'b0}}, axi_r_data_i[(1<<PAYLOAD_P_DW_BYTES)*8-1:0]};
          end
       else
          for(i=0;i<PAYLOAD_DW/8;i=i+1)
@@ -473,15 +471,15 @@ module dcache
                assign s2i_wb_din[i*8 +: 8] = axi_r_data_i[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
             end
    endgenerate
-   
+
    assign stall_req = (fsm_state_ff != S_IDLE);
-   
-   assign s2i_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_DC_P_LINE-PAYLOAD_P_DW_BYTES] == 
+
+   assign s2i_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_DC_P_LINE-PAYLOAD_P_DW_BYTES] ==
                     fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_DC_P_LINE-PAYLOAD_P_DW_BYTES]);
-   
+
    // Output
    assign dout = s2o_match_payload;
-   
+
    // AXI - AR
    assign dbus_ARPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign dbus_ARID = {AXI_ID_WIDTH{1'b0}};
@@ -494,7 +492,7 @@ module dcache
    assign dbus_ARQOS = 'b0;
    assign dbus_ARREGION = 'b0;
    assign ar_clr = (axi_ARREADY & axi_ARVALID);
-   
+
    // Address adapter (truncate or fill zero)
    generate
       if (AXI_ADDR_WIDTH > CONFIG_AW)
@@ -504,16 +502,16 @@ module dcache
       else
          assign axi_arw_addr_nxt = refill_paddr;
    endgenerate
-   
+
    mDFF_lr # (.DW(1)) ff_dbus_ARVALID (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(dbus_ARVALID) );
    mDFF_lr # (.DW(AXI_ADDR_WIDTH)) ff_dbus_ARADDR (.CLK(clk), .RST(rst), .LOAD(ar_set), .D(axi_arw_addr_nxt), .Q(dbus_ARADDR) );
-   
-   
+
+
    // AXI - R
    assign axi_r_ready_o = (fsm_state_ff == S_REFILL);
    assign hds_axi_R = (axi_r_valid_i & axi_r_ready_o);
    assign hds_axi_R_last = (hds_axi_R & axi_r_last_i);
-   
+
    // AXI - AW
    assign dbus_AWPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign dbus_AWID = {AXI_ID_WIDTH{1'b0}};
@@ -529,11 +527,10 @@ module dcache
 
    mDFF_lr # (.DW(1)) ff_dbus_AWVALID (.CLK(clk), .RST(rst), .LOAD(aw_set|aw_clr), .D(aw_set|~aw_clr), .Q(dbus_AWVALID) );
    mDFF_lr # (.DW(AXI_ADDR_WIDTH)) ff_dbus_AWADDR (.CLK(clk), .RST(rst), .LOAD(aw_set), .D(axi_arw_addr_nxt), .Q(dbus_AWADDR) );
-   
+
    // AXI - W
-   assign dbus_WREADY = (fsm_state_ff == S_WRITEBACK);
    assign dbus_WUSER = 'b0;
-   
+
    // Aligner for AXI W
    generate
       if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
@@ -549,31 +546,31 @@ module dcache
                assign dbus_WDATA[i*8 +: 8] = s2o_wb_payload[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
             end
    endgenerate
-   
+
    // Look ahead one address, since payload RAM takes 1 cycle to output the result
    assign s2i_wb_re = (wvalid_set | hds_axi_W);
-   
+
    assign wvalid_set = (aw_set);
    assign wvalid_clr = (hds_axi_W_last);
    mDFF_lr #(.DW(1)) ff_dbus_WVALID (.CLK(clk), .RST(rst), .LOAD(wvalid_set|wvalid_clr), .D(wvalid_set|~wvalid_clr), .Q(dbus_WVALID) );
-   
+
    assign wlast_set = (s2i_wb_re & fsm_refill_cnt_nxt_carry[CONFIG_DC_P_LINE]);
    assign wlast_clr = (wvalid_clr);
-   mDFF_lr #(.DW(1)) ff_dbus_WLAST (.CLK(clk), .RST(rst), .LOAD((wlast_set|wlast_clr), .D(wlast_set|~wlast_clr), .Q(dbus_WLAST) );
-   
+   mDFF_lr #(.DW(1)) ff_dbus_WLAST (.CLK(clk), .RST(rst), .LOAD(wlast_set|wlast_clr), .D(wlast_set|~wlast_clr), .Q(dbus_WLAST) );
+
    assign hds_axi_W = (dbus_WVALID & dbus_WREADY);
    assign hds_axi_W_last = (hds_axi_W & dbus_WLAST);
-   
+
    // AXI - B
    assign dbus_BREADY = (fsm_state_ff == S_WRITEBACK);
    assign hds_axi_B = (dbus_BREADY & dbus_BVALID);
-   
+
    // DCID Register
    assign msr_dcid[3:0] = CONFIG_DC_P_SETS[3:0];
    assign msr_dcid[7:4] = CONFIG_DC_P_LINE[3:0];
    assign msr_dcid[11:8] = CONFIG_DC_P_WAYS[3:0];
    assign msr_dcid[31:12] = 20'b0;
-   
+
    // synthesis translate_off
 `ifndef SYNTHESIS
    initial

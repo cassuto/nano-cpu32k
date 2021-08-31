@@ -26,10 +26,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module popcnt
 #(
-   parameter P_DW = 0
+   parameter DW = 0,
+   parameter P_DW = 0 // = floor(log2(DW))
 )
 (
-   input [(1<<P_DW)-1:0] bitmap,
+   input [DW-1:0] bitmap,
    output reg [P_DW:0] count
 );
    integer j;

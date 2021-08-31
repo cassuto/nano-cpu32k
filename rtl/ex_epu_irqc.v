@@ -33,7 +33,7 @@ module ex_epu_irqc
    input                               clk,
    input                               rst,
    input [CONFIG_NUM_IRQ-1:0]          irqs,
-   output                              irq_sync,
+   output                              irq_async,
    input                               msr_psr_ire,
    // IMR
    output [CONFIG_DW-1:0]              msr_irqc_imr,
@@ -57,7 +57,7 @@ module ex_epu_irqc
    assign msr_irqc_imr = (msr_irqc_imr_we) ? msr_irqc_imr_nxt : imr_ff;
 
    assign irq_masked = (msr_irqc_irr & ~msr_irqc_imr);
-   assign irq_sync = (|irq_masked & msr_psr_ire);
+   assign irq_async = (|irq_masked & msr_psr_ire);
 
    // synthesis translate_off
 `ifndef SYNTHESIS
