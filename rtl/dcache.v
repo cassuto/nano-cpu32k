@@ -126,8 +126,8 @@ module dcache
    wire                                s1o_fls;
    wire                                s2i_ready;
    wire                                s2i_d_we                [(1<<CONFIG_DC_P_WAYS)-1:0];
-   wire [TAG_V_RAM_AW-1:0]             s2i_d_waddr;
-   wire                                s2i_d_wdat;
+   reg [TAG_V_RAM_AW-1:0]              s2i_d_waddr;
+   reg                                 s2i_d_wdat;
    wire [PAYLOAD_DW/8-1:0]             s2i_payload_we;
    reg [PAYLOAD_DW-1:0]                s2i_payload_din;
    wire [PAYLOAD_DW/8-1:0]             s2i_wb_we;
@@ -155,6 +155,7 @@ module dcache
    wire [CONFIG_DC_P_SETS-1:0]         s2o_line_addr;
    wire [CONFIG_AW-1:0]                s2o_paddr;
    wire [PAYLOAD_DW*(1<<CONFIG_DC_P_WAYS)-1:0] s2o_payload;
+   wire [PAYLOAD_DW-1:0]               s2o_payload_packed      [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_hit_vec;
    wire [PAYLOAD_DW-1:0]               s2o_match_payload;
    wire [PAYLOAD_DW-1:0]               s2o_wb_payload;
@@ -267,15 +268,20 @@ module dcache
    endgenerate
 
    // Sel the dout of matched way
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) U_PMUX_BNPC (.sel(s2o_hit_vec), .din(s2o_payload), .dout(s2o_match_payload), .valid(s2i_hit) );
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) U_PMUX_BNPC (.sel(s2o_hit_vec), .din(s2o_d), .dout(s2o_match_dirty),
-                                                                     /* verilator lint_off PINCONNECTEMPTY */
-                                                                     .valid() /* unused */
-                                                                     /* verilator lint_on PINCONNECTEMPTY */);
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s2o_hit_vec), .din(s2o_payload), .dout(s2o_match_payload), .valid(s2i_hit) );
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s2o_d (.sel(s2o_hit_vec), .din(s2o_d), .dout(s2o_match_dirty),
+                                                            /* verilator lint_off PINCONNECTEMPTY */
+                                                            .valid() /* unused */
+                                                            /* verilator lint_on PINCONNECTEMPTY */);
 
    assign s1o_free_dirty = s1o_d[fsm_free_way];
 
-   assign s2o_wb_payload = s2o_payload[s2o_fsm_free_way];
+   generate
+      for(i=0;i<(1<<CONFIG_DC_P_WAYS);i=i+1)
+         assign s2o_payload_packed[i] = s2o_payload[i*PAYLOAD_DW +: PAYLOAD_DW];
+   endgenerate
+   
+   assign s2o_wb_payload = s2o_payload_packed[s2o_fsm_free_way];
 
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(req), .Q(s1o_valid) );
    mDFF_lr # (.DW(1)) ff_s1o_inv (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(inv), .Q(s1o_inv) );
@@ -292,7 +298,7 @@ module dcache
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
    mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_d (.CLK(clk), .LOAD(p_ce), .D(s1o_d), .Q(s2o_d) );
    mDFF_l # (.DW(1)) ff_s2o_free_dirty (.CLK(clk), .LOAD(p_ce), .D(s1o_free_dirty), .Q(s2o_free_dirty) );
-   mDFF_l # (.DW(PAYLOAD_AW)) ff_s2o_free_dirty (.CLK(clk), .LOAD(p_ce), .D(s2i_payload_addr), .Q(s2o_payload_addr) );
+   mDFF_l # (.DW(PAYLOAD_AW)) ff_s2o_payload_addr (.CLK(clk), .LOAD(p_ce), .D(s2i_payload_addr), .Q(s2o_payload_addr) );
 
    // Main FSM
    always @(*)
@@ -466,8 +472,8 @@ module dcache
    generate
       if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
          begin
-            assign s2i_wb_we = {{(1<<AXI_P_DW_BYTES)-PAYLOAD_DW/8{1'b0}}, {PAYLOAD_DW/8{fsm_state_ff == S_REFILL}}}; // FIXME?
-            assign s2i_wb_din = {{(1<<(AXI_P_DW_BYTES-PAYLOAD_P_DW_BYTES)){8'b0}}, dbus_RDATA[(1<<PAYLOAD_P_DW_BYTES)*8-1:0]};
+            assign s2i_wb_we = {PAYLOAD_DW/8{fsm_state_ff == S_REFILL}};
+            assign s2i_wb_din = dbus_RDATA[(1<<PAYLOAD_P_DW_BYTES)*8-1:0];
          end
       else
          for(i=0;i<PAYLOAD_DW/8;i=i+1)
@@ -498,8 +504,9 @@ module dcache
    assign dbus_ARQOS = 'b0;
    assign dbus_ARREGION = 'b0;
    assign ar_clr = (dbus_ARREADY & dbus_ARVALID);
+   assign refill_paddr = {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_AW - CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}}};
 
-   // Address adapter (truncate or fill zero)
+   // Address width adapter (truncate or fill zero)
    generate
       if (AXI_ADDR_WIDTH > CONFIG_AW)
          assign axi_arw_addr_nxt = {{AXI_ADDR_WIDTH-CONFIG_AW{1'b0}}, refill_paddr};
@@ -541,8 +548,8 @@ module dcache
    generate
       if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
          begin
-            assign dbus_WSTRB = {PAYLOAD_DW/8{fsm_state_ff == S_WRITEBACK}};
-            assign dbus_WDATA = s2o_wb_payload[(1<<PAYLOAD_P_DW_BYTES)*8-1:0];
+            assign dbus_WSTRB = {{(1<<AXI_P_DW_BYTES)-PAYLOAD_DW/8{1'b0}}, {PAYLOAD_DW/8{fsm_state_ff == S_WRITEBACK}}}; // FIXME?
+            assign dbus_WDATA = {{(1<<AXI_P_DW_BYTES)-(1<<PAYLOAD_P_DW_BYTES){8'b0}}, s2o_wb_payload}; // FIXME?
          end
       else
          for(i=0;i<PAYLOAD_DW/8;i=i+1)

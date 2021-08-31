@@ -80,7 +80,7 @@ module ex_bru
 
    assign b_tgt =
       // PC-relative 15b addressing
-      ({`PC_W{bcc_taken}} & (ex_pc + ex_imm)) |
+      ({`PC_W{bcc_taken}} & (ex_pc + ex_imm[CONFIG_AW-1:`NCPU_P_INSN_LEN])) |
       // PC-relative 25b addressing
       ({`PC_W{ex_bru_opc_bus[`NCPU_BRU_JMPREL]}} & (ex_pc + ex_operand2[CONFIG_AW-1:`NCPU_P_INSN_LEN])) |
       // Absolute addressing FIXME: alignment check

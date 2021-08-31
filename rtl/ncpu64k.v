@@ -28,6 +28,7 @@ module ncpu64k
 #(
    parameter                           CONFIG_AW = 32,
    parameter                           CONFIG_DW = 32,
+   parameter                           CONFIG_P_DW = 5,
    parameter                           CONFIG_P_FETCH_WIDTH = 1,
    parameter                           CONFIG_P_ISSUE_WIDTH = 1,
    parameter                           CONFIG_P_PAGE_SIZE = 13,
@@ -49,6 +50,14 @@ module ncpu64k
    parameter                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 0,
    parameter                           CONFIG_DTLB_P_SETS = 7,
    parameter                           CONFIG_ITLB_P_SETS = 7,
+   parameter [CONFIG_AW-1:0]           CONFIG_EITM_VECTOR = 0,
+   parameter [CONFIG_AW-1:0]           CONFIG_EIPF_VECTOR = 0,
+   parameter [CONFIG_AW-1:0]           CONFIG_ESYSCALL_VECTOR = 0,
+   parameter [CONFIG_AW-1:0]           CONFIG_EINSN_VECTOR = 0,
+   parameter [CONFIG_AW-1:0]           CONFIG_EIRQ_VECTOR = 0,
+   parameter [CONFIG_AW-1:0]           CONFIG_EDTM_VECTOR = 0,
+   parameter [CONFIG_AW-1:0]           CONFIG_EDPF_VECTOR = 0,
+   parameter [CONFIG_AW-1:0]           CONFIG_EALIGN_VECTOR = 0,
    parameter                           CONFIG_NUM_IRQ = 32,
    parameter                           AXI_P_DW_BYTES    = 3,
    parameter                           AXI_ADDR_WIDTH    = 64,
@@ -247,13 +256,14 @@ module ncpu64k
    // End of automatics
    /*AUTOINPUT*/
    wire                                flush;                  // To U_IFU of frontend.v, ...
-   wire [CONFIG_AW-1:0]                flush_tgt;             // To U_IFU of frontend.v
+   wire [`PC_W-1:0]                    flush_tgt;             // To U_IFU of frontend.v
    wire                                stall;                  // To U_ID of id.v, ...
 
    frontend
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_AW                      (CONFIG_AW),
+        .CONFIG_DW                      (CONFIG_DW),
         .CONFIG_P_FETCH_WIDTH           (CONFIG_P_FETCH_WIDTH),
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
         .CONFIG_P_IQ_DEPTH              (CONFIG_P_IQ_DEPTH),
@@ -296,7 +306,7 @@ module ncpu64k
        .clk                             (clk),
        .rst                             (rst),
        .flush                           (flush),
-       .flush_tgt                       (flush_tgt[CONFIG_AW-1:0]),
+       .flush_tgt                       (flush_tgt[`PC_W-1:0]),
        .id_pop_cnt                      (id_pop_cnt[CONFIG_P_ISSUE_WIDTH:0]),
        .bpu_wb                          (bpu_wb),
        .bpu_wb_is_bcc                   (bpu_wb_is_bcc),
@@ -386,6 +396,7 @@ module ncpu64k
         // Parameters
         .CONFIG_AW                      (CONFIG_AW),
         .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_P_DW                    (CONFIG_P_DW),
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
         .CONFIG_PHT_P_NUM               (CONFIG_PHT_P_NUM),
         .CONFIG_BTB_P_NUM               (CONFIG_BTB_P_NUM),
@@ -395,7 +406,26 @@ module ncpu64k
         .CONFIG_ENABLE_MOD              (CONFIG_ENABLE_MOD),
         .CONFIG_ENABLE_MODU             (CONFIG_ENABLE_MODU),
         .CONFIG_ENABLE_ASR              (CONFIG_ENABLE_ASR),
-        .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ))
+        .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ),
+        .CONFIG_DC_P_WAYS               (CONFIG_DC_P_WAYS),
+        .CONFIG_DC_P_SETS               (CONFIG_DC_P_SETS),
+        .CONFIG_DC_P_LINE               (CONFIG_DC_P_LINE),
+        .CONFIG_P_PAGE_SIZE             (CONFIG_P_PAGE_SIZE),
+        .CONFIG_DMMU_ENABLE_UNCACHED_SEG(CONFIG_DMMU_ENABLE_UNCACHED_SEG),
+        .CONFIG_ITLB_P_SETS             (CONFIG_ITLB_P_SETS),
+        .CONFIG_DTLB_P_SETS             (CONFIG_DTLB_P_SETS),
+        .CONFIG_EITM_VECTOR             (CONFIG_EITM_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EIPF_VECTOR             (CONFIG_EIPF_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_ESYSCALL_VECTOR         (CONFIG_ESYSCALL_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EINSN_VECTOR            (CONFIG_EINSN_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EIRQ_VECTOR             (CONFIG_EIRQ_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EDTM_VECTOR             (CONFIG_EDTM_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EDPF_VECTOR             (CONFIG_EDPF_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EALIGN_VECTOR           (CONFIG_EALIGN_VECTOR[CONFIG_AW-1:0]),
+        .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
+        .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),
+        .AXI_ID_WIDTH                   (AXI_ID_WIDTH),
+        .AXI_USER_WIDTH                 (AXI_USER_WIDTH))
    U_EX
       (/*AUTOINST*/
        // Outputs

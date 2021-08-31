@@ -45,7 +45,8 @@ module ex_epu
    input                               rst,
    input                               flush,
    input [`PC_W-1:0]                   ex_pc,
-   input [`PC_W-1:0]                   ex_npc,      
+   input [`PC_W-1:0]                   ex_npc,
+   input                               ex_valid,
    input [`NCPU_EPU_IOPW-1:0]          ex_epu_opc_bus,
    input [CONFIG_DW-1:0]               ex_operand1,
    input [CONFIG_DW-1:0]               ex_operand2,
@@ -78,18 +79,19 @@ module ex_epu
    output                              epu_EITM,
    output                              epu_EIRQ,
    output                              epu_E_FLUSH_TLB,
-   
+
    // Flush
    output                              exc_flush,
    output [`PC_W-1:0]                  exc_flush_tgt,
-   
+
    // IRQs
    input [CONFIG_NUM_IRQ-1:0]          irqs,
    output                              irq_async,
-   
+
    // PSR
    input [`NCPU_PSR_DW-1:0]            msr_psr,
    input [`NCPU_PSR_DW-1:0]            msr_psr_nold,
+   input                               msr_psr_ire,
    output                              msr_psr_rm_nxt,
    output                              msr_psr_rm_we,
    output                              msr_psr_imme_nxt,
@@ -249,7 +251,7 @@ module ex_epu
    wire [9:0]                          wmsr_psr_res; // unsued
    wire [9:0]                          epsr_res; // unsued
 /* verilator lint_on UNUSED */
-   wire                                msr_exc_ent_r;
+   wire                                msr_exc_ent_ff;
    wire                                save_psr;
    genvar i;
 
@@ -341,42 +343,42 @@ module ex_epu
          ({CONFIG_DW{s1i_bank_tsc}} & dout_tsc)
       );
 
-   assign epu_ERET = ex_epu_opc_bus[`NCPU_EPU_ERET];
-   assign epu_ESYSCALL = ex_epu_opc_bus[`NCPU_EPU_ESYSCALL];
-   assign epu_EINSN = ex_epu_opc_bus[`NCPU_EPU_EINSN];
-   assign epu_EIPF = ex_epu_opc_bus[`NCPU_EPU_EIPF];
-   assign epu_EITM = ex_epu_opc_bus[`NCPU_EPU_EITM];
-   assign epu_EIRQ = ex_epu_opc_bus[`NCPU_EPU_EIRQ];
-   assign epu_E_FLUSH_TLB = (s1i_wmsr_psr_we |
+   assign epu_ERET = (ex_valid & ex_epu_opc_bus[`NCPU_EPU_ERET]);
+   assign epu_ESYSCALL = (ex_valid & ex_epu_opc_bus[`NCPU_EPU_ESYSCALL]);
+   assign epu_EINSN = (ex_valid & ex_epu_opc_bus[`NCPU_EPU_EINSN]);
+   assign epu_EIPF = (ex_valid & ex_epu_opc_bus[`NCPU_EPU_EIPF]);
+   assign epu_EITM = (ex_valid & ex_epu_opc_bus[`NCPU_EPU_EITM]);
+   assign epu_EIRQ = (ex_valid & ex_epu_opc_bus[`NCPU_EPU_EIRQ]);
+   assign epu_E_FLUSH_TLB = (ex_valid & (s1i_wmsr_psr_we |
                               s1i_msr_imm_tlbl_we |
                               s1i_msr_imm_tlbh_we |
                               s1i_msr_dmm_tlbl_we |
-                              s1i_msr_dmm_tlbh_we);
+                              s1i_msr_dmm_tlbh_we));
 
    ////////////////////////////////////////////////////////////////////////////////
 
    // Decode MSR address
    assign epu_wmsr_dat = ex_operand2;
 
-   assign s1i_wmsr_psr_we      = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_PSR];
-   assign s1i_wmsr_epc_we      = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPC];
-   assign s1i_wmsr_epsr_we     = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPSR];
-   assign s1i_wmsr_elsa_we     = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_ELSA];
+   assign s1i_wmsr_psr_we      = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_PSR];
+   assign s1i_wmsr_epc_we      = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPC];
+   assign s1i_wmsr_epsr_we     = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPSR];
+   assign s1i_wmsr_elsa_we     = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_ELSA];
 `ifdef NCPU_ENABLE_MSGPORT
-   assign s1i_wmsr_numport_we  = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[0];
-   assign s1i_wmsr_msgport_we  = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[1];
+   assign s1i_wmsr_numport_we  = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[0];
+   assign s1i_wmsr_msgport_we  = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[1];
 `endif
-   assign s1i_msr_imm_tlbl_we  = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbl_sel;
-   assign s1i_msr_imm_tlbh_we  = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbh_sel;
-   assign s1i_msr_dmm_tlbl_we  = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbl_sel;
-   assign s1i_msr_dmm_tlbh_we  = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbh_sel;
-   assign s1i_msr_ic_inv_we    = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ic & msr_ic_inv_sel;
-   assign s1i_msr_dc_inv_we    = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_inv_sel;
-   assign s1i_msr_dc_fls_we    = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_fls_sel;
+   assign s1i_msr_imm_tlbl_we  = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbl_sel;
+   assign s1i_msr_imm_tlbh_we  = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbh_sel;
+   assign s1i_msr_dmm_tlbl_we  = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbl_sel;
+   assign s1i_msr_dmm_tlbh_we  = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbh_sel;
+   assign s1i_msr_ic_inv_we    = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ic & msr_ic_inv_sel;
+   assign s1i_msr_dc_inv_we    = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_inv_sel;
+   assign s1i_msr_dc_fls_we    = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_fls_sel;
 
-   assign s1i_msr_irqc_imr_we  = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_irqc & msr_irqc_imr_sel;
-   assign s1i_msr_tsc_tsr_we   = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tsr_sel;
-   assign s1i_msr_tsc_tcr_we   = ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tcr_sel;
+   assign s1i_msr_irqc_imr_we  = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_irqc & msr_irqc_imr_sel;
+   assign s1i_msr_tsc_tsr_we   = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tsr_sel;
+   assign s1i_msr_tsc_tcr_we   = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tcr_sel;
 
    assign epu_wmsr_we = {s1i_wmsr_psr_we,
                         s1i_wmsr_epc_we,
@@ -444,11 +446,10 @@ module ex_epu
    assign msr_psr_ire_we = (commit_wmsr_psr_we | commit_ERET);
    assign msr_psr_ire_nxt = commit_wmsr_psr_we ? wmsr_psr_ire : epsr_ire_nobpy;
 
-   nDFF_r #(1) dff_msr_exc_ent_r
-      (clk,rst_n, msr_exc_ent, msr_exc_ent_r);
+   mDFF_r #(.DW(1)) ff_msr_exc_ent_r (.CLK(clk), .RST(rst), .D(msr_exc_ent), .Q(msr_exc_ent_ff) );
 
    // Save PSR to EPSR at the first edge of exception signal
-   assign save_psr = msr_exc_ent & ~msr_exc_ent_r;
+   assign save_psr = msr_exc_ent & ~msr_exc_ent_ff;
 
    // Commit EPSR
    assign msr_epsr_we = (commit_wmsr_epsr_we | save_psr);
@@ -518,7 +519,7 @@ module ex_epu
                            ({CONFIG_AW-2{commit_EIPF}} & CONFIG_EIPF_VECTOR[2 +: CONFIG_AW-2]) |
                            ({CONFIG_AW-2{commit_EIRQ}} & CONFIG_EIRQ_VECTOR[2 +: CONFIG_AW-2]) |
                            ({CONFIG_AW-2{commit_EINSN}} & CONFIG_EINSN_VECTOR[2 +: CONFIG_AW-2]);
-   
+
    assign exc_flush = (commit_EDTM |
                         commit_EDPF |
                         commit_EALIGN |
@@ -529,7 +530,7 @@ module ex_epu
                         commit_EIPF |
                         commit_EIRQ |
                         commit_EINSN);
-   
+
 	// synthesis translate_off
 `ifdef NCPU_ENABLE_MSGPORT
    always @(posedge clk) begin
@@ -578,7 +579,7 @@ module ex_epu
        .msr_tsc_tcr_nxt                 (msr_tsc_tcr_nxt[CONFIG_DW-1:0]),
        .msr_tsc_tcr_we                  (msr_tsc_tcr_we));
 
-       
+
    // synthesis translate_off
 `ifndef SYNTHESIS
    // Assertions
@@ -592,12 +593,12 @@ module ex_epu
                commit_EIRQ +
                commit_wmsr_psr_we)>'d1)
             $fatal (1, "\n Bugs on exception sources (IMMU, IDU, AGU and DMMU)\n");
-            
+
          // Assertions 2105051856
          if ((commit_EDTM +
                commit_EDPF +
                commit_EALIGN +
-               commit_E_FLUSH_TLB + 
+               commit_E_FLUSH_TLB +
                commit_ESYSCALL +
                commit_ERET +
                commit_EITM +

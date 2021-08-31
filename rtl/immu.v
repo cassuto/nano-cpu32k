@@ -85,7 +85,7 @@ module immu
    mRF_nwnr
       #(
          .DW      (CONFIG_DW),
-         .AW      (CONFIG_DTLB_P_SETS),
+         .AW      (CONFIG_ITLB_P_SETS),
          .NUM_READ (1),
          .NUM_WRITE (1)
       )
@@ -104,7 +104,7 @@ module immu
    mRF_nwnr
       #(
          .DW      (CONFIG_DW),
-         .AW      (CONFIG_DTLB_P_SETS),
+         .AW      (CONFIG_ITLB_P_SETS),
          .NUM_READ (1),
          .NUM_WRITE (1)
       )

@@ -51,7 +51,7 @@ module ex_epu_irqc
    mDFF_r #(CONFIG_NUM_IRQ) dff_msr_irqc_irr (.CLK(clk), .RST(rst), .D(msr_irqc_irr_0), .Q(msr_irqc_irr) );
 
    // IMR Register
-   mDFF_lr #(.DW(CONFIG_DW), .RST_VECROR({CONFIG_DW{1'b1}})) ff_imr_ (.CLK(clk), .RST(rst), .LOAD(msr_irqc_imr_we), .D(msr_irqc_imr_nxt), .Q(imr_ff) );
+   mDFF_lr #(.DW(CONFIG_DW), .RST_VECTOR({CONFIG_DW{1'b1}})) ff_imr_ (.CLK(clk), .RST(rst), .LOAD(msr_irqc_imr_we), .D(msr_irqc_imr_nxt), .Q(imr_ff) );
 
    // Bypass IMR write
    assign msr_irqc_imr = (msr_irqc_imr_we) ? msr_irqc_imr_nxt : imr_ff;

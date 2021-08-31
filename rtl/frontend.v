@@ -47,7 +47,7 @@ module frontend
    input                               clk,
    input                               rst,
    input                               flush,
-   input [CONFIG_AW-1:0]               flush_tgt,
+   input [`PC_W-1:0]                   flush_tgt,
    // To ID
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid,
    input [CONFIG_P_ISSUE_WIDTH:0]      id_pop_cnt,
@@ -166,6 +166,7 @@ module frontend
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_AW                      (CONFIG_AW),
+        .CONFIG_DW                      (CONFIG_DW),
         .CONFIG_P_FETCH_WIDTH           (CONFIG_P_FETCH_WIDTH),
         .CONFIG_P_PAGE_SIZE             (CONFIG_P_PAGE_SIZE),
         .CONFIG_IC_P_LINE               (CONFIG_IC_P_LINE),
@@ -295,16 +296,16 @@ module frontend
          assign s1i_fetch_valid[i] = (pc_nxt[`NCPU_P_INSN_LEN +: CONFIG_P_FETCH_WIDTH] <= i);
    endgenerate
 
-   pmux #(.SELW(FW), .DW(`PC_W)) U_PMUX_BNPC (.sel(s1o_bpu_taken), .din(s1o_bpu_npc_packed), .dout(pred_branch_tgt), .valid(pred_branch_taken) );
+   pmux #(.SELW(FW), .DW(`PC_W)) pmux_s1o_bpu_npc (.sel(s1o_bpu_taken), .din(s1o_bpu_npc_packed), .dout(pred_branch_tgt), .valid(pred_branch_taken) );
 
    // NPC Generator
    always @(*)
       if (flush)
-         pc_nxt = flush_tgt;
+         pc_nxt = {flush_tgt, {`NCPU_P_INSN_LEN{1'b0}}};
       else if (~p_ce)
          pc_nxt = pc;
       else if (pred_branch_taken)
-         pc_nxt = {pred_branch_tgt, 2'b00};
+         pc_nxt = {pred_branch_tgt, {`NCPU_P_INSN_LEN{1'b0}}};
       else
          pc_nxt = pc + {{CONFIG_AW-CONFIG_P_FETCH_WIDTH-1-`NCPU_P_INSN_LEN{1'b0}}, s1o_push_cnt, {`NCPU_P_INSN_LEN{1'b0}}};
 

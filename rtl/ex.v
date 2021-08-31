@@ -283,7 +283,7 @@ module ex
    /*AUTOINPUT*/
    wire                                p_ce;
    wire [`NCPU_ALU_IOPW-1:0]           ex_alu_opc_unpacked           [IW-1:0];
-   wire [`NCPU_LSU_IOPW-1:0]           ex_lsu_load0;
+   wire                                ex_lsu_load0;
    wire                                b_lnk;
    wire                                add_s                         [IW-1:0];
    wire [CONFIG_DW-1:0]                add_sum                       [IW-1:0];
@@ -294,6 +294,7 @@ module ex
    wire                                is_bcc, is_breg, is_brel;
    wire [`BPU_UPD_W-1:0]               ex_bpu_upd_unpacked           [IW-1:0];
    wire [`PC_W-1:0]                    npc                           [IW-1:0];
+   reg [IW-1:0]                        valid_msk;
    wire [IW-1:0]                       se_fail_vec;
    wire [`PC_W*IW-1:0]                 se_tgt_vec;
    wire                                se_fail;
@@ -332,6 +333,7 @@ module ex
    wire [IW-1:0]                       s2o_rf_we;
    wire [CONFIG_DW*IW-1:0]             s3i_rf_wdat;
    genvar i;
+   integer j;
 
    assign ex_lsu_load0 = ex_lsu_opc_bus[0*`NCPU_LSU_IOPW + `NCPU_LSU_LOAD];
 
@@ -387,7 +389,7 @@ module ex
                   U_BRU
                      (
                         .ex_valid         (ex_valid[i]),
-                        .ex_bru_opc_bus   (ex_alu_opc_unpacked[i]),
+                        .ex_bru_opc_bus   (ex_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
                         .ex_pc            (ex_pc[i*`PC_W +: `PC_W]),
                         .ex_imm           (ex_imm[i*CONFIG_DW +: CONFIG_DW]),
                         .ex_operand1      (ex_operand1[i*CONFIG_DW +: CONFIG_DW]),
@@ -405,8 +407,9 @@ module ex
                      );
 
                   /* ex_epu AUTO_TEMPLATE (
+                        .ex_valid         (ex_valid[i]),
                         .ex_pc            (ex_pc[i*`PC_W +: `PC_W]),
-                        .ex_npc           (npc[i*`PC_W +: `PC_W]),
+                        .ex_npc           (npc[i]),
                         .ex_epu_opc_bus   (ex_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
                         .ex_operand1      (ex_operand1[i*CONFIG_DW +: CONFIG_DW]),
                         .ex_operand2      (ex_operand2[i*CONFIG_DW +: CONFIG_DW]),
@@ -483,7 +486,8 @@ module ex
                       .rst              (rst),
                       .flush            (flush),
                       .ex_pc            (ex_pc[i*`PC_W +: `PC_W]), // Templated
-                      .ex_npc           (npc[i*`PC_W +: `PC_W]), // Templated
+                      .ex_npc           (npc[i]),                // Templated
+                      .ex_valid         (ex_valid[i]),           // Templated
                       .ex_epu_opc_bus   (ex_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]), // Templated
                       .ex_operand1      (ex_operand1[i*CONFIG_DW +: CONFIG_DW]), // Templated
                       .ex_operand2      (ex_operand2[i*CONFIG_DW +: CONFIG_DW]), // Templated
@@ -506,6 +510,7 @@ module ex
                       .irqs             (irqs[CONFIG_NUM_IRQ-1:0]),
                       .msr_psr          (msr_psr[`NCPU_PSR_DW-1:0]),
                       .msr_psr_nold     (msr_psr_nold[`NCPU_PSR_DW-1:0]),
+                      .msr_psr_ire      (msr_psr_ire),
                       .msr_cpuid        (msr_cpuid[CONFIG_DW-1:0]),
                       .msr_epc          (msr_epc[CONFIG_DW-1:0]),
                       .msr_epsr         (msr_epsr[`NCPU_PSR_DW-1:0]),
@@ -531,7 +536,7 @@ module ex
 
                   // Add the result of BRU
                   assign s1i_rf_dout[i*CONFIG_DW +: CONFIG_DW] = (s1i_rf_dout_1[i*CONFIG_DW +: CONFIG_DW] |
-                                                                  ({CONFIG_DW{b_lnk}} & npc[i]));
+                                                                  ({CONFIG_DW{b_lnk}} & {npc[i], {`NCPU_P_INSN_LEN{1'b0}}}));
 
                   /* ex_lsu AUTO_TEMPLATE (
                         .ex_valid         (ex_valid[i]),
@@ -692,18 +697,18 @@ module ex
 
    ex_psr
       #(
-         .CONFIG_DW (0),
-         .CPUID_VER (1),
-         .CPUID_REV (0),
-         .CPUID_FIMM (1),
-         .CPUID_FDMM (1),
-         .CPUID_FICA (0),
-         .CPUID_FDCA (0),
-         .CPUID_FDBG (0),
-         .CPUID_FFPU (0),
-         .CPUID_FIRQC (1),
-         .CPUID_FTSC (1)
-      )
+        .CONFIG_DW                      (CONFIG_DW),
+        .CPUID_VER                      (1),
+        .CPUID_REV                      (0),
+        .CPUID_FIMM                     (1),
+        .CPUID_FDMM                     (1),
+        .CPUID_FICA                     (1),
+        .CPUID_FDCA                     (1),
+        .CPUID_FDBG                     (0),
+        .CPUID_FFPU                     (0),
+        .CPUID_FIRQC                    (1),
+        .CPUID_FTSC                     (1)
+     )
    U_PSR
       (/*AUTOINST*/
        // Outputs
@@ -741,40 +746,51 @@ module ex
    // NPC adders
    generate
       for(i=0;i<IW;i=i+1)
-         assign npc[i] = (ex_pc[i]+'b1);
+         assign npc[i] = (ex_pc[i*`PC_W +: `PC_W]+'b1);
    endgenerate
 
    // Speculative execution check point
    assign se_fail_vec[0] = (b_taken ^ ex_bpu_upd_unpacked[0][`BPU_UPD_TAKEN]) | (b_tgt != ex_bpu_upd_unpacked[0][`BPU_UPD_TGT]);
-   assign se_tgt_vec[0] = (b_taken) ? b_tgt : npc[0];
+   assign se_tgt_vec[0 +: `PC_W] = (b_taken) ? b_tgt : npc[0];
    generate
       for(i=1;i<IW;i=i+1)
          begin
-            assign se_fail_vec[i] = (ex_bpu_upd_unpacked[i][`BPU_UPD_TAKEN]);
-            assign se_tgt_vec[i] = npc[i];
+            assign se_fail_vec[i] = (1'b0 ^ ex_bpu_upd_unpacked[i][`BPU_UPD_TAKEN]);
+            assign se_tgt_vec[i*`PC_W +: `PC_W] = npc[i];
          end
    endgenerate
 
-   pmux #(.SELW(IW), .DW(`PC_W)) U_PMUX_SE_TGT (.sel(se_fail_vec), .din(se_tgt_vec), .dout(se_tgt), .valid(se_fail) );
+   pmux #(.SELW(IW), .DW(`PC_W)) pmux_se_tgt (.sel(se_fail_vec), .din(se_tgt_vec), .dout(se_tgt), .valid(se_fail) );
 
-   assign s1i_valid = (ex_valid & ~se_fail);
+   always @(*)
+      begin
+         valid_msk[0] = 'b1;
+         for(j=1;j<IW;j=j+1)
+            valid_msk[j] = valid_msk[j-1] & ~se_fail_vec[j-1];
+      end
+   
+   assign s1i_valid = (ex_valid & valid_msk);
 
    // Write BPU
-   assign bpu_wb = s1i_valid[0];
+   assign bpu_wb = ex_valid[0];
    assign bpu_wb_is_bcc = is_bcc;
    assign bpu_wb_is_breg = is_breg;
    assign bpu_wb_is_brel = is_brel;
    assign bpu_wb_taken = b_taken;
-   assign bpu_wb_pc = ex_pc[0];
-   assign bpu_wb_npc_act = se_tgt_vec[0];
+   assign bpu_wb_pc = ex_pc[0 +: `PC_W];
+   assign bpu_wb_npc_act = se_tgt_vec[0 +: `PC_W];
    assign bpu_wb_upd = ex_bpu_upd[0*`BPU_UPD_W +: `BPU_UPD_W];
    
    assign s1i_rf_we = (s1i_valid & ex_rf_we);
 
    // MUX for ARF write data
-   assign s3i_rf_wdat = (s2o_lsu_load0)
-                           ? s2o_lsu_dout0
-                           : s2o_rf_dout;
+   assign s3i_rf_wdat[0 +: CONFIG_DW] = (s2o_lsu_load0)
+                                          ? s2o_lsu_dout0
+                                          : s2o_rf_dout[0 +: CONFIG_DW];
+   generate
+      for(i=1;i<IW;i=i+1)
+         assign s3i_rf_wdat[i*CONFIG_DW +: CONFIG_DW] = s2o_rf_dout[i*CONFIG_DW +: CONFIG_DW];
+   endgenerate
 
 
    // Bypass
@@ -808,7 +824,7 @@ module ex
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s1o_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(ex_rf_waddr), .Q(s1o_rf_waddr) );
    mDFF_lr # (.DW(IW)) ff_s1o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_rf_we & {IW{~flush}}), .Q(s1o_rf_we) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_s1o_rf_dout (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(s1o_rf_dout) );
-   mDFF_lr # (.DW(IW)) ff_s1o_lsu_load (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(ex_lsu_load0), .Q(s1o_lsu_load0) );
+   mDFF_lr # (.DW(1)) ff_s1o_lsu_load (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(ex_lsu_load0), .Q(s1o_lsu_load0) );
    mDFF_l # (.DW(`PC_W)) ff_commit_pc (.CLK(clk), .LOAD(p_ce), .D(ex_pc[0 +: `PC_W]), .Q(commit_pc) );
    mDFF_l # (.DW(`PC_W)) ff_commit_npc (.CLK(clk), .LOAD(p_ce), .D(npc[0]), .Q(commit_npc) );
    
@@ -825,7 +841,7 @@ module ex
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s2o_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(s1o_rf_waddr), .Q(s2o_rf_waddr) );
    mDFF_lr # (.DW(IW)) ff_s2o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_rf_we & {IW{~flush}}), .Q(s2o_rf_we) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_s2o_rf_dout (.CLK(clk), .LOAD(p_ce), .D(s1o_rf_dout), .Q(s2o_rf_dout) );
-   mDFF_l # (.DW(IW)) ff_s2o_lsu_load (.CLK(clk), .LOAD(p_ce), .D(s1o_lsu_load0), .Q(s2o_lsu_load0) );
+   mDFF_l # (.DW(1)) ff_s2o_lsu_load (.CLK(clk), .LOAD(p_ce), .D(s1o_lsu_load0), .Q(s2o_lsu_load0) );
 
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_commit_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(s2o_rf_waddr), .Q(commit_rf_waddr) );
    mDFF_lr # (.DW(IW)) ff_commit_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s2o_rf_we), .Q(commit_rf_we) );

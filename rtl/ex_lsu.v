@@ -46,9 +46,8 @@ module ex_lsu
    input                               stall,
    input                               flush,
    output                              lsu_stall_req,
-   // From SCHEDULER
    input                               ex_valid,
-   input [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lsu_opc_bus,
+   input [`NCPU_LSU_IOPW-1:0]          ex_lsu_opc_bus,
    input [CONFIG_DW-1:0]               add_sum,
    input [CONFIG_DW-1:0]               ex_operand2,
    // AXI Master (Cached access)
@@ -177,11 +176,15 @@ module ex_lsu
    input [CONFIG_DW-1:0]               msr_dcfls_nxt,
    input                               msr_dcfls_we
 );
+   localparam CONFIG_P_DW_BYTES        = (CONFIG_P_DW-3);
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 dc_stall_req;           // From D_CACHE of dcache.v
+   wire                 stall_req;              // From U_UNC_FSM of ex_lsu_unc_fsm.v
+   wire                 valid;                  // From U_UNC_FSM of ex_lsu_unc_fsm.v
    // End of automatics
    wire                                p_cke;
+   wire                                uncached_stall_req;
    // Stage 1 Input
    wire                                s1i_load;
    wire                                s1i_store;
@@ -217,6 +220,7 @@ module ex_lsu
    wire                                s1o_store;
    wire [CONFIG_DW/8-1:0]              s1o_dc_wmsk;
    wire [CONFIG_DW-1:0]                s1o_dc_wdat;
+   wire                                s2i_uncached_boot;
    // Stage 3 Input / Stage 2 Output
    wire [CONFIG_DW-1:0]                s2o_dc_rdat;
    wire [CONFIG_DW-1:0]                s2o_dout_32b;
@@ -226,18 +230,8 @@ module ex_lsu
    wire [2:0]                          s2o_size;
    wire                                s2o_sign_ext;
    wire [CONFIG_DW-1:0]                s2o_uncached_dout;
-   wire [AXI_ADDR_WIDTH-1:0]           s2i_paddr;
-   // FSM of uncached access
-   wire [1:0]                          fsm_uncached_state_ff;
-   reg [1:0]                           fsm_uncached_state_nxt;
-   wire                                fsm_uncached_stall_req;
-   reg                                 ar_set, aw_set;
-   wire                                ar_clr, aw_clr;
-   wire                                w_set, w_clr;
-   wire [AXI_ADDR_WIDTH-1:0]           axi_arw_addr_nxt;
-   wire [2:0]                          axi_arw_size_ff;
-   wire                                hds_axi_R;
-   wire                                hds_axi_B;
+   wire                                s2o_uncached_valid;
+   wire [CONFIG_AW-1:0]                s2i_paddr;
 
    assign s1i_load = ex_lsu_opc_bus[`NCPU_LSU_LOAD];
    assign s1i_store = ex_lsu_opc_bus[`NCPU_LSU_STORE];
@@ -325,7 +319,7 @@ module ex_lsu
                         : s2i_tlb_ppn;
 
    /* dcache AUTO_TEMPLATE (
-      .re                              (s1i_dc_req),
+      .req                             (s1i_dc_req),
       .wmsk                            (s1i_dc_wmsk),
       .wdat                            (s1i_dc_wdat),
       .vpo                             (s1i_dc_vpo),
@@ -391,7 +385,7 @@ module ex_lsu
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
-       .req                             (req),
+       .req                             (s1i_dc_req),            // Templated
        .wmsk                            (s1i_dc_wmsk),           // Templated
        .wdat                            (s1i_dc_wdat),           // Templated
        .vpo                             (s1i_dc_vpo),            // Templated
@@ -429,104 +423,83 @@ module ex_lsu
    mDFF_lr #(.DW(1)) ff_s1o_misalign (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(s1i_misalign), .Q(s1o_EALIGN) );
    mDFF_lr #(.DW(1)) ff_s1o_store (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(s1i_store), .Q(s1o_store) );
 
-   localparam [3:0] S_UNCACHED_IDLE = 4'd0;
-   localparam [3:0] S_UNCACHED_AWVALID = 4'd1;
-   localparam [3:0] S_UNCACHED_ARVALID = 4'd2;
-   localparam [3:0] S_UNCACHED_BREADY = 4'd3;
-   localparam [3:0] S_UNCACHED_WVALID = 4'd4;
-   localparam [3:0] S_UNCACHED_RREADY = 4'd5;
-   localparam [3:0] S_UNCACHED_OUT = 4'd6;
-
-   assign uncached_boot = (s1o_valid & s2i_tlb_uncached & ~s2i_dc_kill_req & ~flush);
-
-   always @(*)
-      begin
-         fsm_uncached_state_nxt = fsm_uncached_state_ff;
-         ar_set = 'b0;
-         aw_set = 'b0;
-         case (fsm_uncached_state_ff)
-            S_UNCACHED_IDLE:
-               if (uncached_boot)
-                  begin
-                     fsm_uncached_state_nxt = (s2_store) ? S_UNCACHED_WAIT_B : S_UNCACHED_WAIT_R;
-                     ar_set = ~s2_store;
-                     aw_set = s2_store;
-                  end
-
-            // W
-            S_UNCACHED_WAIT_B:
-               if (hds_axi_B)
-                  fsm_uncached_state_nxt = S_UNCACHED_OUT;
-
-            // R
-            S_UNCACHED_WAIT_R:
-               if (hds_axi_R)
-                  fsm_uncached_state_nxt = S_UNCACHED_OUT;
-
-            S_UNCACHED_OUT:
-               if (~stall)
-                  fsm_uncached_state_nxt = S_UNCACHED_IDLE;
-
-            default: ;
-            endcase
-      end
-
-   mDFF_r #(.DW(4), .RST_VECTOR(S_UNCACHED_IDLE)) ff_uncached_state_ff
-      (.CLK(clk), .RST(rst), .D(fsm_uncached_state_nxt), .Q(fsm_uncached_state_ff) );
-
+   assign s2i_uncached_boot = (s1o_valid & s2i_tlb_uncached & ~s2i_dc_kill_req & ~flush);
+   
+   ex_lsu_unc_fsm
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_AW                      (CONFIG_AW),
+        .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_P_DW                    (CONFIG_P_DW),
+        .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
+        .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),
+        .AXI_ID_WIDTH                   (AXI_ID_WIDTH),
+        .AXI_USER_WIDTH                 (AXI_USER_WIDTH))
+   U_UNC_FSM
+      (
+       .clk                             (clk),
+       .rst                             (rst),
+       .stall                           (stall),
+       .stall_req                       (uncached_stall_req),
+       .boot                            (s2i_uncached_boot),
+       .store                           (s1o_store),
+       .paddr                           (s2i_paddr),
+       .size                            (s1o_size),
+       .wdat                            (s1o_dc_wdat),
+       .wmsk                            (s1o_dc_wmsk),
+       .valid                           (s2o_uncached_valid),
+       .dout                            (s2o_uncached_dout),
+       .uncached_ARVALID                (uncached_ARVALID),
+       .uncached_ARADDR                 (uncached_ARADDR),
+       .uncached_ARPROT                 (uncached_ARPROT),
+       .uncached_ARID                   (uncached_ARID),
+       .uncached_ARUSER                 (uncached_ARUSER),
+       .uncached_ARLEN                  (uncached_ARLEN),
+       .uncached_ARSIZE                 (uncached_ARSIZE),
+       .uncached_ARBURST                (uncached_ARBURST),
+       .uncached_ARLOCK                 (uncached_ARLOCK),
+       .uncached_ARCACHE                (uncached_ARCACHE),
+       .uncached_ARQOS                  (uncached_ARQOS),
+       .uncached_ARREGION               (uncached_ARREGION),
+       .uncached_RREADY                 (uncached_RREADY),
+       .uncached_AWVALID                (uncached_AWVALID),
+       .uncached_AWADDR                 (uncached_AWADDR),
+       .uncached_AWPROT                 (uncached_AWPROT),
+       .uncached_AWID                   (uncached_AWID),
+       .uncached_AWUSER                 (uncached_AWUSER),
+       .uncached_AWLEN                  (uncached_AWLEN),
+       .uncached_AWSIZE                 (uncached_AWSIZE),
+       .uncached_AWBURST                (uncached_AWBURST),
+       .uncached_AWLOCK                 (uncached_AWLOCK),
+       .uncached_AWCACHE                (uncached_AWCACHE),
+       .uncached_AWQOS                  (uncached_AWQOS),
+       .uncached_AWREGION               (uncached_AWREGION),
+       .uncached_WVALID                 (uncached_WVALID),
+       .uncached_WDATA                  (uncached_WDATA),
+       .uncached_WSTRB                  (uncached_WSTRB),
+       .uncached_WLAST                  (uncached_WLAST),
+       .uncached_WUSER                  (uncached_WUSER),
+       .uncached_BREADY                 (uncached_BREADY),
+       .uncached_ARREADY                (uncached_ARREADY),
+       .uncached_RVALID                 (uncached_RVALID),
+       .uncached_RDATA                  (uncached_RDATA),
+       .uncached_RRESP                  (uncached_RRESP),
+       .uncached_RLAST                  (uncached_RLAST),
+       .uncached_RID                    (uncached_RID),
+       .uncached_RUSER                  (uncached_RUSER),
+       .uncached_AWREADY                (uncached_AWREADY),
+       .uncached_WREADY                 (uncached_WREADY),
+       .uncached_BVALID                 (uncached_BVALID),
+       .uncached_BRESP                  (uncached_BRESP),
+       .uncached_BID                    (uncached_BID),
+       .uncached_BUSER                  (uncached_BUSER)
+    );
+   
    assign s2i_paddr = {s2i_tlb_ppn, s1o_vaddr[CONFIG_P_PAGE_SIZE-1:0]};
-   assign axi_arw_addr_nxt = s2i_paddr;
 
-   // AR
-   assign uncached_ARID = 'b0;
-   assign uncached_ARLEN = 'd0;
-   assign uncached_ARBURST = `AXI_BURST_TYPE_INCR;
-   assign uncached_ARLOCK = 'b0;
-   assign uncached_ARCACHE = `AXI_AWCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
-   assign uncached_ARPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
-   assign uncached_ARQOS = 'b0;
-   assign ar_clr = (uncached_ARVALID & uncached_ARREADY);
-   mDFF_lr # (.DW(1)) ff_uncached_ARVALID (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(uncached_ARVALID) );
-   mDFF_l # (.DW(AXI_ADDR_WIDTH)) ff_uncached_ARADDR (.CLK(clk), .LOAD(ar_set), .D(axi_arw_addr_nxt), .Q(uncached_ARADDR) );
-   mDFF_l #(.DW(2)) ff_uncached_ARSIZE (.CLK(clk), .LOAD(ar_set), .D(s1o_size), .Q(uncached_ARSIZE) );
+   assign s2o_dout_32b = s2o_uncached_valid ? s2o_uncached_dout : s2o_dc_rdat;
 
-   // AW
-   assign uncached_AWID = 'b0;
-   assign uncached_AWLEN = 'd0;
-   assign uncached_AWBURST = `AXI_BURST_TYPE_INCR;
-   assign uncached_AWLOCK ='b0;
-   assign uncached_AWCACHE = `AXI_AWCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
-   assign uncached_AWPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
-   assign uncached_AWQOS = 'b0;
-   assign aw_clr = (uncached_AWVALID & uncached_AWREADY);
-   mDFF_lr # (.DW(1)) ff_uncached_AWVALID (.CLK(clk), .RST(rst), .LOAD(aw_set|aw_clr), .D(aw_set|~aw_clr), .Q(uncached_AWVALID) );
-   mDFF_l # (.DW(AXI_ADDR_WIDTH)) ff_uncached_AWADDR (.CLK(clk), .LOAD(aw_set), .D(axi_arw_addr_nxt), .Q(uncached_AWADDR) );
-   mDFF_l #(.DW(2)) ff_uncached_ARSIZE (.CLK(clk), .LOAD(aw_set), .D(s1o_size), .Q(uncached_AWSIZE) );
-
-   // R
-   assign uncached_RREADY = (fsm_uncached_state_ff == S_UNCACHED_WAIT_R);
-   assign hds_axi_R = (uncached_RREADY & uncached_RVALID);
-   mDFF_l #(.DW(CONFIG_DW)) ff_uncached_dout (.CLK(clk), .LOAD(hds_axi_R), .D(uncached_RDATA), .Q(s2o_uncached_dout) );
-
-   // W
-   assign uncached_WUSER = 'b0;
-   assign uncached_WLAST = 'b1;
-   assign w_set = (aw_set);
-   assign w_clr = (uncached_WVALID & uncached_WREADY);
-   mDFF_lr # (.DW(1)) ff_uncached_WVALID (.CLK(clk), .RST(rst), .LOAD(w_set|w_clr), .D(w_set|~w_clr), .Q(uncached_WVALID) );
-   mDFF_l #(.DW(CONFIG_DW/8)) ff_axi_wstrb_ff (.CLK(clk), .LOAD(w_set), .D(s1o_dc_wmsk), .Q(uncached_WSTRB) );
-   mDFF_l #(.DW(CONFIG_DW)) ff_uncached_WDATA (.CLK(clk), .LOAD(w_set), .D(s1o_dc_wdat), .Q(uncached_WDATA) );
-
-   // B
-   assign uncached_BREADY = (fsm_uncached_state_ff == S_UNCACHED_WAIT_B);
-   assign hds_axi_B = (uncached_BREADY & uncached_BVALID);
-
-   assign fsm_uncached_stall_req = (fsm_uncached_state_ff != S_UNCACHED_OUT) &
-                                    ((fsm_uncached_state_ff != S_UNCACHED_IDLE) | uncached_boot);
-
-   assign s2o_dout_32b = (fsm_uncached_state_ff==S_UNCACHED_OUT) ? s2o_uncached_dout : s2o_dc_rdat;
-
-   assign lsu_stall_req = (dc_stall_req | fsm_uncached_stall_req);
+   assign lsu_stall_req = (dc_stall_req | uncached_stall_req);
 
    // B/HW align
    assign s2o_dout_8b = ({8{s2o_vaddr[1:0]==2'b00}} & s2o_dout_32b[7:0]) |

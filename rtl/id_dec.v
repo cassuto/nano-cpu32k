@@ -173,6 +173,7 @@ module id_dec
    wire                                op_ret;
    wire                                op_wmsr;
    wire                                op_rmsr;
+   wire                                is_bcc;
    wire                                insn_rs1_imm15;
    wire                                insn_rd_rs1_imm15;
    wire                                insn_uimm17;
@@ -186,15 +187,15 @@ module id_dec
    wire [CONFIG_DW-1:0]                uimm17;
    wire [`NCPU_EPU_IOPW-1:0]           epu_opc_no_EINSN;
    
-   assign msk = ((~|id_dec) & id_valid);
+   assign msk = ((~|id_exc) & id_valid);
    
-   assign f_opcode = idu_insn[6:0] & {7{msk}}; // 7'b000000 is `add r0,r0,r0`, i.e., NOP.
-   assign f_rd = idu_insn[11:7];
-   assign f_rs1 = idu_insn[16:12];
-   assign f_rs2 = idu_insn[21:17];
-   assign f_imm15 = idu_insn[31:17];
-   assign f_imm17 = idu_insn[28:12];
-   assign f_rel25 = idu_insn[31:7];
+   assign f_opcode = id_ins[6:0] & {7{msk}}; // 7'b000000 is `add r0,r0,r0`, i.e., NOP.
+   assign f_rd = id_ins[11:7];
+   assign f_rs1 = id_ins[16:12];
+   assign f_rs2 = id_ins[21:17];
+   assign f_imm15 = id_ins[31:17];
+   assign f_imm17 = id_ins[28:12];
+   assign f_rel25 = id_ins[31:7];
 
    assign enable_asr = 1'b1;
    assign enable_asr_i = 1'b1;
@@ -299,7 +300,7 @@ module id_dec
    assign bru_opc_bus[`NCPU_BRU_BLEU] = (op_bleu);
    assign bru_opc_bus[`NCPU_BRU_JMPREL] = (op_jmp_lnk_i | op_jmp_i);
    assign bru_opc_bus[`NCPU_BRU_JMPREG] = op_jmpreg;
-   assign bcc = (op_beq | op_bne | op_bgt | op_bgtu | op_ble | op_bleu);
+   assign is_bcc = (op_beq | op_bne | op_bgt | op_bgtu | op_ble | op_bleu);
    
    // LPU opcodes
    assign lpu_opc_bus[`NCPU_LPU_MUL] = op_mul;
@@ -381,7 +382,7 @@ module id_dec
       (
          lsu_opc_bus[`NCPU_LSU_STORE] |
          op_wmsr |
-         bcc
+         is_bcc
       );
    // Insn that uses imm17 as operand.
    assign insn_uimm17 = op_mhi;
@@ -394,7 +395,7 @@ module id_dec
    // Insns that do not writeback ARF
    assign not_wb =
       (
-         op_jmp_i | bcc | 
+         op_jmp_i | is_bcc | 
          lsu_opc_bus[`NCPU_LSU_STORE] | lsu_opc_bus[`NCPU_LSU_BARR] |
          op_wmsr | epu_opc_bus[`NCPU_EPU_ESYSCALL] | epu_opc_bus[`NCPU_EPU_ERET] |
          epu_opc_bus[`NCPU_EPU_EITM] | epu_opc_bus[`NCPU_EPU_EIPF] |
@@ -406,7 +407,7 @@ module id_dec
    assign rf_we = ~not_wb & (|rf_waddr);
    assign rf_waddr = (op_jmp_lnk_i) ? `NCPU_REGNO_LNK : f_rd;
 
-   assign read_rd_as_rs2 = (lsu_opc_bus[`NCPU_LSU_STORE] | op_wmsr | bcc);
+   assign read_rd_as_rs2 = (lsu_opc_bus[`NCPU_LSU_STORE] | op_wmsr | is_bcc);
 
    // Request operand(s) from regfile when needed
    assign rf_rs1_re = ~insn_no_rops;

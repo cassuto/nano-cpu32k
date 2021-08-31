@@ -31,8 +31,6 @@ module id
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_PHT_P_NUM = 0,
    parameter                           CONFIG_BTB_P_NUM = 0,
-   parameter                           CONFIG_AW = 0,
-   parameter                           CONFIG_DW = 0,
    parameter                           CONFIG_ENABLE_MUL = 0,
    parameter                           CONFIG_ENABLE_DIV = 0,
    parameter                           CONFIG_ENABLE_DIVU = 0,
@@ -91,7 +89,7 @@ module id
    reg [IW-1:0]                        valid_msk;
    wire [IW-1:0]                       valid;
    wire [IW-1:0]                       single_fu;
-   wire [IW-1:0]                       raw_dep;
+   reg [IW-1:0]                        raw_dep;
    wire [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_alu_opc_bus;
    wire [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_lpu_opc_bus;
    wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_epu_opc_bus;
@@ -100,14 +98,15 @@ module id
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_imm;
    wire [IW-1:0]                       rf_we;
    wire [`NCPU_REG_AW*IW-1:0]          rf_waddr;
-   wire                                rf_rs1_re                     [IW-1:0];
+   wire [IW-1:0]                       rf_rs1_re;
    wire [`NCPU_REG_AW-1:0]             rf_rs1_addr                   [IW-1:0];
-   wire                                rf_rs2_re                     [IW-1:0];
+   wire [IW-1:0]                       rf_rs2_re;
    wire [`NCPU_REG_AW-1:0]             rf_rs2_addr                   [IW-1:0];
-   wire                                s1o_rf_rs2_re                 [IW-1:0];
+   wire [IW-1:0]                       s1o_rf_rs2_re;
    wire [CONFIG_DW*2*IW-1:0]           byp_dout;
-   wire [CONFIG_DW-1:0]                rop1, rop2;
-   wire [IW-1:0]                       raw_load0;
+   wire [CONFIG_DW-1:0]                rop1                          [IW-1:0];
+   wire [CONFIG_DW-1:0]                rop2                          [IW-1:0];
+   wire [2*IW-1:0]                     raw_dep_load0;
    genvar i;
    integer j, k;
    
@@ -129,7 +128,7 @@ module id
                (
                   .id_valid            (id_valid[i]),
                   .id_ins              (id_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW]),
-                  .id_exc              (id_exc[i*`FNT_EXC_W]),
+                  .id_exc              (id_exc[i*`FNT_EXC_W +: `FNT_EXC_W]),
                   .irq_async           (irq_async),
                   .single_fu           (single_fu[i]),
                   
@@ -153,7 +152,7 @@ module id
    always @(*)
       for(k=0;k<IW;k=k+1)
          begin
-            raw_dep[k] = raw_load0[k];
+            raw_dep[k] = (raw_dep_load0[(k<<1)] | raw_dep_load0[(k<<1)+1]);
             for(j=0;j<k;j=j+1)
                raw_dep[k] = raw_dep[k] | (rf_we[j] &
                                           ((rf_rs1_re[k] & (rf_rs1_addr[k]==rf_waddr[j*`NCPU_REG_AW +:`NCPU_REG_AW ])) |
@@ -199,7 +198,7 @@ module id
          .re                  (arf_RE),
          .rf_din              (arf_RDATA),
          .byp_dout            (byp_dout),
-         .raw_load0           (raw_load0)
+         .raw_dep_load0       (raw_dep_load0)
       );
    
    // Read the operand from ARF
@@ -232,7 +231,7 @@ module id
    mDFF_l # (.DW(`BPU_UPD_W*IW)) ff_ex_bpu_upd (.CLK(clk), .LOAD(p_ce), .D(id_bpu_upd), .Q(ex_bpu_upd) );
    mDFF_l # (.DW(`PC_W*IW)) ff_ex_pc (.CLK(clk), .LOAD(p_ce), .D(id_pc), .Q(ex_pc) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_ex_imm (.CLK(clk), .LOAD(p_ce), .D(s1i_imm), .Q(ex_imm) );
-   mDFF_l # (.DW(1)) ff_s1o_rf_rs2_re (.CLK(clk), .LOAD(p_ce), .D(rf_rs2_re), .Q(s1o_rf_rs2_re) );
+   mDFF_l # (.DW(IW)) ff_s1o_rf_rs2_re (.CLK(clk), .LOAD(p_ce), .D(rf_rs2_re), .Q(s1o_rf_rs2_re) );
    mDFF_l # (.DW(IW)) ff_ex_rf_we (.CLK(clk), .LOAD(p_ce), .D(rf_we), .Q(ex_rf_we) );
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_ex_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(rf_waddr), .Q(ex_rf_waddr) );
    

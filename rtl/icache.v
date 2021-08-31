@@ -27,6 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module icache
 #(
    parameter                           CONFIG_AW = 0,
+   parameter                           CONFIG_DW = 0,
    parameter                           CONFIG_P_FETCH_WIDTH = 0,
    parameter                           CONFIG_P_PAGE_SIZE = 0,
    parameter                           CONFIG_IC_P_LINE = 0,
@@ -183,7 +184,7 @@ module icache
    endgenerate
 
    // Sel the dout of matched way
-   pmux #(.SELW(1<<CONFIG_IC_P_WAYS), .DW(PAYLOAD_DW)) U_PMUX_BNPC (.sel(s2i_hit_vec), .din(s1o_payload), .dout(s1o_match_payload), .valid(s2i_hit) );
+   pmux #(.SELW(1<<CONFIG_IC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s1o_payload (.sel(s2i_hit_vec), .din(s1o_payload), .dout(s1o_match_payload), .valid(s2i_hit) );
 
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(1'b1), .Q(s1o_valid) );
    mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
@@ -353,7 +354,7 @@ module icache
    assign ar_clr = (ibus_ARREADY & ibus_ARVALID);
    assign refill_paddr = {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_AW - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
 
-   // Address adapter (truncate or fill zero)
+   // Address width adapter (truncate or fill zero)
    generate
       if (AXI_ADDR_WIDTH > CONFIG_AW)
          assign axi_ar_addr_nxt = {{AXI_ADDR_WIDTH-CONFIG_AW{1'b0}}, refill_paddr};
