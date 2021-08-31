@@ -161,6 +161,7 @@ module dcache
    wire                                s2o_free_dirty;
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_d;
    wire                                s2o_match_dirty;
+   wire [PAYLOAD_AW-1:0]               s2o_payload_addr;
    // FSM
    reg [3:0]                           fsm_state_nxt;
    wire [3:0]                          fsm_state_ff;
@@ -191,6 +192,7 @@ module dcache
    localparam [3:0] S_WRITEBACK        = 4'd4;
    localparam [3:0] S_INVALIDATE       = 4'd5;
    localparam [3:0] S_RELOAD_S1O_S2O   = 4'd6;
+   localparam [3:0] S_FLUSH            = 4'd7;
 
    genvar way, i, j;
 
@@ -266,7 +268,10 @@ module dcache
 
    // Sel the dout of matched way
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) U_PMUX_BNPC (.sel(s2o_hit_vec), .din(s2o_payload), .dout(s2o_match_payload), .valid(s2i_hit) );
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) U_PMUX_BNPC (.sel(s2o_hit_vec), .din(s2o_d), .dout(s2o_match_dirty), .valid() /* unused */ );
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) U_PMUX_BNPC (.sel(s2o_hit_vec), .din(s2o_d), .dout(s2o_match_dirty),
+                                                                     /* verilator lint_off PINCONNECTEMPTY */
+                                                                     .valid() /* unused */
+                                                                     /* verilator lint_on PINCONNECTEMPTY */);
 
    assign s1o_free_dirty = s1o_d[fsm_free_way];
 
@@ -287,6 +292,7 @@ module dcache
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
    mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_d (.CLK(clk), .LOAD(p_ce), .D(s1o_d), .Q(s2o_d) );
    mDFF_l # (.DW(1)) ff_s2o_free_dirty (.CLK(clk), .LOAD(p_ce), .D(s1o_free_dirty), .Q(s2o_free_dirty) );
+   mDFF_l # (.DW(PAYLOAD_AW)) ff_s2o_free_dirty (.CLK(clk), .LOAD(p_ce), .D(s2i_payload_addr), .Q(s2o_payload_addr) );
 
    // Main FSM
    always @(*)
@@ -461,14 +467,14 @@ module dcache
       if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
          begin
             assign s2i_wb_we = {{(1<<AXI_P_DW_BYTES)-PAYLOAD_DW/8{1'b0}}, {PAYLOAD_DW/8{fsm_state_ff == S_REFILL}}}; // FIXME?
-            assign s2i_wb_din = {{(1<<(AXI_P_DW_BYTES-PAYLOAD_P_DW_BYTES)){8'b0}}, axi_r_data_i[(1<<PAYLOAD_P_DW_BYTES)*8-1:0]};
+            assign s2i_wb_din = {{(1<<(AXI_P_DW_BYTES-PAYLOAD_P_DW_BYTES)){8'b0}}, dbus_RDATA[(1<<PAYLOAD_P_DW_BYTES)*8-1:0]};
          end
       else
          for(i=0;i<PAYLOAD_DW/8;i=i+1)
             begin : gen_aligner
                assign s2i_wb_we[i] = (fsm_state_ff == S_REFILL) &
                                        (fsm_refill_cnt[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE] == i[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE]);
-               assign s2i_wb_din[i*8 +: 8] = axi_r_data_i[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
+               assign s2i_wb_din[i*8 +: 8] = dbus_RDATA[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
             end
    endgenerate
 
@@ -491,7 +497,7 @@ module dcache
    assign dbus_ARCACHE = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
    assign dbus_ARQOS = 'b0;
    assign dbus_ARREGION = 'b0;
-   assign ar_clr = (axi_ARREADY & axi_ARVALID);
+   assign ar_clr = (dbus_ARREADY & dbus_ARVALID);
 
    // Address adapter (truncate or fill zero)
    generate
@@ -508,9 +514,9 @@ module dcache
 
 
    // AXI - R
-   assign axi_r_ready_o = (fsm_state_ff == S_REFILL);
-   assign hds_axi_R = (axi_r_valid_i & axi_r_ready_o);
-   assign hds_axi_R_last = (hds_axi_R & axi_r_last_i);
+   assign dbus_RREADY = (fsm_state_ff == S_REFILL);
+   assign hds_axi_R = (dbus_RVALID & dbus_RREADY);
+   assign hds_axi_R_last = (hds_axi_R & dbus_RLAST);
 
    // AXI - AW
    assign dbus_AWPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
@@ -523,7 +529,7 @@ module dcache
    assign dbus_AWCACHE = `AXI_AWCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
    assign dbus_AWQOS = 'b0;
    assign dbus_AWREGION = 'b0;
-   assign aw_clr = (axi_AWREADY & axi_AWVALID);
+   assign aw_clr = (dbus_AWREADY & dbus_AWVALID);
 
    mDFF_lr # (.DW(1)) ff_dbus_AWVALID (.CLK(clk), .RST(rst), .LOAD(aw_set|aw_clr), .D(aw_set|~aw_clr), .Q(dbus_AWVALID) );
    mDFF_lr # (.DW(AXI_ADDR_WIDTH)) ff_dbus_AWADDR (.CLK(clk), .RST(rst), .LOAD(aw_set), .D(axi_arw_addr_nxt), .Q(dbus_AWADDR) );
