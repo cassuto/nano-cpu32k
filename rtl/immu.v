@@ -28,6 +28,7 @@ module immu
 #(
    parameter                           CONFIG_AW = 0,
    parameter                           CONFIG_DW = 0,
+   parameter                           CONFIG_IMMU_ENABLE_UNCACHED_SEG = 0,
    parameter                           CONFIG_P_PAGE_SIZE = 0,
    parameter                           CONFIG_ITLB_P_SETS = 0
 )
@@ -39,6 +40,7 @@ module immu
    output [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn,
    output                              EITM,
    output                              EIPF,
+   output                              uncached,
    // PSR
    input                               msr_psr_imme,
    input                               msr_psr_rm,
@@ -124,6 +126,7 @@ module immu
    wire tlb_p = tlb_h_ff[0];
    wire tlb_ux = tlb_h_ff[3];
    wire tlb_rx = tlb_h_ff[4];
+   wire tlb_unc = tlb_h_ff[7];
    wire tlb_s = tlb_h_ff[8];
    wire [PPN_DW-1:0] tlb_ppn = tlb_h_ff[CONFIG_DW-1:CONFIG_DW-PPN_DW];
    wire perm_denied;
@@ -146,6 +149,16 @@ module immu
 
    assign ppn = msr_psr_imme_ff ? tlb_ppn : tgt_vpn_ff;
 
+   // If DMMU is disabled, UNC bit in page entry is not functioned.
+   // Uncached segment is always functioned as long as physical addr is valid
+   // and is within 0x80000000~0x8FFFFFFF
+generate
+   if (CONFIG_IMMU_ENABLE_UNCACHED_SEG)
+      assign uncached = (msr_psr_imme_ff & ~tlb_miss & ~perm_denied & tlb_unc) | (~EITM & ~EIPF & (ppn[CONFIG_AW-CONFIG_P_PAGE_SIZE-1 -: 4]==4'h8));
+   else
+      assign uncached = (msr_psr_imme_ff & ~tlb_miss & ~perm_denied & tlb_unc);
+endgenerate
+   
    // synthesis translate_off
 `ifndef SYNTHESIS
 

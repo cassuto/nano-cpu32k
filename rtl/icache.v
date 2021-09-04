@@ -34,6 +34,7 @@ module icache
    parameter                           CONFIG_IC_P_SETS = 0,
    parameter                           CONFIG_IC_P_WAYS = 0,
    parameter                           AXI_P_DW_BYTES  = 3,
+   parameter                           AXI_UNCACHED_P_DW_BYTES = 2,
    parameter                           AXI_ADDR_WIDTH    = 64,
    parameter                           AXI_ID_WIDTH      = 4,
    parameter                           AXI_USER_WIDTH    = 1
@@ -45,6 +46,7 @@ module icache
    output                              stall_ex_req,
    input [CONFIG_P_PAGE_SIZE-1:0]      vpo,
    input [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2,
+   input                               uncached_s2,
    input                               kill_req_s2,
    output [`NCPU_INSN_DW * (1<<CONFIG_P_FETCH_WIDTH)-1:0] ins,
    output                              valid,
@@ -96,6 +98,8 @@ module icache
    reg [PAYLOAD_AW-1:0]                s1i_payload_addr;
    wire [PAYLOAD_DW/8-1:0]             s1i_payload_we;
    wire [PAYLOAD_DW-1:0]               s1i_payload_din;
+   wire [PAYLOAD_DW/8-1:0]             s1i_uncached_we;
+   wire [PAYLOAD_DW-1:0]               s1i_uncached_din;
    // Stage 1 Output / Stage 2 Input
    wire [CONFIG_IC_P_SETS-1:0]         s1o_line_addr;
    wire [PAYLOAD_AW-1:0]               s1o_payload_addr;
@@ -109,7 +113,8 @@ module icache
    wire                                s2i_v                   [(1<<CONFIG_IC_P_WAYS)-1:0];
    wire [(1<<CONFIG_IC_P_WAYS)-1:0]    s2i_hit_vec;
    wire                                s2i_hit;
-   wire                                s2i_get_dat;
+   wire                                s2i_refill_get_dat;
+   wire                                s2i_uncached_get_dat;
    reg [PAYLOAD_DW-1:0]                s2i_ins;
    wire [CONFIG_AW-1:0]                s1o_op_inv_paddr;
    // Stage 2 Output / Stage 3 Input
@@ -124,12 +129,15 @@ module icache
    wire [CONFIG_IC_P_SETS:0]           fsm_boot_cnt_nxt_carry;
    wire [CONFIG_IC_P_LINE-1:0]         fsm_refill_cnt;
    reg [CONFIG_IC_P_LINE-1:0]          fsm_refill_cnt_nxt;
+   wire [PAYLOAD_P_DW_BYTES-1:0]       fsm_uncached_cnt;
+   reg [PAYLOAD_P_DW_BYTES:0]          fsm_uncached_cnt_nxt_carry;
+   reg                                 fsm_uncached_rd_req;
    wire                                p_ce;
-   wire [CONFIG_AW-1:0]                refill_paddr;
    // AXI
    wire                                ar_set, ar_clr;
    wire                                hds_axi_R;
    wire                                hds_axi_R_last;
+   wire [CONFIG_AW-1:0]                axi_paddr_nxt;
    wire [AXI_ADDR_WIDTH-1:0]           axi_ar_addr_nxt;
 
    localparam [2:0] S_BOOT             = 3'd0;
@@ -138,6 +146,8 @@ module icache
    localparam [2:0] S_REFILL           = 3'd3;
    localparam [2:0] S_INVALIDATE       = 3'd4;
    localparam [2:0] S_RELOAD_S1O       = 3'd5;
+   localparam [2:0] S_UNCACHED_BOOT    = 3'd6;
+   localparam [2:0] S_UNCACHED_READ    = 3'd7;
 
    genvar way, i, j;
 
@@ -200,15 +210,18 @@ module icache
    always @(*)
       begin
          fsm_state_nxt = fsm_state_ff;
+         fsm_uncached_rd_req = 'b0;
          case (fsm_state_ff)
             S_BOOT:
                if (fsm_boot_cnt_nxt_carry[CONFIG_IC_P_SETS])
                   fsm_state_nxt = S_IDLE;
 
             S_IDLE:
-               if (msr_icinv_we)
+               if (msr_icinv_we) // Invalidate one cache line
                   fsm_state_nxt = S_INVALIDATE;
-               else if (s1o_valid & ~s2i_hit & ~kill_req_s2)
+               else if (s1o_valid & uncached_s2 & ~kill_req_s2) // Uncached access
+                  fsm_state_nxt = S_UNCACHED_BOOT;
+               else if (s1o_valid & ~s2i_hit & ~uncached_s2 & ~kill_req_s2) // Miss
                   fsm_state_nxt = S_REPLACE;
 
             S_REPLACE:
@@ -223,6 +236,18 @@ module icache
 
             S_RELOAD_S1O:
                fsm_state_nxt = S_IDLE;
+               
+            S_UNCACHED_BOOT:
+               begin
+                  fsm_state_nxt = S_UNCACHED_READ;
+                  fsm_uncached_rd_req = 'b1;
+               end
+            S_UNCACHED_READ:
+               if (fsm_uncached_cnt_nxt_carry[PAYLOAD_P_DW_BYTES] & hds_axi_R)
+                  fsm_state_nxt = S_IDLE;
+               else if (hds_axi_R)
+                  fsm_uncached_rd_req = 'b1; // Start the next read transaction
+            
             default: ;
          endcase
       end
@@ -240,13 +265,21 @@ module icache
 
    // Refill counter
    always @(*)
-      if (hds_axi_R)
+      if ((fsm_state_ff == S_REFILL) & hds_axi_R)
          fsm_refill_cnt_nxt = fsm_refill_cnt + (1<<AXI_FETCH_SIZE);
       else
          fsm_refill_cnt_nxt = fsm_refill_cnt;
 
    mDFF_r # (.DW(CONFIG_IC_P_LINE)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .D(fsm_refill_cnt_nxt), .Q(fsm_refill_cnt) );
 
+   // Uncached access counter
+   always @(*)
+      if ((fsm_state_ff == S_UNCACHED_READ) & hds_axi_R)
+         fsm_uncached_cnt_nxt_carry = fsm_uncached_cnt + (1<<AXI_UNCACHED_P_DW_BYTES);
+      else
+         fsm_uncached_cnt_nxt_carry = fsm_uncached_cnt;
+   
+   mDFF_r # (.DW(PAYLOAD_P_DW_BYTES)) ff_fsm_uncached_cnt (.CLK(clk), .RST(rst), .D(fsm_uncached_cnt_nxt_carry[PAYLOAD_P_DW_BYTES-1:0]), .Q(fsm_uncached_cnt) );
 
    // MUX for tag RAM addr
    always @(*)
@@ -296,27 +329,46 @@ module icache
    assign s1i_payload_re = s1i_tag_v_re;
 
    // Aligner for payload RAM din
-   generate
-      if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
-         begin
-            assign s1i_payload_we = {PAYLOAD_DW/8{fsm_state_ff == S_REFILL}};
-            assign s1i_payload_din = ibus_RDATA[(1<<PAYLOAD_P_DW_BYTES)*8-1:0];
-         end
-      else
-         for(i=0;i<PAYLOAD_DW/8;i=i+1)
-            begin : gen_aligner
-               assign s1i_payload_we[i] = (fsm_state_ff == S_REFILL) &
-                                          (fsm_refill_cnt[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE] == i[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE]);
-               assign s1i_payload_din[i*8 +: 8] = ibus_RDATA[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
-            end
-   endgenerate
+   align_r
+      #(
+         .AXI_P_DW_BYTES               (AXI_P_DW_BYTES),
+         .PAYLOAD_P_DW_BYTES           (PAYLOAD_P_DW_BYTES),
+         .RAM_AW                       (CONFIG_IC_P_LINE)
+      )
+   U_ALIGN_R
+      (
+         .i_ax_RDATA                   (ibus_RDATA),
+         .i_ram_we                     (fsm_state_ff == S_REFILL),
+         .i_ram_addr                   (fsm_refill_cnt),
+         .o_ram_wmsk                   (s1i_payload_we),
+         .o_ram_din                    (s1i_payload_din)
+      );
+      
+   // Aligner for uncached din
+   align_r
+      #(
+         .AXI_P_DW_BYTES               (AXI_UNCACHED_P_DW_BYTES),
+         .PAYLOAD_P_DW_BYTES           (PAYLOAD_P_DW_BYTES),
+         .RAM_AW                       (AXI_ADDR_WIDTH)
+      )
+   U_ALIGN_R_UNCACHED
+      (
+         .i_ax_RDATA                   (ibus_RDATA),
+         .i_ram_we                     (fsm_state_ff == S_UNCACHED_READ),
+         .i_ram_addr                   (ibus_ARADDR),
+         .o_ram_wmsk                   (s1i_uncached_we),
+         .o_ram_din                    (s1i_uncached_din)
+      );
 
    assign stall_req = (fsm_state_ff != S_IDLE);
 
    assign stall_ex_req = (msr_icinv_we | stall_req); // Stall the EX if icache is temporarily unable to receive a new operation
 
-   assign s2i_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] ==
-                    fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);
+   assign s2i_refill_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] ==
+                                 fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);
+   
+   assign s2i_uncached_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] ==
+                                 ibus_ARADDR[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);
 
    // Output
    generate
@@ -325,17 +377,24 @@ module icache
             always @(*)
                case (fsm_state_ff)
                   S_REFILL:
-                     if (s2i_get_dat & s1i_payload_we[j])
+                     if (s2i_refill_get_dat & s1i_payload_we[j])
                         s2i_ins[j*8 +: 8] = s1i_payload_din[j*8 +: 8]; // Get data from AXI bus
                      else
                         s2i_ins[j*8 +: 8] = ins[j*8 +: 8];
+                  
+                  S_UNCACHED_READ:
+                     if (s2i_uncached_get_dat & s1i_uncached_we[j])
+                        s2i_ins[j*8 +: 8] = s1i_uncached_din[j*8 +: 8]; // Get data from AXI bus, but not write to any payload RAM
+                     else
+                        s2i_ins[j*8 +: 8] = ins[j*8 +: 8];
+                        
                   default:
                      s2i_ins[j*8 +: 8] = s1o_match_payload[j*8 +: 8]; // From the matched way
                endcase
          end
    endgenerate
 
-   mDFF_l # (.DW(PAYLOAD_DW)) ff_ins (.CLK(clk), .LOAD(p_ce|(fsm_state_ff==S_REFILL)), .D(s2i_ins), .Q(ins) );
+   mDFF_l # (.DW(PAYLOAD_DW)) ff_ins (.CLK(clk), .LOAD(p_ce|(fsm_state_ff==S_REFILL)|(fsm_state_ff==S_UNCACHED_READ)), .D(s2i_ins), .Q(ins) );
 
    assign valid = (s2o_valid & ~stall_req);
 
@@ -343,25 +402,28 @@ module icache
    assign ibus_ARPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign ibus_ARID = {AXI_ID_WIDTH{1'b0}};
    assign ibus_ARUSER = {AXI_USER_WIDTH{1'b0}};
-   assign ibus_ARLEN = ((1<<(CONFIG_IC_P_LINE-AXI_FETCH_SIZE))-1);
-   assign ibus_ARSIZE = AXI_FETCH_SIZE;
+   assign ibus_ARLEN = (fsm_state_ff==S_REFILL) ? ((1<<(CONFIG_IC_P_LINE-AXI_FETCH_SIZE))-1) : 'b0;
+   assign ibus_ARSIZE = (fsm_state_ff==S_REFILL) ? AXI_FETCH_SIZE : AXI_UNCACHED_P_DW_BYTES;
    assign ibus_ARBURST = `AXI_BURST_TYPE_INCR;
    assign ibus_ARLOCK = 'b0;
    assign ibus_ARCACHE = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
    assign ibus_ARQOS = 'b0;
    assign ibus_ARREGION = 'b0;
-   assign ar_set = (fsm_state_ff==S_REPLACE);
+   assign ar_set = ((fsm_state_ff==S_REPLACE) | fsm_uncached_rd_req);
    assign ar_clr = (ibus_ARREADY & ibus_ARVALID);
-   assign refill_paddr = {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_AW - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
+   
+   assign axi_paddr_nxt = (fsm_uncached_rd_req)
+                           ? {s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_AW - PAYLOAD_P_DW_BYTES], fsm_uncached_cnt_nxt_carry[PAYLOAD_P_DW_BYTES-1:0]}
+                           : {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_AW - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
 
    // Address width adapter (truncate or fill zero)
    generate
       if (AXI_ADDR_WIDTH > CONFIG_AW)
-         assign axi_ar_addr_nxt = {{AXI_ADDR_WIDTH-CONFIG_AW{1'b0}}, refill_paddr};
+         assign axi_ar_addr_nxt = {{AXI_ADDR_WIDTH-CONFIG_AW{1'b0}}, axi_paddr_nxt};
       else if (AXI_ADDR_WIDTH < CONFIG_AW)
-         assign axi_ar_addr_nxt = refill_paddr[AXI_ADDR_WIDTH-1:0];
+         assign axi_ar_addr_nxt = axi_paddr_nxt[AXI_ADDR_WIDTH-1:0];
       else
-         assign axi_ar_addr_nxt = refill_paddr;
+         assign axi_ar_addr_nxt = axi_paddr_nxt;
    endgenerate
 
    mDFF_lr # (.DW(1)) ff_axi_ar_valid (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(ibus_ARVALID) );
@@ -369,7 +431,7 @@ module icache
 
 
    // AXI - R
-   assign ibus_RREADY = (fsm_state_ff == S_REFILL);
+   assign ibus_RREADY = (fsm_state_ff == S_REFILL) | (fsm_state_ff == S_UNCACHED_READ);
    assign hds_axi_R = (ibus_RVALID & ibus_RREADY);
    assign hds_axi_R_last = (hds_axi_R & ibus_RLAST);
 

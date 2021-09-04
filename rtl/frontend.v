@@ -119,6 +119,7 @@ module frontend
    wire                                p_ce;
    wire [CONFIG_P_PAGE_SIZE-1:0]       vpo;
    wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2;
+   wire                                uncached_s2;
    wire                                kill_req_s2;
    wire                                pred_branch_taken;
    wire [`PC_W-1:0]                    pred_branch_tgt;
@@ -173,6 +174,7 @@ module frontend
         .CONFIG_IC_P_SETS               (CONFIG_IC_P_SETS),
         .CONFIG_IC_P_WAYS               (CONFIG_IC_P_WAYS),
         .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
+        .AXI_UNCACHED_P_DW_BYTES        (AXI_UNCACHED_P_DW_BYTES),
         .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),
         .AXI_ID_WIDTH                   (AXI_ID_WIDTH),
         .AXI_USER_WIDTH                 (AXI_USER_WIDTH))
@@ -202,6 +204,7 @@ module frontend
        .rst                             (rst),
        .vpo                             (vpo[CONFIG_P_PAGE_SIZE-1:0]),
        .ppn_s2                          (ppn_s2[CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0]),
+       .uncached_s2                     (uncached_s2),
        .kill_req_s2                     (kill_req_s2),
        .msr_icinv_nxt                   (msr_icinv_nxt[CONFIG_DW-1:0]),
        .msr_icinv_we                    (msr_icinv_we),
@@ -233,7 +236,7 @@ module frontend
          .bpu_wb_is_bcc                 (bpu_wb_is_bcc),
          .bpu_wb_is_breg                (bpu_wb_is_breg),
          .bpu_wb_is_brel                (bpu_wb_is_brel),
-         .bpu_wb_taken              (bpu_wb_taken),
+         .bpu_wb_taken                  (bpu_wb_taken),
          .bpu_wb_pc                     (bpu_wb_pc),
          .bpu_wb_npc_act                (bpu_wb_npc_act),
          .bpu_wb_upd                    (bpu_wb_upd)
@@ -255,6 +258,7 @@ module frontend
          .ppn                             (ppn_s2),
          .EITM                            (s1o_exc[`FNT_EXC_EITM]),
          .EIPF                            (s1o_exc[`FNT_EXC_EIPF]),
+         .uncached                        (uncached_s2),
          // PSR
          .msr_psr_imme                    (msr_psr_imme),
          .msr_psr_rm                      (msr_psr_rm),

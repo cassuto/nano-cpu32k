@@ -43,6 +43,7 @@ module dcache
    input                               rst,
    output                              stall_req,
    input                               req,
+   input [2:0]                         size,
    input [CONFIG_DW/8-1:0]             wmsk,
    input [CONFIG_DW-1:0]               wdat,
    input [CONFIG_P_PAGE_SIZE-1:0]      vpo,
@@ -133,6 +134,7 @@ module dcache
    wire [PAYLOAD_DW/8-1:0]             s2i_wb_we;
    wire [PAYLOAD_DW-1:0]               s2i_wb_din;
    wire                                s2i_wb_re;
+   wire [2:0]                          s1o_size;
    wire [CONFIG_DW/8-1:0]              s1o_wmsk;
    wire [CONFIG_DW-1:0]                s1o_wdat;
    wire [CONFIG_DC_P_SETS-1:0]         s1o_line_addr;
@@ -148,12 +150,12 @@ module dcache
    wire                                s2i_v                   [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2i_hit_vec;
    wire                                s2i_hit;
-   wire                                s2i_get_dat;
    wire [CONFIG_DC_P_WAYS-1:0]         s2o_fsm_free_way;
    // Stage 2 Output / Stage 3 Input
    wire                                s2o_fls;
    wire [CONFIG_DC_P_SETS-1:0]         s2o_line_addr;
    wire [CONFIG_AW-1:0]                s2o_paddr;
+   wire [CONFIG_DW/8-1:0]              s2o_wmsk;
    wire [PAYLOAD_DW*(1<<CONFIG_DC_P_WAYS)-1:0] s2o_payload;
    wire [PAYLOAD_DW-1:0]               s2o_payload_packed      [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_hit_vec;
@@ -163,6 +165,8 @@ module dcache
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_d;
    wire                                s2o_match_dirty;
    wire [PAYLOAD_AW-1:0]               s2o_payload_addr;
+   wire [2:0]                          s2o_size;
+   wire                                s2o_uncached;
    // FSM
    reg [3:0]                           fsm_state_nxt;
    wire [3:0]                          fsm_state_ff;
@@ -172,8 +176,9 @@ module dcache
    wire [CONFIG_DC_P_LINE-1:0]         fsm_refill_cnt;
    wire [CONFIG_DC_P_LINE:0]           fsm_refill_cnt_nxt_carry;
    reg [CONFIG_DC_P_LINE-1:0]          fsm_refill_cnt_nxt;
+   reg                                 fsm_uncached_req;
    wire                                p_ce;
-   wire [CONFIG_AW-1:0]                refill_paddr;
+   wire [CONFIG_AW-1:0]                axi_paddr_nxt;
    // AXI
    reg                                 ar_set, aw_set;
    wire                                ar_clr, aw_clr;
@@ -185,6 +190,9 @@ module dcache
    wire                                hds_axi_W_last;
    wire                                hds_axi_B;
    wire [AXI_ADDR_WIDTH-1:0]           axi_arw_addr_nxt;
+   wire [PAYLOAD_DW-1:0]               axi_aligned_rdata_ff;
+   wire [PAYLOAD_DW/8-1:0]             axi_aligned_rdata_ff_wmsk;
+   wire [PAYLOAD_DW-1:0]               axi_aligned_rdata_nxt;
 
    localparam [3:0] S_BOOT             = 4'd0;
    localparam [3:0] S_IDLE             = 4'd1;
@@ -194,6 +202,7 @@ module dcache
    localparam [3:0] S_INVALIDATE       = 4'd5;
    localparam [3:0] S_RELOAD_S1O_S2O   = 4'd6;
    localparam [3:0] S_FLUSH            = 4'd7;
+   localparam [3:0] S_UNCACHED_READ    = 4'd8;
 
    genvar way, i, j;
 
@@ -286,6 +295,7 @@ module dcache
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(req), .Q(s1o_valid) );
    mDFF_lr # (.DW(1)) ff_s1o_inv (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(inv), .Q(s1o_inv) );
    mDFF_lr # (.DW(1)) ff_s1o_fls (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(fls), .Q(s1o_fls) );
+   mDFF_l # (.DW(3)) ff_s1o_size (.CLK(clk), .LOAD(p_ce), .D(size), .Q(s1o_size) );
    mDFF_lr # (.DW(CONFIG_DW/8)) ff_s1o_wmsk (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(wmsk), .Q(s1o_wmsk) );
    mDFF_l # (.DW(CONFIG_DW)) ff_s1o_wdat (.CLK(clk), .LOAD(p_ce), .D(wdat), .Q(s1o_wdat) );
    mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
@@ -299,6 +309,10 @@ module dcache
    mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_d (.CLK(clk), .LOAD(p_ce), .D(s1o_d), .Q(s2o_d) );
    mDFF_l # (.DW(1)) ff_s2o_free_dirty (.CLK(clk), .LOAD(p_ce), .D(s1o_free_dirty), .Q(s2o_free_dirty) );
    mDFF_l # (.DW(PAYLOAD_AW)) ff_s2o_payload_addr (.CLK(clk), .LOAD(p_ce), .D(s2i_payload_addr), .Q(s2o_payload_addr) );
+   mDFF_l # (.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_ce), .D(s1o_size), .Q(s2o_size) );
+   mDFF_lr # (.DW(CONFIG_DW/8)) ff_s2o_wmsk (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_wmsk), .Q(s2o_wmsk) );
+   mDFF_lr # (.DW(1)) ff_s2o_use_uncached_dout (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(uncached), .Q(s2o_uncached) );
+   
 
    // Main FSM
    always @(*)
@@ -306,6 +320,7 @@ module dcache
          fsm_state_nxt = fsm_state_ff;
          ar_set = 'b0;
          aw_set = 'b0;
+         fsm_uncached_req = 'b0;
          case (fsm_state_ff)
             S_BOOT:
                if (fsm_boot_cnt_nxt_carry[CONFIG_DC_P_SETS])
@@ -317,7 +332,9 @@ module dcache
                      fsm_state_nxt = S_INVALIDATE;
                   else if (s1o_fls)
                      fsm_state_nxt = S_FLUSH;
-                  else if (~s2i_hit & ~kill_req_s2)
+                  else if (s1o_valid & uncached & ~kill_req_s2) // Uncached access
+                     fsm_state_nxt = S_UNCACHED_BOOT;
+                  else if (s1o_valid & ~s2i_hit & ~uncached & ~kill_req_s2) // Miss
                      fsm_state_nxt = S_REPLACE;
 
             S_REPLACE:
@@ -344,18 +361,30 @@ module dcache
             S_RELOAD_S1O_S2O:
                fsm_state_nxt = S_IDLE;
 
-           S_FLUSH:
+            S_FLUSH:
                begin
                   fsm_state_nxt = (s2o_match_dirty) ? S_WRITEBACK : S_IDLE;
                   aw_set = s2o_match_dirty;
                end
 
+            S_UNCACHED_BOOT:
+               begin
+                  fsm_state_nxt = (|s2o_wmsk) ? S_UNCACHED_WRITE : S_UNCACHED_READ;
+                  ar_set = ~(|s2o_wmsk);
+                  aw_set = (|s2o_wmsk);
+                  fsm_uncached_req = 'b1;
+               end
+               
+            S_UNCACHED_READ:
+               if (hds_axi_R)
+                  fsm_state_nxt = S_IDLE;
+               
             default: ;
          endcase
       end
 
    // Cache line hit and no invalidate or flush
-   assign s2i_ready = ((fsm_state_ff==S_IDLE) & s1o_valid & ~s1o_inv & ~s1o_fls & s2i_hit & ~kill_req_s2);
+   assign s2i_ready = ((fsm_state_ff==S_IDLE) & s1o_valid & ~s1o_inv & ~s1o_fls & ~uncached & s2i_hit & ~kill_req_s2);
 
    // Clock algorithm
    assign fsm_free_way_nxt = fsm_free_way + 'b1;
@@ -370,7 +399,7 @@ module dcache
 
    // Refill counter
    always @(*)
-      if (hds_axi_R | s2i_wb_re)
+      if (((fsm_state_ff==S_REFILL) & hds_axi_R) | ((fsm_state_ff==S_WRITEBACK) & s2i_wb_re))
          fsm_refill_cnt_nxt = fsm_refill_cnt_nxt_carry[CONFIG_DC_P_LINE-1:0];
       else
          fsm_refill_cnt_nxt = fsm_refill_cnt;
@@ -434,7 +463,7 @@ module dcache
    // D flag RAM write enable
    generate
       for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
-         assign s2i_d_we[way] = (s1i_tag_v_we[way] | s2i_ready);
+         assign s2i_d_we[way] = (s1i_tag_v_we[way] | (s2i_ready & s2i_hit_vec[way])); // FIXME
    endgenerate
 
    // MUX for physical addr tag to match
@@ -469,51 +498,53 @@ module dcache
                            s2i_wb_we;
 
    // Aligner for payload RAM din
-   generate
-      if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
-         begin
-            assign s2i_wb_we = {PAYLOAD_DW/8{fsm_state_ff == S_REFILL}};
-            assign s2i_wb_din = dbus_RDATA[(1<<PAYLOAD_P_DW_BYTES)*8-1:0];
-         end
-      else
-         for(i=0;i<PAYLOAD_DW/8;i=i+1)
-            begin : gen_aligner
-               assign s2i_wb_we[i] = (fsm_state_ff == S_REFILL) &
-                                       (fsm_refill_cnt[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE] == i[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE]);
-               assign s2i_wb_din[i*8 +: 8] = dbus_RDATA[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
-            end
-   endgenerate
+   align_r
+      #(
+         .AXI_P_DW_BYTES               (AXI_P_DW_BYTES),
+         .PAYLOAD_P_DW_BYTES           (PAYLOAD_P_DW_BYTES),
+         .RAM_AW                       (CONFIG_DC_P_LINE)
+      )
+   U_ALIGN_R
+      (
+         .i_axi_RDATA                  (dbus_RDATA),
+         .i_ram_we                     (fsm_state_ff == S_REFILL),
+         .i_ram_addr                   (fsm_refill_cnt),
+         .o_ram_wmsk                   (s2i_wb_we),
+         .o_ram_din                    (s2i_wb_din)
+      );
 
    assign stall_req = (fsm_state_ff != S_IDLE);
 
-   assign s2i_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_DC_P_LINE-PAYLOAD_P_DW_BYTES] ==
-                    fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_DC_P_LINE-PAYLOAD_P_DW_BYTES]);
-
    // Output
-   assign dout = s2o_match_payload;
+   assign dout = (s2o_uncached)
+                     ? axi_aligned_rdata_ff
+                     : s2o_match_payload;
 
    // AXI - AR
    assign dbus_ARPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign dbus_ARID = {AXI_ID_WIDTH{1'b0}};
    assign dbus_ARUSER = {AXI_USER_WIDTH{1'b0}};
-   assign dbus_ARLEN = ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
-   assign dbus_ARSIZE = AXI_FETCH_SIZE;
+   assign dbus_ARLEN = (fsm_state_ff==S_UNCACHED_READ) ? 'b0 : ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
+   assign dbus_ARSIZE = (fsm_state_ff==S_UNCACHED_READ) ? s2o_size : AXI_FETCH_SIZE;
    assign dbus_ARBURST = `AXI_BURST_TYPE_INCR;
    assign dbus_ARLOCK = 'b0;
    assign dbus_ARCACHE = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
    assign dbus_ARQOS = 'b0;
    assign dbus_ARREGION = 'b0;
    assign ar_clr = (dbus_ARREADY & dbus_ARVALID);
-   assign refill_paddr = {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_AW - CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}}};
+   
+   assign axi_paddr_nxt = (fsm_uncached_req)
+                           ? s2o_paddr
+                           : {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_AW - CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}}};
 
    // Address width adapter (truncate or fill zero)
    generate
       if (AXI_ADDR_WIDTH > CONFIG_AW)
-         assign axi_arw_addr_nxt = {{AXI_ADDR_WIDTH-CONFIG_AW{1'b0}}, refill_paddr};
+         assign axi_arw_addr_nxt = {{AXI_ADDR_WIDTH-CONFIG_AW{1'b0}}, axi_paddr_nxt};
       else if (AXI_ADDR_WIDTH < CONFIG_AW)
-         assign axi_arw_addr_nxt = refill_paddr[AXI_ADDR_WIDTH-1:0];
+         assign axi_arw_addr_nxt = axi_paddr_nxt[AXI_ADDR_WIDTH-1:0];
       else
-         assign axi_arw_addr_nxt = refill_paddr;
+         assign axi_arw_addr_nxt = axi_paddr_nxt;
    endgenerate
 
    mDFF_lr # (.DW(1)) ff_dbus_ARVALID (.CLK(clk), .RST(rst), .LOAD(ar_set|ar_clr), .D(ar_set|~ar_clr), .Q(dbus_ARVALID) );
@@ -521,16 +552,42 @@ module dcache
 
 
    // AXI - R
-   assign dbus_RREADY = (fsm_state_ff == S_REFILL);
+   assign dbus_RREADY = (fsm_state_ff == S_REFILL) | (fsm_state_ff == S_UNCACHED_READ);
    assign hds_axi_R = (dbus_RVALID & dbus_RREADY);
    assign hds_axi_R_last = (hds_axi_R & dbus_RLAST);
+   
+   // Aligner for uncached R
+   generate
+      if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
+         begin : gen_uncached_align
+            align_r
+               #(
+                  .AXI_P_DW_BYTES               (AXI_P_DW_BYTES),
+                  .PAYLOAD_P_DW_BYTES           (PAYLOAD_P_DW_BYTES),
+                  .RAM_AW                       (AXI_ADDR_WIDTH)
+               )
+            U_ALIGN_UNUCACHED_R
+               (
+                  .i_axi_RDATA                  (dbus_RDATA),
+                  .i_ram_we                     (hds_axi_R),
+                  .i_ram_addr                   (dbus_ARADDR),
+                  .o_ram_wmsk                   (axi_aligned_rdata_ff_wmsk),
+                  .o_ram_din                    (axi_aligned_rdata_nxt)
+               );
+               
+            mDFF_l # (.DW((1<<AXI_P_DW_BYTES)*8)) ff_axi_aligned_rdata (.CLK(clk), .LOAD(|axi_aligned_rdata_ff_wmsk), .D(axi_aligned_rdata_nxt), .Q(axi_aligned_rdata_ff) );
+         end
+      else
+         initial $fatal(1, "Unsupported bitwidth for uncached device!");
+   endgenerate
+   
 
    // AXI - AW
    assign dbus_AWPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign dbus_AWID = {AXI_ID_WIDTH{1'b0}};
    assign dbus_AWUSER = {AXI_USER_WIDTH{1'b0}};
-   assign dbus_AWLEN = ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
-   assign dbus_AWSIZE = AXI_FETCH_SIZE;
+   assign dbus_AWLEN = (fsm_state_ff==S_UNCACHED_READ) ? 'b0 : ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
+   assign dbus_AWSIZE = (fsm_state_ff==S_UNCACHED_READ) ? s2o_size : AXI_FETCH_SIZE;
    assign dbus_AWBURST = `AXI_BURST_TYPE_INCR;
    assign dbus_AWLOCK = 'b0;
    assign dbus_AWCACHE = `AXI_AWCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
@@ -545,20 +602,20 @@ module dcache
    assign dbus_WUSER = 'b0;
 
    // Aligner for AXI W
-   generate
-      if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
-         begin
-            assign dbus_WSTRB = {{(1<<AXI_P_DW_BYTES)-PAYLOAD_DW/8{1'b0}}, {PAYLOAD_DW/8{fsm_state_ff == S_WRITEBACK}}}; // FIXME?
-            assign dbus_WDATA = {{(1<<AXI_P_DW_BYTES)-(1<<PAYLOAD_P_DW_BYTES){8'b0}}, s2o_wb_payload}; // FIXME?
-         end
-      else
-         for(i=0;i<PAYLOAD_DW/8;i=i+1)
-            begin : gen_aligner
-               assign dbus_WSTRB[i] = (fsm_state_ff == S_WRITEBACK) &
-                                       (fsm_refill_cnt[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE] == i[AXI_FETCH_SIZE +: PAYLOAD_P_DW_BYTES-AXI_FETCH_SIZE]);
-               assign dbus_WDATA[i*8 +: 8] = s2o_wb_payload[(i%(1<<AXI_FETCH_SIZE))*8 +: 8];
-            end
-   endgenerate
+   align_w
+      #(
+         .AXI_P_DW_BYTES                     (AXI_P_DW_BYTES),
+         .PAYLOAD_P_DW_BYTES                 (PAYLOAD_P_DW_BYTES),
+         .I_AXI_ADDR_AW                      (CONFIG_DC_P_LINE)
+      )
+   U_ALIGN_W
+      (
+         .i_axi_din                          (s2o_wb_payload),
+         .i_axi_we                           (fsm_state_ff == S_WRITEBACK),
+         .i_axi_addr                         (fsm_refill_cnt),
+         .o_axi_WSTRB                        (dbus_WSTRB),
+         .o_axi_WDATA                        (dbus_WDATA)
+      );
 
    // Look ahead one address, since payload RAM takes 1 cycle to output the result
    assign s2i_wb_re = (wvalid_set | hds_axi_W);
@@ -567,7 +624,8 @@ module dcache
    assign wvalid_clr = (hds_axi_W_last);
    mDFF_lr #(.DW(1)) ff_dbus_WVALID (.CLK(clk), .RST(rst), .LOAD(wvalid_set|wvalid_clr), .D(wvalid_set|~wvalid_clr), .Q(dbus_WVALID) );
 
-   assign wlast_set = (s2i_wb_re & fsm_refill_cnt_nxt_carry[CONFIG_DC_P_LINE]);
+   assign wlast_set = ((fsm_state_ff==S_WRITEBACK) & (s2i_wb_re & fsm_refill_cnt_nxt_carry[CONFIG_DC_P_LINE])) |
+                        (fsm_uncached_req);
    assign wlast_clr = (wvalid_clr);
    mDFF_lr #(.DW(1)) ff_dbus_WLAST (.CLK(clk), .RST(rst), .LOAD(wlast_set|wlast_clr), .D(wlast_set|~wlast_clr), .Q(dbus_WLAST) );
 

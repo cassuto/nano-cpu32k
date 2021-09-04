@@ -201,7 +201,20 @@ module ex_lsu_unc_fsm
    generate
       if (CONFIG_P_DW_BYTES <= AXI_P_DW_BYTES)
          begin
-            assign axi_uncached_din = uncached_RDATA[CONFIG_DW-1:0];
+            align_r
+               #(
+                  .AXI_P_DW_BYTES                     (AXI_P_DW_BYTES),
+                  .PAYLOAD_P_DW_BYTES                 (CONFIG_P_DW_BYTES),
+                  .RAM_AW                             (AXI_ADDR_WIDTH)
+               )
+            U_ALIGN_R
+               (
+                  .i_axi_RDATA                        (uncached_RDATA),
+                  .i_ram_we                           ('b0),
+                  .i_ram_addr                         (uncached_ARADDR),
+                  .o_ram_wmsk                         (),
+                  .o_ram_din                          (axi_uncached_din)
+               );
          end
       else
          initial $fatal(1, "Unsupported bitwidth");
@@ -221,8 +234,18 @@ module ex_lsu_unc_fsm
    generate
       if (CONFIG_P_DW_BYTES <= AXI_P_DW_BYTES)
          begin
-            assign axi_uncached_WSTRB_nxt = {{(1<<AXI_P_DW_BYTES)-CONFIG_DW/8{1'b0}}, wmsk}; // FIXME?
-            assign axi_uncached_WDATA_nxt = {{(1<<AXI_P_DW_BYTES)-(1<<CONFIG_P_DW_BYTES){8'b0}}, wdat}; // FIXME?
+            localparam AXI_BYTES                = (1<<AXI_P_DW_BYTES);
+            localparam PAYLOAD_BYTES            = (1<<CONFIG_P_DW_BYTES);
+            localparam WIN_NUM = (AXI_BYTES/PAYLOAD_BYTES);
+            localparam WIN_P_NUM = (AXI_P_DW_BYTES - CONFIG_P_DW_BYTES);
+            localparam WIN_DW = (PAYLOAD_BYTES*8);
+            localparam WIN_P_DW = (CONFIG_P_DW_BYTES+3);
+         
+            for(i=0;i<WIN_NUM;i=i+1)
+               assign axi_uncached_WSTRB_nxt[i*(WIN_DW/8) +: (WIN_DW/8)] = wmsk & {(WIN_DW/8){axi_arw_addr_nxt[WIN_P_DW +: WIN_P_NUM] == i}};
+            
+            for(i=0;i<WIN_NUM;i=i+1)
+               assign axi_uncached_WDATA_nxt[i*WIN_DW +: WIN_DW] = wdat;
          end
       else
          initial $fatal(1, "Unsupported bitwidth");

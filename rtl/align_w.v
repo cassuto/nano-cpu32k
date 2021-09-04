@@ -24,18 +24,18 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module align_r
+module align_w
 #(
    parameter                           AXI_P_DW_BYTES = 0,
    parameter                           PAYLOAD_P_DW_BYTES = 0,
-   parameter                           RAM_AW = 0
+   parameter                           I_AXI_ADDR_AW = 0
 )
 (
-   input [(1<<AXI_P_DW_BYTES)*8-1:0]   i_axi_RDATA,
-   input                               i_ram_we,
-   input [RAM_AW-1:0]                  i_ram_addr,
-   output [(1<<PAYLOAD_P_DW_BYTES)-1:0] o_ram_wmsk,
-   output [(1<<PAYLOAD_P_DW_BYTES)*8-1:0] o_ram_din
+   input [(1<<PAYLOAD_P_DW_BYTES)*8-1:0] i_axi_din,
+   input                               i_axi_we,
+   input [I_AXI_ADDR_AW-1:0]           i_axi_addr,
+   output [(1<<AXI_P_DW_BYTES)-1:0]    o_axi_WSTRB,
+   output [(1<<AXI_P_DW_BYTES)*8-1:0]  o_axi_WDATA
 );
    localparam AXI_BYTES                = (1<<AXI_P_DW_BYTES);
    localparam PAYLOAD_BYTES            = (1<<PAYLOAD_P_DW_BYTES);
@@ -48,14 +48,15 @@ module align_r
                localparam WIN_P_NUM = (AXI_P_DW_BYTES - PAYLOAD_P_DW_BYTES);
                localparam WIN_DW = (PAYLOAD_BYTES*8);
                localparam WIN_P_DW_BYTES = (PAYLOAD_P_DW_BYTES);
+               wire [(1<<AXI_P_DW_BYTES)-1:0] wstrb_tmp;
+            
+               for(i=0;i<WIN_NUM;i=i+1)
+                  assign wstrb_tmp[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_axi_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}};
                
-               wire [WIN_DW-1:0] RDATA_win [WIN_NUM-1:0];
+               assign o_axi_WSTRB = ({(1<<AXI_P_DW_BYTES){i_axi_we}} & wstrb_tmp);
                
                for(i=0;i<WIN_NUM;i=i+1)
-                  assign RDATA_win[i] = i_axi_RDATA[i*WIN_DW +: WIN_DW];
-               
-               assign o_ram_din = RDATA_win[i_ram_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
-               assign o_ram_wmsk = {(1<<PAYLOAD_P_DW_BYTES){i_ram_we}};
+                  assign o_axi_WDATA[i*WIN_DW +: WIN_DW] = i_axi_din;
             end
       else
          begin
@@ -63,15 +64,14 @@ module align_r
             localparam WIN_P_NUM = (PAYLOAD_P_DW_BYTES - AXI_P_DW_BYTES);
             localparam WIN_DW = (AXI_BYTES*8);
             localparam WIN_P_DW_BYTES = (AXI_P_DW_BYTES);
-            wire [(1<<PAYLOAD_P_DW_BYTES)-1:0] ram_wmsk_tmp;
+            wire [WIN_DW-1:0] i_axi_din_win [WIN_NUM-1:0];
             
             for(i=0;i<WIN_NUM;i=i+1)
-               assign ram_wmsk_tmp[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_ram_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}};
-
-            assign o_ram_wmsk = ({(1<<PAYLOAD_P_DW_BYTES){i_ram_we}} & ram_wmsk_tmp);
-                                  
-            for(i=0;i<WIN_NUM;i=i+1)
-               assign o_ram_din[i*WIN_DW +: WIN_DW] = i_axi_RDATA;
+               assign i_axi_din_win[i] = i_axi_din[i*WIN_DW +: WIN_DW];
+               
+            assign o_axi_WDATA = i_axi_din_win[i_axi_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            
+            assign o_axi_WSTRB = {(1<<AXI_P_DW_BYTES){i_axi_we}};
          end
    endgenerate
 
