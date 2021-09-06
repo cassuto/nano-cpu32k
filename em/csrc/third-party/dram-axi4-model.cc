@@ -89,6 +89,7 @@ void DRAM::pmem_write(uint64_t waddr, uint64_t wdata)
 }
 
 // currently does not support masked read or write
+#include "emu.hh"
 
 void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
 {
@@ -96,6 +97,8 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
     uint64_t beatsize = 1 << ar.size;
     uint8_t beatlen = ar.len + 1;
     uint64_t transaction_size = beatsize * beatlen;
+    extern Emu *emu;
+    emu->finish();
     assert((transaction_size % sizeof(uint64_t)) == 0);
     // axi burst FIXED
     if (ar.burst == 0x0)

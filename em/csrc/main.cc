@@ -140,7 +140,7 @@ static const char *optstirng = "-b:a:r:d:";
 static Args args;
 static CPU *emu_CPU;
 static DeviceTree *emu_dev;
-static Emu *emu;
+ Emu *emu;
 static uint64_t device_clk;
 
 static int
