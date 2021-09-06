@@ -42,7 +42,12 @@ module align_r
    genvar i;
    
    generate
-      if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
+      if (PAYLOAD_P_DW_BYTES == AXI_P_DW_BYTES)
+            begin
+               assign o_ram_din = i_axi_RDATA;
+               assign o_ram_wmsk = {(1<<PAYLOAD_P_DW_BYTES){i_ram_we}};
+            end
+      else if (PAYLOAD_P_DW_BYTES < AXI_P_DW_BYTES)
             begin
                localparam WIN_NUM = (AXI_BYTES/PAYLOAD_BYTES);
                localparam WIN_P_NUM = (AXI_P_DW_BYTES - PAYLOAD_P_DW_BYTES);

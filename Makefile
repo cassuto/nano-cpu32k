@@ -2,20 +2,19 @@
 
 GTKWAVE = e:/gtkwave-win32/gtkwave/bin/gtkwave
 
-NUM_JOBS := 8
-SRC_DIR := rtl
-LIB_DIR := rtl/lib
-FABRIC_DIR := rtl/fabric
-TESTBENCH_DIR := testbench
-EM_DIR := em
-SRCS := $(foreach x,${SRC_DIR}, $(wildcard $(addprefix ${x}/*,.v) ) )
-SRCS += $(foreach x,${LIB_DIR}, $(wildcard $(addprefix ${x}/*,.v) ) )
-SRCS += $(foreach x,${FABRIC_DIR}, $(wildcard $(addprefix ${x}/*,.v) ) )
+NUM_JOBS = 8
+SRC_DIR = ./rtl
+TESTBENCH_DIR = testbench
+EM_DIR = em
+SRCS = $(foreach x,$(SRC_DIR), $(wildcard $(addprefix ${x}/*,.v) ) )
+SRCS += $(foreach x,$(SRC_DIR)/lib, $(wildcard $(addprefix ${x}/*,.v) ) )
+SRCS += $(foreach x,$(SRC_DIR)/fabric, $(wildcard $(addprefix ${x}/*,.v) ) )
+SRCS += $(foreach x,$(SRC_DIR)/port, $(wildcard $(addprefix ${x}/*,.v) ) )
 
 # Emulator
-EM_CXXFLAGS :=
-EM_CXXFLAGS :=
-EM_LDFLAGS :=
+EM_CXXFLAGS =
+EM_CXXFLAGS =
+EM_LDFLAGS =
 
 # DRAMsim3
 DRAMSIM3_HOME = em/third-party/DRAMsim3
@@ -31,12 +30,12 @@ CFLAGS = -Wall -g -I../em $(EM_CXXFLAGS)
 LDFLAGS = -g $(EM_LDFLAGS)
 
 # Simulation (Difftest)
-SIM_TOPLEVEL := simtop
-SIM_FLAGS := +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -LDFLAGS "$(LDFLAGS)" -CFLAGS "$(CFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
-SIM_SRCS := $(SRCS) \
+SIM_TOPLEVEL = simtop
+SIM_FLAGS = +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -LDFLAGS "$(LDFLAGS)" -CFLAGS "$(CFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
+SIM_SRCS = $(SRCS) \
 			$(TESTBENCH_DIR)/simtop.v
 # CPU Model
-SIM_CPPS := $(EM_DIR)/main.cc \
+SIM_CPPS = $(EM_DIR)/main.cc \
 			$(EM_DIR)/cpu.cc \
 			$(EM_DIR)/cache.cc \
 			$(EM_DIR)/memory.cc \
@@ -55,13 +54,13 @@ SIM_CPPS += $(EM_DIR)/third-party/axi4.cc \
 			$(EM_DIR)/third-party/dram-axi4-model.cc
 
 # Lint
-LINT_TOPLEVEL := ncpu64k
-LINT_SRCS := $(SRCS)
+LINT_TOPLEVEL = ncpu64k
+LINT_SRCS = $(SRCS)
 
 # YSYX Information
-MYINFO_FILE := myinfo.txt
-ID :=$(shell sed '/^ID=/!d;s/.*=//' $(MYINFO_FILE))
-NAME :=$(shell sed '/^Name=/!d;s/.*=//' $(MYINFO_FILE))
+MYINFO_FILE = myinfo.txt
+ID =$(shell sed '/^ID=/!d;s/.*=//' $(MYINFO_FILE))
+NAME =$(shell sed '/^Name=/!d;s/.*=//' $(MYINFO_FILE))
 
 build: # $(LIB_DRAMSIM3)
 	verilator --cc -Wall --top-module $(SIM_TOPLEVEL) $(FLAGS) $(SIM_FLAGS) --build $(SIM_SRCS) $(SIM_CPPS)

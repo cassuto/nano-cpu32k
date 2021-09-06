@@ -47,6 +47,7 @@ module ncpu64k
    parameter                           CONFIG_ENABLE_MOD = 0,
    parameter                           CONFIG_ENABLE_MODU = 0,
    parameter                           CONFIG_ENABLE_ASR = 0,
+   parameter                           CONFIG_IMMU_ENABLE_UNCACHED_SEG = 0,
    parameter                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 0,
    parameter                           CONFIG_DTLB_P_SETS = 7,
    parameter                           CONFIG_ITLB_P_SETS = 7,
@@ -60,6 +61,7 @@ module ncpu64k
    parameter [CONFIG_AW-1:0]           CONFIG_EALIGN_VECTOR = 0,
    parameter                           CONFIG_NUM_IRQ = 32,
    parameter                           AXI_P_DW_BYTES    = 3,
+   parameter                           AXI_UNCACHED_P_DW_BYTES = 2,
    parameter                           AXI_ADDR_WIDTH    = 64,
    parameter                           AXI_ID_WIDTH      = 4,
    parameter                           AXI_USER_WIDTH    = 1
@@ -140,58 +142,9 @@ module ncpu64k
    input [AXI_ID_WIDTH-1:0]            dbus_BID,
    input [AXI_USER_WIDTH-1:0]          dbus_BUSER,
    
-   // AXI Master (Uncached access)
-   input                               uncached_ARREADY,
-   output                              uncached_ARVALID,
-   output [AXI_ADDR_WIDTH-1:0]         uncached_ARADDR,
-   output [2:0]                        uncached_ARPROT,
-   output [AXI_ID_WIDTH-1:0]           uncached_ARID,
-   output [AXI_USER_WIDTH-1:0]         uncached_ARUSER,
-   output [7:0]                        uncached_ARLEN,
-   output [2:0]                        uncached_ARSIZE,
-   output [1:0]                        uncached_ARBURST,
-   output                              uncached_ARLOCK,
-   output [3:0]                        uncached_ARCACHE,
-   output [3:0]                        uncached_ARQOS,
-   output [3:0]                        uncached_ARREGION,
-
-   output                              uncached_RREADY,
-   input                               uncached_RVALID,
-   input  [(1<<AXI_P_DW_BYTES)*8-1:0]  uncached_RDATA,
-   input  [1:0]                        uncached_RRESP,
-   input                               uncached_RLAST,
-   input  [AXI_ID_WIDTH-1:0]           uncached_RID,
-   input  [AXI_USER_WIDTH-1:0]         uncached_RUSER,
-
-   input                               uncached_AWREADY,
-   output                              uncached_AWVALID,
-   output [AXI_ADDR_WIDTH-1:0]         uncached_AWADDR,
-   output [2:0]                        uncached_AWPROT,
-   output [AXI_ID_WIDTH-1:0]           uncached_AWID,
-   output [AXI_USER_WIDTH-1:0]         uncached_AWUSER,
-   output [7:0]                        uncached_AWLEN,
-   output [2:0]                        uncached_AWSIZE,
-   output [1:0]                        uncached_AWBURST,
-   output                              uncached_AWLOCK,
-   output [3:0]                        uncached_AWCACHE,
-   output [3:0]                        uncached_AWQOS,
-   output [3:0]                        uncached_AWREGION,
-
-   input                               uncached_WREADY,
-   output                              uncached_WVALID,
-   output [(1<<AXI_P_DW_BYTES)*8-1:0]  uncached_WDATA,
-   output [(1<<AXI_P_DW_BYTES)-1:0]    uncached_WSTRB,
-   output                              uncached_WLAST,
-   output [AXI_USER_WIDTH-1:0]         uncached_WUSER,
-
-   output                              uncached_BREADY,
-   input                               uncached_BVALID,
-   input [1:0]                         uncached_BRESP,
-   input [AXI_ID_WIDTH-1:0]            uncached_BID,
-   input [AXI_USER_WIDTH-1:0]          uncached_BUSER,
-   
    // IRQs
-   input [CONFIG_NUM_IRQ-1:0]          irqs
+   input [CONFIG_NUM_IRQ-1:0]          irqs,
+   output                              tsc_irq
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -222,15 +175,15 @@ module ncpu64k
    wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_waddr;// From U_ID of id.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_we;// From U_ID of id.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_valid;// From U_ID of id.v
-   wire                 icop_stall_req;         // From U_IFU of frontend.v
-   wire [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd;// From U_IFU of frontend.v
-   wire [`FNT_EXC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc;// From U_IFU of frontend.v
-   wire [`NCPU_INSN_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins;// From U_IFU of frontend.v
-   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc;// From U_IFU of frontend.v
+   wire                 icop_stall_req;         // From U_FNT of frontend.v
+   wire [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd;// From U_FNT of frontend.v
+   wire [`FNT_EXC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc;// From U_FNT of frontend.v
+   wire [`NCPU_INSN_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins;// From U_FNT of frontend.v
+   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc;// From U_FNT of frontend.v
    wire [CONFIG_P_ISSUE_WIDTH:0] id_pop_cnt;    // From U_ID of id.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid;// From U_IFU of frontend.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid;// From U_FNT of frontend.v
    wire                 irq_async;              // From U_EX of ex.v
-   wire [CONFIG_DW-1:0] msr_icid;               // From U_IFU of frontend.v
+   wire [CONFIG_DW-1:0] msr_icid;               // From U_FNT of frontend.v
    wire [CONFIG_DW-1:0] msr_icinv_nxt;          // From U_EX of ex.v
    wire                 msr_icinv_we;           // From U_EX of ex.v
    wire [CONFIG_ITLB_P_SETS-1:0] msr_imm_tlbh_idx;// From U_EX of ex.v
@@ -239,7 +192,7 @@ module ncpu64k
    wire [CONFIG_ITLB_P_SETS-1:0] msr_imm_tlbl_idx;// From U_EX of ex.v
    wire [CONFIG_DW-1:0] msr_imm_tlbl_nxt;       // From U_EX of ex.v
    wire                 msr_imm_tlbl_we;        // From U_EX of ex.v
-   wire [CONFIG_DW-1:0] msr_immid;              // From U_IFU of frontend.v
+   wire [CONFIG_DW-1:0] msr_immid;              // From U_FNT of frontend.v
    wire                 msr_psr_imme;           // From U_EX of ex.v
    wire                 msr_psr_rm;             // From U_EX of ex.v
    wire                 ro_ex_s1_load0;         // From U_EX of ex.v
@@ -274,11 +227,13 @@ module ncpu64k
         .CONFIG_IC_P_WAYS               (CONFIG_IC_P_WAYS),
         .CONFIG_PHT_P_NUM               (CONFIG_PHT_P_NUM),
         .CONFIG_BTB_P_NUM               (CONFIG_BTB_P_NUM),
+        .CONFIG_IMMU_ENABLE_UNCACHED_SEG(CONFIG_IMMU_ENABLE_UNCACHED_SEG),
         .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
+        .AXI_UNCACHED_P_DW_BYTES        (AXI_UNCACHED_P_DW_BYTES),
         .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),
         .AXI_ID_WIDTH                   (AXI_ID_WIDTH),
         .AXI_USER_WIDTH                 (AXI_USER_WIDTH))
-   U_IFU
+   U_FNT
       (/*AUTOINST*/
        // Outputs
        .id_valid                        (id_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
@@ -455,6 +410,7 @@ module ncpu64k
        .bpu_wb_npc_act                  (bpu_wb_npc_act[`PC_W-1:0]),
        .bpu_wb_upd                      (bpu_wb_upd[`BPU_UPD_W-1:0]),
        .irq_async                       (irq_async),
+       .tsc_irq                         (tsc_irq),
        .msr_psr_imme                    (msr_psr_imme),
        .msr_psr_rm                      (msr_psr_rm),
        .msr_imm_tlbl_idx                (msr_imm_tlbl_idx[CONFIG_ITLB_P_SETS-1:0]),
@@ -496,37 +452,6 @@ module ncpu64k
        .dbus_WLAST                      (dbus_WLAST),
        .dbus_WUSER                      (dbus_WUSER[AXI_USER_WIDTH-1:0]),
        .dbus_BREADY                     (dbus_BREADY),
-       .uncached_ARVALID                (uncached_ARVALID),
-       .uncached_ARADDR                 (uncached_ARADDR[AXI_ADDR_WIDTH-1:0]),
-       .uncached_ARPROT                 (uncached_ARPROT[2:0]),
-       .uncached_ARID                   (uncached_ARID[AXI_ID_WIDTH-1:0]),
-       .uncached_ARUSER                 (uncached_ARUSER[AXI_USER_WIDTH-1:0]),
-       .uncached_ARLEN                  (uncached_ARLEN[7:0]),
-       .uncached_ARSIZE                 (uncached_ARSIZE[2:0]),
-       .uncached_ARBURST                (uncached_ARBURST[1:0]),
-       .uncached_ARLOCK                 (uncached_ARLOCK),
-       .uncached_ARCACHE                (uncached_ARCACHE[3:0]),
-       .uncached_ARQOS                  (uncached_ARQOS[3:0]),
-       .uncached_ARREGION               (uncached_ARREGION[3:0]),
-       .uncached_RREADY                 (uncached_RREADY),
-       .uncached_AWVALID                (uncached_AWVALID),
-       .uncached_AWADDR                 (uncached_AWADDR[AXI_ADDR_WIDTH-1:0]),
-       .uncached_AWPROT                 (uncached_AWPROT[2:0]),
-       .uncached_AWID                   (uncached_AWID[AXI_ID_WIDTH-1:0]),
-       .uncached_AWUSER                 (uncached_AWUSER[AXI_USER_WIDTH-1:0]),
-       .uncached_AWLEN                  (uncached_AWLEN[7:0]),
-       .uncached_AWSIZE                 (uncached_AWSIZE[2:0]),
-       .uncached_AWBURST                (uncached_AWBURST[1:0]),
-       .uncached_AWLOCK                 (uncached_AWLOCK),
-       .uncached_AWCACHE                (uncached_AWCACHE[3:0]),
-       .uncached_AWQOS                  (uncached_AWQOS[3:0]),
-       .uncached_AWREGION               (uncached_AWREGION[3:0]),
-       .uncached_WVALID                 (uncached_WVALID),
-       .uncached_WDATA                  (uncached_WDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
-       .uncached_WSTRB                  (uncached_WSTRB[(1<<AXI_P_DW_BYTES)-1:0]),
-       .uncached_WLAST                  (uncached_WLAST),
-       .uncached_WUSER                  (uncached_WUSER[AXI_USER_WIDTH-1:0]),
-       .uncached_BREADY                 (uncached_BREADY),
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
@@ -559,20 +484,7 @@ module ncpu64k
        .dbus_BVALID                     (dbus_BVALID),
        .dbus_BRESP                      (dbus_BRESP[1:0]),
        .dbus_BID                        (dbus_BID[AXI_ID_WIDTH-1:0]),
-       .dbus_BUSER                      (dbus_BUSER[AXI_USER_WIDTH-1:0]),
-       .uncached_ARREADY                (uncached_ARREADY),
-       .uncached_RVALID                 (uncached_RVALID),
-       .uncached_RDATA                  (uncached_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
-       .uncached_RRESP                  (uncached_RRESP[1:0]),
-       .uncached_RLAST                  (uncached_RLAST),
-       .uncached_RID                    (uncached_RID[AXI_ID_WIDTH-1:0]),
-       .uncached_RUSER                  (uncached_RUSER[AXI_USER_WIDTH-1:0]),
-       .uncached_AWREADY                (uncached_AWREADY),
-       .uncached_WREADY                 (uncached_WREADY),
-       .uncached_BVALID                 (uncached_BVALID),
-       .uncached_BRESP                  (uncached_BRESP[1:0]),
-       .uncached_BID                    (uncached_BID[AXI_ID_WIDTH-1:0]),
-       .uncached_BUSER                  (uncached_BUSER[AXI_USER_WIDTH-1:0]));
+       .dbus_BUSER                      (dbus_BUSER[AXI_USER_WIDTH-1:0]));
    
    cmt
       #(/*AUTOINSTPARAM*/

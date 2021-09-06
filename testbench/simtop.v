@@ -1,7 +1,7 @@
 `define AXI_TOP_INTERFACE(name) io_memAXI_0_``name
 
 `define AXI_P_DW_BYTES      3
-`define AXI_ADDR_WIDTH      64
+`define AXI_ADDR_WIDTH      32
 `define AXI_DATA_WIDTH      ((1<<`AXI_P_DW_BYTES)*8)
 `define AXI_ID_WIDTH        4
 `define AXI_USER_WIDTH      1
@@ -75,236 +75,206 @@ module simtop
    input  [`AXI_USER_WIDTH-1:0]        `AXI_TOP_INTERFACE(r_bits_user)
 );
    
-   wire clk;
-   wire rst;
+   /*AUTOWIRE*/
+   // Beginning of automatic wires (for undeclared instantiated-module outputs)
+   wire [31:0]          io_master_araddr;       // From U_DUT of ysyx_20210479.v
+   wire [1:0]           io_master_arburst;      // From U_DUT of ysyx_20210479.v
+   wire [3:0]           io_master_arid;         // From U_DUT of ysyx_20210479.v
+   wire [7:0]           io_master_arlen;        // From U_DUT of ysyx_20210479.v
+   wire [2:0]           io_master_arsize;       // From U_DUT of ysyx_20210479.v
+   wire                 io_master_arvalid;      // From U_DUT of ysyx_20210479.v
+   wire [31:0]          io_master_awaddr;       // From U_DUT of ysyx_20210479.v
+   wire [1:0]           io_master_awburst;      // From U_DUT of ysyx_20210479.v
+   wire [3:0]           io_master_awid;         // From U_DUT of ysyx_20210479.v
+   wire [7:0]           io_master_awlen;        // From U_DUT of ysyx_20210479.v
+   wire [2:0]           io_master_awsize;       // From U_DUT of ysyx_20210479.v
+   wire                 io_master_awvalid;      // From U_DUT of ysyx_20210479.v
+   wire                 io_master_bready;       // From U_DUT of ysyx_20210479.v
+   wire                 io_master_rready;       // From U_DUT of ysyx_20210479.v
+   wire [63:0]          io_master_wdata;        // From U_DUT of ysyx_20210479.v
+   wire                 io_master_wlast;        // From U_DUT of ysyx_20210479.v
+   wire [7:0]           io_master_wstrb;        // From U_DUT of ysyx_20210479.v
+   wire                 io_master_wvalid;       // From U_DUT of ysyx_20210479.v
+   wire                 io_slave_arready;       // From U_DUT of ysyx_20210479.v
+   wire                 io_slave_awready;       // From U_DUT of ysyx_20210479.v
+   wire [3:0]           io_slave_bid;           // From U_DUT of ysyx_20210479.v
+   wire [1:0]           io_slave_bresp;         // From U_DUT of ysyx_20210479.v
+   wire                 io_slave_bvalid;        // From U_DUT of ysyx_20210479.v
+   wire [63:0]          io_slave_rdata;         // From U_DUT of ysyx_20210479.v
+   wire [3:0]           io_slave_rid;           // From U_DUT of ysyx_20210479.v
+   wire                 io_slave_rlast;         // From U_DUT of ysyx_20210479.v
+   wire [1:0]           io_slave_rresp;         // From U_DUT of ysyx_20210479.v
+   wire                 io_slave_rvalid;        // From U_DUT of ysyx_20210479.v
+   wire                 io_slave_wready;        // From U_DUT of ysyx_20210479.v
+   // End of automatics
+   /*AUTOINPUT*/
+   wire                 io_master_arready;      // To U_DUT of ysyx_20210479.v
+   wire                 io_master_awready;      // To U_DUT of ysyx_20210479.v
+   wire  [3:0]          io_master_bid;          // To U_DUT of ysyx_20210479.v
+   wire  [1:0]          io_master_bresp;        // To U_DUT of ysyx_20210479.v
+   wire                 io_master_bvalid;       // To U_DUT of ysyx_20210479.v
+   wire  [63:0]         io_master_rdata;        // To U_DUT of ysyx_20210479.v
+   wire  [3:0]          io_master_rid;          // To U_DUT of ysyx_20210479.v
+   wire                 io_master_rlast;        // To U_DUT of ysyx_20210479.v
+   wire  [1:0]          io_master_rresp;        // To U_DUT of ysyx_20210479.v
+   wire                 io_master_rvalid;       // To U_DUT of ysyx_20210479.v
+   wire                 io_master_wready;       // To U_DUT of ysyx_20210479.v
+   wire  [31:0]         io_slave_araddr;        // To U_DUT of ysyx_20210479.v
+   wire  [1:0]          io_slave_arburst;       // To U_DUT of ysyx_20210479.v
+   wire  [3:0]          io_slave_arid;          // To U_DUT of ysyx_20210479.v
+   wire  [7:0]          io_slave_arlen;         // To U_DUT of ysyx_20210479.v
+   wire  [2:0]          io_slave_arsize;        // To U_DUT of ysyx_20210479.v
+   wire                 io_slave_arvalid;       // To U_DUT of ysyx_20210479.v
+   wire  [31:0]         io_slave_awaddr;        // To U_DUT of ysyx_20210479.v
+   wire  [1:0]          io_slave_awburst;       // To U_DUT of ysyx_20210479.v
+   wire  [3:0]          io_slave_awid;          // To U_DUT of ysyx_20210479.v
+   wire  [7:0]          io_slave_awlen;         // To U_DUT of ysyx_20210479.v
+   wire  [2:0]          io_slave_awsize;        // To U_DUT of ysyx_20210479.v
+   wire                 io_slave_awvalid;       // To U_DUT of ysyx_20210479.v
+   wire                 io_slave_bready;        // To U_DUT of ysyx_20210479.v
+   wire                 io_slave_rready;        // To U_DUT of ysyx_20210479.v
+   wire  [63:0]         io_slave_wdata;         // To U_DUT of ysyx_20210479.v
+   wire                 io_slave_wlast;         // To U_DUT of ysyx_20210479.v
+   wire  [7:0]          io_slave_wstrb;         // To U_DUT of ysyx_20210479.v
+   wire                 io_slave_wvalid;        // To U_DUT of ysyx_20210479.v
+   wire                 io_interrupt;
+
+   assign io_master_arready                                 = `AXI_TOP_INTERFACE(ar_ready);
+   assign `AXI_TOP_INTERFACE(ar_valid)             = io_master_arvalid;
+   assign `AXI_TOP_INTERFACE(ar_bits_addr)         = io_master_araddr;
+   assign `AXI_TOP_INTERFACE(ar_bits_prot)         = 'b0; //io_master_arprot;
+   assign `AXI_TOP_INTERFACE(ar_bits_id)           = io_master_arid;
+   assign `AXI_TOP_INTERFACE(ar_bits_user)         = 'b0; //io_master_aruser;
+   assign `AXI_TOP_INTERFACE(ar_bits_len)          = io_master_arlen;
+   assign `AXI_TOP_INTERFACE(ar_bits_size)         = io_master_arsize;
+   assign `AXI_TOP_INTERFACE(ar_bits_burst)        = io_master_arburst;
+   assign `AXI_TOP_INTERFACE(ar_bits_lock)         = 'b0; //io_master_arlock;
+   assign `AXI_TOP_INTERFACE(ar_bits_cache)        = 'b0; //io_master_arcache;
+   assign `AXI_TOP_INTERFACE(ar_bits_qos)          = 'b0; //io_master_arqos;
+
+   assign `AXI_TOP_INTERFACE(r_ready)              = io_master_rready;
+   assign io_master_rvalid                                  = `AXI_TOP_INTERFACE(r_valid);
+   assign io_master_rresp                                   = `AXI_TOP_INTERFACE(r_bits_resp);
+   assign io_master_rdata                                   = `AXI_TOP_INTERFACE(r_bits_data)[0];
+   assign io_master_rlast                                   = `AXI_TOP_INTERFACE(r_bits_last);
+   assign io_master_rid                                     = `AXI_TOP_INTERFACE(r_bits_id);
+   //assign io_master_ruser                                   = `AXI_TOP_INTERFACE(r_bits_user);
+
+   assign io_master_awready                                 = `AXI_TOP_INTERFACE(aw_ready);
+   assign `AXI_TOP_INTERFACE(aw_valid)             = io_master_awvalid;
+   assign `AXI_TOP_INTERFACE(aw_bits_addr)         = io_master_awaddr;
+   assign `AXI_TOP_INTERFACE(aw_bits_prot)         = 'b0; //io_master_awprot;
+   assign `AXI_TOP_INTERFACE(aw_bits_id)           = io_master_awid;
+   assign `AXI_TOP_INTERFACE(aw_bits_user)         = 'b0; //io_master_awuser;
+   assign `AXI_TOP_INTERFACE(aw_bits_len)          = io_master_awlen;
+   assign `AXI_TOP_INTERFACE(aw_bits_size)         = io_master_awsize;
+   assign `AXI_TOP_INTERFACE(aw_bits_burst)        = io_master_awburst;
+   assign `AXI_TOP_INTERFACE(aw_bits_lock)         = 'b0; //io_master_awlock;
+   assign `AXI_TOP_INTERFACE(aw_bits_cache)        = 'b0; //io_master_awcache;
+   assign `AXI_TOP_INTERFACE(aw_bits_qos)          = 'b0; //io_master_awqos;
    
-   wire axi_aw_ready_i;
-   wire axi_aw_valid_o;
-   wire [`AXI_ADDR_WIDTH-1:0] axi_aw_addr_o;
-   wire [2:0] axi_aw_prot_o;
-   wire [`AXI_ID_WIDTH-1:0] axi_aw_id_o;
-   wire [`AXI_USER_WIDTH-1:0] axi_aw_user_o;
-   wire [7:0] axi_aw_len_o;
-   wire [2:0] axi_aw_size_o;
-   wire [1:0] axi_aw_burst_o;
-   wire axi_aw_lock_o;
-   wire [3:0] axi_aw_cache_o;
-   wire [3:0] axi_aw_qos_o;
-
-   wire axi_w_ready_i;
-   wire axi_w_valid_o;
-   wire [`AXI_DATA_WIDTH-1:0] axi_w_data_o;
-   wire [`AXI_DATA_WIDTH/8-1:0] axi_w_strb_o;
-   wire axi_w_last_o;
-
-   wire axi_b_ready_o;
-   wire axi_b_valid_i;
-   wire [1:0] axi_b_resp_i;
-   wire [`AXI_ID_WIDTH-1:0] axi_b_id_i;
-   wire [`AXI_USER_WIDTH-1:0] axi_b_user_i;
-
-   wire axi_ar_ready_i;
-   wire axi_ar_valid_o;
-   wire [`AXI_ADDR_WIDTH-1:0] axi_ar_addr_o;
-   wire [2:0] axi_ar_prot_o;
-   wire [`AXI_ID_WIDTH-1:0] axi_ar_id_o;
-   wire [`AXI_USER_WIDTH-1:0] axi_ar_user_o;
-   wire [7:0] axi_ar_len_o;
-   wire [2:0] axi_ar_size_o;
-   wire [1:0] axi_ar_burst_o;
-   wire axi_ar_lock_o;
-   wire [3:0] axi_ar_cache_o;
-   wire [3:0] axi_ar_qos_o;
-   
-/* verilator lint_off UNUSED */
-   wire [3:0] axi_aw_region_o; // unused
-   wire [`AXI_USER_WIDTH-1:0] axi_w_user_o; // unused
-   wire [3:0] axi_ar_region_o; // unsued
-/* verilator lint_on UNUSED */
-
-   wire axi_r_ready_o;
-   wire axi_r_valid_i;
-   wire [1:0] axi_r_resp_i;
-   wire [`AXI_DATA_WIDTH-1:0] axi_r_data_i;
-   wire axi_r_last_i;
-   wire [`AXI_ID_WIDTH-1:0] axi_r_id_i;
-   wire [`AXI_USER_WIDTH-1:0] axi_r_user_i;
-
-   assign axi_ar_ready_i                                 = `AXI_TOP_INTERFACE(ar_ready);
-   assign `AXI_TOP_INTERFACE(ar_valid)             = axi_ar_valid_o;
-   assign `AXI_TOP_INTERFACE(ar_bits_addr)         = axi_ar_addr_o;
-   assign `AXI_TOP_INTERFACE(ar_bits_prot)         = axi_ar_prot_o;
-   assign `AXI_TOP_INTERFACE(ar_bits_id)           = axi_ar_id_o;
-   assign `AXI_TOP_INTERFACE(ar_bits_user)         = axi_ar_user_o;
-   assign `AXI_TOP_INTERFACE(ar_bits_len)          = axi_ar_len_o;
-   assign `AXI_TOP_INTERFACE(ar_bits_size)         = axi_ar_size_o;
-   assign `AXI_TOP_INTERFACE(ar_bits_burst)        = axi_ar_burst_o;
-   assign `AXI_TOP_INTERFACE(ar_bits_lock)         = axi_ar_lock_o;
-   assign `AXI_TOP_INTERFACE(ar_bits_cache)        = axi_ar_cache_o;
-   assign `AXI_TOP_INTERFACE(ar_bits_qos)          = axi_ar_qos_o;
-
-   assign `AXI_TOP_INTERFACE(r_ready)              = axi_r_ready_o;
-   assign axi_r_valid_i                                  = `AXI_TOP_INTERFACE(r_valid);
-   assign axi_r_resp_i                                   = `AXI_TOP_INTERFACE(r_bits_resp);
-   assign axi_r_data_i                                   = `AXI_TOP_INTERFACE(r_bits_data)[0];
-   assign axi_r_last_i                                   = `AXI_TOP_INTERFACE(r_bits_last);
-   assign axi_r_id_i                                     = `AXI_TOP_INTERFACE(r_bits_id);
-   assign axi_r_user_i                                   = `AXI_TOP_INTERFACE(r_bits_user);
-
-   assign axi_aw_ready_i                                 = `AXI_TOP_INTERFACE(aw_ready);
-   assign `AXI_TOP_INTERFACE(aw_valid)             = axi_aw_valid_o;
-   assign `AXI_TOP_INTERFACE(aw_bits_addr)         = axi_aw_addr_o;
-   assign `AXI_TOP_INTERFACE(aw_bits_prot)         = axi_aw_prot_o;
-   assign `AXI_TOP_INTERFACE(aw_bits_id)           = axi_aw_id_o;
-   assign `AXI_TOP_INTERFACE(aw_bits_user)         = axi_aw_user_o;
-   assign `AXI_TOP_INTERFACE(aw_bits_len)          = axi_aw_len_o;
-   assign `AXI_TOP_INTERFACE(aw_bits_size)         = axi_aw_size_o;
-   assign `AXI_TOP_INTERFACE(aw_bits_burst)        = axi_aw_burst_o;
-   assign `AXI_TOP_INTERFACE(aw_bits_lock)         = axi_aw_lock_o;
-   assign `AXI_TOP_INTERFACE(aw_bits_cache)        = axi_aw_cache_o;
-   assign `AXI_TOP_INTERFACE(aw_bits_qos)          = axi_aw_qos_o;
-   
-   assign axi_w_ready_i                                  = `AXI_TOP_INTERFACE(w_ready);
-   assign `AXI_TOP_INTERFACE(w_valid)              = axi_w_valid_o;
-   assign `AXI_TOP_INTERFACE(w_bits_data)[0]       = axi_w_data_o;
+   assign io_master_wready                                  = `AXI_TOP_INTERFACE(w_ready);
+   assign `AXI_TOP_INTERFACE(w_valid)              = io_master_wvalid;
+   assign `AXI_TOP_INTERFACE(w_bits_data)[0]       = io_master_wdata;
    assign `AXI_TOP_INTERFACE(w_bits_data)[1]       = 'b0;
    assign `AXI_TOP_INTERFACE(w_bits_data)[2]       = 'b0;
    assign `AXI_TOP_INTERFACE(w_bits_data)[3]       = 'b0;
-   assign `AXI_TOP_INTERFACE(w_bits_strb)          = axi_w_strb_o;
-   assign `AXI_TOP_INTERFACE(w_bits_last)          = axi_w_last_o;
+   assign `AXI_TOP_INTERFACE(w_bits_strb)          = io_master_wstrb;
+   assign `AXI_TOP_INTERFACE(w_bits_last)          = io_master_wlast;
    
-   assign `AXI_TOP_INTERFACE(b_ready)              = axi_b_ready_o;
-   assign axi_b_valid_i                                  = `AXI_TOP_INTERFACE(b_valid);
-   assign axi_b_resp_i                                   = `AXI_TOP_INTERFACE(b_bits_resp);
-   assign axi_b_id_i                                     = `AXI_TOP_INTERFACE(b_bits_id);
-   assign axi_b_user_i                                   = `AXI_TOP_INTERFACE(b_bits_user);
+   assign `AXI_TOP_INTERFACE(b_ready)              = io_master_bready;
+   assign io_master_bvalid                                  = `AXI_TOP_INTERFACE(b_valid);
+   assign io_master_bresp                                   = `AXI_TOP_INTERFACE(b_bits_resp);
+   assign io_master_bid                                     = `AXI_TOP_INTERFACE(b_bits_id);
+   //assign io_master_buser                                   = `AXI_TOP_INTERFACE(b_bits_user);
    
-   assign clk = clock;
-   assign rst = reset; // reset is high-active
-
-   ncpu64k
-   #(
-   .AXI_P_DW_BYTES                     (AXI_P_DW_BYTES),
-   .AXI_ADDR_WIDTH                     (AXI_ADDR_WIDTH),
-   .AXI_ID_WIDTH                       (AXI_ID_WIDTH),
-   .AXI_USER_WIDTH                     (AXI_USER_WIDTH)
-   )
-   DUT
-   (/*AUTOINST*/
-    // Outputs
-    .ibus_ARVALID                       (ibus_ARVALID),
-    .ibus_ARADDR                        (ibus_ARADDR[AXI_ADDR_WIDTH-1:0]),
-    .ibus_ARPROT                        (ibus_ARPROT[2:0]),
-    .ibus_ARID                          (ibus_ARID[AXI_ID_WIDTH-1:0]),
-    .ibus_ARUSER                        (ibus_ARUSER[AXI_USER_WIDTH-1:0]),
-    .ibus_ARLEN                         (ibus_ARLEN[7:0]),
-    .ibus_ARSIZE                        (ibus_ARSIZE[2:0]),
-    .ibus_ARBURST                       (ibus_ARBURST[1:0]),
-    .ibus_ARLOCK                        (ibus_ARLOCK),
-    .ibus_ARCACHE                       (ibus_ARCACHE[3:0]),
-    .ibus_ARQOS                         (ibus_ARQOS[3:0]),
-    .ibus_ARREGION                      (ibus_ARREGION[3:0]),
-    .ibus_RREADY                        (ibus_RREADY),
-    .dbus_ARVALID                       (dbus_ARVALID),
-    .dbus_ARADDR                        (dbus_ARADDR[AXI_ADDR_WIDTH-1:0]),
-    .dbus_ARPROT                        (dbus_ARPROT[2:0]),
-    .dbus_ARID                          (dbus_ARID[AXI_ID_WIDTH-1:0]),
-    .dbus_ARUSER                        (dbus_ARUSER[AXI_USER_WIDTH-1:0]),
-    .dbus_ARLEN                         (dbus_ARLEN[7:0]),
-    .dbus_ARSIZE                        (dbus_ARSIZE[2:0]),
-    .dbus_ARBURST                       (dbus_ARBURST[1:0]),
-    .dbus_ARLOCK                        (dbus_ARLOCK),
-    .dbus_ARCACHE                       (dbus_ARCACHE[3:0]),
-    .dbus_ARQOS                         (dbus_ARQOS[3:0]),
-    .dbus_ARREGION                      (dbus_ARREGION[3:0]),
-    .dbus_RREADY                        (dbus_RREADY),
-    .dbus_AWVALID                       (dbus_AWVALID),
-    .dbus_AWADDR                        (dbus_AWADDR[AXI_ADDR_WIDTH-1:0]),
-    .dbus_AWPROT                        (dbus_AWPROT[2:0]),
-    .dbus_AWID                          (dbus_AWID[AXI_ID_WIDTH-1:0]),
-    .dbus_AWUSER                        (dbus_AWUSER[AXI_USER_WIDTH-1:0]),
-    .dbus_AWLEN                         (dbus_AWLEN[7:0]),
-    .dbus_AWSIZE                        (dbus_AWSIZE[2:0]),
-    .dbus_AWBURST                       (dbus_AWBURST[1:0]),
-    .dbus_AWLOCK                        (dbus_AWLOCK),
-    .dbus_AWCACHE                       (dbus_AWCACHE[3:0]),
-    .dbus_AWQOS                         (dbus_AWQOS[3:0]),
-    .dbus_AWREGION                      (dbus_AWREGION[3:0]),
-    .dbus_WVALID                        (dbus_WVALID),
-    .dbus_WDATA                         (dbus_WDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
-    .dbus_WSTRB                         (dbus_WSTRB[(1<<AXI_P_DW_BYTES)-1:0]),
-    .dbus_WLAST                         (dbus_WLAST),
-    .dbus_WUSER                         (dbus_WUSER[AXI_USER_WIDTH-1:0]),
-    .dbus_BREADY                        (dbus_BREADY),
-    .uncached_ARVALID                   (uncached_ARVALID),
-    .uncached_ARADDR                    (uncached_ARADDR[AXI_ADDR_WIDTH-1:0]),
-    .uncached_ARPROT                    (uncached_ARPROT[2:0]),
-    .uncached_ARID                      (uncached_ARID[AXI_ID_WIDTH-1:0]),
-    .uncached_ARUSER                    (uncached_ARUSER[AXI_USER_WIDTH-1:0]),
-    .uncached_ARLEN                     (uncached_ARLEN[7:0]),
-    .uncached_ARSIZE                    (uncached_ARSIZE[2:0]),
-    .uncached_ARBURST                   (uncached_ARBURST[1:0]),
-    .uncached_ARLOCK                    (uncached_ARLOCK),
-    .uncached_ARCACHE                   (uncached_ARCACHE[3:0]),
-    .uncached_ARQOS                     (uncached_ARQOS[3:0]),
-    .uncached_ARREGION                  (uncached_ARREGION[3:0]),
-    .uncached_RREADY                    (uncached_RREADY),
-    .uncached_AWVALID                   (uncached_AWVALID),
-    .uncached_AWADDR                    (uncached_AWADDR[AXI_ADDR_WIDTH-1:0]),
-    .uncached_AWPROT                    (uncached_AWPROT[2:0]),
-    .uncached_AWID                      (uncached_AWID[AXI_ID_WIDTH-1:0]),
-    .uncached_AWUSER                    (uncached_AWUSER[AXI_USER_WIDTH-1:0]),
-    .uncached_AWLEN                     (uncached_AWLEN[7:0]),
-    .uncached_AWSIZE                    (uncached_AWSIZE[2:0]),
-    .uncached_AWBURST                   (uncached_AWBURST[1:0]),
-    .uncached_AWLOCK                    (uncached_AWLOCK),
-    .uncached_AWCACHE                   (uncached_AWCACHE[3:0]),
-    .uncached_AWQOS                     (uncached_AWQOS[3:0]),
-    .uncached_AWREGION                  (uncached_AWREGION[3:0]),
-    .uncached_WVALID                    (uncached_WVALID),
-    .uncached_WDATA                     (uncached_WDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
-    .uncached_WSTRB                     (uncached_WSTRB[(1<<AXI_P_DW_BYTES)-1:0]),
-    .uncached_WLAST                     (uncached_WLAST),
-    .uncached_WUSER                     (uncached_WUSER[AXI_USER_WIDTH-1:0]),
-    .uncached_BREADY                    (uncached_BREADY),
-    // Inputs
-    .clk                                (clk),
-    .rst                                (rst),
-    .ibus_ARREADY                       (ibus_ARREADY),
-    .ibus_RVALID                        (ibus_RVALID),
-    .ibus_RDATA                         (ibus_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
-    .ibus_RLAST                         (ibus_RLAST),
-    .ibus_RRESP                         (ibus_RRESP[1:0]),
-    .ibus_RID                           (ibus_RID[AXI_ID_WIDTH-1:0]),
-    .ibus_RUSER                         (ibus_RUSER[AXI_USER_WIDTH-1:0]),
-    .dbus_ARREADY                       (dbus_ARREADY),
-    .dbus_RVALID                        (dbus_RVALID),
-    .dbus_RDATA                         (dbus_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
-    .dbus_RRESP                         (dbus_RRESP[1:0]),
-    .dbus_RLAST                         (dbus_RLAST),
-    .dbus_RID                           (dbus_RID[AXI_ID_WIDTH-1:0]),
-    .dbus_RUSER                         (dbus_RUSER[AXI_USER_WIDTH-1:0]),
-    .dbus_AWREADY                       (dbus_AWREADY),
-    .dbus_WREADY                        (dbus_WREADY),
-    .dbus_BVALID                        (dbus_BVALID),
-    .dbus_BRESP                         (dbus_BRESP[1:0]),
-    .dbus_BID                           (dbus_BID[AXI_ID_WIDTH-1:0]),
-    .dbus_BUSER                         (dbus_BUSER[AXI_USER_WIDTH-1:0]),
-    .uncached_ARREADY                   (uncached_ARREADY),
-    .uncached_RVALID                    (uncached_RVALID),
-    .uncached_RDATA                     (uncached_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
-    .uncached_RRESP                     (uncached_RRESP[1:0]),
-    .uncached_RLAST                     (uncached_RLAST),
-    .uncached_RID                       (uncached_RID[AXI_ID_WIDTH-1:0]),
-    .uncached_RUSER                     (uncached_RUSER[AXI_USER_WIDTH-1:0]),
-    .uncached_AWREADY                   (uncached_AWREADY),
-    .uncached_WREADY                    (uncached_WREADY),
-    .uncached_BVALID                    (uncached_BVALID),
-    .uncached_BRESP                     (uncached_BRESP[1:0]),
-    .uncached_BID                       (uncached_BID[AXI_ID_WIDTH-1:0]),
-    .uncached_BUSER                     (uncached_BUSER[AXI_USER_WIDTH-1:0]),
-    .irqs                               (irqs[CONFIG_NUM_IRQ-1:0]));
-
+   assign io_slave_araddr = 'b0;
+   assign io_slave_arburst = 'b0;
+   assign io_slave_arid = 'b0;
+   assign io_slave_arlen = 'b0;
+   assign io_slave_arsize = 'b0;
+   assign io_slave_arvalid = 'b0;
+   assign io_slave_awaddr = 'b0;
+   assign io_slave_awburst = 'b0;
+   assign io_slave_awid = 'b0;
+   assign io_slave_awlen = 'b0;
+   assign io_slave_awsize = 'b0;
+   assign io_slave_awvalid = 'b0;
+   assign io_slave_bready = 'b0;
+   assign io_slave_rready = 'b0;
+   assign io_slave_wdata = 'b0;
+   assign io_slave_wlast = 'b0;
+   assign io_slave_wstrb = 'b0;
+   assign io_slave_wvalid = 'b0;
+   
+   assign io_interrupt = 'b0;
+   
+   ysyx_20210479 U_DUT
+      (/*AUTOINST*/
+       // Outputs
+       .io_master_awvalid               (io_master_awvalid),
+       .io_master_awaddr                (io_master_awaddr[31:0]),
+       .io_master_awid                  (io_master_awid[3:0]),
+       .io_master_awlen                 (io_master_awlen[7:0]),
+       .io_master_awsize                (io_master_awsize[2:0]),
+       .io_master_awburst               (io_master_awburst[1:0]),
+       .io_master_wvalid                (io_master_wvalid),
+       .io_master_wdata                 (io_master_wdata[63:0]),
+       .io_master_wstrb                 (io_master_wstrb[7:0]),
+       .io_master_wlast                 (io_master_wlast),
+       .io_master_bready                (io_master_bready),
+       .io_master_arvalid               (io_master_arvalid),
+       .io_master_araddr                (io_master_araddr[31:0]),
+       .io_master_arid                  (io_master_arid[3:0]),
+       .io_master_arlen                 (io_master_arlen[7:0]),
+       .io_master_arsize                (io_master_arsize[2:0]),
+       .io_master_rready                (io_master_rready),
+       .io_slave_awready                (io_slave_awready),
+       .io_slave_wready                 (io_slave_wready),
+       .io_slave_bvalid                 (io_slave_bvalid),
+       .io_slave_bresp                  (io_slave_bresp[1:0]),
+       .io_slave_bid                    (io_slave_bid[3:0]),
+       .io_slave_arready                (io_slave_arready),
+       .io_master_arburst               (io_master_arburst[1:0]),
+       .io_slave_rvalid                 (io_slave_rvalid),
+       .io_slave_rresp                  (io_slave_rresp[1:0]),
+       .io_slave_rdata                  (io_slave_rdata[63:0]),
+       .io_slave_rlast                  (io_slave_rlast),
+       .io_slave_rid                    (io_slave_rid[3:0]),
+       // Inputs
+       .clock                           (clock),
+       .reset                           (reset),
+       .io_interrupt                    (io_interrupt),
+       .io_master_awready               (io_master_awready),
+       .io_master_wready                (io_master_wready),
+       .io_master_bvalid                (io_master_bvalid),
+       .io_master_bresp                 (io_master_bresp[1:0]),
+       .io_master_bid                   (io_master_bid[3:0]),
+       .io_master_arready               (io_master_arready),
+       .io_master_rvalid                (io_master_rvalid),
+       .io_master_rresp                 (io_master_rresp[1:0]),
+       .io_master_rdata                 (io_master_rdata[63:0]),
+       .io_master_rlast                 (io_master_rlast),
+       .io_master_rid                   (io_master_rid[3:0]),
+       .io_slave_awvalid                (io_slave_awvalid),
+       .io_slave_awaddr                 (io_slave_awaddr[31:0]),
+       .io_slave_awid                   (io_slave_awid[3:0]),
+       .io_slave_awlen                  (io_slave_awlen[7:0]),
+       .io_slave_awsize                 (io_slave_awsize[2:0]),
+       .io_slave_awburst                (io_slave_awburst[1:0]),
+       .io_slave_wvalid                 (io_slave_wvalid),
+       .io_slave_wdata                  (io_slave_wdata[63:0]),
+       .io_slave_wstrb                  (io_slave_wstrb[7:0]),
+       .io_slave_wlast                  (io_slave_wlast),
+       .io_slave_bready                 (io_slave_bready),
+       .io_slave_arvalid                (io_slave_arvalid),
+       .io_slave_araddr                 (io_slave_araddr[31:0]),
+       .io_slave_arid                   (io_slave_arid[3:0]),
+       .io_slave_arlen                  (io_slave_arlen[7:0]),
+       .io_slave_arsize                 (io_slave_arsize[2:0]),
+       .io_slave_arburst                (io_slave_arburst[1:0]),
+       .io_slave_rready                 (io_slave_rready));
+   
    assign io_uart_out_valid = 'b0;
    assign io_uart_out_ch = 'b0;
    assign io_uart_in_valid = 'b0;
@@ -315,5 +285,6 @@ endmodule
 // verilog-library-directories:(
 //  "."
 //  "../rtl"
+//  "../rtl/port"
 // )
 // End:

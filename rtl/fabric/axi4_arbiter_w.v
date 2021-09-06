@@ -87,7 +87,11 @@ module axi4_arbiter_w
                else
                  fsm_state_nxt = S_S1;
             end
+            
+         default: ;
       endcase
+
+   mDFF_r #(.DW(2), .RST_VECTOR(S_S0)) ff_fsm_state (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff));
 
    assign s0_sel = (fsm_state_ff == S_S0);
    assign s1_sel = (fsm_state_ff == S_S1);

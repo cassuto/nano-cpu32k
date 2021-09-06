@@ -130,7 +130,8 @@ module icache
    wire [CONFIG_IC_P_LINE-1:0]         fsm_refill_cnt;
    reg [CONFIG_IC_P_LINE-1:0]          fsm_refill_cnt_nxt;
    wire [PAYLOAD_P_DW_BYTES-1:0]       fsm_uncached_cnt;
-   reg [PAYLOAD_P_DW_BYTES:0]          fsm_uncached_cnt_nxt_carry;
+   reg [PAYLOAD_P_DW_BYTES-1:0]        fsm_uncached_cnt_nxt;
+   wire [PAYLOAD_P_DW_BYTES:0]         fsm_uncached_cnt_nxt_carry;
    reg                                 fsm_uncached_rd_req;
    wire                                p_ce;
    // AXI
@@ -275,11 +276,13 @@ module icache
    // Uncached access counter
    always @(*)
       if ((fsm_state_ff == S_UNCACHED_READ) & hds_axi_R)
-         fsm_uncached_cnt_nxt_carry = fsm_uncached_cnt + (1<<AXI_UNCACHED_P_DW_BYTES);
+         fsm_uncached_cnt_nxt = fsm_uncached_cnt_nxt_carry[PAYLOAD_P_DW_BYTES-1:0];
       else
-         fsm_uncached_cnt_nxt_carry = fsm_uncached_cnt;
+         fsm_uncached_cnt_nxt = fsm_uncached_cnt;
    
-   mDFF_r # (.DW(PAYLOAD_P_DW_BYTES)) ff_fsm_uncached_cnt (.CLK(clk), .RST(rst), .D(fsm_uncached_cnt_nxt_carry[PAYLOAD_P_DW_BYTES-1:0]), .Q(fsm_uncached_cnt) );
+   assign fsm_uncached_cnt_nxt_carry = fsm_uncached_cnt + (1<<AXI_UNCACHED_P_DW_BYTES);
+   
+   mDFF_r # (.DW(PAYLOAD_P_DW_BYTES)) ff_fsm_uncached_cnt (.CLK(clk), .RST(rst), .D(fsm_uncached_cnt_nxt), .Q(fsm_uncached_cnt) );
 
    // MUX for tag RAM addr
    always @(*)
@@ -337,7 +340,7 @@ module icache
       )
    U_ALIGN_R
       (
-         .i_ax_RDATA                   (ibus_RDATA),
+         .i_axi_RDATA                  (ibus_RDATA),
          .i_ram_we                     (fsm_state_ff == S_REFILL),
          .i_ram_addr                   (fsm_refill_cnt),
          .o_ram_wmsk                   (s1i_payload_we),
@@ -347,13 +350,13 @@ module icache
    // Aligner for uncached din
    align_r
       #(
-         .AXI_P_DW_BYTES               (AXI_UNCACHED_P_DW_BYTES),
+         .AXI_P_DW_BYTES               (AXI_P_DW_BYTES),
          .PAYLOAD_P_DW_BYTES           (PAYLOAD_P_DW_BYTES),
          .RAM_AW                       (AXI_ADDR_WIDTH)
       )
    U_ALIGN_R_UNCACHED
       (
-         .i_ax_RDATA                   (ibus_RDATA),
+         .i_axi_RDATA                  (ibus_RDATA),
          .i_ram_we                     (fsm_state_ff == S_UNCACHED_READ),
          .i_ram_addr                   (ibus_ARADDR),
          .o_ram_wmsk                   (s1i_uncached_we),
@@ -413,7 +416,7 @@ module icache
    assign ar_clr = (ibus_ARREADY & ibus_ARVALID);
    
    assign axi_paddr_nxt = (fsm_uncached_rd_req)
-                           ? {s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_AW - PAYLOAD_P_DW_BYTES], fsm_uncached_cnt_nxt_carry[PAYLOAD_P_DW_BYTES-1:0]}
+                           ? {s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_AW - PAYLOAD_P_DW_BYTES], fsm_uncached_cnt_nxt}
                            : {s2o_paddr[CONFIG_IC_P_LINE +: CONFIG_AW - CONFIG_IC_P_LINE], {CONFIG_IC_P_LINE{1'b0}}};
 
    // Address width adapter (truncate or fill zero)

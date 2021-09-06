@@ -42,22 +42,27 @@ module align_w
    genvar i;
    
    generate
-      if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
-            begin
-               localparam WIN_NUM = (AXI_BYTES/PAYLOAD_BYTES);
-               localparam WIN_P_NUM = (AXI_P_DW_BYTES - PAYLOAD_P_DW_BYTES);
-               localparam WIN_DW = (PAYLOAD_BYTES*8);
-               localparam WIN_P_DW_BYTES = (PAYLOAD_P_DW_BYTES);
-               wire [(1<<AXI_P_DW_BYTES)-1:0] wstrb_tmp;
+      if (PAYLOAD_P_DW_BYTES == AXI_P_DW_BYTES)
+         begin
+            assign o_axi_WSTRB = {(1<<AXI_P_DW_BYTES){i_axi_we}};
+            assign o_axi_WDATA = i_axi_din;
+         end
+      else if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
+         begin
+            localparam WIN_NUM = (AXI_BYTES/PAYLOAD_BYTES);
+            localparam WIN_P_NUM = (AXI_P_DW_BYTES - PAYLOAD_P_DW_BYTES);
+            localparam WIN_DW = (PAYLOAD_BYTES*8);
+            localparam WIN_P_DW_BYTES = (PAYLOAD_P_DW_BYTES);
+            wire [(1<<AXI_P_DW_BYTES)-1:0] wstrb_tmp;
+         
+            for(i=0;i<WIN_NUM;i=i+1)
+               assign wstrb_tmp[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_axi_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}};
             
-               for(i=0;i<WIN_NUM;i=i+1)
-                  assign wstrb_tmp[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_axi_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}};
-               
-               assign o_axi_WSTRB = ({(1<<AXI_P_DW_BYTES){i_axi_we}} & wstrb_tmp);
-               
-               for(i=0;i<WIN_NUM;i=i+1)
-                  assign o_axi_WDATA[i*WIN_DW +: WIN_DW] = i_axi_din;
-            end
+            assign o_axi_WSTRB = ({(1<<AXI_P_DW_BYTES){i_axi_we}} & wstrb_tmp);
+            
+            for(i=0;i<WIN_NUM;i=i+1)
+               assign o_axi_WDATA[i*WIN_DW +: WIN_DW] = i_axi_din;
+         end
       else
          begin
             localparam WIN_NUM = (PAYLOAD_BYTES/AXI_BYTES);

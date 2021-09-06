@@ -87,6 +87,7 @@ module ex_epu
    // IRQs
    input [CONFIG_NUM_IRQ-1:0]          irqs,
    output                              irq_async,
+   output                              tsc_irq,
 
    // PSR
    input [`NCPU_PSR_DW-1:0]            msr_psr,
@@ -159,7 +160,6 @@ module ex_epu
    wire [CONFIG_DW-1:0] msr_irqc_irr;           // From U_IRQC of ex_epu_irqc.v
    wire [CONFIG_DW-1:0] msr_tsc_tcr;            // From U_TSC of ex_epu_tsc.v
    wire [CONFIG_DW-1:0] msr_tsc_tsr;            // From U_TSC of ex_epu_tsc.v
-   wire                 tsc_irq;                // From U_TSC of ex_epu_tsc.v
    // End of automatics
    wire [CONFIG_DW-1:0]                msr_irqc_imr_nxt;
    wire                                msr_irqc_imr_we;

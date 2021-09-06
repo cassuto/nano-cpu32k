@@ -38,7 +38,9 @@ module frontend
    parameter                           CONFIG_IC_P_WAYS = 2,
    parameter                           CONFIG_PHT_P_NUM = 9,
    parameter                           CONFIG_BTB_P_NUM = 9,
+   parameter                           CONFIG_IMMU_ENABLE_UNCACHED_SEG = 0,
    parameter                           AXI_P_DW_BYTES = 3,
+   parameter                           AXI_UNCACHED_P_DW_BYTES = 2,
    parameter                           AXI_ADDR_WIDTH = 64,
    parameter                           AXI_ID_WIDTH = 4,
    parameter                           AXI_USER_WIDTH = 1
@@ -247,6 +249,7 @@ module frontend
         // Parameters
         .CONFIG_AW                      (CONFIG_AW),
         .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_IMMU_ENABLE_UNCACHED_SEG(CONFIG_IMMU_ENABLE_UNCACHED_SEG),
         .CONFIG_P_PAGE_SIZE             (CONFIG_P_PAGE_SIZE),
         .CONFIG_ITLB_P_SETS             (CONFIG_ITLB_P_SETS))
    U_I_MMU
