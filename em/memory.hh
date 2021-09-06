@@ -19,7 +19,7 @@ public:
 class Memory
 {
 public:
-    Memory(size_t memory_size_, phy_addr_t dram_phy_start_, phy_addr_t mmio_phy_base_, phy_addr_t mmio_phy_end_addr_);
+    Memory(CPU *cpu_, size_t memory_size_, phy_addr_t dram_phy_start_, phy_addr_t mmio_phy_base_, phy_addr_t mmio_phy_end_addr_);
     ~Memory();
     int load_address_fp(FILE *fp, phy_addr_t baseaddr);
 
@@ -189,6 +189,7 @@ private:
                           void *opaque);
 
 private:
+    CPU *cpu;
     mmio_node *mmio8, *mmio16, *mmio32;
     uint8_t *memory;
     size_t memory_size;

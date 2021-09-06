@@ -22,10 +22,12 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "cpu.hh"
 #include "memory.hh"
 
-Memory::Memory(size_t memory_size_, phy_addr_t dram_phy_start_, phy_addr_t mmio_phy_base_, phy_addr_t mmio_phy_end_addr_)
-    : mmio8(nullptr),
+Memory::Memory(CPU *cpu_, size_t memory_size_, phy_addr_t dram_phy_start_, phy_addr_t mmio_phy_base_, phy_addr_t mmio_phy_end_addr_)
+    : cpu(cpu_),
+      mmio8(nullptr),
       mmio16(nullptr),
       mmio32(nullptr),
       memory(new uint8_t[memory_size_]),
@@ -71,7 +73,10 @@ Memory::match_mmio_handler(mmio_node *domain, phy_addr_t addr, bool w)
                 return node;
             }
         }
-        fprintf(stderr, "%s(): accessing invalid mmio address %#x.\n", __func__, addr);
+        if (cpu)
+            fprintf(stderr, "%s(): accessing invalid mmio address %#x. emu_pc=%#x\n", __func__, addr, cpu->get_pc());
+        else
+            fprintf(stderr, "%s(): accessing invalid mmio address %#x.\n", __func__, addr);
         panic(1);
     }
     return 0;

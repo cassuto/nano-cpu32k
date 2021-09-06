@@ -49,12 +49,12 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       dcache_p_ways(dcache_p_ways_),
       dcache_p_sets(dcache_p_sets_),
       dcache_p_line(dcache_p_line_),
-      mem(new Memory(memory_size_, dram_phy_base_, mmio_phy_base_, mmio_phy_end_addr_)),
-      icache(new Cache(mem, enable_icache, icache_p_ways, icache_p_sets, icache_p_line)),
-      dcache(new Cache(mem, enable_dcache, dcache_p_ways, dcache_p_sets, dcache_p_line)),
       IRQ_TSC(IRQ_TSC_),
       pc_queue(new PCQueue())
 {
+    mem = new Memory(this, memory_size_, dram_phy_base_, mmio_phy_base_, mmio_phy_end_addr_);
+    icache = new Cache(mem, enable_icache, icache_p_ways, icache_p_sets, icache_p_line);
+    dcache = new Cache(mem, enable_dcache, dcache_p_ways, dcache_p_sets, dcache_p_line);
 }
 
 CPU::~CPU()
