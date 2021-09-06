@@ -145,6 +145,8 @@ void dpic_commit_inst(
     {
         rtl_pc = pc1;
         rtl_pc_queue->push(pc1, 0); // FIXME
+        if (wen1)
+            rtl_regfile[wnum1] = wdata1;
 
         vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
         vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc);
@@ -160,6 +162,8 @@ void dpic_commit_inst(
     {
         rtl_pc = pc2;
         rtl_pc_queue->push(pc2, 0); // FIXME
+        if (wen2)
+            rtl_regfile[wnum2] = wdata2;
 
         vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
         vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc);
@@ -223,7 +227,7 @@ void dpic_regfile(
     int r30,
     int r31)
 {
-    rtl_regfile[0] = r0;
+    /*rtl_regfile[0] = r0;
     rtl_regfile[1] = r1;
     rtl_regfile[2] = r2;
     rtl_regfile[3] = r3;
@@ -254,5 +258,5 @@ void dpic_regfile(
     rtl_regfile[28] = r28;
     rtl_regfile[29] = r29;
     rtl_regfile[30] = r30;
-    rtl_regfile[31] = r31;
+    rtl_regfile[31] = r31;*/
 }
