@@ -147,6 +147,7 @@ void dpic_commit_inst(
         rtl_pc_queue->push(pc1, 0); // FIXME
         if (wen1)
             rtl_regfile[wnum1] = wdata1;
+            printf("wen1=%d wnum1=%d wdata1=%#x\n", wen1, wnum1, wdata1);
 
         vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
         vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc);
@@ -164,6 +165,7 @@ void dpic_commit_inst(
         rtl_pc_queue->push(pc2, 0); // FIXME
         if (wen2)
             rtl_regfile[wnum2] = wdata2;
+            printf("wen2=%d wnum2=%d wdata2=%#x\n", wen2, wnum2, wdata2);
 
         vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
         vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc);

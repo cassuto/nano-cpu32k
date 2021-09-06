@@ -758,7 +758,7 @@ module ex
    
 `ifdef ENABLE_DIFFTEST
    //
-   // Signals for difftest
+   // Signals used for difftest
    //
    wire [IW-1:0]                       s1o_valid;
    wire [IW-1:0]                       s2o_valid;
