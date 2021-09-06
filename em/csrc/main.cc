@@ -342,8 +342,8 @@ int main(int argc, char *argv[])
     case ModeDifftest:
     {
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU);
-        enable_difftest(emu_CPU, emu, args.commit_timeout_max);
         emu->reset(args.reset_cycles);
+        enable_difftest(emu_CPU, emu, args.commit_timeout_max);
         for (;;)
         {
             if (emu->clk())
