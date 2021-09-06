@@ -150,6 +150,7 @@ CPU::step(vm_addr_t pc)
     }
 
     /* Access ICache */
+    printf("pa=%#x\n", insn_pa);
     insn = (insn_t)icache->phy_readm32(insn_pa);
     pc_queue->push(pc, insn);
 
