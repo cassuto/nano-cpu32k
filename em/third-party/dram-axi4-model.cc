@@ -22,7 +22,7 @@
 #include "dram-axi4-model.hh"
 
 DRAM::DRAM(Memory *mem_)
-    : ram(mem_),
+    : mem(mem_),
       dram(nullptr),
       wait_resp_r(nullptr),
       wait_resp_b(nullptr),
@@ -45,26 +45,26 @@ DRAM::~DRAM()
 
 uint64_t DRAM::ram_read_helper(uint8_t en, uint64_t rIdx)
 {
-    assert(ram);
-    if (en && rIdx >= ram->get_size() / sizeof(uint64_t))
+    assert(mem);
+    if (en && rIdx >= mem->get_size() / sizeof(uint64_t))
     {
-        rIdx %= ram->get_size() / sizeof(uint64_t);
+        rIdx %= mem->get_size() / sizeof(uint64_t);
     }
-    uint64_t rdata = (en) ? ram->dram_readm64(rIdx) : 0;
+    uint64_t rdata = (en) ? mem->dram_readm64(rIdx) : 0;
     return rdata;
 }
 
 void DRAM::ram_write_helper(uint64_t wIdx, uint64_t wdata, uint64_t wmask, uint8_t wen)
 {
-    assert(ram);
+    assert(mem);
     if (wen)
     {
-        if (wIdx >= ram->get_size() / sizeof(uint64_t))
+        if (wIdx >= mem->get_size() / sizeof(uint64_t))
         {
-            fprintf(stderr, "ERROR: ram wIdx = 0x%lx out of bound!\n", wIdx);
-            assert(wIdx < ram->get_size() / sizeof(uint64_t));
+            fprintf(stderr, "ERROR: mem wIdx = 0x%lx out of bound!\n", wIdx);
+            assert(wIdx < mem->get_size() / sizeof(uint64_t));
         }
-        ram->dram_writem64(wIdx, (ram->dram_readm64(wIdx) & ~wmask) | (wdata & wmask));
+        mem->dram_writem64(wIdx, (mem->dram_readm64(wIdx) & ~wmask) | (wdata & wmask));
     }
 }
 
@@ -92,7 +92,7 @@ void DRAM::pmem_write(uint64_t waddr, uint64_t wdata)
 
 void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
 {
-    uint64_t address = ar.addr % ram->get_size();
+    uint64_t address = ar.addr % mem->get_size();
     uint64_t beatsize = 1 << ar.size;
     uint8_t beatlen = ar.len + 1;
     uint64_t transaction_size = beatsize * beatlen;
@@ -109,7 +109,7 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
         assert(transaction_size / sizeof(uint64_t) <= MAX_AXI_DATA_LEN);
         for (int i = 0; i < transaction_size / sizeof(uint64_t); i++)
         {
-            meta->data[i] = ram->dram_readm64(address / sizeof(uint64_t));
+            meta->data[i] = mem->dram_readm64(address / sizeof(uint64_t));
             address += sizeof(uint64_t);
         }
     }
@@ -125,7 +125,7 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
             {
                 address = low;
             }
-            meta->data[i] = ram->dram_readm64(address / sizeof(uint64_t));
+            meta->data[i] = mem->dram_readm64(address / sizeof(uint64_t));
             address += sizeof(uint64_t);
         }
     }
@@ -205,16 +205,16 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
             assert(wait_resp_b != NULL);
         }
         // flush data to memory
-        uint64_t waddr = wait_resp_b->req->address % ram->get_size();
+        uint64_t waddr = wait_resp_b->req->address % mem->get_size();
         dramsim3_meta *meta = static_cast<dramsim3_meta *>(wait_resp_b->req->meta);
 #if 0
-        void *start_addr = ram + (waddr / sizeof(uint64_t));
+        void *start_addr = mem + (waddr / sizeof(uint64_t));
         memcpy(start_addr, meta->data, meta->len * meta->size);
 #else
         for (int i = 0; i < meta->len; i++)
         {
-            uint64_t address = wait_resp_b->req->address % ram->get_size();
-            ram->dram_writem64(address / sizeof(uint64_t) + i, meta->data[i]);
+            uint64_t address = wait_resp_b->req->address % mem->get_size();
+            mem->dram_writem64(address / sizeof(uint64_t) + i, meta->data[i]);
             // printf("flush write to memory[0x%ld] = 0x%lx\n", address)
         }
 #endif
@@ -246,12 +246,12 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         }
         dramsim3_meta *meta = static_cast<dramsim3_meta *>(wait_req_w->meta);
         void *data_start = meta->data + meta->offset * meta->size / sizeof(uint64_t);
-        uint64_t waddr = axi.aw.addr % ram->get_size();
+        uint64_t waddr = axi.aw.addr % mem->get_size();
 #if 0
-        const void *src_addr = ram + (waddr + meta->offset * meta->size) / sizeof(uint64_t);
+        const void *src_addr = mem + (waddr + meta->offset * meta->size) / sizeof(uint64_t);
 #else
         assert(meta->size <= 8); // The current STRB supports no more than 8 bytes of data
-        uint64_t lastdata = ram->dram_readm64((waddr + meta->offset * meta->size) / sizeof(uint64_t));
+        uint64_t lastdata = mem->dram_readm64((waddr + meta->offset * meta->size) / sizeof(uint64_t));
         const void *src_addr = &lastdata;
 #endif
         axi_get_wdata(axi, data_start, src_addr, meta->size);

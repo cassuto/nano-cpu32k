@@ -158,7 +158,7 @@ module dmmu
    // and is within 0x80000000~0x8FFFFFFF
 generate
    if (CONFIG_DMMU_ENABLE_UNCACHED_SEG)
-      assign uncached = (msr_psr_dmme_ff & ~tlb_miss & ~perm_denied & tlb_unc) | (~EDTM & ~EDPF & (ppn[CONFIG_AW-CONFIG_P_PAGE_SIZE-1 -: 4]==4'h8));
+      assign uncached = (msr_psr_dmme_ff & ~tlb_miss & ~perm_denied & tlb_unc) | (~EDTM & ~EDPF & ~ppn[CONFIG_AW-CONFIG_P_PAGE_SIZE-1]);
    else
       assign uncached = (msr_psr_dmme_ff & ~tlb_miss & ~perm_denied & tlb_unc);
 endgenerate

@@ -90,13 +90,50 @@ module ysyx_20210479
 	output [3:0]	io_slave_rid
 );
 
+   // CPU configurations
+   localparam                           CONFIG_AW = 32;
+   localparam                           CONFIG_DW = 32;
+   localparam                           CONFIG_P_DW = 5;
+   localparam                           CONFIG_P_FETCH_WIDTH = 1;
+   localparam                           CONFIG_P_ISSUE_WIDTH = 1;
+   localparam                           CONFIG_P_PAGE_SIZE = 13;
+   localparam                           CONFIG_IC_P_LINE = 6;
+   localparam                           CONFIG_IC_P_SETS = 6;
+   localparam                           CONFIG_IC_P_WAYS = 2;
+   localparam                           CONFIG_DC_P_LINE = 6;
+   localparam                           CONFIG_DC_P_SETS = 6;
+   localparam                           CONFIG_DC_P_WAYS = 2;
+   localparam                           CONFIG_PHT_P_NUM = 2;
+   localparam                           CONFIG_BTB_P_NUM = 2;
+   localparam                           CONFIG_P_IQ_DEPTH = 2;
+   localparam                           CONFIG_ENABLE_MUL = 0;
+   localparam                           CONFIG_ENABLE_DIV = 0;
+   localparam                           CONFIG_ENABLE_DIVU = 0;
+   localparam                           CONFIG_ENABLE_MOD = 0;
+   localparam                           CONFIG_ENABLE_MODU = 0;
+   localparam                           CONFIG_ENABLE_ASR = 0;
+   localparam                           CONFIG_IMMU_ENABLE_UNCACHED_SEG = 1;
+   localparam                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 1;
+   localparam                           CONFIG_DTLB_P_SETS = 7;
+   localparam                           CONFIG_ITLB_P_SETS = 7;
+
+   localparam [CONFIG_AW-1:0]           CONFIG_EITM_VECTOR = 32'h80000000 + 32'h1c;
+   localparam [CONFIG_AW-1:0]           CONFIG_EIPF_VECTOR = 32'h80000000 + 32'h14;
+   localparam [CONFIG_AW-1:0]           CONFIG_ERST_VECTOR = 32'h30000000;
+   localparam [CONFIG_AW-1:0]           CONFIG_ESYSCALL_VECTOR = 32'h80000000 + 32'hc;
+   localparam [CONFIG_AW-1:0]           CONFIG_EINSN_VECTOR = 32'h80000000 + 32'h4;
+   localparam [CONFIG_AW-1:0]           CONFIG_EIRQ_VECTOR = 32'h80000000 + 32'h8;
+   localparam [CONFIG_AW-1:0]           CONFIG_EDTM_VECTOR = 32'h80000000 + 32'h20;
+   localparam [CONFIG_AW-1:0]           CONFIG_EDPF_VECTOR = 32'h80000000 + 32'h18;
+   localparam [CONFIG_AW-1:0]           CONFIG_EALIGN_VECTOR = 32'h80000000 + 32'h24;
+   
+   localparam                           CONFIG_NUM_IRQ = 32;
+
    localparam AXI_P_DW_BYTES   = 3; // 8 Bytes
    localparam AXI_UNCACHED_P_DW_BYTES = 2; // 4 Bytes max. for uncached devices
    localparam AXI_ADDR_WIDTH    = 32;
    localparam AXI_ID_WIDTH      = 4;
    localparam AXI_USER_WIDTH    = 1;
-  
-   localparam CONFIG_NUM_IRQ = 32;
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -218,13 +255,47 @@ module ysyx_20210479
    assign rst = reset;
 
    ncpu64k
-      #(
-         .AXI_P_DW_BYTES                     (AXI_P_DW_BYTES),
-         .AXI_UNCACHED_P_DW_BYTES            (AXI_UNCACHED_P_DW_BYTES),
-         .AXI_ADDR_WIDTH                     (AXI_ADDR_WIDTH),
-         .AXI_ID_WIDTH                       (AXI_ID_WIDTH),
-         .AXI_USER_WIDTH                     (AXI_USER_WIDTH)
-      )
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_AW                      (CONFIG_AW),
+        .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_P_DW                    (CONFIG_P_DW),
+        .CONFIG_P_FETCH_WIDTH           (CONFIG_P_FETCH_WIDTH),
+        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
+        .CONFIG_P_PAGE_SIZE             (CONFIG_P_PAGE_SIZE),
+        .CONFIG_IC_P_LINE               (CONFIG_IC_P_LINE),
+        .CONFIG_IC_P_SETS               (CONFIG_IC_P_SETS),
+        .CONFIG_IC_P_WAYS               (CONFIG_IC_P_WAYS),
+        .CONFIG_DC_P_LINE               (CONFIG_DC_P_LINE),
+        .CONFIG_DC_P_SETS               (CONFIG_DC_P_SETS),
+        .CONFIG_DC_P_WAYS               (CONFIG_DC_P_WAYS),
+        .CONFIG_PHT_P_NUM               (CONFIG_PHT_P_NUM),
+        .CONFIG_BTB_P_NUM               (CONFIG_BTB_P_NUM),
+        .CONFIG_P_IQ_DEPTH              (CONFIG_P_IQ_DEPTH),
+        .CONFIG_ENABLE_MUL              (CONFIG_ENABLE_MUL),
+        .CONFIG_ENABLE_DIV              (CONFIG_ENABLE_DIV),
+        .CONFIG_ENABLE_DIVU             (CONFIG_ENABLE_DIVU),
+        .CONFIG_ENABLE_MOD              (CONFIG_ENABLE_MOD),
+        .CONFIG_ENABLE_MODU             (CONFIG_ENABLE_MODU),
+        .CONFIG_ENABLE_ASR              (CONFIG_ENABLE_ASR),
+        .CONFIG_IMMU_ENABLE_UNCACHED_SEG(CONFIG_IMMU_ENABLE_UNCACHED_SEG),
+        .CONFIG_DMMU_ENABLE_UNCACHED_SEG(CONFIG_DMMU_ENABLE_UNCACHED_SEG),
+        .CONFIG_DTLB_P_SETS             (CONFIG_DTLB_P_SETS),
+        .CONFIG_ITLB_P_SETS             (CONFIG_ITLB_P_SETS),
+        .CONFIG_EITM_VECTOR             (CONFIG_EITM_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EIPF_VECTOR             (CONFIG_EIPF_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_ESYSCALL_VECTOR         (CONFIG_ESYSCALL_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EINSN_VECTOR            (CONFIG_EINSN_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EIRQ_VECTOR             (CONFIG_EIRQ_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EDTM_VECTOR             (CONFIG_EDTM_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EDPF_VECTOR             (CONFIG_EDPF_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EALIGN_VECTOR           (CONFIG_EALIGN_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ),
+        .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
+        .AXI_UNCACHED_P_DW_BYTES        (AXI_UNCACHED_P_DW_BYTES),
+        .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),
+        .AXI_ID_WIDTH                   (AXI_ID_WIDTH),
+        .AXI_USER_WIDTH                 (AXI_USER_WIDTH))
    U_CORE
       (/*AUTOINST*/
        // Outputs

@@ -24,14 +24,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "memory.hh"
 
-Memory::Memory(size_t memory_size_, phy_addr_t mmio_phy_base_)
+Memory::Memory(size_t memory_size_, phy_addr_t dram_phy_start_, phy_addr_t mmio_phy_base_, phy_addr_t mmio_phy_end_addr_)
     : mmio8(nullptr),
       mmio16(nullptr),
       mmio32(nullptr),
       memory(new uint8_t[memory_size_]),
       memory_size(memory_size_),
-      mmio_phy_base(mmio_phy_base_)
+      dram_phy_start(dram_phy_start_),
+      mmio_phy_base(mmio_phy_base_),
+      mmio_phy_end_addr(mmio_phy_end_addr_)
 {
+    assert(mmio_phy_base <= mmio_phy_end_addr);
 }
 
 Memory::~Memory()
@@ -43,8 +46,13 @@ int Memory::load_address_fp(FILE *fp, phy_addr_t baseaddr)
 {
     size_t pos = 0;
     size_t len;
+    if (!(baseaddr >= dram_phy_start && baseaddr < (dram_phy_start + memory_size)))
+    {
+        fprintf(stderr, "%s(): Memory out of bound: paddr=%#x", __func__, baseaddr);
+        return -1;
+    }
     fseek(fp, 0, SEEK_SET);
-    while ((len = fread(memory + baseaddr + pos, 1, CHUNK_SIZE, fp)) > 0)
+    while ((len = fread(memory + baseaddr - dram_phy_start + pos, 1, CHUNK_SIZE, fp)) > 0)
     {
         pos += len;
     }
@@ -54,7 +62,7 @@ int Memory::load_address_fp(FILE *fp, phy_addr_t baseaddr)
 Memory::mmio_node *
 Memory::match_mmio_handler(mmio_node *domain, phy_addr_t addr, bool w)
 {
-    if (addr >= mmio_phy_base)
+    if (addr >= mmio_phy_base && addr <= mmio_phy_end_addr)
     {
         for (mmio_node *node = domain; node; node = node->next)
         {

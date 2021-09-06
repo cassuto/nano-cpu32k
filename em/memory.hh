@@ -19,7 +19,7 @@ public:
 class Memory
 {
 public:
-    Memory(size_t memory_size_, phy_addr_t mmio_phy_base_);
+    Memory(size_t memory_size_, phy_addr_t dram_phy_start_, phy_addr_t mmio_phy_base_, phy_addr_t mmio_phy_end_addr_);
     ~Memory();
     int load_address_fp(FILE *fp, phy_addr_t baseaddr);
 
@@ -44,19 +44,14 @@ public:
         {
             mmio_handler->callback->writem8(addr, val, mmio_handler->opaque);
         }
+        else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
+        {
+            memory[addr - dram_phy_start] = val;
+        }
         else
         {
-#ifdef CHECK_MEMORY_BOUND
-            if (addr < memory_size)
-                memory[addr] = val;
-            else
-            {
-                fprintf(stderr, "Memory out of bound. paddr=%#x\n", addr);
-                panic(1);
-            }
-#else
-            memory[addr] = val;
-#endif
+            fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
+            panic(1);
         }
     }
 
@@ -68,8 +63,9 @@ public:
         {
             mmio_handler->callback->writem16(addr, val, mmio_handler->opaque);
         }
-        else
+        else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
         {
+            addr -= dram_phy_start;
             phy_writem8(addr, uint8_t(val & 0x00ff));
             phy_writem8(addr + 1, uint8_t(val >> 8));
         }
@@ -83,8 +79,9 @@ public:
         {
             mmio_handler->callback->writem32(addr, val, mmio_handler->opaque);
         }
-        else
+        else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
         {
+            addr -= dram_phy_start;
             phy_writem8(addr, uint8_t(val & 0xff));
             phy_writem8(addr + 1, uint8_t((val >> 8) & 0xff));
             phy_writem8(addr + 2, uint8_t((val >> 16) & 0xff));
@@ -100,16 +97,15 @@ public:
         {
             return mmio_handler->callback->readm8(addr, mmio_handler->opaque);
         }
+        else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
+        {
+            return memory[addr - dram_phy_start];
+        }
         else
         {
-#ifdef CHECK_MEMORY_BOUND
-            if (addr >= memory_size)
-            {
-                fprintf(stderr, "Memory out of bound: paddr=%#x\n", addr);
-                panic(1);
-            }
-#endif
-            return memory[addr];
+            fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
+            panic(1);
+            return 0;
         }
     }
 
@@ -121,8 +117,17 @@ public:
         {
             return mmio_handler->callback->readm16(addr, mmio_handler->opaque);
         }
-        else
+        else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
+        {
+            addr -= dram_phy_start;
             return ((uint16_t)phy_readm8(addr + 1) << 8) | (uint16_t)phy_readm8(addr);
+        }
+        else
+        {
+            fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
+            panic(1);
+            return 0;
+        }
     }
 
     inline uint32_t
@@ -133,26 +138,33 @@ public:
         {
             return mmio_handler->callback->readm32(addr, mmio_handler->opaque);
         }
-        else
+        else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
         {
+            addr -= dram_phy_start;
             return ((uint32_t)phy_readm8(addr + 3) << 24) |
                    ((uint32_t)phy_readm8(addr + 2) << 16) |
                    ((uint32_t)phy_readm8(addr + 1) << 8) |
                    (uint32_t)phy_readm8(addr);
+        }
+        else
+        {
+            fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
+            panic(1);
+            return 0;
         }
     }
 
     inline uint64_t
     dram_readm64(uint64_t idx)
     {
-        /* FIXME: support big-endian host machines */
-        return *(((uint64_t *)memory)+idx);
+        /* FIXME: unsupport big-endian host machines */
+        return *(((uint64_t *)memory) + idx);
     }
     inline void
     dram_writem64(uint64_t idx, uint64_t val)
     {
-        /* FIXME: support big-endian host machines */
-        *(((uint64_t *)memory)+idx) = val;
+        /* FIXME: unsupport big-endian host machines */
+        *(((uint64_t *)memory) + idx) = val;
     }
 
     inline size_t get_size() const { return memory_size; } /* in bytes */
@@ -180,7 +192,9 @@ private:
     mmio_node *mmio8, *mmio16, *mmio32;
     uint8_t *memory;
     size_t memory_size;
+    phy_addr_t dram_phy_start;
     phy_addr_t mmio_phy_base;
+    phy_addr_t mmio_phy_end_addr;
 };
 
 #endif

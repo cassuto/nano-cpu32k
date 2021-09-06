@@ -52,7 +52,7 @@ private:
     CoDRAMRequest *dramsim3_request(const axi_channel &axi, bool is_write);
 
 private:
-    Memory *ram;
+    Memory *mem;
     CoDRAMsim3 *dram;
     CoDRAMResponse *wait_resp_r;
     CoDRAMResponse *wait_resp_b;

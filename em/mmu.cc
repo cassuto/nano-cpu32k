@@ -68,7 +68,7 @@ int CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool s
              */
             if (dmmu_enable_uncached_seg)
                 /* Without any exception */
-                *uncached = (msr.DTLBH[offset].NC) || ((msr.DTLBH[offset].PPN >> (32 - PPN_SHIFT - 4)) == 0x8);
+                *uncached = (msr.DTLBH[offset].NC) || !((msr.DTLBH[offset].PPN >> (32 - PPN_SHIFT - 1))&0x1);
             else
                 *uncached = (msr.DTLBH[offset].NC);
         }
@@ -109,7 +109,7 @@ int CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa)
             {
                 return -EM_PAGE_FAULT;
             }
-            *pa = (msr.ITLBH[offset].PPN << PPN_SHIFT) | (va & ((1 << PPN_SHIFT) - 1));
+            *pa = (msr.ITLBH[offset].PPN << PPN_SHIFT) | !((msr.DTLBH[offset].PPN >> (32 - PPN_SHIFT - 1))&0x1);
             return 0;
         }
         else

@@ -82,7 +82,9 @@ public:
         dcache_p_ways = 2;
         dcache_p_sets = 6;
         dcache_p_line = 6;
-        mmio_phy_base = 0x80000000;
+        dram_phy_base = 0x80000000;
+        mmio_phy_base = 0x00000000;
+        mmio_phy_end_addr = 0x7fffffff;
         IRQ_TSC = 0;
         bin_load_addr = 0x0;
         device_clk_div = 100;
@@ -100,7 +102,8 @@ public:
     bool enable_icache, enable_dcache;
     int icache_p_ways, icache_p_sets, icache_p_line;
     int dcache_p_ways, dcache_p_sets, dcache_p_line;
-    phy_addr_t mmio_phy_base;
+    phy_addr_t dram_phy_base;
+    phy_addr_t mmio_phy_base, mmio_phy_end_addr;
     int IRQ_TSC;
     phy_addr_t bin_load_addr;
     uint64_t device_clk_div;
@@ -263,7 +266,7 @@ int main(int argc, char *argv[])
                       args.enable_icache, args.enable_dcache,
                       args.icache_p_ways, args.icache_p_sets, args.icache_p_line,
                       args.dcache_p_ways, args.dcache_p_sets, args.dcache_p_line,
-                      args.ram_size, args.mmio_phy_base,
+                      args.ram_size, args.dram_phy_base, args.mmio_phy_base, args.mmio_phy_end_addr,
                       args.IRQ_TSC);
 
     FILE *bin_fp = fopen(args.bin_pathname.c_str(), "rb");

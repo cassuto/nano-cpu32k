@@ -109,7 +109,7 @@ public:
         bool enable_icache_, bool enable_dcache_,
         int icache_p_ways_, int icache_p_sets_, int icache_p_line_,
         int dcache_p_ways_, int dcache_p_sets_, int dcache_p_line_,
-        size_t memory_size_, phy_addr_t mmio_phy_base_,
+        size_t memory_size_, phy_addr_t dram_phy_base_, phy_addr_t mmio_phy_base_, phy_addr_t mmio_phy_end_addr_,
         int IRQ_TSC_);
     ~CPU();
 

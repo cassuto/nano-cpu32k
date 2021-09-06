@@ -91,19 +91,6 @@
 `define BPU_UPD_TGT `PC_W:1
 
 
-/* Exception Vector Table */
-`define NCPU_ERST_VECTOR 32'h0
-`define NCPU_EINSN_VECTOR 32'h4
-`define NCPU_EIRQ_VECTOR 32'h8
-`define NCPU_ESYSCALL_VECTOR 32'hc
-`define NCPU_EBUS_VECTOR 32'h10
-`define NCPU_EIPF_VECTOR 32'h14
-`define NCPU_EDPF_VECTOR 32'h18
-`define NCPU_EITM_VECTOR 32'h1c
-`define NCPU_EDTM_VECTOR 32'h20
-`define NCPU_EALIGN_VECTOR 32'h24
-
-
 /* Internal OPC (one-hot encoding) */
 
 // Single-cycle operations
