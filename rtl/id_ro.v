@@ -53,9 +53,9 @@ module id_ro
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam CHS                      = (IW*2);
    wire                                p_ce;
-   wire [CONFIG_DW*IW-1:0]             s1o_s1_rf_dout_ff;
-   wire [CONFIG_DW*IW-1:0]             s1o_s2_rf_dout_ff;
-   wire [CONFIG_DW*IW-1:0]             s1o_s3_rf_wdat_ff;
+   wire [CONFIG_DW*IW-1:0]             s1o_s1_rf_dout_ff, s1o_s1_rf_dout_ff_rev;
+   wire [CONFIG_DW*IW-1:0]             s1o_s2_rf_dout_ff, s1o_s2_rf_dout_ff_rev;
+   wire [CONFIG_DW*IW-1:0]             s1o_s3_rf_wdat_ff, s1o_s3_rf_wdat_ff_rev;
    wire [CHS-1:0]                      rop_raw_load0;
    genvar i, k;
    integer j;
@@ -92,9 +92,9 @@ module id_ro
             mDFF_l #(.DW(IW)) ff_s1o_cf_s2_rev(.CLK(clk), .LOAD(p_ce), .D(cf_s2_rev), .Q(s1o_cf_s2_rev) );
             mDFF_l #(.DW(IW)) ff_s1o_cf_s3_rev(.CLK(clk), .LOAD(p_ce), .D(cf_s3_rev), .Q(s1o_cf_s3_rev) );
 
-            pmux #(.SELW(IW), .DW(CONFIG_DW)) U_S1_PMUX (.sel(s1o_cf_s1_rev), .din(s1o_s1_rf_dout_ff), .dout(s1o_s1_rf_dout_sel), .valid(s1o_use_s1) );
-            pmux #(.SELW(IW), .DW(CONFIG_DW)) U_S2_PMUX (.sel(s1o_cf_s2_rev), .din(s1o_s2_rf_dout_ff), .dout(s1o_s2_rf_dout_sel), .valid(s1o_use_s2) );
-            pmux #(.SELW(IW), .DW(CONFIG_DW)) U_S3_PMUX (.sel(s1o_cf_s3_rev), .din(s1o_s3_rf_wdat_ff), .dout(s1o_s3_rf_wdat_sel), .valid(s1o_use_s3) );
+            pmux #(.SELW(IW), .DW(CONFIG_DW)) U_S1_PMUX (.sel(s1o_cf_s1_rev), .din(s1o_s1_rf_dout_ff_rev), .dout(s1o_s1_rf_dout_sel), .valid(s1o_use_s1) );
+            pmux #(.SELW(IW), .DW(CONFIG_DW)) U_S2_PMUX (.sel(s1o_cf_s2_rev), .din(s1o_s2_rf_dout_ff_rev), .dout(s1o_s2_rf_dout_sel), .valid(s1o_use_s2) );
+            pmux #(.SELW(IW), .DW(CONFIG_DW)) U_S3_PMUX (.sel(s1o_cf_s3_rev), .din(s1o_s3_rf_wdat_ff_rev), .dout(s1o_s3_rf_wdat_sel), .valid(s1o_use_s3) );
             
             assign byp_dout[i*CONFIG_DW +: CONFIG_DW] = (s1o_use_s1)
                                                             ? s1o_s1_rf_dout_sel
@@ -111,5 +111,14 @@ module id_ro
    mDFF_l #(.DW(CONFIG_DW*IW)) ff_s1o_s1_rf_dout_ff(.CLK(clk), .LOAD(p_ce), .D(ro_ex_s1_rf_dout), .Q(s1o_s1_rf_dout_ff) );
    mDFF_l #(.DW(CONFIG_DW*IW)) ff_s1o_s2_rf_dout_ff(.CLK(clk), .LOAD(p_ce), .D(ro_ex_s2_rf_dout), .Q(s1o_s2_rf_dout_ff) );
    mDFF_l #(.DW(CONFIG_DW*IW)) ff_s1o_s3_rf_wdat_ff(.CLK(clk), .LOAD(p_ce), .D(ro_ex_s3_rf_wdat), .Q(s1o_s3_rf_wdat_ff) );
+   
+   generate
+      for(i=0;i<IW;i=i+1)
+         begin : gen_s1o_rf_dout_ff_rev
+            assign s1o_s1_rf_dout_ff_rev[(IW-i-1)*CONFIG_DW +: CONFIG_DW] = s1o_s1_rf_dout_ff[i*CONFIG_DW +: CONFIG_DW];
+            assign s1o_s2_rf_dout_ff_rev[(IW-i-1)*CONFIG_DW +: CONFIG_DW] = s1o_s2_rf_dout_ff[i*CONFIG_DW +: CONFIG_DW];
+            assign s1o_s3_rf_wdat_ff_rev[(IW-i-1)*CONFIG_DW +: CONFIG_DW] = s1o_s3_rf_wdat_ff[i*CONFIG_DW +: CONFIG_DW];
+         end
+   endgenerate
    
 endmodule
