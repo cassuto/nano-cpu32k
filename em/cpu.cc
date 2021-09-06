@@ -538,6 +538,7 @@ CPU::step(vm_addr_t pc)
 
     case INS32_OP_MHI:
         set_reg(rd, (cpu_unsigned_word_t)uimm17 << 15);
+        printf("r2=%#x\n", get_reg(2));
         break;
 
     default:
