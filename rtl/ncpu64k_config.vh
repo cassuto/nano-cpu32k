@@ -8,7 +8,7 @@
 
 /* Difftest configuration */
 `undef ENABLE_DIFFTEST
-//`define ENABLE_DIFFTEST
+`define ENABLE_DIFFTEST
 
 
 /* Asynchronous/synchronous reset */

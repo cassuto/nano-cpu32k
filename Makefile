@@ -75,6 +75,10 @@ sim: build
 	./build/emu --mode=simulate-only -b ./build/vmlinux.bin --dump-wave=./build/dump.vcd
 	$(GTKWAVE) ./build/dump.vcd
 
+test: build
+	./build/emu --mode=difftest -b ./build/coremark.bin --dump-wave=./build/dump.vcd
+	$(GTKWAVE) ./build/dump.vcd
+
 lint:
 	-verilator --lint-only -Wall --top-module $(LINT_TOPLEVEL) $(FLAGS) $(LINT_SRCS)
 

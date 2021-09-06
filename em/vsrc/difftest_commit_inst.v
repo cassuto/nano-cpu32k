@@ -31,8 +31,8 @@ module difftest_commit_inst(
 );
    always @(posedge clk)
       dpic_commit_inst(
-         valid1, pc1, wen1, wnum1, wdata1,
-         valid2, pc2, wen2, wnum2, wdata2,
+         valid1, pc1, wen1, {3'b0, wnum1}, wdata1,
+         valid2, pc2, wen2, {3'b0, wnum2}, wdata2,
          EINT1, EINT2
       );
 
