@@ -34,7 +34,16 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          int icache_p_ways_, int icache_p_sets_, int icache_p_line_,
          int dcache_p_ways_, int dcache_p_sets_, int dcache_p_line_,
          size_t memory_size_, phy_addr_t dram_phy_base_, phy_addr_t mmio_phy_base_, phy_addr_t mmio_phy_end_addr_,
-         int IRQ_TSC_)
+         int IRQ_TSC_,
+         phy_addr_t vect_EINSN_,
+         phy_addr_t vect_EIRQ_,
+         phy_addr_t vect_ESYSCALL_,
+         phy_addr_t vect_EIPF_,
+         phy_addr_t vect_EDPF_,
+         phy_addr_t vect_EITM_,
+         phy_addr_t vect_EDTM_,
+         phy_addr_t vect_EALGIN_,
+         phy_addr_t vect_EINT_)
     : msr(immu_tlb_count_, dmmu_tlb_count_),
       dmmu_tlb_count(dmmu_tlb_count_),
       immu_tlb_count(immu_tlb_count_),
@@ -50,6 +59,15 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       dcache_p_sets(dcache_p_sets_),
       dcache_p_line(dcache_p_line_),
       IRQ_TSC(IRQ_TSC_),
+      vect_EINSN(vect_EINSN_),
+      vect_EIRQ(vect_EIRQ_),
+      vect_ESYSCALL(vect_ESYSCALL_),
+      vect_EIPF(vect_EIPF_),
+      vect_EDPF(vect_EDPF_),
+      vect_EITM(vect_EITM_),
+      vect_EDTM(vect_EDTM_),
+      vect_EALGIN(vect_EALGIN_),
+      vect_EINT(vect_EINT_),
       pc_queue(new PCQueue())
 {
     mem = new Memory(this, memory_size_, dram_phy_base_, mmio_phy_base_, mmio_phy_end_addr_);
@@ -134,18 +152,18 @@ CPU::step(vm_addr_t pc)
     /* response asynchronous interrupts */
     if (irqc_handle_irqs() == -EM_IRQ)
     {
-        pc_nxt = raise_exception(pc, VECT_EIRQ, 0, 0);
+        pc_nxt = raise_exception(pc, vect_EIRQ, 0, 0);
         goto handle_exception;
     }
 
     switch (immu_translate_vma(pc, &insn_pa))
     {
     case -EM_PAGE_FAULT:
-        pc_nxt = raise_exception(pc, VECT_EIPF, pc, 0);
+        pc_nxt = raise_exception(pc, vect_EIPF, pc, 0);
         goto handle_exception;
 
     case -EM_TLB_MISS:
-        pc_nxt = raise_exception(pc, VECT_EITM, pc, 0);
+        pc_nxt = raise_exception(pc, vect_EITM, pc, 0);
         goto handle_exception;
     }
 
@@ -278,7 +296,7 @@ CPU::step(vm_addr_t pc)
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
         if (check_vma_align(va, 2) < 0)
         {
-            pc_nxt = raise_exception(pc, VECT_EALGIN, va, 0);
+            pc_nxt = raise_exception(pc, vect_EALGIN, va, 0);
             goto handle_exception;
         }
         phy_addr_t pa = 0;
@@ -286,10 +304,10 @@ CPU::step(vm_addr_t pc)
         switch (dmmu_translate_vma(va, &pa, &uncached, 0))
         {
         case -EM_PAGE_FAULT:
-            pc_nxt = raise_exception(pc, VECT_EDPF, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDPF, va, 0);
             goto handle_exception;
         case -EM_TLB_MISS:
-            pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
         cpu_unsigned_word_t readout;
@@ -306,7 +324,7 @@ CPU::step(vm_addr_t pc)
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
         if (check_vma_align(va, 2) < 0)
         {
-            pc_nxt = raise_exception(pc, VECT_EALGIN, va, 0);
+            pc_nxt = raise_exception(pc, vect_EALGIN, va, 0);
             goto handle_exception;
         }
         phy_addr_t pa = 0;
@@ -314,10 +332,10 @@ CPU::step(vm_addr_t pc)
         switch (dmmu_translate_vma(va, &pa, &uncached, 1))
         {
         case -EM_PAGE_FAULT:
-            pc_nxt = raise_exception(pc, VECT_EDPF, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDPF, va, 0);
             goto handle_exception;
         case -EM_TLB_MISS:
-            pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
         if (uncached)
@@ -332,7 +350,7 @@ CPU::step(vm_addr_t pc)
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
         if (check_vma_align(va, 1) < 0)
         {
-            pc_nxt = raise_exception(pc, VECT_EALGIN, va, 0);
+            pc_nxt = raise_exception(pc, vect_EALGIN, va, 0);
             goto handle_exception;
         }
         phy_addr_t pa = 0;
@@ -340,10 +358,10 @@ CPU::step(vm_addr_t pc)
         switch (dmmu_translate_vma(va, &pa, &uncached, 0))
         {
         case -EM_PAGE_FAULT:
-            pc_nxt = raise_exception(pc, VECT_EDPF, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDPF, va, 0);
             goto handle_exception;
         case -EM_TLB_MISS:
-            pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
         cpu_unsigned_word_t readout;
@@ -359,7 +377,7 @@ CPU::step(vm_addr_t pc)
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
         if (check_vma_align(va, 1) < 0)
         {
-            pc_nxt = raise_exception(pc, VECT_EALGIN, va, 0);
+            pc_nxt = raise_exception(pc, vect_EALGIN, va, 0);
             goto handle_exception;
         }
         phy_addr_t pa = 0;
@@ -367,10 +385,10 @@ CPU::step(vm_addr_t pc)
         switch (dmmu_translate_vma(va, &pa, &uncached, 0))
         {
         case -EM_PAGE_FAULT:
-            pc_nxt = raise_exception(pc, VECT_EDPF, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDPF, va, 0);
             goto handle_exception;
         case -EM_TLB_MISS:
-            pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
         cpu_word_t readout;
@@ -386,7 +404,7 @@ CPU::step(vm_addr_t pc)
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
         if (check_vma_align(va, 1) < 0)
         {
-            pc_nxt = raise_exception(pc, VECT_EALGIN, va, 0);
+            pc_nxt = raise_exception(pc, vect_EALGIN, va, 0);
             goto handle_exception;
         }
         phy_addr_t pa = 0;
@@ -394,10 +412,10 @@ CPU::step(vm_addr_t pc)
         switch (dmmu_translate_vma(va, &pa, &uncached, 1))
         {
         case -EM_PAGE_FAULT:
-            pc_nxt = raise_exception(pc, VECT_EDPF, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDPF, va, 0);
             goto handle_exception;
         case -EM_TLB_MISS:
-            pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
         if (uncached)
@@ -415,10 +433,10 @@ CPU::step(vm_addr_t pc)
         switch (dmmu_translate_vma(va, &pa, &uncached, 0))
         {
         case -EM_PAGE_FAULT:
-            pc_nxt = raise_exception(pc, VECT_EDPF, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDPF, va, 0);
             goto handle_exception;
         case -EM_TLB_MISS:
-            pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
         cpu_unsigned_word_t readout;
@@ -437,10 +455,10 @@ CPU::step(vm_addr_t pc)
         switch (dmmu_translate_vma(va, &pa, &uncached, 0))
         {
         case -EM_PAGE_FAULT:
-            pc_nxt = raise_exception(pc, VECT_EDPF, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDPF, va, 0);
             goto handle_exception;
         case -EM_TLB_MISS:
-            pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
         cpu_word_t readout;
@@ -460,10 +478,10 @@ CPU::step(vm_addr_t pc)
         switch (dmmu_translate_vma(va, &pa, &uncached, 1))
         {
         case -EM_PAGE_FAULT:
-            pc_nxt = raise_exception(pc, VECT_EDPF, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDPF, va, 0);
             goto handle_exception;
         case -EM_TLB_MISS:
-            pc_nxt = raise_exception(pc, VECT_EDTM, va, 0);
+            pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
         if (uncached)
@@ -477,7 +495,7 @@ CPU::step(vm_addr_t pc)
         break;
 
     case INS32_OP_SYSCALL:
-        pc_nxt = raise_exception(pc, VECT_ESYSCALL, 0, /*syscall*/ 1);
+        pc_nxt = raise_exception(pc, vect_ESYSCALL, 0, /*syscall*/ 1);
         goto handle_exception;
 
     case INS32_OP_RET:
@@ -527,7 +545,7 @@ CPU::step(vm_addr_t pc)
         {
             fprintf(stderr, "EINSN: opcode = %#x at pc %#x\n", opcode, pc);
         }
-        pc_nxt = raise_exception(pc, VECT_EINSN, pc, 0);
+        pc_nxt = raise_exception(pc, vect_EINSN, pc, 0);
         goto handle_exception;
     }
 

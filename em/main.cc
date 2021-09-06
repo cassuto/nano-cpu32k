@@ -69,7 +69,18 @@ public:
     {
         /* Default settings */
         mode = ModeDifftest;
-        reset_vector = 0x0;
+
+        vect_ERST = 0x80000000;
+        vect_EINSN = 0x80000004;
+        vect_EIRQ = 0x80000008;
+        vect_ESYSCALL = 0x8000000c;
+        vect_EIPF = 0x80000014;
+        vect_EDPF = 0x80000018;
+        vect_EITM = 0x8000001c;
+        vect_EDTM = 0x80000020;
+        vect_EALGIN = 0x80000024;
+        vect_EINT = 0x80000028;
+
         ram_size = 32 * 1024 * 1024;
         dmmu_tlb_count = 128;
         immu_tlb_count = 128;
@@ -95,7 +106,16 @@ public:
 
     Mode mode;
     std::string bin_pathname;
-    phy_addr_t reset_vector;
+    phy_addr_t vect_ERST;
+    phy_addr_t vect_EINSN;
+    phy_addr_t vect_EIRQ;
+    phy_addr_t vect_ESYSCALL;
+    phy_addr_t vect_EIPF;
+    phy_addr_t vect_EDPF;
+    phy_addr_t vect_EITM;
+    phy_addr_t vect_EDTM;
+    phy_addr_t vect_EALGIN;
+    phy_addr_t vect_EINT;
     int ram_size;
     int dmmu_tlb_count, immu_tlb_count;
     bool dmmu_enable_uncached_seg;
@@ -237,7 +257,7 @@ parse_args(int argc, char **argv)
             args.bin_load_addr = atoi(optarg);
             break;
         case 'r':
-            args.reset_vector = atoll(optarg);
+            args.vect_ERST = atoll(optarg);
             break;
         case 'd':
             args.vcdfile = optarg;
@@ -267,7 +287,16 @@ int main(int argc, char *argv[])
                       args.icache_p_ways, args.icache_p_sets, args.icache_p_line,
                       args.dcache_p_ways, args.dcache_p_sets, args.dcache_p_line,
                       args.ram_size, args.dram_phy_base, args.mmio_phy_base, args.mmio_phy_end_addr,
-                      args.IRQ_TSC);
+                      args.IRQ_TSC,
+                      args.vect_EINSN,
+                      args.vect_EIRQ,
+                      args.vect_ESYSCALL,
+                      args.vect_EIPF,
+                      args.vect_EDPF,
+                      args.vect_EITM,
+                      args.vect_EDTM,
+                      args.vect_EALGIN,
+                      args.vect_EINT);
 
     FILE *bin_fp = fopen(args.bin_pathname.c_str(), "rb");
     if (!bin_fp)
@@ -281,7 +310,7 @@ int main(int argc, char *argv[])
 
     emu_dev = new DeviceTree(emu_CPU, emu_CPU->memory(), args.mmio_phy_base);
 
-    emu_CPU->reset(args.reset_vector);
+    emu_CPU->reset(args.vect_ERST);
 
     switch (args.mode)
     {
@@ -306,7 +335,8 @@ int main(int argc, char *argv[])
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU);
         for (int i = 0; i < 1000; i++)
         {
-            if (emu->clk()) {
+            if (emu->clk())
+            {
                 retcode = -1;
                 break;
             }

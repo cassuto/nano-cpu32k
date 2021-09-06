@@ -110,7 +110,16 @@ public:
         int icache_p_ways_, int icache_p_sets_, int icache_p_line_,
         int dcache_p_ways_, int dcache_p_sets_, int dcache_p_line_,
         size_t memory_size_, phy_addr_t dram_phy_base_, phy_addr_t mmio_phy_base_, phy_addr_t mmio_phy_end_addr_,
-        int IRQ_TSC_);
+        int IRQ_TSC_,
+        phy_addr_t vect_EINSN_,
+        phy_addr_t vect_EIRQ_,
+        phy_addr_t vect_ESYSCALL_,
+        phy_addr_t vect_EIPF_,
+        phy_addr_t vect_EDPF_,
+        phy_addr_t vect_EITM_,
+        phy_addr_t vect_EDTM_,
+        phy_addr_t vect_EALGIN_,
+        phy_addr_t vect_EINT_);
     ~CPU();
 
     void reset(vm_addr_t reset_vect);
@@ -159,6 +168,15 @@ private:
     Cache *icache, *dcache;
     int IRQ_TSC;
     PCQueue *pc_queue;
+    phy_addr_t vect_EINSN;
+    phy_addr_t vect_EIRQ;
+    phy_addr_t vect_ESYSCALL;
+    phy_addr_t vect_EIPF;
+    phy_addr_t vect_EDPF;
+    phy_addr_t vect_EITM;
+    phy_addr_t vect_EDTM;
+    phy_addr_t vect_EALGIN;
+    phy_addr_t vect_EINT;
 };
 
 #endif // CPU_H_
