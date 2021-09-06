@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "cpu.hh"
 #include "memory.hh"
 #include "emu.hh"
+#include "dpi-c.hh"
 #include "peripheral/device-tree.hh"
 #include <string>
 #include <getopt.h>
@@ -48,6 +49,7 @@ static const struct option long_options[] = {
     {"enable-dcache", required_argument, NULL, 0},            /* 15 */
     {"wave-begin", required_argument, NULL, 0},               /* 16 */
     {"wave-end", required_argument, NULL, 0},                 /* 17 */
+    {"commit-timeout-max", required_argument, NULL, 0},       /* 18 */
     {"bin-load-addr", required_argument, NULL, 'a'},
     {"bin-pathname", required_argument, NULL, 'b'},
     {"reset-vector", required_argument, NULL, 'r'},
@@ -102,6 +104,7 @@ public:
         vcdfile = "dump.vcd";
         wave_begin = 0;
         wave_end = 10000;
+        commit_timeout_max = 100000;
     }
 
     Mode mode;
@@ -130,6 +133,7 @@ public:
     std::string vcdfile;
     uint64_t wave_begin;
     uint64_t wave_end;
+    uint64_t commit_timeout_max;
 };
 
 static const char *optstirng = "-b:a:r:d:";
@@ -245,6 +249,9 @@ parse_args(int argc, char **argv)
             case 17:
                 args.wave_end = atol(optarg);
                 break;
+            case 18:
+                args.commit_timeout_max = atol(optarg);
+                break;
             default:
                 return usage(argv[0]);
             }
@@ -330,6 +337,22 @@ int main(int argc, char *argv[])
     }
     break;
 
+    case ModeDifftest:
+    {
+        emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU);
+        enable_difftest(emu_CPU, emu, args.commit_timeout_max);
+        for (;;)
+        {
+            if (emu->clk())
+            {
+                retcode = -1;
+                break;
+            }
+        }
+        emu->finish();
+        break;
+    }
+
     case ModeSimulateOnly:
     {
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU);
@@ -342,14 +365,8 @@ int main(int argc, char *argv[])
             }
         }
         emu->finish();
+        break;
     }
-    break;
-
-    case ModeDifftest:
-    {
-        exit(1);
-    }
-    break;
     }
     fprintf(stderr, "Normally exit with code = %d\n", retcode);
     return 0;

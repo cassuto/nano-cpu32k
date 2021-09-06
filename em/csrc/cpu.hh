@@ -129,6 +129,8 @@ public:
     void set_reg(uint16_t addr, cpu_word_t val);
     cpu_word_t get_reg(uint16_t addr);
 
+    inline PCQueue *get_pc_queue() { return pc_queue; }
+
     /* irqc.cc */
     void irqc_set_interrupt(int channel, char raise);
     int irqc_is_masked(int channel);
@@ -136,6 +138,7 @@ public:
 
     inline Memory *memory() { return mem; }
     inline vm_addr_t get_pc() { return pc; }
+    inline void set_pc(vm_addr_t npc) { pc = npc; }
 
 private:
     vm_addr_t raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall);

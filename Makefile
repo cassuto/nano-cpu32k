@@ -3,7 +3,7 @@
 GTKWAVE = e:/gtkwave-win32/gtkwave/bin/gtkwave
 
 NUM_JOBS = 8
-SRC_DIR = ./rtl
+SRC_DIR = rtl
 TESTBENCH_DIR = testbench
 EM_DIR = em
 SRCS = $(foreach x,$(SRC_DIR), $(wildcard $(addprefix ${x}/*,.v) ) )
@@ -17,7 +17,7 @@ EM_CXXFLAGS =
 EM_LDFLAGS =
 
 # DRAMsim3
-DRAMSIM3_HOME = em/third-party/DRAMsim3
+DRAMSIM3_HOME = em/csrc/third-party/DRAMsim3
 LIB_DRAMSIM3 = $(DRAMSIM3_HOME)/build/libdramsim3.a
 EM_CXXFLAGS += -I../$(DRAMSIM3_HOME)/src
 EM_CXXFLAGS += -DWITH_DRAMSIM3 -DDRAMSIM3_CONFIG=\\\"$(DRAMSIM3_HOME)/configs/XiangShan.ini\\\" -DDRAMSIM3_OUTDIR=\\\"$(BUILD_DIR)\\\"
@@ -26,7 +26,7 @@ EM_LDFLAGS  += ../$(LIB_DRAMSIM3)
 INCS = -I$(SRC_DIR)
 DEFS = +define+SYNTHESIS=1
 FLAGS = $(DEFS) $(INCS) -Wno-UNUSED
-CFLAGS = -Wall -g -I../em $(EM_CXXFLAGS)
+CFLAGS = -Wall -g -I../em/csrc $(EM_CXXFLAGS)
 LDFLAGS = -g $(EM_LDFLAGS)
 
 # Simulation (Difftest)
@@ -34,24 +34,27 @@ SIM_TOPLEVEL = simtop
 SIM_FLAGS = +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -LDFLAGS "$(LDFLAGS)" -CFLAGS "$(CFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
 SIM_SRCS = $(SRCS) \
 			$(TESTBENCH_DIR)/simtop.v
+SIM_SRCS += $(foreach x,$(EM_DIR)/vsrc, $(wildcard $(addprefix ${x}/*,.v) ) )
+
 # CPU Model
-SIM_CPPS = $(EM_DIR)/main.cc \
-			$(EM_DIR)/cpu.cc \
-			$(EM_DIR)/cache.cc \
-			$(EM_DIR)/memory.cc \
-			$(EM_DIR)/mmu.cc \
-			$(EM_DIR)/msr.cc \
-			$(EM_DIR)/tsc.cc \
-			$(EM_DIR)/irqc.cc \
-			$(EM_DIR)/pc-queue.cc \
-			$(EM_DIR)/emu.cc
+SIM_CPPS = $(EM_DIR)/csrc/main.cc \
+			$(EM_DIR)/csrc/cpu.cc \
+			$(EM_DIR)/csrc/cache.cc \
+			$(EM_DIR)/csrc/memory.cc \
+			$(EM_DIR)/csrc/mmu.cc \
+			$(EM_DIR)/csrc/msr.cc \
+			$(EM_DIR)/csrc/tsc.cc \
+			$(EM_DIR)/csrc/irqc.cc \
+			$(EM_DIR)/csrc/pc-queue.cc \
+			$(EM_DIR)/csrc/emu.cc \
+			$(EM_DIR)/csrc/dpi-c.cc
 # Peripherals
-SIM_CPPS += $(EM_DIR)/peripheral/device-tree.cc \
-			$(EM_DIR)/peripheral/pb-uart.cc \
-			$(EM_DIR)/peripheral/virt-uart.cc
+SIM_CPPS += $(EM_DIR)/csrc/peripheral/device-tree.cc \
+			$(EM_DIR)/csrc/peripheral/pb-uart.cc \
+			$(EM_DIR)/csrc/peripheral/virt-uart.cc
 # Third-party lib
-SIM_CPPS += $(EM_DIR)/third-party/axi4.cc \
-			$(EM_DIR)/third-party/dram-axi4-model.cc
+SIM_CPPS += $(EM_DIR)/csrc/third-party/axi4.cc \
+			$(EM_DIR)/csrc/third-party/dram-axi4-model.cc
 
 # Lint
 LINT_TOPLEVEL = ncpu64k

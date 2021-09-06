@@ -18,13 +18,14 @@ public:
     bool clk();
     void finish();
 
+    inline uint64_t get_cycle() const { return cycles; }
+ 
 private:
     Vsimtop *dut_ptr;
     std::string vcdfile;
     uint64_t wave_begin, wave_end;
     uint64_t num_inst_commit;
     uint64_t cycles;
-    uint64_t last_commit_cycle;
     CPU *cpu;
     DRAM *dram;
     VerilatedVcdC *trace_fp;

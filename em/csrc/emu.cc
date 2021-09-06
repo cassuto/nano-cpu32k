@@ -33,7 +33,6 @@ Emu::Emu(const char *vcdfile_,
       wave_end(wave_end_),
       num_inst_commit(0),
       cycles(0),
-      last_commit_cycle(0),
       cpu(cpu_),
       dram(new DRAM(cpu_->memory())),
       trace_fp(nullptr)
