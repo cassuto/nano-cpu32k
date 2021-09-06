@@ -59,6 +59,7 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       dcache_p_sets(dcache_p_sets_),
       dcache_p_line(dcache_p_line_),
       IRQ_TSC(IRQ_TSC_),
+      pc_queue(new PCQueue()),
       vect_EINSN(vect_EINSN_),
       vect_EIRQ(vect_EIRQ_),
       vect_ESYSCALL(vect_ESYSCALL_),
@@ -67,8 +68,7 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       vect_EITM(vect_EITM_),
       vect_EDTM(vect_EDTM_),
       vect_EALGIN(vect_EALGIN_),
-      vect_EINT(vect_EINT_),
-      pc_queue(new PCQueue())
+      vect_EINT(vect_EINT_)
 {
     mem = new Memory(this, memory_size_, dram_phy_base_, mmio_phy_base_, mmio_phy_end_addr_);
     icache = new Cache(mem, enable_icache, icache_p_ways, icache_p_sets, icache_p_line);
@@ -338,6 +338,9 @@ CPU::step(vm_addr_t pc)
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
+        if (pc==0x800019d0){
+            printf("800019d0 ls va=%#x pa=%#x\n", va, pa);
+        }
         if (uncached)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
@@ -538,7 +541,6 @@ CPU::step(vm_addr_t pc)
 
     case INS32_OP_MHI:
         set_reg(rd, (cpu_unsigned_word_t)uimm17 << 15);
-        printf("r2=%#x\n", get_reg(2));
         break;
 
     default:
