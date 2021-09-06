@@ -21,9 +21,6 @@
 #include "axi4.hh"
 #include "dram-axi4-model.hh"
 
-#include "emu.hh"
-extern Emu *emu;
-
 DRAM::DRAM(Memory *mem_)
     : mem(mem_),
       dram(nullptr),
@@ -99,11 +96,6 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
     uint64_t beatsize = 1 << ar.size;
     uint8_t beatlen = ar.len + 1;
     uint64_t transaction_size = beatsize * beatlen;
-    
-    if (!((transaction_size % sizeof(uint64_t)) == 0)) {
-        printf("c=%lu\n", emu->get_cycle());
-        emu->finish();
-    }
     assert((transaction_size % sizeof(uint64_t)) == 0);
     // axi burst FIXED
     if (ar.burst == 0x0)
@@ -201,7 +193,6 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
     // read address fire: accept a new request
     if (axi_check_raddr_fire(axi))
     {
-        printf("rfire c=%lu\n", emu->get_cycle());
         dram->add_request(dramsim3_request(axi, false));
     }
 

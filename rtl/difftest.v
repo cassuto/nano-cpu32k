@@ -25,7 +25,6 @@ module difftest
    //
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid_ff;
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc_ff;
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_ff;
    wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr_ff;
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat_ff;
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_we_ff;
