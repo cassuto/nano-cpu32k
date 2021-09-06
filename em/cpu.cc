@@ -338,9 +338,6 @@ CPU::step(vm_addr_t pc)
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
-        if (pc==0x800019d0){
-            printf("800019d0 ls va=%#x pa=%#x\n", va, pa);
-        }
         if (uncached)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else

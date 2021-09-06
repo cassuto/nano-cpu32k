@@ -65,7 +65,6 @@ public:
         }
         else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
         {
-            addr -= dram_phy_start;
             phy_writem8(addr, uint8_t(val & 0x00ff));
             phy_writem8(addr + 1, uint8_t(val >> 8));
         }
@@ -81,7 +80,6 @@ public:
         }
         else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
         {
-            addr -= dram_phy_start;
             phy_writem8(addr, uint8_t(val & 0xff));
             phy_writem8(addr + 1, uint8_t((val >> 8) & 0xff));
             phy_writem8(addr + 2, uint8_t((val >> 16) & 0xff));
@@ -119,7 +117,6 @@ public:
         }
         else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
         {
-            addr -= dram_phy_start;
             return ((uint16_t)phy_readm8(addr + 1) << 8) | (uint16_t)phy_readm8(addr);
         }
         else
@@ -140,7 +137,6 @@ public:
         }
         else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
         {
-            addr -= dram_phy_start;
             return ((uint32_t)phy_readm8(addr + 3) << 24) |
                    ((uint32_t)phy_readm8(addr + 2) << 16) |
                    ((uint32_t)phy_readm8(addr + 1) << 8) |
