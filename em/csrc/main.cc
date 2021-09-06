@@ -105,7 +105,6 @@ public:
         wave_begin = 0;
         wave_end = 10000;
         commit_timeout_max = 100000;
-        reset_cycles = 10;
     }
 
     Mode mode;
@@ -135,7 +134,6 @@ public:
     uint64_t wave_begin;
     uint64_t wave_end;
     uint64_t commit_timeout_max;
-    int reset_cycles;
 };
 
 static const char *optstirng = "-b:a:r:d:";
@@ -342,7 +340,6 @@ int main(int argc, char *argv[])
     case ModeDifftest:
     {
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU);
-        emu->reset(args.reset_cycles);
         enable_difftest(emu_CPU, emu, args.commit_timeout_max);
         for (;;)
         {
@@ -359,7 +356,6 @@ int main(int argc, char *argv[])
     case ModeSimulateOnly:
     {
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU);
-        emu->reset(args.reset_cycles);
         for (int i = 0; i < 1000; i++)
         {
             if (emu->clk())

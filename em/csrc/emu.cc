@@ -37,6 +37,8 @@ Emu::Emu(const char *vcdfile_,
       dram(new DRAM(cpu_->memory())),
       trace_fp(nullptr)
 {
+    reset(10);
+    
 #if VM_TRACE == 1
     if (!vcdfile.empty())
     {
