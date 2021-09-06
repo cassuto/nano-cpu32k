@@ -65,7 +65,7 @@ MYINFO_FILE = myinfo.txt
 ID =$(shell sed '/^ID=/!d;s/.*=//' $(MYINFO_FILE))
 NAME =$(shell sed '/^Name=/!d;s/.*=//' $(MYINFO_FILE))
 
-build: # $(LIB_DRAMSIM3)
+build: $(LIB_DRAMSIM3)
 	verilator --cc -Wall --top-module $(SIM_TOPLEVEL) $(FLAGS) $(SIM_FLAGS) --build $(SIM_SRCS) $(SIM_CPPS)
 	git add . -A --ignore-errors
 	(echo $(NAME) && echo $(ID) && hostnamectl && date) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty  2>&1
