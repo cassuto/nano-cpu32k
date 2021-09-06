@@ -57,7 +57,7 @@ SIM_CPPS += $(EM_DIR)/csrc/third-party/axi4.cc \
 			$(EM_DIR)/csrc/third-party/dram-axi4-model.cc
 
 # Lint
-LINT_TOPLEVEL = ncpu64k
+LINT_TOPLEVEL = ysyx_20210479
 LINT_SRCS = $(SRCS)
 
 # YSYX Information
