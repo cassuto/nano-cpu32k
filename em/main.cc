@@ -86,7 +86,7 @@ public:
         mmio_phy_base = 0x00000000;
         mmio_phy_end_addr = 0x7fffffff;
         IRQ_TSC = 0;
-        bin_load_addr = 0x0;
+        bin_load_addr = dram_phy_base;
         device_clk_div = 100;
         vcdfile = "dump.vcd";
         wave_begin = 0;
@@ -274,7 +274,10 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "Failed to open file '%s'\n", args.bin_pathname.c_str());
     }
-    emu_CPU->memory()->load_address_fp(bin_fp, args.bin_load_addr);
+    if (emu_CPU->memory()->load_address_fp(bin_fp, args.bin_load_addr))
+    {
+        return 1;
+    }
 
     emu_dev = new DeviceTree(emu_CPU, emu_CPU->memory(), args.mmio_phy_base);
 

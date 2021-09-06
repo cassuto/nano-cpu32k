@@ -48,7 +48,7 @@ int Memory::load_address_fp(FILE *fp, phy_addr_t baseaddr)
     size_t len;
     if (!(baseaddr >= dram_phy_start && baseaddr < (dram_phy_start + memory_size)))
     {
-        fprintf(stderr, "%s(): Memory out of bound: paddr=%#x", __func__, baseaddr);
+        fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, baseaddr);
         return -1;
     }
     fseek(fp, 0, SEEK_SET);
