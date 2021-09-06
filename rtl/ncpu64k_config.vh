@@ -1,10 +1,15 @@
 `ifndef NCPU64K_CONFIG_H_
 `define NCPU64K_CONFIG_H_
 
-/* Synthesis switch */
+/* Enable this synthesis switch, if you compiler doesn't support */
 //`ifndef SYNTHESIS
 //`define SYNTHESIS
 //`endif
+
+/* Difftest configuration */
+`undef ENABLE_DIFFTEST
+//`define ENABLE_DIFFTEST
+
 
 /* Asynchronous/synchronous reset */
 //`define NCPU_RST_ASYNC

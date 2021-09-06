@@ -51,6 +51,7 @@ module ncpu64k
    parameter                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 0,
    parameter                           CONFIG_DTLB_P_SETS = 7,
    parameter                           CONFIG_ITLB_P_SETS = 7,
+   parameter [CONFIG_AW-1:0]           CONFIG_ERST_VECTOR = 0,
    parameter [CONFIG_AW-1:0]           CONFIG_EITM_VECTOR = 0,
    parameter [CONFIG_AW-1:0]           CONFIG_EIPF_VECTOR = 0,
    parameter [CONFIG_AW-1:0]           CONFIG_ESYSCALL_VECTOR = 0,
@@ -149,7 +150,6 @@ module ncpu64k
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_REG_AW-1:0] arf_RADDR;// From U_ID of id.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0] arf_RDATA;// From U_CMT of cmt.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] arf_RE;// From U_ID of id.v
    wire                 bpu_wb;                 // From U_EX of ex.v
    wire                 bpu_wb_is_bcc;          // From U_EX of ex.v
@@ -211,6 +211,7 @@ module ncpu64k
    wire                                flush;                  // To U_IFU of frontend.v, ...
    wire [`PC_W-1:0]                    flush_tgt;             // To U_IFU of frontend.v
    wire                                stall;                  // To U_ID of id.v, ...
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0] arf_RDATA;// To U_ID of id.v
 
    frontend
       #(/*AUTOINSTPARAM*/
@@ -227,6 +228,7 @@ module ncpu64k
         .CONFIG_IC_P_WAYS               (CONFIG_IC_P_WAYS),
         .CONFIG_PHT_P_NUM               (CONFIG_PHT_P_NUM),
         .CONFIG_BTB_P_NUM               (CONFIG_BTB_P_NUM),
+        .CONFIG_ERST_VECTOR             (CONFIG_ERST_VECTOR[CONFIG_AW-1:0]),
         .CONFIG_IMMU_ENABLE_UNCACHED_SEG(CONFIG_IMMU_ENABLE_UNCACHED_SEG),
         .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
         .AXI_UNCACHED_P_DW_BYTES        (AXI_UNCACHED_P_DW_BYTES),
@@ -492,12 +494,16 @@ module ncpu64k
         .CONFIG_DW                      (CONFIG_DW),
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH))
    U_CMT
-      (/*AUTOINST*/
+      (
        // Outputs
        .arf_RDATA                       (arf_RDATA[(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0]),
        // Inputs
        .clk                             (clk),
        .stall                           (stall),
+`ifdef ENABLE_DIFFTEST
+       .commit_valid                    (U_EX.commit_valid),
+       .commit_pc                       (U_EX.commit_pc),
+`endif
        .commit_rf_wdat                  (commit_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .commit_rf_waddr                 (commit_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .commit_rf_we                    (commit_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),

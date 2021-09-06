@@ -251,8 +251,8 @@ module ex
    wire [`PC_W*IW-1:0]                 se_tgt_vec;
    wire                                se_fail;
    wire [`PC_W-1:0]                    se_tgt;
-   wire  [`PC_W-1:0]                   commit_pc;
-   wire [`PC_W-1:0]                    commit_npc;
+   wire  [`PC_W-1:0]                   commit_epc;
+   wire [`PC_W-1:0]                    commit_nepc;
    wire                                commit_EDTM;
    wire                                commit_EDPF;
    wire                                commit_EALIGN;
@@ -445,8 +445,8 @@ module ex
                       .ex_operand1      (ex_operand1[i*CONFIG_DW +: CONFIG_DW]), // Templated
                       .ex_operand2      (ex_operand2[i*CONFIG_DW +: CONFIG_DW]), // Templated
                       .ex_imm           (ex_imm[i*CONFIG_DW +: CONFIG_DW]), // Templated
-                      .commit_pc        (commit_pc[`PC_W-1:0]),
-                      .commit_npc       (commit_npc[`PC_W-1:0]),
+                      .commit_epc       (commit_epc[`PC_W-1:0]),
+                      .commit_nepc      (commit_nepc[`PC_W-1:0]),
                       .commit_EDTM      (commit_EDTM),
                       .commit_EDPF      (commit_EDPF),
                       .commit_EALIGN    (commit_EALIGN),
@@ -734,8 +734,8 @@ module ex
    mDFF_lr # (.DW(IW)) ff_s1o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_rf_we & {IW{~flush}}), .Q(s1o_rf_we) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_s1o_rf_dout (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(s1o_rf_dout) );
    mDFF_lr # (.DW(1)) ff_s1o_lsu_load (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(ex_lsu_load0), .Q(s1o_lsu_load0) );
-   mDFF_l # (.DW(`PC_W)) ff_commit_pc (.CLK(clk), .LOAD(p_ce), .D(ex_pc[0 +: `PC_W]), .Q(commit_pc) );
-   mDFF_l # (.DW(`PC_W)) ff_commit_npc (.CLK(clk), .LOAD(p_ce), .D(npc[0]), .Q(commit_npc) );
+   mDFF_l # (.DW(`PC_W)) ff_commit_epc (.CLK(clk), .LOAD(p_ce), .D(ex_pc[0 +: `PC_W]), .Q(commit_epc) );
+   mDFF_l # (.DW(`PC_W)) ff_commit_nepc (.CLK(clk), .LOAD(p_ce), .D(npc[0]), .Q(commit_nepc) );
    
    mDFF_lr # (.DW(1)) ff_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(epu_ERET), .Q(commit_ERET) );
    mDFF_lr # (.DW(1)) ff_commit_ESYSCALL (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(epu_ESYSCALL), .Q(commit_ESYSCALL) );
@@ -755,5 +755,20 @@ module ex
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_commit_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(s2o_rf_waddr), .Q(commit_rf_waddr) );
    mDFF_lr # (.DW(IW)) ff_commit_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s2o_rf_we), .Q(commit_rf_we) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_commit_rf_wdat (.CLK(clk), .LOAD(p_ce), .D(s3i_rf_wdat), .Q(commit_rf_wdat) );
+   
+`ifdef ENABLE_DIFFTEST
+   //
+   // Signals for difftest
+   //
+   wire [IW-1:0]                       s1o_valid;
+   wire [`PC_W*IW-1:0]                 s1o_pc;
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid;
+   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc;
+
+   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_valid), .Q(s1o_valid) );
+   mDFF_l # (.DW(`PC_W*IW)) ff_s1o_pc (.CLK(clk), .LOAD(p_ce), .D(ex_pc), .Q(s1o_pc) );
+   mDFF_lr # (.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(commit_valid) );
+   mDFF_l # (.DW(`PC_W*IW)) ff_commit_pc (.CLK(clk), .LOAD(p_ce), .D(s1o_pc), .Q(commit_pc) );
+`endif
 
 endmodule

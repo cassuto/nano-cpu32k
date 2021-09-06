@@ -52,8 +52,8 @@ module ex_epu
    input [CONFIG_DW-1:0]               ex_operand2,
    input [CONFIG_DW-1:0]               ex_imm,
    // From COMMIT
-   input [`PC_W-1:0]                   commit_pc,
-   input [`PC_W-1:0]                   commit_npc,
+   input [`PC_W-1:0]                   commit_epc,
+   input [`PC_W-1:0]                   commit_nepc,
    input                               commit_EDTM,
    input                               commit_EDPF,
    input                               commit_EALIGN,
@@ -457,14 +457,14 @@ module ex_epu
    // In syscall, EPC is a pointer to the next insn to syscall, while in general EPC points to the insn
    // that raised the exception.
    assign msr_epc_nxt = commit_wmsr_epc_we ? commit_wmsr_dat :
-                        commit_ESYSCALL ? {commit_npc,2'b0} : {commit_pc,2'b0};
+                        commit_ESYSCALL ? {commit_nepc,2'b0} : {commit_epc,2'b0};
    assign msr_epc_we = msr_exc_ent | commit_wmsr_epc_we;
 
    // Commit ELSA  Assert (03100705)
    assign set_elsa_as_pc = (commit_EITM | commit_EIPF | commit_EINSN);
    assign set_elsa = (set_elsa_as_pc | commit_EDTM | commit_EDPF | commit_EALIGN);
    // Let ELSA be PC if it's IMMU or EINSN exception
-   assign lsa_nxt = set_elsa_as_pc ? {commit_pc,2'b0} : commit_LSA;
+   assign lsa_nxt = set_elsa_as_pc ? {commit_epc,2'b0} : commit_LSA;
    // Assert (03060933)
    assign msr_elsa_nxt = set_elsa ? lsa_nxt : commit_wmsr_dat;
    assign msr_elsa_we = set_elsa | commit_wmsr_elsa_we;
