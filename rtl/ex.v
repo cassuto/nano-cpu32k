@@ -663,12 +663,12 @@ module ex
    endgenerate
 
    // Speculative execution check point
-   assign se_fail_vec[0] = (b_taken ^ ex_bpu_upd_unpacked[0][`BPU_UPD_TAKEN]) | (b_tgt != ex_bpu_upd_unpacked[0][`BPU_UPD_TGT]);
+   assign se_fail_vec[0] = ex_valid[0] & ((b_taken ^ ex_bpu_upd_unpacked[0][`BPU_UPD_TAKEN]) | (b_tgt != ex_bpu_upd_unpacked[0][`BPU_UPD_TGT]));
    assign se_tgt_vec[0 +: `PC_W] = (b_taken) ? b_tgt : npc[0];
    generate
       for(i=1;i<IW;i=i+1)
          begin
-            assign se_fail_vec[i] = (1'b0 ^ ex_bpu_upd_unpacked[i][`BPU_UPD_TAKEN]);
+            assign se_fail_vec[i] = ex_valid[i] & (1'b0 ^ ex_bpu_upd_unpacked[i][`BPU_UPD_TAKEN]);
             assign se_tgt_vec[i*`PC_W +: `PC_W] = npc[i];
          end
    endgenerate
