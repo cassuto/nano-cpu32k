@@ -365,7 +365,7 @@ module icache
 
    assign stall_req = (fsm_state_ff != S_IDLE);
 
-   assign stall_ex_req = (msr_icinv_we | stall_req); // Stall the EX if icache is temporarily unable to receive a new operation
+   assign stall_ex_req = (msr_icinv_we /*&*/| stall_req); // Stall the EX if icache is temporarily unable to receive a new operation
 
    assign s2i_refill_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] ==
                                  fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);
