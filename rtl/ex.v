@@ -266,6 +266,7 @@ module ex
    wire                                commit_E_FLUSH_TLB;
    wire  [`NCPU_WMSR_WE_W-1:0]         commit_wmsr_we;
    wire  [CONFIG_DW-1:0]               commit_wmsr_dat;
+   wire                                se_flush;
    wire                                flush_s1;
    wire                                flush_s2;
    // Stage 1 Input
@@ -449,6 +450,7 @@ module ex
        .clk                             (clk),
        .rst                             (rst),
        .flush                           (flush),
+       .stall                           (stall),
        .ex_pc                           (ex_pc[0*`PC_W +: `PC_W]), // Templated
        .ex_npc                          (npc[0]),                // Templated
        .ex_valid                        (ex_valid[0]),           // Templated
@@ -723,17 +725,19 @@ module ex
    
    assign p_ce = (~stall);
    
-   assign flush = (exc_flush | s1o_se_flush);
+   assign se_flush = (p_ce & s1o_se_flush);
+   
+   assign flush = (exc_flush | se_flush);
    assign flush_tgt = (exc_flush)
                         ? exc_flush_tgt
-                        : s1o_se_flush_tgt; /* (s1o_se_flush) */ 
+                        : s1o_se_flush_tgt; /* (se_flush) */ 
    
    //
    // Pipeline flush scope table:
-   // exc_flush:     (Output of) Frontend & ID & EX(s1,s2)
-   // s1o_se_flush:  (Output of) Frontend & ID & EX(s1)
+   // exc_flush:  (Output of) Frontend & ID & EX(s1,s2)
+   // se_flush:   (Output of) Frontend & ID & EX(s1)
    //
-   assign flush_s1 = (exc_flush | s1o_se_flush);
+   assign flush_s1 = (exc_flush | se_flush);
    assign flush_s2 = (exc_flush);
    
    //

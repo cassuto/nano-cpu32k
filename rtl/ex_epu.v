@@ -44,6 +44,7 @@ module ex_epu
    input                               clk,
    input                               rst,
    input                               flush,
+   input                               stall,
    input [`PC_W-1:0]                   ex_pc,
    input [`PC_W-1:0]                   ex_npc,
    input                               ex_valid,
@@ -520,7 +521,7 @@ module ex_epu
                            ({CONFIG_AW-2{commit_EIRQ}} & CONFIG_EIRQ_VECTOR[2 +: CONFIG_AW-2]) |
                            ({CONFIG_AW-2{commit_EINSN}} & CONFIG_EINSN_VECTOR[2 +: CONFIG_AW-2]);
 
-   assign exc_flush = (commit_EDTM |
+   assign exc_flush = ~stall & (commit_EDTM |
                         commit_EDPF |
                         commit_EALIGN |
                         commit_E_FLUSH_TLB |
