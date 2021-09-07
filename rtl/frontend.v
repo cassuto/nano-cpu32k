@@ -387,4 +387,20 @@ module frontend
        .iq_push_cnt                     (iq_push_cnt[CONFIG_P_FETCH_WIDTH:0]),
        .id_pop_cnt                      (id_pop_cnt[CONFIG_P_ISSUE_WIDTH:0]));
 
+`ifdef ENABLE_DIFFTEST
+   wire [`PC_W-1:0] dbg_iq_pc[(1<<CONFIG_P_FETCH_WIDTH)-1:0];
+   wire [`PC_W-1:0] dbg_id_pc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0];
+   generate
+      for(i=0;i<FW;i=i+1)  
+         begin
+            assign dbg_iq_pc[i] = iq_pc[i*`PC_W +: `PC_W];
+            
+         end
+   endgenerate
+   generate
+      for(i=0;i<(1<<CONFIG_P_ISSUE_WIDTH);i=i+1)
+         assign dbg_id_pc[i] = id_pc[i*`PC_W +: `PC_W];
+   endgenerate
+`endif
+       
 endmodule

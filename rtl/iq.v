@@ -129,13 +129,10 @@ module iq
          assign pop_cnt_adapt = {{P_BANKS-CONFIG_P_ISSUE_WIDTH{1'b0}}, id_pop_cnt};
    endgenerate
    
-   wire [`PC_W-1:0]                    trace_iq_pc_unpacked                [FW-1:0];
-   
    // MUX for FIFO input
    generate
       for(i=0;i<BANKS;i=i+1)
          begin : gen_bank_ctrl
-         assign trace_iq_pc_unpacked[i] = iq_pc_unpacked[tail_inv[i]];
             assign que_din[i] = {iq_ins_unpacked[tail_inv[i]],
                                  iq_pc_unpacked[tail_inv[i]],
                                  iq_exc_unpacked[tail_inv[i]],

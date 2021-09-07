@@ -779,4 +779,14 @@ module ex
    mDFF_l # (.DW(`PC_W*IW)) ff_commit_pc (.CLK(clk), .LOAD(p_ce), .D(s2o_pc), .Q(commit_pc) );
 `endif
 
+`ifdef ENABLE_DIFFTEST
+   wire [`PC_W-1:0] dbg_ex_pc[IW-1:0];
+   generate
+      for(i=0;i<IW;i=i+1)  
+         begin
+            assign dbg_ex_pc[i] = ex_pc[i*`PC_W +: `PC_W];
+         end
+   endgenerate
+`endif
+
 endmodule
