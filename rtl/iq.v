@@ -42,6 +42,7 @@ module iq
    input [`FNT_EXC_W * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_exc,
    input [`BPU_UPD_W * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_bpu_upd,
    input [CONFIG_P_FETCH_WIDTH:0]      iq_push_cnt,
+   input [CONFIG_P_FETCH_WIDTH:0]      iq_push_offset,
    output                              iq_ready,
    // To ID
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid,
@@ -63,7 +64,6 @@ module iq
    wire [P_BANKS-1:0]                  head_r                        [FW-1:0];
    wire [P_BANKS-1:0]                  tail_r                        [FW-1:0];
    wire [P_BANKS-1:0]                  tail_inv                      [FW-1:0];
-   wire [P_BANKS:0]                    offset;
    wire [FIFO_DW-1:0]                  que_din                       [BANKS-1:0];
    wire [FIFO_DW-1:0]                  que_dout                      [BANKS-1:0];
    wire                                que_valid                     [BANKS-1:0];
@@ -86,29 +86,27 @@ module iq
             
             //
             // The data layout in a fetch window is as follows (FW=4)
-            // Case: push_cnt = 4:
+            // Case: iq_push_offset = 0:
             // Idx   0   1   2   3
             //     +---+---+---+---+
             // Dat |D0 |D1 |D2 |D3 |
             //     +---+---+---+---+
-            // Case: push_cnt = 3:
+            // Case: iq_push_offset = 1:
             //     +---+---+---+---+
             // Dat |X  |D0 |D1 |D2 |
             //     +---+---+---+---+
-            // Case: push_cnt = 2:
+            // Case: iq_push_offset = 2:
             //     +---+---+---+---+
             // Dat |X  |X  |D0 |D1 |
             //     +---+---+---+---+
-            // Case: push_cnt = 1:
+            // Case: iq_push_offset = 3:
             //     +---+---+---+---+
             // Dat |X  |X  |X  |D0 |
             //     +---+---+---+---+
             //
-            assign tail_inv[i] = i - tail_ff + offset[P_BANKS-1:0];
+            assign tail_inv[i] = i - tail_ff + iq_push_offset[P_BANKS-1:0];
          end
    endgenerate
-   
-   assign offset = (FW - iq_push_cnt);
    
    // Would you like some syntactic sugar?
    generate

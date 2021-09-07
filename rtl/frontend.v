@@ -116,6 +116,7 @@ module frontend
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 ic_stall_req;           // From U_ICACHE of icache.v
+   wire [`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_ins;// From U_ICACHE of icache.v
    wire                 iq_ready;               // From U_IQ of iq.v
    // End of automatics
    /*AUTOINPUT*/
@@ -130,38 +131,41 @@ module frontend
    reg [CONFIG_AW-1:0]                 pc_nxt;
    // Stage 1 Input
    wire [CONFIG_AW-1:0]                s1i_fetch_vaddr;
-   wire [FW-1:0]                       s1i_fetch_valid;
-   reg [FW-1:0]                        s1i_valid_msk;
+   wire [FW-1:0]                       s1i_fetch_aligned;
    wire [`PC_W-1:0]                    s1i_pc                           [FW-1:0];
    wire [`PC_W*FW-1:0]                 s1i_bpu_pc;
-   wire [CONFIG_P_FETCH_WIDTH:0]       s1i_push_cnt;
+   wire [CONFIG_P_FETCH_WIDTH:0]       s1i_push_offset;
    // Stage 2 Input / Stage 1 Output
    wire [`PC_W-1:0]                    s1o_pc                           [FW-1:0];
    wire [`FNT_EXC_W-1:0]               s1o_exc;
+   wire [FW-1:0]                       s1o_fetch_aligned;
    wire [CONFIG_P_FETCH_WIDTH:0]       s1o_push_cnt;
+   wire [CONFIG_P_FETCH_WIDTH:0]       s1o_push_offset;
    wire [`PC_W*FW-1:0]                 s1o_bpu_npc_packed;
    wire [`BPU_UPD_W*FW-1:0]            s1o_bpu_upd_packed;
    wire [`BPU_UPD_W-1:0]               s1o_bpu_upd                      [FW-1:0];
    wire [FW-1:0]                       s1o_bpu_taken;
    wire [`BPU_UPD_W-1:0]               s2i_bpu_upd                      [FW-1:0];
+   reg [FW-1:0]                        s2i_valid_msk;
    // Stage 3 Input / Stage 2 Output
    wire [`PC_W-1:0]                    s2o_pc                           [FW-1:0];
    wire [`FNT_EXC_W-1:0]               s2o_exc;
    wire [`BPU_UPD_W-1:0]               s2o_bpu_upd                      [FW-1:0];
    wire                                s2o_valid;
    wire [CONFIG_P_FETCH_WIDTH:0]       s2o_push_cnt;
-   wire [`NCPU_INSN_DW*FW-1:0]         iq_ins;
-   wire [`PC_W*FW-1:0]                 iq_pc;
-   wire [`FNT_EXC_W*FW-1:0]            iq_exc;
-   wire [`BPU_UPD_W*FW-1:0]            iq_bpu_upd;
-   wire [CONFIG_P_FETCH_WIDTH:0]       iq_push_cnt;
+   wire [CONFIG_P_FETCH_WIDTH:0]       s2o_push_offset;
+   wire [`BPU_UPD_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_bpu_upd;// To U_IQ of iq.v
+   wire [`FNT_EXC_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_exc;// To U_IQ of iq.v
+   wire [`PC_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_pc;// To U_IQ of iq.v
+   wire [CONFIG_P_FETCH_WIDTH:0] iq_push_cnt;  // To U_IQ of iq.v
+   wire [CONFIG_P_FETCH_WIDTH:0] iq_push_offset;// To U_IQ of iq.v
 
    genvar i;
    integer j;
 
    /* icache AUTO_TEMPLATE (
       .stall_req                       (ic_stall_req),
-      .ins                             (iq_ins),
+      .ins                             (iq_ins[]),
       .valid                           (s2o_valid),
       .stall_ex_req                    (icop_stall_req),
       )
@@ -186,7 +190,7 @@ module frontend
        // Outputs
        .stall_req                       (ic_stall_req),          // Templated
        .stall_ex_req                    (icop_stall_req),        // Templated
-       .ins                             (iq_ins),                // Templated
+       .ins                             (iq_ins[`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0]), // Templated
        .valid                           (s2o_valid),             // Templated
        .msr_icid                        (msr_icid[CONFIG_DW-1:0]),
        .ibus_ARVALID                    (ibus_ARVALID),
@@ -293,15 +297,15 @@ module frontend
    // Generate valid mask
    always @(*)
       begin
-         s1i_valid_msk[0] = 'b1;
+         s2i_valid_msk[0] = 'b1;
          for(j=1;j<FW;j=j+1)
-            s1i_valid_msk[j] = s1i_valid_msk[j-1] & ~s1o_bpu_taken[j-1];
+            s2i_valid_msk[j] = s2i_valid_msk[j-1] & ~s1o_bpu_taken[j-1];
       end
 
    // Process unaligned access
    generate
       for(i=0;i<FW;i=i+1)
-         assign s1i_fetch_valid[i] = (pc_nxt[`NCPU_P_INSN_LEN +: CONFIG_P_FETCH_WIDTH] <= i);
+         assign s1i_fetch_aligned[i] = (pc_nxt[`NCPU_P_INSN_LEN +: CONFIG_P_FETCH_WIDTH] <= i);
    endgenerate
 
    pmux #(.SELW(FW), .DW(`PC_W)) pmux_s1o_bpu_npc (.sel(s1o_bpu_taken), .din(s1o_bpu_npc_packed), .dout(pred_branch_tgt), .valid(pred_branch_taken) );
@@ -324,25 +328,30 @@ module frontend
 
    assign s1i_fetch_vaddr = {pc_nxt[CONFIG_AW-1:P_FETCH_DW_BYTES], {P_FETCH_DW_BYTES{1'b0}}}; // Aligned by fetch window
 
-   // Count the number of valid inst
-   popcnt #(.DW(FW), .P_DW(CONFIG_P_FETCH_WIDTH)) U_CLO (.bitmap(s1i_fetch_valid & s1i_valid_msk), .count(s1i_push_cnt) );
+   // Count the number of unaligned inst
+   popcnt #(.DW(FW), .P_DW(CONFIG_P_FETCH_WIDTH)) U_CUI (.bitmap(~s1i_fetch_aligned), .count(s1i_push_offset) );
 
+   // Count the number of valid inst
+   popcnt #(.DW(FW), .P_DW(CONFIG_P_FETCH_WIDTH)) U_CVI (.bitmap(s1o_fetch_aligned & s2i_valid_msk), .count(s1o_push_cnt) );
+   
    assign vpo = s1i_fetch_vaddr[CONFIG_P_PAGE_SIZE-1:0];
 
    // Control path
-   mDFF_lr # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s1o_push_cnt (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_push_cnt & {CONFIG_P_FETCH_WIDTH+1{~flush}}), .Q(s1o_push_cnt) );
+   mDFF_lr # (.DW(FW)) ff_s1o_fetch_aligned (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_fetch_aligned & {FW{~flush}}), .Q(s1o_fetch_aligned) );
    mDFF_lr # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s2o_push_cnt (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1o_push_cnt & {CONFIG_P_FETCH_WIDTH+1{~flush}}), .Q(s2o_push_cnt) );
+   mDFF_lr # (.DW(`FNT_EXC_W)) ff_s2o_exc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_exc), .Q(s2o_exc) );
 
    // Data path
-   mDFF_lr # (.DW(`FNT_EXC_W)) ff_s2o_exc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_exc), .Q(s2o_exc) );
+   mDFF_l # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s1o_push_offset (.CLK(clk), .LOAD(p_ce), .D(s1i_push_offset), .Q(s1o_push_offset) );
+   mDFF_l # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s2o_push_offset (.CLK(clk), .LOAD(p_ce), .D(s1o_push_offset), .Q(s2o_push_offset) );
+   
 
    generate
       for(i=0;i<FW;i=i+1)
          begin
             // Restore PC of each inst
             // We need re-align PC and related attributes(if any) here.
-            wire [CONFIG_P_FETCH_WIDTH:0] align_offset = (FW-s1i_push_cnt);
-            assign s1i_pc[i] = (pc_nxt[CONFIG_AW-1: `NCPU_P_INSN_LEN] + i - {{`PC_W-CONFIG_P_FETCH_WIDTH-1{1'b0}}, align_offset});
+            assign s1i_pc[i] = (pc_nxt[CONFIG_AW-1: `NCPU_P_INSN_LEN] + i - {{`PC_W-CONFIG_P_FETCH_WIDTH-1{1'b0}}, s1i_push_offset});
 
             mDFF_lr # (.DW(`PC_W)) ff_s1o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
             mDFF_lr # (.DW(`PC_W)) ff_s2o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_pc[i]), .Q(s2o_pc[i]) );
@@ -356,6 +365,7 @@ module frontend
    endgenerate
 
    assign iq_push_cnt = (s2o_push_cnt & {CONFIG_P_FETCH_WIDTH+1{s2o_valid & p_ce}});
+   assign iq_push_offset = (s2o_push_offset);
 
    // Fetch Buffer
    iq
@@ -385,6 +395,7 @@ module frontend
        .iq_exc                          (iq_exc[`FNT_EXC_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0]),
        .iq_bpu_upd                      (iq_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0]),
        .iq_push_cnt                     (iq_push_cnt[CONFIG_P_FETCH_WIDTH:0]),
+       .iq_push_offset                  (iq_push_offset[CONFIG_P_FETCH_WIDTH:0]),
        .id_pop_cnt                      (id_pop_cnt[CONFIG_P_ISSUE_WIDTH:0]));
 
 `ifdef ENABLE_DIFFTEST
