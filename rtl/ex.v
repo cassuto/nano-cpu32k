@@ -340,7 +340,10 @@ module ex
          end
    endgenerate
 
+   //
    // The first FU
+   //
+   
    ex_bru
       #(/*AUTOINSTPARAM*/
         // Parameters

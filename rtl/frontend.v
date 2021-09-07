@@ -340,7 +340,10 @@ module frontend
       for(i=0;i<FW;i=i+1)
          begin
             // Restore PC of each inst
-            assign s1i_pc[i] = (pc_nxt[CONFIG_AW-1: `NCPU_P_INSN_LEN] + i);
+            // We need re-align PC and any other related attributes here.
+            wire [CONFIG_P_FETCH_WIDTH:0] align_offset = (FW-s1i_push_cnt);
+            assign s1i_pc[i] = (pc_nxt[CONFIG_AW-1: `NCPU_P_INSN_LEN] +
+                                 {{`PC_W-CONFIG_P_FETCH_WIDTH-1{1'b0}}, align_offset} + i);
 
             mDFF_lr # (.DW(`PC_W)) ff_s1o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
             mDFF_lr # (.DW(`PC_W)) ff_s2o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_pc[i]), .Q(s2o_pc[i]) );
