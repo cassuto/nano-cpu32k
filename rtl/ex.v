@@ -267,6 +267,8 @@ module ex
    wire                                commit_E_FLUSH_TLB;
    wire  [`NCPU_WMSR_WE_W-1:0]         commit_wmsr_we;
    wire  [CONFIG_DW-1:0]               commit_wmsr_dat;
+   wire                                flush_s1;
+   wire                                flush_s2;
    // Stage 1 Input
    wire [IW-1:0]                       s1i_valid;
    wire [CONFIG_DW*IW-1:0]             s1i_rf_dout_1, s1i_rf_dout;
@@ -723,19 +725,26 @@ module ex
    
    assign p_ce = (~stall);
    
-   // Flush (Scope: Frontend & ID & EX(s1,s2))
    assign flush = (exc_flush | s1o_se_flush);
    assign flush_tgt = (exc_flush)
                         ? exc_flush_tgt
                         : s1o_se_flush_tgt; /* (s1o_se_flush) */ 
    
    //
+   // Pipeline flush scope table:
+   // exc_flush:     Frontend & ID & EX(s1,s2)
+   // s1o_se_flush:  Frontend & ID & EX(s1)
+   //
+   assign flush_s1 = (exc_flush | s1o_se_flush);
+   assign flush_s2 = (exc_flush);
+   
+   //
    // Pipeline stages
    //
-   mDFF_lr # (.DW(1)) ff_s1o_se_flush (.CLK(clk), .RST(rst), .LOAD(p_ce|exc_flush), .D(se_fail & ~exc_flush), .Q(s1o_se_flush) );
+   mDFF_lr # (.DW(1)) ff_s1o_se_flush (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(se_fail & ~flush_s1), .Q(s1o_se_flush) );
    mDFF_l # (.DW(`PC_W)) ff_s1o_se_flush_tgt (.CLK(clk), .LOAD(p_ce), .D(se_tgt), .Q(s1o_se_flush_tgt) );
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s1o_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(ex_rf_waddr), .Q(s1o_rf_waddr) );
-   mDFF_lr # (.DW(IW)) ff_s1o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce|exc_flush), .D(s1i_rf_we & {IW{~exc_flush}}), .Q(s1o_rf_we) );
+   mDFF_lr # (.DW(IW)) ff_s1o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(s1i_rf_we & {IW{~flush_s1}}), .Q(s1o_rf_we) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_s1o_rf_dout (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(s1o_rf_dout) );
    mDFF_lr # (.DW(1)) ff_s1o_lsu_load (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(ex_lsu_load0), .Q(s1o_lsu_load0) );
    mDFF_l # (.DW(`PC_W)) ff_commit_epc (.CLK(clk), .LOAD(p_ce), .D(ex_pc[0 +: `PC_W]), .Q(commit_epc) );
@@ -752,7 +761,7 @@ module ex
    mDFF_l # (.DW(CONFIG_DW)) ff_commit_wmsr_dat (.CLK(clk), .LOAD(p_ce), .D(epu_wmsr_dat), .Q(commit_wmsr_dat) );
 
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s2o_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(s1o_rf_waddr), .Q(s2o_rf_waddr) );
-   mDFF_lr # (.DW(IW)) ff_s2o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce|exc_flush), .D(s1o_rf_we & {IW{~exc_flush}}), .Q(s2o_rf_we) );
+   mDFF_lr # (.DW(IW)) ff_s2o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s2), .D(s1o_rf_we & {IW{~flush_s2}}), .Q(s2o_rf_we) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_s2o_rf_dout (.CLK(clk), .LOAD(p_ce), .D(s1o_rf_dout), .Q(s2o_rf_dout) );
    mDFF_l # (.DW(1)) ff_s2o_lsu_load (.CLK(clk), .LOAD(p_ce), .D(s1o_lsu_load0), .Q(s2o_lsu_load0) );
 
@@ -771,8 +780,8 @@ module ex
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid;
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc;
 
-   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|exc_flush), .D(s1i_valid & {IW{~exc_flush}}), .Q(s1o_valid) );
-   mDFF_lr # (.DW(IW)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|exc_flush), .D(s1o_valid & {IW{~exc_flush}}), .Q(s2o_valid) );
+   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(s1i_valid & {IW{~flush_s1}}), .Q(s1o_valid) );
+   mDFF_lr # (.DW(IW)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s2), .D(s1o_valid & {IW{~flush_s2}}), .Q(s2o_valid) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s1o_pc (.CLK(clk), .LOAD(p_ce), .D(ex_pc), .Q(s1o_pc) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s2o_pc (.CLK(clk), .LOAD(p_ce), .D(s1o_pc), .Q(s2o_pc) );
    mDFF_lr # (.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s2o_valid), .Q(commit_valid) );
