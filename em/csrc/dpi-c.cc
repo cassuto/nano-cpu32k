@@ -103,8 +103,8 @@ static void difftest_report_reg(svBit valid1, svBit valid2, int pc1, int pc2)
         fprintf(stderr, "At pc[1] = %#8x\n", pc1);
     if (valid2)
         fprintf(stderr, "At pc[2] = %#8x\n", pc2);
-    fprintf(stderr, "--------------------------------------------------------------\n");
     difftest_compare_reg(true);
+    fprintf(stderr, "--------------------------------------------------------------\n");
 }
 
 void dpic_commit_inst(
@@ -149,7 +149,6 @@ void dpic_commit_inst(
             rtl_regfile[wnum1] = wdata1;
 
         vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
-        printf("emu_pc=%#x\n", emu_pc);
         vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc);
         dpic_emu_CPU->set_pc(emu_npc);
 
@@ -167,7 +166,6 @@ void dpic_commit_inst(
             rtl_regfile[wnum2] = wdata2;
 
         vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
-        printf("emu_pc=%#x\n", emu_pc);
         vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc);
         dpic_emu_CPU->set_pc(emu_npc);
 

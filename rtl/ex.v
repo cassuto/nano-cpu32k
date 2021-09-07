@@ -771,8 +771,8 @@ module ex
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid;
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc;
 
-   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_valid), .Q(s1o_valid) );
-   mDFF_lr # (.DW(IW)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
+   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_valid & {IW{~flush}}), .Q(s1o_valid) );
+   mDFF_lr # (.DW(IW)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1o_valid & {IW{~flush}}), .Q(s2o_valid) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s1o_pc (.CLK(clk), .LOAD(p_ce), .D(ex_pc), .Q(s1o_pc) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s2o_pc (.CLK(clk), .LOAD(p_ce), .D(s1o_pc), .Q(s2o_pc) );
    mDFF_lr # (.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s2o_valid), .Q(commit_valid) );
