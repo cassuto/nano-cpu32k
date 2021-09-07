@@ -780,11 +780,11 @@ module ex
 `endif
 
 `ifdef ENABLE_DIFFTEST
-   wire [`PC_W-1:0] dbg_ex_pc[IW-1:0];
+   wire [31:0] dbg_ex_pc[IW-1:0];
    generate
       for(i=0;i<IW;i=i+1)  
          begin
-            assign dbg_ex_pc[i] = ex_pc[i*`PC_W +: `PC_W];
+            assign dbg_ex_pc[i] = {ex_pc[i*`PC_W +: `PC_W], 2'b00};
          end
    endgenerate
 `endif
