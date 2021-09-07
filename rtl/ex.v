@@ -234,7 +234,6 @@ module ex
    // End of automatics
    /*AUTOINPUT*/
    wire                                p_ce;
-   wire [`NCPU_ALU_IOPW-1:0]           ex_alu_opc_unpacked           [IW-1:0];
    wire                                ex_lsu_load0;
    wire                                b_lnk;
    wire                                add_s                         [IW-1:0];
@@ -789,10 +788,14 @@ module ex
 
 `ifdef ENABLE_DIFFTEST
    wire [31:0] dbg_ex_pc[IW-1:0];
+   wire [31:0] dbg_s1o_pc[IW-1:0];
+   wire [31:0] dbg_s2o_pc[IW-1:0];
    generate
       for(i=0;i<IW;i=i+1)  
          begin
             assign dbg_ex_pc[i] = {ex_pc[i*`PC_W +: `PC_W], 2'b00};
+            assign dbg_s1o_pc[i] = {s1o_pc[i*`PC_W +: `PC_W], 2'b00};
+            assign dbg_s2o_pc[i] = {s2o_pc[i*`PC_W +: `PC_W], 2'b00};
          end
    endgenerate
 `endif

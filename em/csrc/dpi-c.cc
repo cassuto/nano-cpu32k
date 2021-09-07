@@ -68,10 +68,7 @@ static void difftest_report_pc(vm_addr_t right, vm_addr_t wrong)
 
     fprintf(stderr, "--------------------------------------------------------------\n");
     fprintf(stderr, "[%lu cycle] PC Error!\n", dpic_emu->get_cycle());
-    fprintf(stderr, "    reference: PC = 0x%08x\n",
-            right);
-    fprintf(stderr, "    mycpu    : PC = 0x%08x\n",
-            wrong);
+    fprintf(stderr, "pc different: (right = %#8x, wrong = %#8x)\n", right, wrong);
     fprintf(stderr, "--------------------------------------------------------------\n");
 }
 
