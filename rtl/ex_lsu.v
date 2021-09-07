@@ -48,6 +48,7 @@ module ex_lsu
    output                              lsu_stall_req,
    input                               ex_valid,
    input [`NCPU_LSU_IOPW-1:0]          ex_lsu_opc_bus,
+   output                              agu_en,
    input [CONFIG_DW-1:0]               add_sum,
    input [CONFIG_DW-1:0]               ex_operand2,
    // AXI Master (Cached access)
@@ -186,6 +187,7 @@ module ex_lsu
 
    assign s1i_dcop = (msr_dcinv_we | msr_dcfls_we);
 
+   assign agu_en = (s1i_load|s1i_store);
    assign s1i_dc_vaddr = (msr_dcinv_we)
                            ? msr_dcinv_nxt
                            : (msr_dcfls_we)

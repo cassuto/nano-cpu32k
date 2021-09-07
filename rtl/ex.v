@@ -244,6 +244,7 @@ module ex
    wire                                b_taken;
    wire [`PC_W-1:0]                    b_tgt;
    wire                                is_bcc, is_breg, is_brel;
+   wire                                agu_en;
    wire [`BPU_UPD_W-1:0]               ex_bpu_upd_unpacked           [IW-1:0];
    wire [`PC_W-1:0]                    npc                           [IW-1:0];
    reg [IW-1:0]                        valid_msk;
@@ -305,7 +306,7 @@ module ex
             U_ADD
                (
                   .a                   (ex_operand1[i*CONFIG_DW +: CONFIG_DW]),
-                  .b                   (ex_operand2[i*CONFIG_DW +: CONFIG_DW]),
+                  .b                   (((i==0) & agu_en) ? ex_imm[i*CONFIG_DW +: CONFIG_DW] : ex_operand2[i*CONFIG_DW +: CONFIG_DW]),
                   .s                   (add_s[i]),
                   .sum                 (add_sum[i]),
                   .carry               (add_carry[i]),
@@ -331,272 +332,7 @@ module ex
                   .alu_result          (s1i_rf_dout_1[i*CONFIG_DW +: CONFIG_DW])
                );
 
-            if (i == 0) // The first FU
-               begin
-                  ex_bru
-                     #(/*AUTOINSTPARAM*/
-                       // Parameters
-                       .CONFIG_DW       (CONFIG_DW),
-                       .CONFIG_AW       (CONFIG_AW))
-                  U_BRU
-                     (
-                        .ex_valid         (ex_valid[i]),
-                        .ex_bru_opc_bus   (ex_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
-                        .ex_pc            (ex_pc[i*`PC_W +: `PC_W]),
-                        .ex_imm           (ex_imm[i*CONFIG_DW +: CONFIG_DW]),
-                        .ex_operand1      (ex_operand1[i*CONFIG_DW +: CONFIG_DW]),
-                        .ex_operand2      (ex_operand2[i*CONFIG_DW +: CONFIG_DW]),
-                        .ex_rf_we         (ex_rf_we[i]),
-                        .add_sum          (add_sum[i]),
-                        .add_carry        (add_carry[i]),
-                        .add_overflow     (add_overflow[i]),
-                        .b_taken          (b_taken),
-                        .b_tgt            (b_tgt),
-                        .b_lnk            (b_lnk),
-                        .is_bcc           (is_bcc),
-                        .is_breg          (is_breg),
-                        .is_brel          (is_brel)
-                     );
-
-                  /* ex_epu AUTO_TEMPLATE (
-                        .ex_valid         (ex_valid[i]),
-                        .ex_pc            (ex_pc[i*`PC_W +: `PC_W]),
-                        .ex_npc           (npc[i]),
-                        .ex_epu_opc_bus   (ex_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
-                        .ex_operand1      (ex_operand1[i*CONFIG_DW +: CONFIG_DW]),
-                        .ex_operand2      (ex_operand2[i*CONFIG_DW +: CONFIG_DW]),
-                        .ex_imm           (ex_imm[i*CONFIG_DW +: CONFIG_DW]),
-                     )
-                  */
-                  ex_epu
-                     #(/*AUTOINSTPARAM*/
-                       // Parameters
-                       .CONFIG_DW       (CONFIG_DW),
-                       .CONFIG_AW       (CONFIG_AW),
-                       .CONFIG_EITM_VECTOR(CONFIG_EITM_VECTOR[CONFIG_AW-1:0]),
-                       .CONFIG_EIPF_VECTOR(CONFIG_EIPF_VECTOR[CONFIG_AW-1:0]),
-                       .CONFIG_ESYSCALL_VECTOR(CONFIG_ESYSCALL_VECTOR[CONFIG_AW-1:0]),
-                       .CONFIG_EINSN_VECTOR(CONFIG_EINSN_VECTOR[CONFIG_AW-1:0]),
-                       .CONFIG_EIRQ_VECTOR(CONFIG_EIRQ_VECTOR[CONFIG_AW-1:0]),
-                       .CONFIG_EDTM_VECTOR(CONFIG_EDTM_VECTOR[CONFIG_AW-1:0]),
-                       .CONFIG_EDPF_VECTOR(CONFIG_EDPF_VECTOR[CONFIG_AW-1:0]),
-                       .CONFIG_EALIGN_VECTOR(CONFIG_EALIGN_VECTOR[CONFIG_AW-1:0]),
-                       .CONFIG_ITLB_P_SETS(CONFIG_ITLB_P_SETS),
-                       .CONFIG_DTLB_P_SETS(CONFIG_DTLB_P_SETS),
-                       .CONFIG_NUM_IRQ  (CONFIG_NUM_IRQ))
-                  U_EPU
-                     (/*AUTOINST*/
-                      // Outputs
-                      .epu_dout         (epu_dout[CONFIG_DW-1:0]),
-                      .epu_wmsr_dat     (epu_wmsr_dat[CONFIG_DW-1:0]),
-                      .epu_wmsr_we      (epu_wmsr_we[`NCPU_WMSR_WE_W-1:0]),
-                      .epu_ERET         (epu_ERET),
-                      .epu_ESYSCALL     (epu_ESYSCALL),
-                      .epu_EINSN        (epu_EINSN),
-                      .epu_EIPF         (epu_EIPF),
-                      .epu_EITM         (epu_EITM),
-                      .epu_EIRQ         (epu_EIRQ),
-                      .epu_E_FLUSH_TLB  (epu_E_FLUSH_TLB),
-                      .exc_flush        (exc_flush),
-                      .exc_flush_tgt    (exc_flush_tgt[`PC_W-1:0]),
-                      .irq_async        (irq_async),
-                      .tsc_irq          (tsc_irq),
-                      .msr_psr_rm_nxt   (msr_psr_rm_nxt),
-                      .msr_psr_rm_we    (msr_psr_rm_we),
-                      .msr_psr_imme_nxt (msr_psr_imme_nxt),
-                      .msr_psr_imme_we  (msr_psr_imme_we),
-                      .msr_psr_dmme_nxt (msr_psr_dmme_nxt),
-                      .msr_psr_dmme_we  (msr_psr_dmme_we),
-                      .msr_psr_ire_nxt  (msr_psr_ire_nxt),
-                      .msr_psr_ire_we   (msr_psr_ire_we),
-                      .msr_exc_ent      (msr_exc_ent),
-                      .msr_epc_nxt      (msr_epc_nxt[CONFIG_DW-1:0]),
-                      .msr_epc_we       (msr_epc_we),
-                      .msr_epsr_nxt     (msr_epsr_nxt[`NCPU_PSR_DW-1:0]),
-                      .msr_epsr_we      (msr_epsr_we),
-                      .msr_elsa_nxt     (msr_elsa_nxt[CONFIG_DW-1:0]),
-                      .msr_elsa_we      (msr_elsa_we),
-                      .msr_imm_tlbl_idx (msr_imm_tlbl_idx[CONFIG_ITLB_P_SETS-1:0]),
-                      .msr_imm_tlbl_nxt (msr_imm_tlbl_nxt[CONFIG_DW-1:0]),
-                      .msr_imm_tlbl_we  (msr_imm_tlbl_we),
-                      .msr_imm_tlbh_idx (msr_imm_tlbh_idx[CONFIG_ITLB_P_SETS-1:0]),
-                      .msr_imm_tlbh_nxt (msr_imm_tlbh_nxt[CONFIG_DW-1:0]),
-                      .msr_imm_tlbh_we  (msr_imm_tlbh_we),
-                      .msr_dmm_tlbl_idx (msr_dmm_tlbl_idx[CONFIG_DTLB_P_SETS-1:0]),
-                      .msr_dmm_tlbl_nxt (msr_dmm_tlbl_nxt[CONFIG_DW-1:0]),
-                      .msr_dmm_tlbl_we  (msr_dmm_tlbl_we),
-                      .msr_dmm_tlbh_idx (msr_dmm_tlbh_idx[CONFIG_DTLB_P_SETS-1:0]),
-                      .msr_dmm_tlbh_nxt (msr_dmm_tlbh_nxt[CONFIG_DW-1:0]),
-                      .msr_dmm_tlbh_we  (msr_dmm_tlbh_we),
-                      .msr_icinv_nxt    (msr_icinv_nxt[CONFIG_DW-1:0]),
-                      .msr_icinv_we     (msr_icinv_we),
-                      .msr_dcinv_nxt    (msr_dcinv_nxt[CONFIG_DW-1:0]),
-                      .msr_dcinv_we     (msr_dcinv_we),
-                      .msr_dcfls_nxt    (msr_dcfls_nxt[CONFIG_DW-1:0]),
-                      .msr_dcfls_we     (msr_dcfls_we),
-                      // Inputs
-                      .clk              (clk),
-                      .rst              (rst),
-                      .flush            (flush),
-                      .ex_pc            (ex_pc[i*`PC_W +: `PC_W]), // Templated
-                      .ex_npc           (npc[i]),                // Templated
-                      .ex_valid         (ex_valid[i]),           // Templated
-                      .ex_epu_opc_bus   (ex_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]), // Templated
-                      .ex_operand1      (ex_operand1[i*CONFIG_DW +: CONFIG_DW]), // Templated
-                      .ex_operand2      (ex_operand2[i*CONFIG_DW +: CONFIG_DW]), // Templated
-                      .ex_imm           (ex_imm[i*CONFIG_DW +: CONFIG_DW]), // Templated
-                      .commit_epc       (commit_epc[`PC_W-1:0]),
-                      .commit_nepc      (commit_nepc[`PC_W-1:0]),
-                      .commit_EDTM      (commit_EDTM),
-                      .commit_EDPF      (commit_EDPF),
-                      .commit_EALIGN    (commit_EALIGN),
-                      .commit_E_FLUSH_TLB(commit_E_FLUSH_TLB),
-                      .commit_LSA       (commit_LSA[CONFIG_AW-1:0]),
-                      .commit_ERET      (commit_ERET),
-                      .commit_ESYSCALL  (commit_ESYSCALL),
-                      .commit_EINSN     (commit_EINSN),
-                      .commit_EIPF      (commit_EIPF),
-                      .commit_EITM      (commit_EITM),
-                      .commit_EIRQ      (commit_EIRQ),
-                      .commit_wmsr_we   (commit_wmsr_we[`NCPU_WMSR_WE_W-1:0]),
-                      .commit_wmsr_dat  (commit_wmsr_dat[CONFIG_DW-1:0]),
-                      .irqs             (irqs[CONFIG_NUM_IRQ-1:0]),
-                      .msr_psr          (msr_psr[`NCPU_PSR_DW-1:0]),
-                      .msr_psr_nold     (msr_psr_nold[`NCPU_PSR_DW-1:0]),
-                      .msr_psr_ire      (msr_psr_ire),
-                      .msr_cpuid        (msr_cpuid[CONFIG_DW-1:0]),
-                      .msr_epc          (msr_epc[CONFIG_DW-1:0]),
-                      .msr_epsr         (msr_epsr[`NCPU_PSR_DW-1:0]),
-                      .msr_epsr_nobyp   (msr_epsr_nobyp[`NCPU_PSR_DW-1:0]),
-                      .msr_elsa         (msr_elsa[CONFIG_DW-1:0]),
-                      .msr_coreid       (msr_coreid[CONFIG_DW-1:0]),
-                      .msr_immid        (msr_immid[CONFIG_DW-1:0]),
-                      .msr_dmmid        (msr_dmmid[CONFIG_DW-1:0]),
-                      .msr_icid         (msr_icid[CONFIG_DW-1:0]),
-                      .msr_dcid         (msr_dcid[CONFIG_DW-1:0]));
-
-                  // BRU reused the adder of ALU
-                  assign add_s[i] =
-                     (
-                        ex_alu_opc_unpacked[i][`NCPU_ALU_SUB] |
-                        ex_alu_opc_unpacked[i][`NCPU_BRU_BEQ] |
-                        ex_alu_opc_unpacked[i][`NCPU_BRU_BNE] |
-                        ex_alu_opc_unpacked[i][`NCPU_BRU_BGTU] |
-                        ex_alu_opc_unpacked[i][`NCPU_BRU_BGT] |
-                        ex_alu_opc_unpacked[i][`NCPU_BRU_BLEU] |
-                        ex_alu_opc_unpacked[i][`NCPU_BRU_BLE]
-                     );
-
-                  // Add the result of BRU
-                  assign s1i_rf_dout[i*CONFIG_DW +: CONFIG_DW] = (s1i_rf_dout_1[i*CONFIG_DW +: CONFIG_DW] |
-                                                                  ({CONFIG_DW{b_lnk}} & {npc[i], {`NCPU_P_INSN_LEN{1'b0}}}));
-
-                  /* ex_lsu AUTO_TEMPLATE (
-                        .ex_valid         (ex_valid[i]),
-                        .ex_lsu_opc_bus   (ex_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
-                        .add_sum          (add_sum[i]),
-                        .ex_operand2      (ex_operand2[i*CONFIG_DW +: CONFIG_DW]),
-                        .lsu_EDTM         (commit_EDTM),
-                        .lsu_EDPF         (commit_EDPF),
-                        .lsu_EALIGN       (commit_EALIGN),
-                        .lsu_vaddr        (commit_LSA),
-                        .lsu_dout         (s2o_lsu_dout0),
-                     )
-                  */
-                  ex_lsu
-                     #(/*AUTOINSTPARAM*/
-                       // Parameters
-                       .CONFIG_AW       (CONFIG_AW),
-                       .CONFIG_DW       (CONFIG_DW),
-                       .CONFIG_P_DW     (CONFIG_P_DW),
-                       .CONFIG_P_PAGE_SIZE(CONFIG_P_PAGE_SIZE),
-                       .CONFIG_DMMU_ENABLE_UNCACHED_SEG(CONFIG_DMMU_ENABLE_UNCACHED_SEG),
-                       .CONFIG_DTLB_P_SETS(CONFIG_DTLB_P_SETS),
-                       .CONFIG_DC_P_LINE(CONFIG_DC_P_LINE),
-                       .CONFIG_DC_P_SETS(CONFIG_DC_P_SETS),
-                       .CONFIG_DC_P_WAYS(CONFIG_DC_P_WAYS),
-                       .AXI_P_DW_BYTES  (AXI_P_DW_BYTES),
-                       .AXI_ADDR_WIDTH  (AXI_ADDR_WIDTH),
-                       .AXI_ID_WIDTH    (AXI_ID_WIDTH),
-                       .AXI_USER_WIDTH  (AXI_USER_WIDTH))
-                  U_LSU
-                     (/*AUTOINST*/
-                      // Outputs
-                      .lsu_stall_req    (lsu_stall_req),
-                      .dbus_ARVALID     (dbus_ARVALID),
-                      .dbus_ARADDR      (dbus_ARADDR[AXI_ADDR_WIDTH-1:0]),
-                      .dbus_ARPROT      (dbus_ARPROT[2:0]),
-                      .dbus_ARID        (dbus_ARID[AXI_ID_WIDTH-1:0]),
-                      .dbus_ARUSER      (dbus_ARUSER[AXI_USER_WIDTH-1:0]),
-                      .dbus_ARLEN       (dbus_ARLEN[7:0]),
-                      .dbus_ARSIZE      (dbus_ARSIZE[2:0]),
-                      .dbus_ARBURST     (dbus_ARBURST[1:0]),
-                      .dbus_ARLOCK      (dbus_ARLOCK),
-                      .dbus_ARCACHE     (dbus_ARCACHE[3:0]),
-                      .dbus_ARQOS       (dbus_ARQOS[3:0]),
-                      .dbus_ARREGION    (dbus_ARREGION[3:0]),
-                      .dbus_RREADY      (dbus_RREADY),
-                      .dbus_AWVALID     (dbus_AWVALID),
-                      .dbus_AWADDR      (dbus_AWADDR[AXI_ADDR_WIDTH-1:0]),
-                      .dbus_AWPROT      (dbus_AWPROT[2:0]),
-                      .dbus_AWID        (dbus_AWID[AXI_ID_WIDTH-1:0]),
-                      .dbus_AWUSER      (dbus_AWUSER[AXI_USER_WIDTH-1:0]),
-                      .dbus_AWLEN       (dbus_AWLEN[7:0]),
-                      .dbus_AWSIZE      (dbus_AWSIZE[2:0]),
-                      .dbus_AWBURST     (dbus_AWBURST[1:0]),
-                      .dbus_AWLOCK      (dbus_AWLOCK),
-                      .dbus_AWCACHE     (dbus_AWCACHE[3:0]),
-                      .dbus_AWQOS       (dbus_AWQOS[3:0]),
-                      .dbus_AWREGION    (dbus_AWREGION[3:0]),
-                      .dbus_WVALID      (dbus_WVALID),
-                      .dbus_WDATA       (dbus_WDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
-                      .dbus_WSTRB       (dbus_WSTRB[(1<<AXI_P_DW_BYTES)-1:0]),
-                      .dbus_WLAST       (dbus_WLAST),
-                      .dbus_WUSER       (dbus_WUSER[AXI_USER_WIDTH-1:0]),
-                      .dbus_BREADY      (dbus_BREADY),
-                      .lsu_EDTM         (commit_EDTM),           // Templated
-                      .lsu_EDPF         (commit_EDPF),           // Templated
-                      .lsu_EALIGN       (commit_EALIGN),         // Templated
-                      .lsu_vaddr        (commit_LSA),            // Templated
-                      .lsu_dout         (s2o_lsu_dout0),         // Templated
-                      .msr_dmmid        (msr_dmmid[CONFIG_DW-1:0]),
-                      .msr_dcid         (msr_dcid[CONFIG_DW-1:0]),
-                      // Inputs
-                      .clk              (clk),
-                      .rst              (rst),
-                      .stall            (stall),
-                      .flush            (flush),
-                      .ex_valid         (ex_valid[i]),           // Templated
-                      .ex_lsu_opc_bus   (ex_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]), // Templated
-                      .add_sum          (add_sum[i]),            // Templated
-                      .ex_operand2      (ex_operand2[i*CONFIG_DW +: CONFIG_DW]), // Templated
-                      .dbus_ARREADY     (dbus_ARREADY),
-                      .dbus_RVALID      (dbus_RVALID),
-                      .dbus_RDATA       (dbus_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
-                      .dbus_RRESP       (dbus_RRESP[1:0]),
-                      .dbus_RLAST       (dbus_RLAST),
-                      .dbus_RID         (dbus_RID[AXI_ID_WIDTH-1:0]),
-                      .dbus_RUSER       (dbus_RUSER[AXI_USER_WIDTH-1:0]),
-                      .dbus_AWREADY     (dbus_AWREADY),
-                      .dbus_WREADY      (dbus_WREADY),
-                      .dbus_BVALID      (dbus_BVALID),
-                      .dbus_BRESP       (dbus_BRESP[1:0]),
-                      .dbus_BID         (dbus_BID[AXI_ID_WIDTH-1:0]),
-                      .dbus_BUSER       (dbus_BUSER[AXI_USER_WIDTH-1:0]),
-                      .msr_psr_dmme     (msr_psr_dmme),
-                      .msr_psr_rm       (msr_psr_rm),
-                      .msr_dmm_tlbl_idx (msr_dmm_tlbl_idx[CONFIG_DTLB_P_SETS-1:0]),
-                      .msr_dmm_tlbl_nxt (msr_dmm_tlbl_nxt[CONFIG_DW-1:0]),
-                      .msr_dmm_tlbl_we  (msr_dmm_tlbl_we),
-                      .msr_dmm_tlbh_idx (msr_dmm_tlbh_idx[CONFIG_DTLB_P_SETS-1:0]),
-                      .msr_dmm_tlbh_nxt (msr_dmm_tlbh_nxt[CONFIG_DW-1:0]),
-                      .msr_dmm_tlbh_we  (msr_dmm_tlbh_we),
-                      .msr_dcinv_nxt    (msr_dcinv_nxt[CONFIG_DW-1:0]),
-                      .msr_dcinv_we     (msr_dcinv_we),
-                      .msr_dcfls_nxt    (msr_dcfls_nxt[CONFIG_DW-1:0]),
-                      .msr_dcfls_we     (msr_dcfls_we));
-               end
-            else // The remaining n-1 FUs
+            if (i > 0) // The last n-1 FUs
                begin
                   assign add_s[i] = ex_alu_opc_unpacked[i][`NCPU_ALU_SUB];
                   assign s1i_rf_dout[i*CONFIG_DW +: CONFIG_DW] = s1i_rf_dout_1[i*CONFIG_DW +: CONFIG_DW];
@@ -604,6 +340,271 @@ module ex
          end
    endgenerate
 
+   // The first FU
+   ex_bru
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_AW                      (CONFIG_AW))
+   U_BRU
+      (
+         .ex_valid         (ex_valid[0]),
+         .ex_bru_opc_bus   (ex_bru_opc_bus[0*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
+         .ex_pc            (ex_pc[0*`PC_W +: `PC_W]),
+         .ex_imm           (ex_imm[0*CONFIG_DW +: CONFIG_DW]),
+         .ex_operand1      (ex_operand1[0*CONFIG_DW +: CONFIG_DW]),
+         .ex_operand2      (ex_operand2[0*CONFIG_DW +: CONFIG_DW]),
+         .ex_rf_we         (ex_rf_we[0]),
+         .add_sum          (add_sum[0]),
+         .add_carry        (add_carry[0]),
+         .add_overflow     (add_overflow[0]),
+         .b_taken          (b_taken),
+         .b_tgt            (b_tgt),
+         .b_lnk            (b_lnk),
+         .is_bcc           (is_bcc),
+         .is_breg          (is_breg),
+         .is_brel          (is_brel)
+      );
+
+   /* ex_epu AUTO_TEMPLATE (
+         .ex_valid         (ex_valid[0]),
+         .ex_pc            (ex_pc[0*`PC_W +: `PC_W]),
+         .ex_npc           (npc[0]),
+         .ex_epu_opc_bus   (ex_epu_opc_bus[0*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
+         .ex_operand1      (ex_operand1[0*CONFIG_DW +: CONFIG_DW]),
+         .ex_operand2      (ex_operand2[0*CONFIG_DW +: CONFIG_DW]),
+         .ex_imm           (ex_imm[0*CONFIG_DW +: CONFIG_DW]),
+      )
+   */
+   ex_epu
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_AW                      (CONFIG_AW),
+        .CONFIG_EITM_VECTOR             (CONFIG_EITM_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EIPF_VECTOR             (CONFIG_EIPF_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_ESYSCALL_VECTOR         (CONFIG_ESYSCALL_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EINSN_VECTOR            (CONFIG_EINSN_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EIRQ_VECTOR             (CONFIG_EIRQ_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EDTM_VECTOR             (CONFIG_EDTM_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EDPF_VECTOR             (CONFIG_EDPF_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EALIGN_VECTOR           (CONFIG_EALIGN_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_ITLB_P_SETS             (CONFIG_ITLB_P_SETS),
+        .CONFIG_DTLB_P_SETS             (CONFIG_DTLB_P_SETS),
+        .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ))
+   U_EPU
+      (/*AUTOINST*/
+       // Outputs
+       .epu_dout                        (epu_dout[CONFIG_DW-1:0]),
+       .epu_wmsr_dat                    (epu_wmsr_dat[CONFIG_DW-1:0]),
+       .epu_wmsr_we                     (epu_wmsr_we[`NCPU_WMSR_WE_W-1:0]),
+       .epu_ERET                        (epu_ERET),
+       .epu_ESYSCALL                    (epu_ESYSCALL),
+       .epu_EINSN                       (epu_EINSN),
+       .epu_EIPF                        (epu_EIPF),
+       .epu_EITM                        (epu_EITM),
+       .epu_EIRQ                        (epu_EIRQ),
+       .epu_E_FLUSH_TLB                 (epu_E_FLUSH_TLB),
+       .exc_flush                       (exc_flush),
+       .exc_flush_tgt                   (exc_flush_tgt[`PC_W-1:0]),
+       .irq_async                       (irq_async),
+       .tsc_irq                         (tsc_irq),
+       .msr_psr_rm_nxt                  (msr_psr_rm_nxt),
+       .msr_psr_rm_we                   (msr_psr_rm_we),
+       .msr_psr_imme_nxt                (msr_psr_imme_nxt),
+       .msr_psr_imme_we                 (msr_psr_imme_we),
+       .msr_psr_dmme_nxt                (msr_psr_dmme_nxt),
+       .msr_psr_dmme_we                 (msr_psr_dmme_we),
+       .msr_psr_ire_nxt                 (msr_psr_ire_nxt),
+       .msr_psr_ire_we                  (msr_psr_ire_we),
+       .msr_exc_ent                     (msr_exc_ent),
+       .msr_epc_nxt                     (msr_epc_nxt[CONFIG_DW-1:0]),
+       .msr_epc_we                      (msr_epc_we),
+       .msr_epsr_nxt                    (msr_epsr_nxt[`NCPU_PSR_DW-1:0]),
+       .msr_epsr_we                     (msr_epsr_we),
+       .msr_elsa_nxt                    (msr_elsa_nxt[CONFIG_DW-1:0]),
+       .msr_elsa_we                     (msr_elsa_we),
+       .msr_imm_tlbl_idx                (msr_imm_tlbl_idx[CONFIG_ITLB_P_SETS-1:0]),
+       .msr_imm_tlbl_nxt                (msr_imm_tlbl_nxt[CONFIG_DW-1:0]),
+       .msr_imm_tlbl_we                 (msr_imm_tlbl_we),
+       .msr_imm_tlbh_idx                (msr_imm_tlbh_idx[CONFIG_ITLB_P_SETS-1:0]),
+       .msr_imm_tlbh_nxt                (msr_imm_tlbh_nxt[CONFIG_DW-1:0]),
+       .msr_imm_tlbh_we                 (msr_imm_tlbh_we),
+       .msr_dmm_tlbl_idx                (msr_dmm_tlbl_idx[CONFIG_DTLB_P_SETS-1:0]),
+       .msr_dmm_tlbl_nxt                (msr_dmm_tlbl_nxt[CONFIG_DW-1:0]),
+       .msr_dmm_tlbl_we                 (msr_dmm_tlbl_we),
+       .msr_dmm_tlbh_idx                (msr_dmm_tlbh_idx[CONFIG_DTLB_P_SETS-1:0]),
+       .msr_dmm_tlbh_nxt                (msr_dmm_tlbh_nxt[CONFIG_DW-1:0]),
+       .msr_dmm_tlbh_we                 (msr_dmm_tlbh_we),
+       .msr_icinv_nxt                   (msr_icinv_nxt[CONFIG_DW-1:0]),
+       .msr_icinv_we                    (msr_icinv_we),
+       .msr_dcinv_nxt                   (msr_dcinv_nxt[CONFIG_DW-1:0]),
+       .msr_dcinv_we                    (msr_dcinv_we),
+       .msr_dcfls_nxt                   (msr_dcfls_nxt[CONFIG_DW-1:0]),
+       .msr_dcfls_we                    (msr_dcfls_we),
+       // Inputs
+       .clk                             (clk),
+       .rst                             (rst),
+       .flush                           (flush),
+       .ex_pc                           (ex_pc[0*`PC_W +: `PC_W]), // Templated
+       .ex_npc                          (npc[0]),                // Templated
+       .ex_valid                        (ex_valid[0]),           // Templated
+       .ex_epu_opc_bus                  (ex_epu_opc_bus[0*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]), // Templated
+       .ex_operand1                     (ex_operand1[0*CONFIG_DW +: CONFIG_DW]), // Templated
+       .ex_operand2                     (ex_operand2[0*CONFIG_DW +: CONFIG_DW]), // Templated
+       .ex_imm                          (ex_imm[0*CONFIG_DW +: CONFIG_DW]), // Templated
+       .commit_epc                      (commit_epc[`PC_W-1:0]),
+       .commit_nepc                     (commit_nepc[`PC_W-1:0]),
+       .commit_EDTM                     (commit_EDTM),
+       .commit_EDPF                     (commit_EDPF),
+       .commit_EALIGN                   (commit_EALIGN),
+       .commit_E_FLUSH_TLB              (commit_E_FLUSH_TLB),
+       .commit_LSA                      (commit_LSA[CONFIG_AW-1:0]),
+       .commit_ERET                     (commit_ERET),
+       .commit_ESYSCALL                 (commit_ESYSCALL),
+       .commit_EINSN                    (commit_EINSN),
+       .commit_EIPF                     (commit_EIPF),
+       .commit_EITM                     (commit_EITM),
+       .commit_EIRQ                     (commit_EIRQ),
+       .commit_wmsr_we                  (commit_wmsr_we[`NCPU_WMSR_WE_W-1:0]),
+       .commit_wmsr_dat                 (commit_wmsr_dat[CONFIG_DW-1:0]),
+       .irqs                            (irqs[CONFIG_NUM_IRQ-1:0]),
+       .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
+       .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
+       .msr_psr_ire                     (msr_psr_ire),
+       .msr_cpuid                       (msr_cpuid[CONFIG_DW-1:0]),
+       .msr_epc                         (msr_epc[CONFIG_DW-1:0]),
+       .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
+       .msr_epsr_nobyp                  (msr_epsr_nobyp[`NCPU_PSR_DW-1:0]),
+       .msr_elsa                        (msr_elsa[CONFIG_DW-1:0]),
+       .msr_coreid                      (msr_coreid[CONFIG_DW-1:0]),
+       .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
+       .msr_dmmid                       (msr_dmmid[CONFIG_DW-1:0]),
+       .msr_icid                        (msr_icid[CONFIG_DW-1:0]),
+       .msr_dcid                        (msr_dcid[CONFIG_DW-1:0]));
+
+   // BRU reused the adder of ALU
+   assign add_s[0] =
+      (
+         ex_alu_opc_unpacked[0][`NCPU_ALU_SUB] |
+         ex_alu_opc_unpacked[0][`NCPU_BRU_BEQ] |
+         ex_alu_opc_unpacked[0][`NCPU_BRU_BNE] |
+         ex_alu_opc_unpacked[0][`NCPU_BRU_BGTU] |
+         ex_alu_opc_unpacked[0][`NCPU_BRU_BGT] |
+         ex_alu_opc_unpacked[0][`NCPU_BRU_BLEU] |
+         ex_alu_opc_unpacked[0][`NCPU_BRU_BLE]
+      );
+
+   // Add the result of BRU
+   assign s1i_rf_dout[0*CONFIG_DW +: CONFIG_DW] = (s1i_rf_dout_1[0*CONFIG_DW +: CONFIG_DW] |
+                                                   ({CONFIG_DW{b_lnk}} & {npc[0], {`NCPU_P_INSN_LEN{1'b0}}}));
+
+   /* ex_lsu AUTO_TEMPLATE (
+         .ex_valid         (ex_valid[0]),
+         .ex_lsu_opc_bus   (ex_lsu_opc_bus[0*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
+         .add_sum          (add_sum[0]),
+         .ex_operand2      (ex_operand2[0*CONFIG_DW +: CONFIG_DW]),
+         .lsu_EDTM         (commit_EDTM),
+         .lsu_EDPF         (commit_EDPF),
+         .lsu_EALIGN       (commit_EALIGN),
+         .lsu_vaddr        (commit_LSA),
+         .lsu_dout         (s2o_lsu_dout0),
+      )
+   */
+   ex_lsu
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_AW                      (CONFIG_AW),
+        .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_P_DW                    (CONFIG_P_DW),
+        .CONFIG_P_PAGE_SIZE             (CONFIG_P_PAGE_SIZE),
+        .CONFIG_DMMU_ENABLE_UNCACHED_SEG(CONFIG_DMMU_ENABLE_UNCACHED_SEG),
+        .CONFIG_DTLB_P_SETS             (CONFIG_DTLB_P_SETS),
+        .CONFIG_DC_P_LINE               (CONFIG_DC_P_LINE),
+        .CONFIG_DC_P_SETS               (CONFIG_DC_P_SETS),
+        .CONFIG_DC_P_WAYS               (CONFIG_DC_P_WAYS),
+        .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
+        .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),
+        .AXI_ID_WIDTH                   (AXI_ID_WIDTH),
+        .AXI_USER_WIDTH                 (AXI_USER_WIDTH))
+   U_LSU
+      (/*AUTOINST*/
+       // Outputs
+       .lsu_stall_req                   (lsu_stall_req),
+       .agu_en                          (agu_en),
+       .dbus_ARVALID                    (dbus_ARVALID),
+       .dbus_ARADDR                     (dbus_ARADDR[AXI_ADDR_WIDTH-1:0]),
+       .dbus_ARPROT                     (dbus_ARPROT[2:0]),
+       .dbus_ARID                       (dbus_ARID[AXI_ID_WIDTH-1:0]),
+       .dbus_ARUSER                     (dbus_ARUSER[AXI_USER_WIDTH-1:0]),
+       .dbus_ARLEN                      (dbus_ARLEN[7:0]),
+       .dbus_ARSIZE                     (dbus_ARSIZE[2:0]),
+       .dbus_ARBURST                    (dbus_ARBURST[1:0]),
+       .dbus_ARLOCK                     (dbus_ARLOCK),
+       .dbus_ARCACHE                    (dbus_ARCACHE[3:0]),
+       .dbus_ARQOS                      (dbus_ARQOS[3:0]),
+       .dbus_ARREGION                   (dbus_ARREGION[3:0]),
+       .dbus_RREADY                     (dbus_RREADY),
+       .dbus_AWVALID                    (dbus_AWVALID),
+       .dbus_AWADDR                     (dbus_AWADDR[AXI_ADDR_WIDTH-1:0]),
+       .dbus_AWPROT                     (dbus_AWPROT[2:0]),
+       .dbus_AWID                       (dbus_AWID[AXI_ID_WIDTH-1:0]),
+       .dbus_AWUSER                     (dbus_AWUSER[AXI_USER_WIDTH-1:0]),
+       .dbus_AWLEN                      (dbus_AWLEN[7:0]),
+       .dbus_AWSIZE                     (dbus_AWSIZE[2:0]),
+       .dbus_AWBURST                    (dbus_AWBURST[1:0]),
+       .dbus_AWLOCK                     (dbus_AWLOCK),
+       .dbus_AWCACHE                    (dbus_AWCACHE[3:0]),
+       .dbus_AWQOS                      (dbus_AWQOS[3:0]),
+       .dbus_AWREGION                   (dbus_AWREGION[3:0]),
+       .dbus_WVALID                     (dbus_WVALID),
+       .dbus_WDATA                      (dbus_WDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
+       .dbus_WSTRB                      (dbus_WSTRB[(1<<AXI_P_DW_BYTES)-1:0]),
+       .dbus_WLAST                      (dbus_WLAST),
+       .dbus_WUSER                      (dbus_WUSER[AXI_USER_WIDTH-1:0]),
+       .dbus_BREADY                     (dbus_BREADY),
+       .lsu_EDTM                        (commit_EDTM),           // Templated
+       .lsu_EDPF                        (commit_EDPF),           // Templated
+       .lsu_EALIGN                      (commit_EALIGN),         // Templated
+       .lsu_vaddr                       (commit_LSA),            // Templated
+       .lsu_dout                        (s2o_lsu_dout0),         // Templated
+       .msr_dmmid                       (msr_dmmid[CONFIG_DW-1:0]),
+       .msr_dcid                        (msr_dcid[CONFIG_DW-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .rst                             (rst),
+       .stall                           (stall),
+       .flush                           (flush),
+       .ex_valid                        (ex_valid[0]),           // Templated
+       .ex_lsu_opc_bus                  (ex_lsu_opc_bus[0*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]), // Templated
+       .add_sum                         (add_sum[0]),            // Templated
+       .ex_operand2                     (ex_operand2[0*CONFIG_DW +: CONFIG_DW]), // Templated
+       .dbus_ARREADY                    (dbus_ARREADY),
+       .dbus_RVALID                     (dbus_RVALID),
+       .dbus_RDATA                      (dbus_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
+       .dbus_RRESP                      (dbus_RRESP[1:0]),
+       .dbus_RLAST                      (dbus_RLAST),
+       .dbus_RID                        (dbus_RID[AXI_ID_WIDTH-1:0]),
+       .dbus_RUSER                      (dbus_RUSER[AXI_USER_WIDTH-1:0]),
+       .dbus_AWREADY                    (dbus_AWREADY),
+       .dbus_WREADY                     (dbus_WREADY),
+       .dbus_BVALID                     (dbus_BVALID),
+       .dbus_BRESP                      (dbus_BRESP[1:0]),
+       .dbus_BID                        (dbus_BID[AXI_ID_WIDTH-1:0]),
+       .dbus_BUSER                      (dbus_BUSER[AXI_USER_WIDTH-1:0]),
+       .msr_psr_dmme                    (msr_psr_dmme),
+       .msr_psr_rm                      (msr_psr_rm),
+       .msr_dmm_tlbl_idx                (msr_dmm_tlbl_idx[CONFIG_DTLB_P_SETS-1:0]),
+       .msr_dmm_tlbl_nxt                (msr_dmm_tlbl_nxt[CONFIG_DW-1:0]),
+       .msr_dmm_tlbl_we                 (msr_dmm_tlbl_we),
+       .msr_dmm_tlbh_idx                (msr_dmm_tlbh_idx[CONFIG_DTLB_P_SETS-1:0]),
+       .msr_dmm_tlbh_nxt                (msr_dmm_tlbh_nxt[CONFIG_DW-1:0]),
+       .msr_dmm_tlbh_we                 (msr_dmm_tlbh_we),
+       .msr_dcinv_nxt                   (msr_dcinv_nxt[CONFIG_DW-1:0]),
+       .msr_dcinv_we                    (msr_dcinv_we),
+       .msr_dcfls_nxt                   (msr_dcfls_nxt[CONFIG_DW-1:0]),
+       .msr_dcfls_we                    (msr_dcfls_we));
+   
    ex_psr
       #(
         .CONFIG_DW                      (CONFIG_DW),
