@@ -96,6 +96,14 @@ module difftest
          .msr_tsc_count                   ('b0) // TODO
       );
 
+   wire [31:0] dbg_commit_pc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0];
+   generate
+      for(genvar i=0;i<(1<<CONFIG_P_ISSUE_WIDTH);i=i+1)  
+         begin
+            assign dbg_commit_pc[i] = {commit_pc[i*`PC_W +: `PC_W], 2'b00};
+         end
+   endgenerate
+      
 endmodule
 
 `endif
