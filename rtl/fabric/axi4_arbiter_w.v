@@ -47,49 +47,54 @@ module axi4_arbiter_w
    reg                                 s0_pending_set, s1_pending_set;
 
    always @(*)
-      case (fsm_state_ff)
-         S_S0:
-            begin
-               if (s0_AWVALID)
-                  begin
-                     fsm_state_nxt = S_S0;
-                     s0_pending_set = 'b1;
-                  end
-               else if (s0_pending & ~s0_pending_clr)
-                 fsm_state_nxt = S_S0; // Lock the bus for slave0
-               else if (s0_pending & s0_pending_clr)
-                 fsm_state_nxt = S_S1;  // Round-robin
-               else if (s1_AWVALID)
-                  begin
-                     fsm_state_nxt = S_S1;
-                     s1_pending_set = 'b1;
-                  end
-               else
-                 fsm_state_nxt = S_S0;
-            end
+      begin
+         fsm_state_nxt = fsm_state_ff;
+         s0_pending_set = 'b0;
+         s1_pending_set = 'b1;
+         case (fsm_state_ff)
+            S_S0:
+               begin
+                  if (s0_AWVALID)
+                     begin
+                        fsm_state_nxt = S_S0;
+                        s0_pending_set = 'b1;
+                     end
+                  else if (s0_pending & ~s0_pending_clr)
+                    fsm_state_nxt = S_S0; // Lock the bus for slave0
+                  else if (s0_pending & s0_pending_clr)
+                    fsm_state_nxt = S_S1;  // Round-robin
+                  else if (s1_AWVALID)
+                     begin
+                        fsm_state_nxt = S_S1;
+                        s1_pending_set = 'b1;
+                     end
+                  else
+                    fsm_state_nxt = S_S0;
+               end
 
-         S_S1:
-            begin
-               if (s1_AWVALID)
-                  begin
-                     fsm_state_nxt = S_S1;
-                     s1_pending_set = 'b1;
-                  end
-               else if (s1_pending & ~s1_pending_clr)
-                 fsm_state_nxt = S_S1; // Lock the bus for slave1
-               else if (s1_pending & s1_pending_clr)
-                 fsm_state_nxt = S_S0;  // Round-robin
-               else if (s0_AWVALID)
-                  begin
-                     fsm_state_nxt = S_S0;
-                     s0_pending_set = 'b1;
-                  end
-               else
-                 fsm_state_nxt = S_S1;
-            end
-            
-         default: ;
-      endcase
+            S_S1:
+               begin
+                  if (s1_AWVALID)
+                     begin
+                        fsm_state_nxt = S_S1;
+                        s1_pending_set = 'b1;
+                     end
+                  else if (s1_pending & ~s1_pending_clr)
+                    fsm_state_nxt = S_S1; // Lock the bus for slave1
+                  else if (s1_pending & s1_pending_clr)
+                    fsm_state_nxt = S_S0;  // Round-robin
+                  else if (s0_AWVALID)
+                     begin
+                        fsm_state_nxt = S_S0;
+                        s0_pending_set = 'b1;
+                     end
+                  else
+                    fsm_state_nxt = S_S1;
+               end
+               
+            default: ;
+         endcase
+      end
 
    mDFF_r #(.DW(2), .RST_VECTOR(S_S0)) ff_fsm_state (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff));
 

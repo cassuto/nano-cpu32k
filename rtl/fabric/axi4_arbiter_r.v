@@ -50,6 +50,7 @@ module axi4_arbiter_r
    always @(*)
       begin
          fsm_state_nxt = fsm_state_ff;
+         s0_pending_set = 'b0;
          s1_pending_set = 'b0;
          case (fsm_state_ff)
             S_S0:
