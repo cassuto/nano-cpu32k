@@ -149,6 +149,7 @@ void dpic_commit_inst(
             rtl_regfile[wnum1] = wdata1;
 
         vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
+        printf("emu_pc=%#x\n", emu_pc);
         vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc);
         dpic_emu_CPU->set_pc(emu_npc);
 
@@ -166,6 +167,7 @@ void dpic_commit_inst(
             rtl_regfile[wnum2] = wdata2;
 
         vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
+        printf("emu_pc=%#x\n", emu_pc);
         vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc);
         dpic_emu_CPU->set_pc(emu_npc);
 
