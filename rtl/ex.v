@@ -298,7 +298,6 @@ module ex
    generate
       for(i=0;i<IW;i=i+1)
          begin : gen_alus
-            assign ex_alu_opc_unpacked[i] = ex_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW];
             assign ex_bpu_upd_unpacked[i] = ex_bpu_upd[i*`BPU_UPD_W +: `BPU_UPD_W];
 
             ex_add
@@ -336,7 +335,7 @@ module ex
 
             if (i > 0) // The last n-1 FUs
                begin
-                  assign add_s[i] = ex_alu_opc_unpacked[i][`NCPU_ALU_SUB];
+                  assign add_s[i] = ex_alu_opc_bus[i*`NCPU_ALU_IOPW + `NCPU_ALU_SUB];
                   assign s1i_rf_dout[i*CONFIG_DW +: CONFIG_DW] = s1i_rf_dout_1[i*CONFIG_DW +: CONFIG_DW];
                end
          end
@@ -491,13 +490,13 @@ module ex
    // BRU reused the adder of ALU
    assign add_s[0] =
       (
-         ex_alu_opc_unpacked[0][`NCPU_ALU_SUB] |
-         ex_alu_opc_unpacked[0][`NCPU_BRU_BEQ] |
-         ex_alu_opc_unpacked[0][`NCPU_BRU_BNE] |
-         ex_alu_opc_unpacked[0][`NCPU_BRU_BGTU] |
-         ex_alu_opc_unpacked[0][`NCPU_BRU_BGT] |
-         ex_alu_opc_unpacked[0][`NCPU_BRU_BLEU] |
-         ex_alu_opc_unpacked[0][`NCPU_BRU_BLE]
+         ex_alu_opc_bus[0*`NCPU_ALU_IOPW + `NCPU_ALU_SUB] |
+         ex_bru_opc_bus[0*`NCPU_BRU_IOPW + `NCPU_BRU_BEQ] |
+         ex_bru_opc_bus[0*`NCPU_BRU_IOPW + `NCPU_BRU_BNE] |
+         ex_bru_opc_bus[0*`NCPU_BRU_IOPW + `NCPU_BRU_BGTU] |
+         ex_bru_opc_bus[0*`NCPU_BRU_IOPW + `NCPU_BRU_BGT] |
+         ex_bru_opc_bus[0*`NCPU_BRU_IOPW + `NCPU_BRU_BLEU] |
+         ex_bru_opc_bus[0*`NCPU_BRU_IOPW + `NCPU_BRU_BLE]
       );
 
    // Add the result of BRU
@@ -732,8 +731,8 @@ module ex
    
    //
    // Pipeline flush scope table:
-   // exc_flush:     Frontend & ID & EX(s1,s2)
-   // s1o_se_flush:  Frontend & ID & EX(s1)
+   // exc_flush:     (Output of) Frontend & ID & EX(s1,s2)
+   // s1o_se_flush:  (Output of) Frontend & ID & EX(s1)
    //
    assign flush_s1 = (exc_flush | s1o_se_flush);
    assign flush_s2 = (exc_flush);
