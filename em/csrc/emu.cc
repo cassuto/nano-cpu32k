@@ -38,7 +38,7 @@ Emu::Emu(const char *vcdfile_,
       trace_fp(nullptr)
 {
     reset(10);
-    
+
 #if VM_TRACE == 1
     if (!vcdfile.empty())
     {
@@ -94,6 +94,9 @@ bool Emu::clk()
     //    axi.ar.addr -= 0x80000000UL;
     dram->dramsim3_helper_falling(axi);
     axi_set_dut_ptr(dut_ptr, axi);
+
+    // 
+    dut_ptr->eval();
 #endif
 
 #if VM_TRACE == 1
