@@ -180,6 +180,8 @@ module dcache
    reg [CONFIG_DC_P_LINE-1:0]          fsm_refill_cnt_nxt;
    reg                                 fsm_uncached_req;
    wire                                p_ce;
+   wire                                p_ce_s2o_hit_vec;
+   wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_hit_vec_nxt;
    wire [CONFIG_AW-1:0]                axi_paddr_nxt;
    // AXI
    reg                                 ar_set, aw_set;
@@ -302,6 +304,10 @@ module dcache
                                                             .valid() /* unused */
                                                             /* verilator lint_on PINCONNECTEMPTY */);
 
+   // Reload the hit vector
+   assign p_ce_s2o_hit_vec = (p_ce | (fsm_state_ff==S_RELOAD_S1O_S2O));
+   assign s2o_hit_vec_nxt = (fsm_state_ff==S_RELOAD_S1O_S2O) ? fsm_free_way : s2i_hit_vec;
+                                                            
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(req), .Q(s1o_valid) );
    mDFF_lr # (.DW(1)) ff_s1o_inv (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(inv), .Q(s1o_inv) );
    mDFF_lr # (.DW(1)) ff_s1o_fls (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(fls), .Q(s1o_fls) );
@@ -310,7 +316,7 @@ module dcache
    mDFF_l # (.DW(CONFIG_DW)) ff_s1o_wdat (.CLK(clk), .LOAD(p_ce), .D(wdat), .Q(s1o_wdat) );
    mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
    mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s1o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
-   mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_hit_vec (.CLK(clk), .LOAD(p_ce), .D(s2i_hit_vec), .Q(s2o_hit_vec) );
+   mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_hit_vec (.CLK(clk), .LOAD(p_ce_s2o_hit_vec), .D(s2o_hit_vec_nxt), .Q(s2o_hit_vec) );
    mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s2o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
    mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_fsm_free_way (.CLK(clk), .LOAD(p_ce), .D(fsm_free_way), .Q(s2o_fsm_free_way) );
 
