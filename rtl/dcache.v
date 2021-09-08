@@ -280,8 +280,13 @@ module dcache
          end
    endgenerate
 
+   assign s2i_hit = (|s2o_hit_vec);
+   
    // Sel the dout of matched way
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s2o_hit_vec), .din(s2o_payload), .dout(s2o_match_payload), .valid(s2i_hit) );
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s2o_hit_vec), .din(s2o_payload), .dout(s2o_match_payload),
+                                                            /* verilator lint_off PINCONNECTEMPTY */
+                                                            .valid() /* unused */
+                                                            /* verilator lint_on PINCONNECTEMPTY */ );
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s2o_d (.sel(s2o_hit_vec), .din(s2o_d), .dout(s2o_match_dirty),
                                                             /* verilator lint_off PINCONNECTEMPTY */
                                                             .valid() /* unused */
