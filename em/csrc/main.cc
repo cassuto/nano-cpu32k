@@ -140,7 +140,8 @@ static const char *optstirng = "-b:a:r:d:";
 static Args args;
 static CPU *emu_CPU;
 static DeviceTree *emu_dev;
- Emu *emu;
+static Emu *emu;
+static Memory *rtl_memory;
 static uint64_t device_clk;
 
 static int
@@ -339,7 +340,13 @@ int main(int argc, char *argv[])
 
     case ModeDifftest:
     {
-        emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU);
+        // RTL simulation use its independent memory and mmio space
+        rtl_memory = new Memory(nullptr, args.ram_size, args.dram_phy_base, args.mmio_phy_base, args.mmio_phy_end_addr);
+        if (rtl_memory->load_address_fp(bin_fp, args.bin_load_addr)) {
+            return 1;
+        }
+
+        emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU, rtl_memory);
         enable_difftest(emu_CPU, emu, args.commit_timeout_max);
         for (;;)
         {
@@ -355,7 +362,7 @@ int main(int argc, char *argv[])
 
     case ModeSimulateOnly:
     {
-        emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU);
+        emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU, emu_CPU->memory());
         for (int i = 0; i < 1000; i++)
         {
             if (emu->clk())

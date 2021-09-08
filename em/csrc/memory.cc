@@ -25,6 +25,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "cpu.hh"
 #include "memory.hh"
 
+/* cpu_ is optional */
 Memory::Memory(CPU *cpu_, size_t memory_size_, phy_addr_t dram_phy_start_, phy_addr_t mmio_phy_base_, phy_addr_t mmio_phy_end_addr_)
     : cpu(cpu_),
       mmio8(nullptr),

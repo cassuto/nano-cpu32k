@@ -11,7 +11,8 @@ class Emu
 public:
     Emu(const char *vcdfile_,
         uint64_t wave_start_, uint64_t wave_end_,
-        CPU *cpu_);
+        CPU *cpu_,
+        Memory *mem_);
     ~Emu();
 
     void reset(int cycles);

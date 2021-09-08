@@ -26,7 +26,8 @@
 
 Emu::Emu(const char *vcdfile_,
          uint64_t wave_start_, uint64_t wave_end_,
-         CPU *cpu_)
+         CPU *cpu_,
+         Memory *mem_)
     : dut_ptr(new Vsimtop()),
       vcdfile(vcdfile_),
       wave_begin(wave_start_),
@@ -34,7 +35,7 @@ Emu::Emu(const char *vcdfile_,
       num_inst_commit(0),
       cycles(0),
       cpu(cpu_),
-      dram(new DRAM(cpu_->memory())),
+      dram(new DRAM(mem_)),
       trace_fp(nullptr)
 {
     reset(10);
