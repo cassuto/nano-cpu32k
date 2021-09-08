@@ -96,10 +96,11 @@ module icache
    wire                                s1i_tag_v_we            [(1<<CONFIG_IC_P_WAYS)-1:0];
    wire                                s1i_payload_re;
    reg [PAYLOAD_AW-1:0]                s1i_payload_addr;
-   wire [PAYLOAD_DW/8-1:0]             s1i_payload_we;
+   wire [PAYLOAD_DW/8-1:0]             s1i_payload_we          [(1<<CONFIG_IC_P_WAYS)-1:0];
    wire [PAYLOAD_DW-1:0]               s1i_payload_din;
    wire [PAYLOAD_DW/8-1:0]             s1i_uncached_we;
    wire [PAYLOAD_DW-1:0]               s1i_uncached_din;
+   wire [PAYLOAD_DW/8-1:0]             s1i_payload_tgt_we;
    // Stage 1 Output / Stage 2 Input
    wire [CONFIG_IC_P_SETS-1:0]         s1o_line_addr;
    wire [PAYLOAD_AW-1:0]               s1o_payload_addr;
@@ -121,10 +122,11 @@ module icache
    wire [CONFIG_IC_P_SETS-1:0]         s2o_line_addr;
    wire                                s2o_valid;
    wire [CONFIG_AW-1:0]                s2o_paddr;
+   wire [(1<<CONFIG_IC_P_WAYS)-1:0]    s2o_fsm_free_way;
    // FSM
    reg [2:0]                           fsm_state_nxt;
    wire [2:0]                          fsm_state_ff;
-   wire [CONFIG_IC_P_WAYS-1:0]         fsm_free_way, fsm_free_way_nxt;
+   wire [(1<<CONFIG_IC_P_WAYS)-1:0]    fsm_free_way, fsm_free_way_nxt;
    wire [CONFIG_IC_P_SETS-1:0]         fsm_boot_cnt;
    wire [CONFIG_IC_P_SETS:0]           fsm_boot_cnt_nxt_carry;
    wire [CONFIG_IC_P_LINE-1:0]         fsm_refill_cnt;
@@ -169,7 +171,7 @@ module icache
                   .ADDR (s1i_payload_addr),
                   .RE   (s1i_payload_re),
                   .DOUT (s1o_payload[way*PAYLOAD_DW +: PAYLOAD_DW]),
-                  .WE   (s1i_payload_we),
+                  .WE   (s1i_payload_we[way]),
                   .DIN  (s1i_payload_din)
                );
 
@@ -254,10 +256,12 @@ module icache
       end
 
    // Clock algorithm
-   assign fsm_free_way_nxt = fsm_free_way + 'b1;
+   assign fsm_free_way_nxt = (fsm_free_way[(1<<CONFIG_IC_P_WAYS)-1])
+                              ? {{(1<<CONFIG_IC_P_WAYS)-1{1'b0}}, 1'b1}
+                              : {fsm_free_way[(1<<CONFIG_IC_P_WAYS)-2:0], 1'b0};
 
    mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
-   mDFF_r # (.DW(CONFIG_IC_P_WAYS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
+   mDFF_r # (.DW(1<<CONFIG_IC_P_WAYS)) ff_fsm_free_way (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
 
    // Boot counter
    assign fsm_boot_cnt_nxt_carry = fsm_boot_cnt + 'b1;
@@ -315,8 +319,10 @@ module icache
       for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
          assign s1i_tag_v_we[way] = (fsm_state_ff==S_BOOT) |
                                     (fsm_state_ff==S_INVALIDATE) |
-                                    ((fsm_state_ff==S_REPLACE) & (way == fsm_free_way));
+                                    ((fsm_state_ff==S_REPLACE) & (fsm_free_way[way]));
    endgenerate
+   
+   mDFF_l #(.DW(1<<CONFIG_IC_P_WAYS)) ff_s2o_fsm_free_way(.CLK(clk), .LOAD(fsm_state_ff==S_REPLACE), .D(fsm_free_way), .Q(s2o_fsm_free_way));
 
    // MUX for payload RAM addr
    always @(*)
@@ -343,9 +349,14 @@ module icache
          .i_axi_RDATA                  (ibus_RDATA),
          .i_ram_we                     (fsm_state_ff == S_REFILL),
          .i_ram_addr                   (fsm_refill_cnt),
-         .o_ram_wmsk                   (s1i_payload_we),
+         .o_ram_wmsk                   (s1i_payload_tgt_we),
          .o_ram_din                    (s1i_payload_din)
       );
+      
+   generate
+      for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
+         assign s1i_payload_we[way] = (s1i_payload_tgt_we & {PAYLOAD_DW/8{s2o_fsm_free_way[way]}});
+   endgenerate
       
    // Aligner for uncached din
    align_r
@@ -380,7 +391,7 @@ module icache
             always @(*)
                case (fsm_state_ff)
                   S_REFILL:
-                     if (s2i_refill_get_dat & s1i_payload_we[j])
+                     if (s2i_refill_get_dat & s1i_payload_tgt_we[j])
                         s2i_ins[j*8 +: 8] = s1i_payload_din[j*8 +: 8]; // Get data from AXI bus
                      else
                         s2i_ins[j*8 +: 8] = ins[j*8 +: 8];

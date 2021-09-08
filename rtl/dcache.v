@@ -130,7 +130,8 @@ module dcache
    wire                                s2i_d_we                [(1<<CONFIG_DC_P_WAYS)-1:0];
    reg [TAG_V_RAM_AW-1:0]              s2i_d_waddr;
    reg                                 s2i_d_wdat;
-   wire [PAYLOAD_DW/8-1:0]             s2i_payload_we;
+   wire [PAYLOAD_DW/8-1:0]             s2i_payload_we          [(1<<CONFIG_DC_P_WAYS)-1:0];
+   wire [PAYLOAD_DW/8-1:0]             s2i_payload_tgt_we;
    reg [PAYLOAD_DW-1:0]                s2i_payload_din;
    wire [PAYLOAD_DW/8-1:0]             s2i_wb_we;
    wire [PAYLOAD_DW-1:0]               s2i_wb_din;
@@ -151,7 +152,7 @@ module dcache
    wire                                s2i_v                   [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2i_hit_vec;
    wire                                s2i_hit;
-   wire [CONFIG_DC_P_WAYS-1:0]         s2o_fsm_free_way;
+   wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_fsm_free_way;
    // Stage 2 Output / Stage 3 Input
    wire                                s2o_fls;
    wire [CONFIG_DC_P_SETS-1:0]         s2o_line_addr;
@@ -159,7 +160,6 @@ module dcache
    wire [CONFIG_DW/8-1:0]              s2o_wmsk;
    wire [CONFIG_DW-1:0]                s2o_wdat;
    wire [PAYLOAD_DW*(1<<CONFIG_DC_P_WAYS)-1:0] s2o_payload;
-   wire [PAYLOAD_DW-1:0]               s2o_payload_packed      [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_hit_vec;
    wire [PAYLOAD_DW-1:0]               s2o_match_payload;
    wire [PAYLOAD_DW-1:0]               s2o_wb_payload;
@@ -172,7 +172,7 @@ module dcache
    // FSM
    reg [3:0]                           fsm_state_nxt;
    wire [3:0]                          fsm_state_ff;
-   wire [CONFIG_DC_P_WAYS-1:0]         fsm_free_way, fsm_free_way_nxt;
+   wire [(1<<CONFIG_DC_P_WAYS)-1:0]    fsm_free_way, fsm_free_way_nxt;
    wire [CONFIG_DC_P_SETS-1:0]         fsm_boot_cnt;
    wire [CONFIG_DC_P_SETS:0]           fsm_boot_cnt_nxt_carry;
    wire [CONFIG_DC_P_LINE-1:0]         fsm_refill_cnt;
@@ -230,7 +230,7 @@ module dcache
                   .ADDR (s2i_payload_addr),
                   .RE   (s2i_payload_re),
                   .DOUT (s2o_payload[way*PAYLOAD_DW +: PAYLOAD_DW]),
-                  .WE   (s2i_payload_we),
+                  .WE   (s2i_payload_we[way]),
                   .DIN  (s2i_payload_din)
                );
 
@@ -292,14 +292,15 @@ module dcache
                                                             .valid() /* unused */
                                                             /* verilator lint_on PINCONNECTEMPTY */);
 
-   assign s1o_free_dirty = s1o_d[fsm_free_way];
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s1o_free_dirty (.sel(fsm_free_way), .din(s1o_d), .dout(s1o_free_dirty),
+                                                            /* verilator lint_off PINCONNECTEMPTY */
+                                                            .valid() /* unused */
+                                                            /* verilator lint_on PINCONNECTEMPTY */);
 
-   generate
-      for(i=0;i<(1<<CONFIG_DC_P_WAYS);i=i+1)
-         assign s2o_payload_packed[i] = s2o_payload[i*PAYLOAD_DW +: PAYLOAD_DW];
-   endgenerate
-   
-   assign s2o_wb_payload = s2o_payload_packed[s2o_fsm_free_way];
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_wb_payload (.sel(s2o_fsm_free_way), .din(s2o_payload), .dout(s2o_wb_payload),
+                                                            /* verilator lint_off PINCONNECTEMPTY */
+                                                            .valid() /* unused */
+                                                            /* verilator lint_on PINCONNECTEMPTY */);
 
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(req), .Q(s1o_valid) );
    mDFF_lr # (.DW(1)) ff_s1o_inv (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(inv), .Q(s1o_inv) );
@@ -311,7 +312,7 @@ module dcache
    mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s1o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
    mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_hit_vec (.CLK(clk), .LOAD(p_ce), .D(s2i_hit_vec), .Q(s2o_hit_vec) );
    mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s2o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
-   mDFF_l # (.DW(CONFIG_DC_P_WAYS)) ff_s2o_fsm_free_way (.CLK(clk), .LOAD(p_ce), .D(fsm_free_way), .Q(s2o_fsm_free_way) );
+   mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_fsm_free_way (.CLK(clk), .LOAD(p_ce), .D(fsm_free_way), .Q(s2o_fsm_free_way) );
 
    mDFF_lr # (.DW(1)) ff_s2o_fls (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_fls), .Q(s2o_fls) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
@@ -401,10 +402,12 @@ module dcache
    assign s2i_ready = ((fsm_state_ff==S_IDLE) & s1o_valid & ~s1o_inv & ~s1o_fls & ~uncached_s2 & s2i_hit & ~kill_req_s2);
 
    // Clock algorithm
-   assign fsm_free_way_nxt = fsm_free_way + 'b1;
+   assign fsm_free_way_nxt = (fsm_free_way[(1<<CONFIG_DC_P_WAYS)-1])
+                              ? {{(1<<CONFIG_DC_P_WAYS)-1{1'b0}}, 1'b1}
+                              : {fsm_free_way[(1<<CONFIG_DC_P_WAYS)-2:0], 1'b0};
 
    mDFF_r # (.DW(4), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
-   mDFF_r # (.DW(CONFIG_DC_P_WAYS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
+   mDFF_r # (.DW(1<<CONFIG_DC_P_WAYS)) ff_fsm_free_idx (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
 
    // Boot counter
    assign fsm_boot_cnt_nxt_carry = fsm_boot_cnt + 'b1;
@@ -453,7 +456,7 @@ module dcache
       for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
          assign s1i_tag_v_we[way] = (fsm_state_ff==S_BOOT) |
                                     (fsm_state_ff==S_INVALIDATE) |
-                                    ((fsm_state_ff==S_REPLACE) & (way == s2o_fsm_free_way));
+                                    ((fsm_state_ff==S_REPLACE) & (s2o_fsm_free_way[way]));
    endgenerate
 
    // MUX for D flag RAM addr
@@ -477,7 +480,7 @@ module dcache
    // D flag RAM write enable
    generate
       for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
-         assign s2i_d_we[way] = (s1i_tag_v_we[way] | (s2i_ready & s2i_hit_vec[way])); // FIXME
+         assign s2i_d_we[way] = (s1i_tag_v_we[way] | (s2i_ready & s2i_hit_vec[way])); // FIXME?????
    endgenerate
 
    // MUX for physical addr tag to match
@@ -510,9 +513,19 @@ module dcache
                               (fsm_state_ff==S_RELOAD_S1O_S2O));
 
    // MUX for payload RAM we
-   assign s2i_payload_we = ({CONFIG_DW/8{s2i_ready}} & s1o_wmsk) |
-                           ({CONFIG_DW/8{fsm_state_ff==S_RELOAD_S1O_S2O}} & s2o_wmsk) |
-                           s2i_wb_we;
+   assign s2i_payload_tgt_we = ({CONFIG_DW/8{s2i_ready}} & s1o_wmsk) |
+                                 ({CONFIG_DW/8{fsm_state_ff==S_RELOAD_S1O_S2O}} & s2o_wmsk) |
+                                 s2i_wb_we;
+   
+   generate
+      for(way=0;way<(1<<CONFIG_DC_P_WAYS);way=way+1)
+         assign s2i_payload_we[way] = (s2i_payload_tgt_we &
+                                       {CONFIG_DW/8{
+                                          (s2i_ready & s2i_hit_vec[way]) |
+                                          ((fsm_state_ff==S_RELOAD_S1O_S2O) & s2o_fsm_free_way[way]) |
+                                          ((fsm_state_ff==S_REFILL) & s2o_fsm_free_way[way])
+                                       }});
+   endgenerate
 
    // Aligner for payload RAM din
    align_r
