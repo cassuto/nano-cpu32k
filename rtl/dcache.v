@@ -280,7 +280,7 @@ module dcache
          end
    endgenerate
 
-   assign s2i_hit = (|s2o_hit_vec);
+   assign s2i_hit = (|s2i_hit_vec);
    
    // Sel the dout of matched way
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s2o_hit_vec), .din(s2o_payload), .dout(s2o_match_payload),
