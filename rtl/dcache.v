@@ -499,6 +499,8 @@ module dcache
       case (fsm_state_ff)
          S_IDLE:
             s2i_payload_din = s1o_wdat;
+         S_RELOAD_S1O_S2O:
+            s2i_payload_din = s2o_wdat;
          default:
             s2i_payload_din = s2i_wb_din;
       endcase
@@ -509,6 +511,7 @@ module dcache
 
    // MUX for payload RAM we
    assign s2i_payload_we = ({CONFIG_DW/8{s2i_ready}} & s1o_wmsk) |
+                           ({CONFIG_DW/8{fsm_state_ff==S_RELOAD_S1O_S2O}} & s2o_wmsk) |
                            s2i_wb_we;
 
    // Aligner for payload RAM din
