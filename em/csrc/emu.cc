@@ -74,19 +74,11 @@ bool Emu::clk()
     if (Verilated::gotFinish())
         return true;
 
-#if 1 // WITH_DRAMSIM3
-    axi_channel axi;
-    axi_copy_from_dut_ptr(dut_ptr, axi);
-    //    axi.aw.addr -= 0x80000000UL;
-    //    axi.ar.addr -= 0x80000000UL;
-    dram->dramsim3_helper_falling(axi);
-    axi_set_dut_ptr(dut_ptr, axi);
-#endif
-
     dut_ptr->clock = 0;
     dut_ptr->eval();
 
 #if 1 // WITH_DRAMSIM3
+    axi_channel axi;
     axi_copy_from_dut_ptr(dut_ptr, axi);
     //    axi.aw.addr -= 0x80000000UL;
     //    axi.ar.addr -= 0x80000000UL;
@@ -95,6 +87,15 @@ bool Emu::clk()
 
     dut_ptr->clock = 1;
     dut_ptr->eval();
+
+#if 1 // WITH_DRAMSIM3
+    axi_copy_from_dut_ptr(dut_ptr, axi);
+    //    axi.aw.addr -= 0x80000000UL;
+    //    axi.ar.addr -= 0x80000000UL;
+    dram->dramsim3_helper_falling(axi);
+    axi_set_dut_ptr(dut_ptr, axi);
+    //dut_ptr->eval();
+#endif
 
 #if VM_TRACE == 1
     if (trace_fp)
