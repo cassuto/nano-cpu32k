@@ -94,7 +94,7 @@ bool Emu::clk()
     //    axi.ar.addr -= 0x80000000UL;
     dram->dramsim3_helper_falling(axi);
     axi_set_dut_ptr(dut_ptr, axi);
-    //dut_ptr->eval();
+    dut_ptr->eval();
 #endif
 
 #if VM_TRACE == 1
