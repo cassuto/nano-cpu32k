@@ -665,7 +665,8 @@ module ex
    endgenerate
 
    // Speculative execution check point
-   assign se_fail_vec[0] = ex_valid[0] & ((b_taken ^ ex_bpu_upd_unpacked[0][`BPU_UPD_TAKEN]) | (b_tgt != ex_bpu_upd_unpacked[0][`BPU_UPD_TGT]));
+   assign se_fail_vec[0] = ex_valid[0] & ((b_taken ^ ex_bpu_upd_unpacked[0][`BPU_UPD_TAKEN]) | (b_tgt != ex_bpu_upd_unpacked[0][`BPU_UPD_TGT])); // FAIL
+   //ex_valid[0] & ((b_taken ^ ex_bpu_upd_unpacked[0][`BPU_UPD_TAKEN]) | (b_taken & (b_tgt != ex_bpu_upd_unpacked[0][`BPU_UPD_TGT]))); // RIGHT
    assign se_tgt_vec[0 +: `PC_W] = (b_taken) ? b_tgt : npc[0];
    generate
       for(i=1;i<IW;i=i+1)
@@ -728,9 +729,10 @@ module ex
    assign se_flush = (p_ce & s1o_se_flush);
    
    assign flush = (exc_flush | se_flush);
-   assign flush_tgt = (exc_flush)
-                        ? exc_flush_tgt
-                        : s1o_se_flush_tgt; /* (se_flush) */ 
+   // Maintain the priority carefully here for speculative execution or exception
+   assign flush_tgt = (se_flush)
+                        ? s1o_se_flush_tgt
+                        : exc_flush_tgt; /* (exc_flush) */ 
    
    //
    // Pipeline flush scope table:

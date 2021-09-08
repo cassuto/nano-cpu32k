@@ -235,6 +235,7 @@ module frontend
          .clk                           (clk),
          .rst                           (rst),
          .re                            (p_ce),
+         .valid                         (s1o_fetch_aligned),
          .pc                            (s1i_bpu_pc),
          .npc                           (s1o_bpu_npc_packed),
          .upd                           (s1o_bpu_upd_packed),

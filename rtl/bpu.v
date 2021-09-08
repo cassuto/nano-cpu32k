@@ -35,6 +35,7 @@ module bpu
    input                                        clk,
    input                                        rst,
    input                                        re,
+   input [(1<<CONFIG_P_FETCH_WIDTH)-1:0]        valid,
    input [`PC_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0]  pc,
    output [`PC_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0] npc,
    output [`BPU_UPD_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0] upd,
@@ -111,7 +112,7 @@ module bpu
             
             assign s2i_btb_hit[i] = (s2i_btb_v[i] & (s2i_btb_tag[i] == s1o_pc[i][`PC_W-1:CONFIG_BTB_P_NUM]));
             
-            assign s2i_taken[i] = (s2i_btb_hit[i] & (~s2i_btb_is_bcc[i] | s2i_pht_taken[i]));
+            assign s2i_taken[i] = (valid[i] & (s2i_btb_hit[i] & (~s2i_btb_is_bcc[i] | s2i_pht_taken[i])));
             
             // MUX of NPC
             assign npc[i*`PC_W +: `PC_W] = s2i_btb_npc[i];
