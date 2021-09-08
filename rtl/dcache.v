@@ -408,9 +408,7 @@ module dcache
                               ? {{(1<<CONFIG_DC_P_WAYS)-1{1'b0}}, 1'b1}
                               : {fsm_free_way[(1<<CONFIG_DC_P_WAYS)-2:0], 1'b0};
 
-   mDFF_r
-      #(.DW(1<<CONFIG_DC_P_WAYS), .RST_VECTOR({{(1<<CONFIG_DC_P_WAYS)-1{1'b0}}, 1'b1}) )
-   ff_fsm_free_idx
+   mDFF_r #(.DW(1<<CONFIG_DC_P_WAYS), .RST_VECTOR({{(1<<CONFIG_DC_P_WAYS)-1{1'b0}}, 1'b1}) ) ff_fsm_free_idx
       (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
 
    // Boot counter

@@ -255,13 +255,15 @@ module icache
          endcase
       end
 
+   mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
+   
    // Clock algorithm
    assign fsm_free_way_nxt = (fsm_free_way[(1<<CONFIG_IC_P_WAYS)-1])
                               ? {{(1<<CONFIG_IC_P_WAYS)-1{1'b0}}, 1'b1}
                               : {fsm_free_way[(1<<CONFIG_IC_P_WAYS)-2:0], 1'b0};
-
-   mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
-   mDFF_r # (.DW(1<<CONFIG_IC_P_WAYS)) ff_fsm_free_way (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
+                              
+   mDFF_r #(.DW(1<<CONFIG_IC_P_WAYS), .RST_VECTOR({{(1<<CONFIG_IC_P_WAYS)-1{1'b0}}, 1'b1}) ) ff_fsm_free_idx
+      (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
 
    // Boot counter
    assign fsm_boot_cnt_nxt_carry = fsm_boot_cnt + 'b1;
