@@ -50,15 +50,15 @@ module ex_bru
    output                              is_brel
 );
    wire                                cmp_eq;
-   wire                                cmp_gt_s;
-   wire                                cmp_gt_u;
+   wire                                cmp_lt_s;
+   wire                                cmp_lt_u;
    wire                                bcc_taken;
    
    // equal
    assign cmp_eq = (ex_operand1 == ex_operand2);
    // greater
-   assign cmp_gt_s = (add_sum[CONFIG_DW-1] ^ add_overflow);
-   assign cmp_gt_u = ~add_carry;
+   assign cmp_lt_s = (add_sum[CONFIG_DW-1] ^ add_overflow);
+   assign cmp_lt_u = ~add_carry;
 
    assign is_bcc = (ex_bru_opc_bus[`NCPU_BRU_BEQ] |
                      ex_bru_opc_bus[`NCPU_BRU_BNE] |
@@ -71,10 +71,10 @@ module ex_bru
    
    assign bcc_taken = (ex_bru_opc_bus[`NCPU_BRU_BEQ] & cmp_eq) |
                         (ex_bru_opc_bus[`NCPU_BRU_BNE] & ~cmp_eq) |
-                        (ex_bru_opc_bus[`NCPU_BRU_BGTU] & cmp_gt_u) |
-                        (ex_bru_opc_bus[`NCPU_BRU_BGT] & cmp_gt_s) |
-                        (ex_bru_opc_bus[`NCPU_BRU_BLEU] & ~cmp_gt_u) |
-                        (ex_bru_opc_bus[`NCPU_BRU_BLE] & ~cmp_gt_s);
+                        (ex_bru_opc_bus[`NCPU_BRU_BGTU] & (~cmp_lt_u & ~cmp_eq)) |
+                        (ex_bru_opc_bus[`NCPU_BRU_BGT] & (~cmp_lt_s & ~cmp_eq)) |
+                        (ex_bru_opc_bus[`NCPU_BRU_BLEU] & (cmp_lt_u | cmp_eq)) |
+                        (ex_bru_opc_bus[`NCPU_BRU_BLE] & (cmp_lt_s | cmp_eq));
 
    assign b_taken = (ex_valid & (bcc_taken | ex_bru_opc_bus[`NCPU_BRU_JMPREG] | ex_bru_opc_bus[`NCPU_BRU_JMPREL]));
 

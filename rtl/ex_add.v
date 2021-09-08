@@ -36,11 +36,13 @@ module ex_add
    output                              carry,
    output                              overflow
 );
+   wire                                ci;
    wire [CONFIG_DW-1:0]                op2;
 
-   assign op2 = (s) ? (~b + 'b1) : b;
-   assign {carry, sum} = a + op2;
-   assign overflow = ((b[CONFIG_DW-1] == op2[CONFIG_DW-1]) &
-                        (b[CONFIG_DW-1] ^ sum[CONFIG_DW-1]));
+   assign op2 = (s) ? ~b : b;
+   assign ci = (s);
+   assign {carry, sum} = a + op2 + {{CONFIG_DW-1{1'b0}}, ci};
+   assign overflow = ((a[CONFIG_DW-1] == op2[CONFIG_DW-1]) &
+                        (a[CONFIG_DW-1] ^ sum[CONFIG_DW-1]));
 
 endmodule
