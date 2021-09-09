@@ -315,9 +315,6 @@ CPU::step(vm_addr_t pc)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
-        if(pc==0x80004978){
-            printf("0x80004978 va=%#x\n", va);
-        }
     }
     break;
 
@@ -424,6 +421,9 @@ CPU::step(vm_addr_t pc)
             mem->phy_writem16(pa, (uint16_t)get_reg(rd));
         else
             dcache->phy_writem16(pa, (uint16_t)get_reg(rd));
+                if(pc==0x80001A18){
+            printf("80001A18 va=%#x\n", va);
+        }
     }
     break;
 
