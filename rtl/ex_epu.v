@@ -70,6 +70,7 @@ module ex_epu
 
    // To WRITEBACK
    output [CONFIG_DW-1:0]              epu_dout,
+   output                              epu_dout_valid,
    output [CONFIG_DW-1:0]              epu_wmsr_dat,
    output [`NCPU_WMSR_WE_W-1:0]        epu_wmsr_we,
    output                              epu_ERET,
@@ -342,6 +343,8 @@ module ex_epu
          ({CONFIG_DW{s1i_bank_irqc}} & dout_irqc) |
          ({CONFIG_DW{s1i_bank_tsc}} & dout_tsc)
       );
+   
+   assign epu_dout_valid = (ex_valid & ex_epu_opc_bus[`NCPU_EPU_RMSR]);
 
    assign epu_ERET = (ex_valid & ex_epu_opc_bus[`NCPU_EPU_ERET]);
    assign epu_ESYSCALL = (ex_valid & ex_epu_opc_bus[`NCPU_EPU_ESYSCALL]);

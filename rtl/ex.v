@@ -193,6 +193,7 @@ module ex
    wire                 epu_ESYSCALL;           // From U_EPU of ex_epu.v
    wire                 epu_E_FLUSH_TLB;        // From U_EPU of ex_epu.v
    wire [CONFIG_DW-1:0] epu_dout;               // From U_EPU of ex_epu.v
+   wire                 epu_dout_valid;         // From U_EPU of ex_epu.v
    wire [CONFIG_DW-1:0] epu_wmsr_dat;           // From U_EPU of ex_epu.v
    wire [`NCPU_WMSR_WE_W-1:0] epu_wmsr_we;      // From U_EPU of ex_epu.v
    wire                 exc_flush;              // From U_EPU of ex_epu.v
@@ -237,9 +238,10 @@ module ex
    wire                 msr_psr_rm_we;          // From U_EPU of ex_epu.v
    // End of automatics
    /*AUTOINPUT*/
+   wire [CONFIG_DW-1:0]                bru_dout;
+   wire                                bru_dout_valid;
    wire                                p_ce;
    wire                                ex_lsu_load0;
-   wire                                b_lnk;
    wire                                add_s                         [IW-1:0];
    wire [CONFIG_DW-1:0]                add_sum                       [IW-1:0];
    wire                                add_carry                     [IW-1:0];
@@ -363,15 +365,17 @@ module ex
          .ex_operand1      (ex_operand1[0*CONFIG_DW +: CONFIG_DW]),
          .ex_operand2      (ex_operand2[0*CONFIG_DW +: CONFIG_DW]),
          .ex_rf_we         (ex_rf_we[0]),
+         .npc              (npc[0]),
          .add_sum          (add_sum[0]),
          .add_carry        (add_carry[0]),
          .add_overflow     (add_overflow[0]),
          .b_taken          (b_taken),
          .b_tgt            (b_tgt),
-         .b_lnk            (b_lnk),
          .is_bcc           (is_bcc),
          .is_breg          (is_breg),
-         .is_brel          (is_brel)
+         .is_brel          (is_brel),
+         .bru_dout         (bru_dout),
+         .bru_dout_valid   (bru_dout_valid)
       );
 
    /* ex_epu AUTO_TEMPLATE (
@@ -403,6 +407,7 @@ module ex
       (/*AUTOINST*/
        // Outputs
        .epu_dout                        (epu_dout[CONFIG_DW-1:0]),
+       .epu_dout_valid                  (epu_dout_valid),
        .epu_wmsr_dat                    (epu_wmsr_dat[CONFIG_DW-1:0]),
        .epu_wmsr_we                     (epu_wmsr_we[`NCPU_WMSR_WE_W-1:0]),
        .epu_ERET                        (epu_ERET),
@@ -502,9 +507,14 @@ module ex
          ex_bru_opc_bus[0*`NCPU_BRU_IOPW + `NCPU_BRU_BLE]
       );
 
-   // Add the result of BRU
-   assign s1i_rf_dout[0*CONFIG_DW +: CONFIG_DW] = (s1i_rf_dout_1[0*CONFIG_DW +: CONFIG_DW] |
-                                                   ({CONFIG_DW{b_lnk}} & {npc[0], {`NCPU_P_INSN_LEN{1'b0}}}));
+   // MUX: switch the result of EPU/BRU/ALU (without LSU)
+   assign s1i_rf_dout[0*CONFIG_DW +: CONFIG_DW] =
+      (epu_dout_valid)
+         ? epu_dout
+         : (bru_dout_valid)
+            ? bru_dout
+            : s1i_rf_dout_1[0*CONFIG_DW +: CONFIG_DW];
+
 
    /* ex_lsu AUTO_TEMPLATE (
          .ex_valid         (ex_valid[0]),

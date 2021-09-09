@@ -37,6 +37,7 @@ module ex_bru
    input [CONFIG_DW-1:0]               ex_operand1,
    input [CONFIG_DW-1:0]               ex_operand2,
    input                               ex_rf_we,
+   input [`PC_W-1:0]                   npc,
    // From ex_add
    input [CONFIG_DW-1:0]               add_sum,
    input                               add_carry,
@@ -44,15 +45,17 @@ module ex_bru
    // Result
    output                              b_taken,
    output [`PC_W-1:0]                  b_tgt,
-   output                              b_lnk,
    output                              is_bcc,
    output                              is_breg,
-   output                              is_brel
+   output                              is_brel,
+   output [CONFIG_DW-1:0]              bru_dout,
+   output                              bru_dout_valid
 );
    wire                                cmp_eq;
    wire                                cmp_lt_s;
    wire                                cmp_lt_u;
    wire                                bcc_taken;
+   wire                                b_lnk;
    
    // equal
    assign cmp_eq = (ex_operand1 == ex_operand2);
@@ -88,4 +91,7 @@ module ex_bru
 
    assign b_lnk = ((ex_bru_opc_bus[`NCPU_BRU_JMPREL] | ex_bru_opc_bus[`NCPU_BRU_JMPREG]) & ex_rf_we);
 
+   assign bru_dout = {npc, {`NCPU_P_INSN_LEN{1'b0}}};
+   assign bru_dout_valid = b_lnk;
+   
 endmodule
