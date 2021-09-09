@@ -756,18 +756,17 @@ module ex
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s1o_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(ex_rf_waddr), .Q(s1o_rf_waddr) );
    mDFF_lr # (.DW(IW)) ff_s1o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(s1i_rf_we & {IW{~flush_s1}}), .Q(s1o_rf_we) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_s1o_rf_dout (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(s1o_rf_dout) );
-   mDFF_lr # (.DW(1)) ff_s1o_lsu_load (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(ex_lsu_load0), .Q(s1o_lsu_load0) );
+   mDFF_lr # (.DW(1)) ff_s1o_lsu_load (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(ex_lsu_load0 & ~flush_s1), .Q(s1o_lsu_load0) );
    mDFF_l # (.DW(`PC_W)) ff_commit_epc (.CLK(clk), .LOAD(p_ce), .D(ex_pc[0 +: `PC_W]), .Q(commit_epc) );
    mDFF_l # (.DW(`PC_W)) ff_commit_nepc (.CLK(clk), .LOAD(p_ce), .D(npc[0]), .Q(commit_nepc) );
-   
-   mDFF_lr # (.DW(1)) ff_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(epu_ERET), .Q(commit_ERET) );
-   mDFF_lr # (.DW(1)) ff_commit_ESYSCALL (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(epu_ESYSCALL), .Q(commit_ESYSCALL) );
-   mDFF_lr # (.DW(1)) ff_commit_EINSN (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(epu_EINSN), .Q(commit_EINSN) );
-   mDFF_lr # (.DW(1)) ff_commit_EIPF (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(epu_EIPF), .Q(commit_EIPF) );
-   mDFF_lr # (.DW(1)) ff_commit_EITM (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(epu_EITM), .Q(commit_EITM) );
-   mDFF_lr # (.DW(1)) ff_commit_EIRQ (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(epu_EIRQ), .Q(commit_EIRQ) );
-   mDFF_lr # (.DW(1)) ff_commit_E_FLUSH_TLB (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(epu_E_FLUSH_TLB), .Q(commit_E_FLUSH_TLB) );
-   mDFF_lr # (.DW(`NCPU_WMSR_WE_W)) ff_commit_wmsr_we (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(epu_wmsr_we), .Q(commit_wmsr_we) );
+   mDFF_lr # (.DW(1)) ff_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_ERET & ~flush_s1), .Q(commit_ERET) );
+   mDFF_lr # (.DW(1)) ff_commit_ESYSCALL (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_ESYSCALL & ~flush_s1), .Q(commit_ESYSCALL) );
+   mDFF_lr # (.DW(1)) ff_commit_EINSN (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_EINSN & ~flush_s1), .Q(commit_EINSN) );
+   mDFF_lr # (.DW(1)) ff_commit_EIPF (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_EIPF & ~flush_s1), .Q(commit_EIPF) );
+   mDFF_lr # (.DW(1)) ff_commit_EITM (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_EITM & ~flush_s1), .Q(commit_EITM) );
+   mDFF_lr # (.DW(1)) ff_commit_EIRQ (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_EIRQ & ~flush_s1), .Q(commit_EIRQ) );
+   mDFF_lr # (.DW(1)) ff_commit_E_FLUSH_TLB (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_E_FLUSH_TLB & ~flush_s1), .Q(commit_E_FLUSH_TLB) );
+   mDFF_lr # (.DW(`NCPU_WMSR_WE_W)) ff_commit_wmsr_we (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_wmsr_we  & {`NCPU_WMSR_WE_W{~flush_s1}}), .Q(commit_wmsr_we) );
    mDFF_l # (.DW(CONFIG_DW)) ff_commit_wmsr_dat (.CLK(clk), .LOAD(p_ce), .D(epu_wmsr_dat), .Q(commit_wmsr_dat) );
 
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s2o_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(s1o_rf_waddr), .Q(s2o_rf_waddr) );
