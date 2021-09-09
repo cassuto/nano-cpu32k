@@ -513,12 +513,12 @@ CPU::step(vm_addr_t pc)
         set_reg(rd, rmsr(get_reg(rs1) | uimm15));
         break;
 
-    /*case INS32_OP_ASR:
+    case INS32_OP_ASR:
         set_reg(rd, get_reg(rs1) >> get_reg(rs2));
         break;
     case INS32_OP_ASR_I:
         set_reg(rd, get_reg(rs1) >> uimm15);
-        break;*/
+        break;
 
     case INS32_OP_MUL:
         set_reg(rd, get_reg(rs1) * get_reg(rs2));

@@ -111,7 +111,7 @@ module ysyx_20210479
    localparam                           CONFIG_ENABLE_DIVU = 0;
    localparam                           CONFIG_ENABLE_MOD = 0;
    localparam                           CONFIG_ENABLE_MODU = 0;
-   localparam                           CONFIG_ENABLE_ASR = 0;
+   localparam                           CONFIG_ENABLE_ASR = 1;
    localparam                           CONFIG_IMMU_ENABLE_UNCACHED_SEG = 1;
    localparam                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 1;
    localparam                           CONFIG_DTLB_P_SETS = 7;
