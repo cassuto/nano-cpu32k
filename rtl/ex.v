@@ -735,7 +735,9 @@ module ex
    assign se_flush = (p_ce & s1o_se_flush);
    
    assign flush = (exc_flush | se_flush);
-   // Maintain the priority carefully here for speculative execution or exception
+   // Maintain the priority of for speculative execution or exception
+   // Highest - Speculative execution failure
+   // Lowest - Exception
    assign flush_tgt = (se_flush)
                         ? s1o_se_flush_tgt
                         : exc_flush_tgt; /* (exc_flush) */ 
@@ -746,7 +748,7 @@ module ex
    // se_flush:   (Output of) Frontend & ID & EX(s1)
    //
    assign flush_s1 = (exc_flush | se_flush);
-   assign flush_s2 = (exc_flush);
+   assign flush_s2 = (exc_flush & ~se_flush);
    
    //
    // Pipeline stages
