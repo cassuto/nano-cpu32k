@@ -192,6 +192,7 @@ module ex
    wire                 epu_ERET;               // From U_EPU of ex_epu.v
    wire                 epu_ESYSCALL;           // From U_EPU of ex_epu.v
    wire                 epu_E_FLUSH_TLB;        // From U_EPU of ex_epu.v
+   wire [`PC_W-1:0]     epu_E_FLUSH_TLB_npc;    // From U_EPU of ex_epu.v
    wire [CONFIG_DW-1:0] epu_dout;               // From U_EPU of ex_epu.v
    wire                 epu_dout_valid;         // From U_EPU of ex_epu.v
    wire [CONFIG_DW-1:0] epu_wmsr_dat;           // From U_EPU of ex_epu.v
@@ -236,6 +237,7 @@ module ex
    wire [`NCPU_PSR_DW-1:0] msr_psr_nold;        // From U_PSR of ex_psr.v
    wire                 msr_psr_rm_nxt;         // From U_EPU of ex_epu.v
    wire                 msr_psr_rm_we;          // From U_EPU of ex_epu.v
+   wire [`PC_W-1:0]     commit_E_FLUSH_TLB_npc; // To U_EPU of ex_epu.v
    // End of automatics
    /*AUTOINPUT*/
    wire [CONFIG_DW-1:0]                bru_dout;
@@ -417,6 +419,7 @@ module ex
        .epu_EITM                        (epu_EITM),
        .epu_EIRQ                        (epu_EIRQ),
        .epu_E_FLUSH_TLB                 (epu_E_FLUSH_TLB),
+       .epu_E_FLUSH_TLB_npc             (epu_E_FLUSH_TLB_npc[`PC_W-1:0]),
        .exc_flush                       (exc_flush),
        .exc_flush_tgt                   (exc_flush_tgt[`PC_W-1:0]),
        .irq_async                       (irq_async),
@@ -480,6 +483,7 @@ module ex
        .commit_EIRQ                     (commit_EIRQ),
        .commit_wmsr_we                  (commit_wmsr_we[`NCPU_WMSR_WE_W-1:0]),
        .commit_wmsr_dat                 (commit_wmsr_dat[CONFIG_DW-1:0]),
+       .commit_E_FLUSH_TLB_npc          (commit_E_FLUSH_TLB_npc[`PC_W-1:0]),
        .irqs                            (irqs[CONFIG_NUM_IRQ-1:0]),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
        .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
@@ -779,7 +783,8 @@ module ex
    mDFF_lr # (.DW(1)) ff_commit_E_FLUSH_TLB (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_E_FLUSH_TLB & ~flush_s1), .Q(commit_E_FLUSH_TLB) );
    mDFF_lr # (.DW(`NCPU_WMSR_WE_W)) ff_commit_wmsr_we (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_wmsr_we  & {`NCPU_WMSR_WE_W{~flush_s1}}), .Q(commit_wmsr_we) );
    mDFF_l # (.DW(CONFIG_DW)) ff_commit_wmsr_dat (.CLK(clk), .LOAD(p_ce), .D(epu_wmsr_dat), .Q(commit_wmsr_dat) );
-
+   mDFF_l # (.DW(`PC_W)) ff_commit_E_FLUSH_TLB_npc (.CLK(clk), .LOAD(p_ce), .D(epu_E_FLUSH_TLB_npc), .Q(commit_E_FLUSH_TLB_npc) );
+   
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s2o_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(s1o_rf_waddr), .Q(s2o_rf_waddr) );
    mDFF_lr # (.DW(IW)) ff_s2o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s2), .D(s1o_rf_we & {IW{~flush_s2}}), .Q(s2o_rf_we) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_s2o_rf_dout (.CLK(clk), .LOAD(p_ce), .D(s1o_rf_dout), .Q(s2o_rf_dout) );

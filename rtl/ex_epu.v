@@ -67,6 +67,7 @@ module ex_epu
    input                               commit_EIRQ,
    input [`NCPU_WMSR_WE_W-1:0]         commit_wmsr_we,
    input [CONFIG_DW-1:0]               commit_wmsr_dat,
+   input [`PC_W-1:0]                   commit_E_FLUSH_TLB_npc,
 
    // To WRITEBACK
    output [CONFIG_DW-1:0]              epu_dout,
@@ -80,6 +81,7 @@ module ex_epu
    output                              epu_EITM,
    output                              epu_EIRQ,
    output                              epu_E_FLUSH_TLB,
+   output [`PC_W-1:0]                  epu_E_FLUSH_TLB_npc,
 
    // Flush
    output                              exc_flush,
@@ -357,6 +359,7 @@ module ex_epu
                               s1i_msr_imm_tlbh_we |
                               s1i_msr_dmm_tlbl_we |
                               s1i_msr_dmm_tlbh_we));
+   assign epu_E_FLUSH_TLB_npc = ex_npc;
 
    ////////////////////////////////////////////////////////////////////////////////
 
@@ -515,7 +518,7 @@ module ex_epu
    assign exc_flush_tgt = ({CONFIG_AW-2{commit_EDTM}} & CONFIG_EDTM_VECTOR[2 +: CONFIG_AW-2]) |
                            ({CONFIG_AW-2{commit_EDPF}} & CONFIG_EDPF_VECTOR[2 +: CONFIG_AW-2]) |
                            ({CONFIG_AW-2{commit_EALIGN}} & CONFIG_EALIGN_VECTOR[2 +: CONFIG_AW-2]) |
-                           ({CONFIG_AW-2{commit_E_FLUSH_TLB}} & ex_npc) |
+                           ({CONFIG_AW-2{commit_E_FLUSH_TLB}} & commit_E_FLUSH_TLB_npc) |
                            ({CONFIG_AW-2{commit_ESYSCALL}} & CONFIG_ESYSCALL_VECTOR[2 +: CONFIG_AW-2]) |
                            ({CONFIG_AW-2{commit_ERET}} & msr_epc[2 +: CONFIG_AW-2]) |
                            ({CONFIG_AW-2{commit_EITM}} & CONFIG_EITM_VECTOR[2 +: CONFIG_AW-2]) |
