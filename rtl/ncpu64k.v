@@ -196,6 +196,9 @@ module ncpu64k
    wire [CONFIG_DW-1:0] msr_immid;              // From U_FNT of frontend.v
    wire                 msr_psr_imme;           // From U_EX of ex.v
    wire                 msr_psr_rm;             // From U_EX of ex.v
+   wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_waddr;// From U_EX of ex.v
+   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_wdat;// From U_EX of ex.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_we;// From U_EX of ex.v
    wire                 ro_ex_s1_load0;         // From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_dout;// From U_EX of ex.v
    wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_waddr;// From U_EX of ex.v
@@ -204,8 +207,9 @@ module ncpu64k
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_dout;// From U_EX of ex.v
    wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_waddr;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_we;// From U_EX of ex.v
+   wire                 ro_ex_s3_load0;         // From U_EX of ex.v
+   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_dout;// From U_EX of ex.v
    wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_waddr;// From U_EX of ex.v
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_wdat;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_we;// From U_EX of ex.v
    // End of automatics
    /*AUTOINPUT*/
@@ -337,15 +341,19 @@ module ncpu64k
        .irq_async                       (irq_async),
        .ro_ex_s1_rf_dout                (ro_ex_s1_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s2_rf_dout                (ro_ex_s2_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s3_rf_wdat                (ro_ex_s3_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s3_rf_dout                (ro_ex_s3_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_wdat                  (ro_cmt_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s1_rf_we                  (ro_ex_s1_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s2_rf_we                  (ro_ex_s2_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s3_rf_we                  (ro_ex_s3_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_we                    (ro_cmt_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s1_load0                  (ro_ex_s1_load0),
        .ro_ex_s2_load0                  (ro_ex_s2_load0),
+       .ro_ex_s3_load0                  (ro_ex_s3_load0),
        .arf_RDATA                       (arf_RDATA[(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0]));
       
    ex
@@ -391,15 +399,19 @@ module ncpu64k
        .flush_tgt                       (flush_tgt[`PC_W-1:0]),
        .ro_ex_s1_rf_dout                (ro_ex_s1_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s2_rf_dout                (ro_ex_s2_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s3_rf_wdat                (ro_ex_s3_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s3_rf_dout                (ro_ex_s3_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_wdat                  (ro_cmt_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s1_rf_we                  (ro_ex_s1_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s2_rf_we                  (ro_ex_s2_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s3_rf_we                  (ro_ex_s3_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_we                    (ro_cmt_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s1_load0                  (ro_ex_s1_load0),
        .ro_ex_s2_load0                  (ro_ex_s2_load0),
+       .ro_ex_s3_load0                  (ro_ex_s3_load0),
        .commit_rf_wdat                  (commit_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .commit_rf_waddr                 (commit_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .commit_rf_we                    (commit_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),

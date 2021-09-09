@@ -69,15 +69,19 @@ module id
    // RO
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_dout,
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_dout,
-   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_wdat,
+   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_dout,
+   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_wdat,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_we,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_we,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_we,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_we,
    input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_waddr,
    input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_waddr,
    input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_waddr,
-   input ro_ex_s1_load0,
-   input ro_ex_s2_load0,
+   input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_waddr,
+   input                               ro_ex_s1_load0,
+   input                               ro_ex_s2_load0,
+   input                               ro_ex_s3_load0,
    // Regfile
    output [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] arf_RE,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_REG_AW-1:0] arf_RADDR,
@@ -174,6 +178,11 @@ module id
 
    assign p_ce = (~stall);
    
+   /* id_ro AUTO_TEMPLATE (
+      .raddr                           (arf_RADDR[]),
+      .re                              (arf_RE[]),
+      .rf_din                          (arf_RDATA[]),
+   ); */
    id_ro
       #(/*AUTOINSTPARAM*/
         // Parameters
@@ -181,25 +190,30 @@ module id
         .CONFIG_DW                      (CONFIG_DW),
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH))
    U_RO
-      (
-         .clk        (clk),
-         .ro_ex_s1_rf_dout    (ro_ex_s1_rf_dout),
-         .ro_ex_s2_rf_dout    (ro_ex_s2_rf_dout),
-         .ro_ex_s3_rf_wdat    (ro_ex_s3_rf_wdat),
-         .ro_ex_s1_rf_we      (ro_ex_s1_rf_we),
-         .ro_ex_s2_rf_we      (ro_ex_s2_rf_we),
-         .ro_ex_s3_rf_we      (ro_ex_s3_rf_we),
-         .ro_ex_s1_rf_waddr   (ro_ex_s1_rf_waddr),
-         .ro_ex_s2_rf_waddr   (ro_ex_s2_rf_waddr),
-         .ro_ex_s3_rf_waddr   (ro_ex_s3_rf_waddr),
-         .ro_ex_s1_load0      (ro_ex_s1_load0),
-         .ro_ex_s2_load0      (ro_ex_s2_load0),
-         .raddr               (arf_RADDR),
-         .re                  (arf_RE),
-         .rf_din              (arf_RDATA),
-         .byp_dout            (byp_dout),
-         .raw_dep_load0       (raw_dep_load0)
-      );
+      (/*AUTOINST*/
+       // Outputs
+       .byp_dout                        (byp_dout[CONFIG_DW*2*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .raw_dep_load0                   (raw_dep_load0[2*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .ro_ex_s1_rf_dout                (ro_ex_s1_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s2_rf_dout                (ro_ex_s2_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s3_rf_dout                (ro_ex_s3_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_wdat                  (ro_cmt_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s1_rf_we                  (ro_ex_s1_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s2_rf_we                  (ro_ex_s2_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s3_rf_we                  (ro_ex_s3_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_we                    (ro_cmt_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s1_load0                  (ro_ex_s1_load0),
+       .ro_ex_s2_load0                  (ro_ex_s2_load0),
+       .ro_ex_s3_load0                  (ro_ex_s3_load0),
+       .raddr                           (arf_RADDR[`NCPU_REG_AW*2*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]), // Templated
+       .re                              (arf_RE[2*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]), // Templated
+       .rf_din                          (arf_RDATA[CONFIG_DW*2*(1<<CONFIG_P_ISSUE_WIDTH)-1:0])); // Templated
    
    // Read the operand from ARF
    // ARF has 1 cycle latency before output the result

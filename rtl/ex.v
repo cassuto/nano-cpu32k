@@ -65,7 +65,7 @@ module ex
    output                              stall,
    output                              flush,
    output [`PC_W-1:0]                  flush_tgt,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0]                ex_valid,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_valid,
    input [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_alu_opc_bus,
    input [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lpu_opc_bus,
    input [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_epu_opc_bus,
@@ -81,15 +81,19 @@ module ex
    // To bypass
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_dout,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_dout,
-   output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_wdat,
+   output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_dout,
+   output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_wdat,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_we,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_we,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_we,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_we,
    output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_waddr,
    output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_waddr,
    output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_waddr,
-   output ro_ex_s1_load0,
-   output ro_ex_s2_load0,
+   output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_waddr,
+   output                              ro_ex_s1_load0,
+   output                              ro_ex_s2_load0,
+   output                              ro_ex_s3_load0,
    // To commit
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat,
    output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr,
@@ -378,8 +382,7 @@ module ex
          .ex_operand1      (ex_operand1[0*CONFIG_DW +: CONFIG_DW]),
          .ex_operand2      (ex_operand2[0*CONFIG_DW +: CONFIG_DW]),
          .ex_imm           (ex_imm[0*CONFIG_DW +: CONFIG_DW]),
-      )
-   */
+      ) */
    ex_epu
       #(/*AUTOINSTPARAM*/
         // Parameters
@@ -514,8 +517,7 @@ module ex
          .lsu_EALIGN       (commit_EALIGN),
          .lsu_vaddr        (commit_LSA),
          .lsu_dout         (s2o_lsu_dout0),
-      )
-   */
+      ) */
    ex_lsu
       #(/*AUTOINSTPARAM*/
         // Parameters
@@ -712,15 +714,19 @@ module ex
    // Bypass
    assign ro_ex_s1_rf_dout = s1i_rf_dout;
    assign ro_ex_s2_rf_dout = s1o_rf_dout;
-   assign ro_ex_s3_rf_wdat = s3i_rf_wdat;
+   assign ro_ex_s3_rf_dout = s2o_rf_dout;
+   assign ro_cmt_rf_wdat = commit_rf_wdat;
    assign ro_ex_s1_rf_we = s1i_rf_we;
    assign ro_ex_s2_rf_we = s1o_rf_we;
    assign ro_ex_s3_rf_we = s2o_rf_we;
+   assign ro_cmt_rf_we = commit_rf_we;
    assign ro_ex_s1_rf_waddr = ex_rf_waddr;
    assign ro_ex_s2_rf_waddr = s1o_rf_waddr;
-   assign ro_ex_s3_rf_waddr= s2o_rf_waddr;
+   assign ro_ex_s3_rf_waddr = s2o_rf_waddr;
+   assign ro_cmt_rf_waddr = commit_rf_waddr;
    assign ro_ex_s1_load0 = ex_lsu_load0;
    assign ro_ex_s2_load0 = s1o_lsu_load0;
+   assign ro_ex_s3_load0 = s2o_lsu_load0;
 
    assign stall = (lsu_stall_req | icop_stall_req);
    
