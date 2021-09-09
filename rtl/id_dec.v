@@ -123,6 +123,7 @@ module id_dec
    wire [4:0]                          f_rs2;
    wire [14:0]                         f_imm15;
    wire [16:0]                         f_imm17;
+   wire [14:0]                         f_rel15;
    wire [24:0]                         f_rel25;
    wire                                enable_asr;
    wire                                enable_asr_i;
@@ -176,15 +177,17 @@ module id_dec
    wire                                is_bcc;
    wire                                insn_rs1_imm15;
    wire                                insn_rd_rs1_imm15;
+   wire                                insn_rd_rs1_rel15;
    wire                                insn_uimm17;
    wire                                insn_rel25;
    wire                                insn_no_rops;
    wire                                use_simm15;
    wire                                not_wb;
    wire                                read_rd_as_rs2;
-   wire [CONFIG_DW-1:0]                simm15;
-   wire [CONFIG_DW-1:0]                uimm15;
+   wire [CONFIG_DW-1:0]                imm15;
    wire [CONFIG_DW-1:0]                uimm17;
+   wire [CONFIG_DW-1:0]                rel15;
+   wire [CONFIG_DW-1:0]                rel25;
    wire [`NCPU_EPU_IOPW-1:0]           epu_opc_no_EINSN;
    
    assign msk = ((~|id_exc) & id_valid);
@@ -195,6 +198,7 @@ module id_dec
    assign f_rs2 = id_ins[21:17];
    assign f_imm15 = id_ins[31:17];
    assign f_imm17 = id_ins[28:12];
+   assign f_rel15 = id_ins[31:17];
    assign f_rel25 = id_ins[31:7];
 
    assign enable_asr = 1'b1;
@@ -369,7 +373,7 @@ module id_dec
          (|epu_opc_bus)
       );
    
-   // Insn that uses rs1 and imm15 as operand.
+   // Insn that uses rs1 and imm15 as operands.
    assign insn_rs1_imm15 =
       (
          op_and_i | op_or_i | op_xor_i | op_lsl_i | op_lsr_i | op_asr_i |
@@ -377,13 +381,14 @@ module id_dec
          lsu_opc_bus[`NCPU_LSU_LOAD] |
          op_rmsr
       );
-   // Insn that uses rs1, rs2 and imm15 as operand
+   // Insn that uses rs1, rs2 and imm15 as operands
    assign insn_rd_rs1_imm15 =
       (
          lsu_opc_bus[`NCPU_LSU_STORE] |
-         op_wmsr |
-         is_bcc
+         op_wmsr
       );
+   // Insn that uses rs1, rs2 and rel15 as operands
+   assign insn_rd_rs1_rel15 = is_bcc;
    // Insn that uses imm17 as operand.
    assign insn_uimm17 = op_mhi;
    // Insn that uses rel25 as operand
@@ -415,16 +420,19 @@ module id_dec
    assign rf_rs2_re = ((~insn_rs1_imm15 & ~insn_uimm17 & ~insn_rel25 & ~insn_no_rops) | read_rd_as_rs2);
    assign rf_rs2_addr = read_rd_as_rs2 ? f_rd : f_rs2;
 
-   // Sign-extended 15bit Integer
-   assign simm15 = {{CONFIG_DW-15{f_imm15[14]}}, f_imm15[14:0]};
-   // Zero-extended 15bit Integer
-   assign uimm15 = {{CONFIG_DW-15{1'b0}}, f_imm15[14:0]};
-   // Zero-extended 17bit Integer
+   // Sign-extended / zero-extended 15bit integer
+   assign imm15 = {{CONFIG_DW-15{use_simm15 & f_imm15[14]}}, f_imm15[14:0]};
+   // Zero-extended 17bit integer
    assign uimm17 = {{CONFIG_DW-17{1'b0}}, f_imm17[16:0]};
+   // Sign-extended 15bit pcrel
+   assign rel15 = {{CONFIG_DW-2-15{f_rel15[14]}}, f_rel15[14:0], 2'b00};
+   // Sign-extended 25bit pcrel
+   assign rel25 = {{CONFIG_DW-2-25{f_rel25[24]}}, f_rel25[24:0], 2'b00};
    // Immediate Operand
-   assign imm = ({CONFIG_DW{insn_rs1_imm15|insn_rd_rs1_imm15}} & (use_simm15 ? simm15 : uimm15)) |
-                        ({CONFIG_DW{insn_rel25}} & {{CONFIG_DW-2-25{f_rel25[24]}}, f_rel25[24:0], 2'b00}) |
-                        ({CONFIG_DW{insn_uimm17}} & uimm17);
+   assign imm = ({CONFIG_DW{insn_rs1_imm15|insn_rd_rs1_imm15}} & imm15) |
+                  ({CONFIG_DW{insn_rd_rs1_rel15}} & rel15) |
+                  ({CONFIG_DW{insn_rel25}} & rel25) |
+                  ({CONFIG_DW{insn_uimm17}} & uimm17);
 
    // synthesis translate_off
 `ifndef SYNTHESIS
