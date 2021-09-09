@@ -6,11 +6,6 @@
 //`define SYNTHESIS
 //`endif
 
-/* Difftest configuration */
-`undef ENABLE_DIFFTEST
-`define ENABLE_DIFFTEST
-
-
 /* Asynchronous/synchronous reset */
 //`define NCPU_RST_ASYNC
 `undef NCPU_RST_ASYNC
@@ -18,6 +13,10 @@
 /* Reset Polarity */
 `define NCPU_RST_POS_POLARITY
 //`undef NCPU_RST_POS_POLARITY
+
+/* Difftest configuration */
+`undef ENABLE_DIFFTEST
+`define ENABLE_DIFFTEST
 
 /* Assert in simulation */
 `define NCPU_ENABLE_ASSERT

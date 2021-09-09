@@ -44,7 +44,7 @@ module ex_lsu
    input                               clk,
    input                               rst,
    input                               stall,
-   input                               flush,
+   input                               flush_s1,
    output                              lsu_stall_req,
    input                               ex_valid,
    input [`NCPU_LSU_IOPW-1:0]          ex_lsu_opc_bus,
@@ -219,7 +219,7 @@ module ex_lsu
 
    assign s1i_dc_vpo = s1i_dc_vaddr[CONFIG_P_PAGE_SIZE-1:0];
 
-   assign s1i_dc_req = (p_cke & s1i_valid & ~flush);
+   assign s1i_dc_req = (p_cke & s1i_valid & ~flush_s1);
 
    assign s1i_tlb_req = (s1i_dc_req & ~s1i_dcop);
 
@@ -367,7 +367,7 @@ module ex_lsu
    mDFF_l #(.DW(1)) ff_s2o_sign_ext (.CLK(clk), .LOAD(p_cke), .D(s1o_sign_ext), .Q(s2o_sign_ext) );
 
    // Control path
-   mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(s1i_valid), .Q(s1o_valid) );
+   mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_cke|flush_s1), .D(s1i_valid & ~flush_s1), .Q(s1o_valid) );
    mDFF_lr #(.DW(1)) ff_s1o_misalign (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(s1i_misalign), .Q(s1o_EALIGN) );
    
 

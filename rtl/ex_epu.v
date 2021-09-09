@@ -43,7 +43,6 @@ module ex_epu
 (
    input                               clk,
    input                               rst,
-   input                               flush,
    input                               stall,
    input [`PC_W-1:0]                   ex_pc,
    input [`PC_W-1:0]                   ex_npc,

@@ -452,7 +452,6 @@ module ex
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
-       .flush                           (flush),
        .stall                           (stall),
        .ex_pc                           (ex_pc[0*`PC_W +: `PC_W]), // Templated
        .ex_npc                          (npc[0]),                // Templated
@@ -581,7 +580,7 @@ module ex
        .clk                             (clk),
        .rst                             (rst),
        .stall                           (stall),
-       .flush                           (flush),
+       .flush_s1                        (flush_s1),
        .ex_valid                        (ex_valid[0]),           // Templated
        .ex_lsu_opc_bus                  (ex_lsu_opc_bus[0*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]), // Templated
        .add_sum                         (add_sum[0]),            // Templated
