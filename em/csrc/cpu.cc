@@ -422,7 +422,7 @@ CPU::step(vm_addr_t pc)
         else
             dcache->phy_writem16(pa, (uint16_t)get_reg(rd));
                 if(pc==0x80001A18){
-            printf("80001A18 va=%#x\n", va);
+            printf("80001A18 va=%#x dat=%#x\n", va, get_reg(rd));
         }
     }
     break;
