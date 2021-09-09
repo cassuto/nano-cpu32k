@@ -28,7 +28,7 @@ private:
         vm_addr_t pc;
         insn_t insn;
     };
-    const int n_pc_queue = 512;
+    const int n_pc_queue = 16;
     info *pc_queue;
     int pc_queue_pos;
 };
