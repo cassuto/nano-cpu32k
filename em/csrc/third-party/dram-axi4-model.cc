@@ -98,7 +98,6 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
     uint64_t transaction_size = beatsize * beatlen;
     assert(beatsize <= 8);
     assert((transaction_size % sizeof(uint64_t)) == 0);
-    meta->start_addr = address;
     // axi burst FIXED
     if (ar.burst == 0x0)
     {
@@ -289,7 +288,7 @@ void DRAM::dramsim3_helper_falling(axi_channel &axi)
         dramsim3_meta *meta = static_cast<dramsim3_meta *>(wait_resp_r->req->meta);
         // printf("meta->size %d offset %d\n", meta->size, meta->offset*meta->size/sizeof(uint64_t));
         void *data_start = meta->data + meta->offset * meta->size / sizeof(uint64_t);
-        axi_put_rdata(axi, data_start, meta->size, meta->offset == meta->len - 1, meta->id, meta->start_addr, meta->offset);
+        axi_put_rdata(axi, data_start, meta->size, meta->offset == meta->len - 1, meta->id);
     }
 
     // RADDR: check whether the read request can be accepted
