@@ -21,6 +21,7 @@
 
 // #define DEBUG_LOG_AXI4
 
+#define AXI_DATA_WIDTH 64
 // 4*64 bits
 #define AXI_DATA_WIDTH_64 4
 
@@ -210,7 +211,7 @@ void axi_accept_raddr(axi_channel &axi);
 bool axi_check_raddr_fire(const axi_channel &axi);
 
 // r channel: (1) put rdata; (2) check rdata fire
-void axi_put_rdata(axi_channel &axi, void *src, size_t n, bool last, uint8_t id);
+void axi_put_rdata(axi_channel &axi, void *src, size_t n, bool last, uint8_t id, uint8_t rpos);
 bool axi_check_rdata_fire(const axi_channel &axi);
 
 // aw channel: (1) read waddr; (2) try to accept the address; (3) check waddr fire

@@ -96,7 +96,9 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
     uint64_t beatsize = 1 << ar.size;
     uint8_t beatlen = ar.len + 1;
     uint64_t transaction_size = beatsize * beatlen;
+    assert(beatsize <= (AXI_DATA_WIDTH/8));
     assert((transaction_size % sizeof(uint64_t)) == 0);
+    meta->rpos = (address/beatsize) % (AXI_DATA_WIDTH/8/beatsize);
     // axi burst FIXED
     if (ar.burst == 0x0)
     {
@@ -251,8 +253,7 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         const void *src_addr = mem + (waddr + meta->offset * meta->size) / sizeof(uint64_t);
 #else
         assert(meta->size <= 8); // The current STRB supports no more than 8 bytes of data
-        uint64_t lastdata = mem->dram_readm64((waddr + meta->offset * meta->size) / sizeof(uint64_t));
-        const void *src_addr = &lastdata;
+        const void *src_addr = mem->dram_refm64((waddr + meta->offset * meta->size) / sizeof(uint64_t));
 #endif
         axi_get_wdata(axi, data_start, src_addr, meta->size);
         meta->offset++;
@@ -288,7 +289,7 @@ void DRAM::dramsim3_helper_falling(axi_channel &axi)
         dramsim3_meta *meta = static_cast<dramsim3_meta *>(wait_resp_r->req->meta);
         // printf("meta->size %d offset %d\n", meta->size, meta->offset*meta->size/sizeof(uint64_t));
         void *data_start = meta->data + meta->offset * meta->size / sizeof(uint64_t);
-        axi_put_rdata(axi, data_start, meta->size, meta->offset == meta->len - 1, meta->id);
+        axi_put_rdata(axi, data_start, meta->size, meta->offset == meta->len - 1, meta->id, meta->rpos);
     }
 
     // RADDR: check whether the read request can be accepted

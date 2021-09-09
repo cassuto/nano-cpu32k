@@ -31,6 +31,7 @@ struct dramsim3_meta
     uint8_t offset;
     uint8_t id;
     uint64_t data[MAX_AXI_DATA_LEN];
+    uint8_t rpos;
 };
 
 class DRAM

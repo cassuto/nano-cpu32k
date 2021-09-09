@@ -156,6 +156,12 @@ public:
         /* FIXME: unsupport big-endian host machines */
         return *(((uint64_t *)memory) + idx);
     }
+    inline uint64_t *
+    dram_refm64(uint64_t idx)
+    {
+        /* FIXME: unsupport big-endian host machines */
+        return ((uint64_t *)memory) + idx;
+    }
     inline void
     dram_writem64(uint64_t idx, uint64_t val)
     {
