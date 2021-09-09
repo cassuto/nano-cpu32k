@@ -155,7 +155,7 @@ module dmmu
 
    // If DMMU is disabled, UNC bit in page entry is not functioned.
    // Uncached segment is always functioned as long as physical addr is valid
-   // and is within 0x80000000~0x8FFFFFFF
+   // and is within 0x00000000~0x7FFFFFFF
 generate
    if (CONFIG_DMMU_ENABLE_UNCACHED_SEG)
       assign uncached = (msr_psr_dmme_ff & ~tlb_miss & ~perm_denied & tlb_unc) | (~EDTM & ~EDPF & ~ppn[CONFIG_AW-CONFIG_P_PAGE_SIZE-1]);

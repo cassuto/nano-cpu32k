@@ -136,6 +136,7 @@ module ex_lsu
    // End of automatics
    wire                                p_cke;
    // Stage 1 Input
+   wire                                s1i_valid;
    wire                                s1i_load;
    wire                                s1i_store;
    wire                                s1i_sign_ext;
@@ -167,9 +168,6 @@ module ex_lsu
    wire                                s1o_EALIGN;
    wire [CONFIG_AW-1:0]                s1o_vaddr;
    wire                                s1o_dcop;
-   wire                                s1o_store;
-   wire [CONFIG_DW/8-1:0]              s1o_dc_wmsk;
-   wire [CONFIG_DW-1:0]                s1o_dc_wdat;
    // Stage 3 Input / Stage 2 Output
    wire [CONFIG_DW-1:0]                s2o_dc_rdat;
    wire [CONFIG_DW-1:0]                s2o_dout_32b;
@@ -179,6 +177,7 @@ module ex_lsu
    wire [2:0]                          s2o_size;
    wire                                s2o_sign_ext;
 
+   assign s1i_valid = ex_valid & (s1i_load|s1i_store|s1i_dcop);
    assign s1i_load = ex_lsu_opc_bus[`NCPU_LSU_LOAD];
    assign s1i_store = ex_lsu_opc_bus[`NCPU_LSU_STORE];
    assign s1i_sign_ext = ex_lsu_opc_bus[`NCPU_LSU_SIGN_EXT];
@@ -220,7 +219,7 @@ module ex_lsu
 
    assign s1i_dc_vpo = s1i_dc_vaddr[CONFIG_P_PAGE_SIZE-1:0];
 
-   assign s1i_dc_req = (p_cke & ex_valid & (s1i_load|s1i_store|s1i_dcop) & ~flush);
+   assign s1i_dc_req = (p_cke & s1i_valid & ~flush);
 
    assign s1i_tlb_req = (s1i_dc_req & ~s1i_dcop);
 
@@ -366,13 +365,10 @@ module ex_lsu
    mDFF_l #(.DW(CONFIG_AW)) ff_s2o_vaddr (.CLK(clk), .LOAD(p_cke), .D(s1o_vaddr), .Q(s2o_vaddr) );
    mDFF_l #(.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_cke), .D(s1o_size), .Q(s2o_size) );
    mDFF_l #(.DW(1)) ff_s2o_sign_ext (.CLK(clk), .LOAD(p_cke), .D(s1o_sign_ext), .Q(s2o_sign_ext) );
-   mDFF_l #(.DW(CONFIG_DW/8)) ff_s1o_dc_wmsk (.CLK(clk), .LOAD(p_cke), .D(s1i_dc_wmsk), .Q(s1o_dc_wmsk));
-   mDFF_l #(.DW(CONFIG_DW)) ff_s1o_dc_wdat (.CLK(clk), .LOAD(p_cke), .D(s1i_dc_wdat), .Q(s1o_dc_wdat));
 
    // Control path
-   mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(ex_valid & (s1i_load|s1i_store) & ~flush), .Q(s1o_valid) );
+   mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(s1i_valid), .Q(s1o_valid) );
    mDFF_lr #(.DW(1)) ff_s1o_misalign (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(s1i_misalign), .Q(s1o_EALIGN) );
-   mDFF_lr #(.DW(1)) ff_s1o_store (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(s1i_store), .Q(s1o_store) );
    
 
    assign s2o_dout_32b = s2o_dc_rdat;
@@ -391,9 +387,9 @@ module ex_lsu
       ({CONFIG_DW{s2o_size==3'd2}} & {{16{s2o_sign_ext & s2o_dout_16b[15]}}, s2o_dout_16b[15:0]}) |
       ({CONFIG_DW{s2o_size==3'd1}} & {{24{s2o_sign_ext & s2o_dout_8b[7]}}, s2o_dout_8b[7:0]});
 
-   assign lsu_EDTM = s1o_EDTM;
-   assign lsu_EDPF = s1o_EDPF;
-   assign lsu_EALIGN = s1o_EALIGN;
+   assign lsu_EDTM = (s1o_valid & s1o_EDTM);
+   assign lsu_EDPF = (s1o_valid & s1o_EDPF);
+   assign lsu_EALIGN = (s1o_valid & s1o_EALIGN);
    
    assign lsu_vaddr = s2o_vaddr;
 
