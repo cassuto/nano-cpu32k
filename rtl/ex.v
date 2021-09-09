@@ -786,17 +786,21 @@ module ex
    //
    wire [IW-1:0]                       s1o_valid;
    wire [IW-1:0]                       s2o_valid;
+   wire                                s2o_exc;
    wire [`PC_W*IW-1:0]                 s1o_pc;
    wire [`PC_W*IW-1:0]                 s2o_pc;
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid;
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc;
+   wire                                commit_exc;
 
    mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(s1i_valid & {IW{~flush_s1}}), .Q(s1o_valid) );
-   mDFF_lr # (.DW(IW)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s2), .D(s1o_valid & {IW{~flush_s2}}), .Q(s2o_valid) );
+   mDFF_lr # (.DW(IW)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
+   mDFF_lr # (.DW(1)) ff_s2o_exc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(exc_flush), .Q(s2o_exc) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s1o_pc (.CLK(clk), .LOAD(p_ce), .D(ex_pc), .Q(s1o_pc) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s2o_pc (.CLK(clk), .LOAD(p_ce), .D(s1o_pc), .Q(s2o_pc) );
    mDFF_lr # (.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s2o_valid), .Q(commit_valid) );
    mDFF_l # (.DW(`PC_W*IW)) ff_commit_pc (.CLK(clk), .LOAD(p_ce), .D(s2o_pc), .Q(commit_pc) );
+   mDFF_lr # (.DW(1)) ff_commit_exc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s2o_exc), .Q(commit_exc) );
 `endif
 
 `ifdef ENABLE_DIFFTEST
