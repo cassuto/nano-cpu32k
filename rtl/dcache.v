@@ -152,16 +152,17 @@ module dcache
    wire                                s2i_v                   [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2i_hit_vec;
    wire                                s2i_hit;
+   wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2i_match_vec;
+   wire                                s2i_match_vec_ce;
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_fsm_free_way;
    // Stage 2 Output / Stage 3 Input
-   wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s3i_match_vec;
    wire                                s2o_fls;
    wire [CONFIG_DC_P_SETS-1:0]         s2o_line_addr;
    wire [CONFIG_AW-1:0]                s2o_paddr;
    wire [CONFIG_DW/8-1:0]              s2o_wmsk;
    wire [CONFIG_DW-1:0]                s2o_wdat;
    wire [PAYLOAD_DW*(1<<CONFIG_DC_P_WAYS)-1:0] s2o_payload;
-   wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_hit_vec;
+   wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_match_vec;
    wire [PAYLOAD_DW-1:0]               s2o_match_payload;
    wire [PAYLOAD_DW-1:0]               s2o_wb_payload;
    wire                                s2o_free_dirty;
@@ -284,14 +285,15 @@ module dcache
    assign s2i_hit = (|s2i_hit_vec);
    
    // Select the matched way
-   assign s3i_match_vec = (fsm_state_ff==S_RELOAD_S1O_S2O) ? s2o_fsm_free_way : s2o_hit_vec;
+   assign s2i_match_vec = (fsm_state_ff==S_RELOAD_S1O_S2O) ? fsm_free_way : s2o_match_vec;
+   assign s2i_match_vec_ce = (p_ce | (fsm_state_ff==S_RELOAD_S1O_S2O));
    
    // Sel the dout of matched way
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s3i_match_vec), .din(s2o_payload), .dout(s2o_match_payload),
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s2o_match_vec), .din(s2o_payload), .dout(s2o_match_payload),
                                                             /* verilator lint_off PINCONNECTEMPTY */
                                                             .valid() /* unused */
                                                             /* verilator lint_on PINCONNECTEMPTY */ );
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s2o_d (.sel(s2o_hit_vec), .din(s2o_d), .dout(s2o_hit_dirty),
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s2o_d (.sel(s2o_match_vec), .din(s2o_d), .dout(s2o_hit_dirty),
                                                             /* verilator lint_off PINCONNECTEMPTY */
                                                             .valid() /* unused */
                                                             /* verilator lint_on PINCONNECTEMPTY */);
@@ -314,7 +316,7 @@ module dcache
    mDFF_l # (.DW(CONFIG_DW)) ff_s1o_wdat (.CLK(clk), .LOAD(p_ce), .D(wdat), .Q(s1o_wdat) );
    mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
    mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s1o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
-   mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_hit_vec (.CLK(clk), .LOAD(p_ce), .D(s2i_hit_vec), .Q(s2o_hit_vec) );
+   mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_match_vec (.CLK(clk), .LOAD(s2i_match_vec_ce), .D(s2i_match_vec), .Q(s2o_match_vec) );
    mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s2o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
    mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_fsm_free_way (.CLK(clk), .LOAD(p_ce), .D(fsm_free_way), .Q(s2o_fsm_free_way) );
 
