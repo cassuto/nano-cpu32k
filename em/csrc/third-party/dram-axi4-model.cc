@@ -96,7 +96,7 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
     uint64_t beatsize = 1 << ar.size;
     uint8_t beatlen = ar.len + 1;
     uint64_t transaction_size = beatsize * beatlen;
-    assert(beatsize <= (AXI_DATA_WIDTH/8));
+    assert(beatsize <= 8);
     assert((transaction_size % sizeof(uint64_t)) == 0);
     meta->start_addr = address;
     // axi burst FIXED

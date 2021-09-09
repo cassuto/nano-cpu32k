@@ -21,7 +21,6 @@
 
 // #define DEBUG_LOG_AXI4
 
-#define AXI_DATA_WIDTH 64
 // 4*64 bits
 #define AXI_DATA_WIDTH_64 4
 

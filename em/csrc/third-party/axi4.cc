@@ -44,9 +44,11 @@ bool axi_check_raddr_fire(const axi_channel &axi) {
 
 // r channel: (1) put rdata; (2) check rdata fire
 void axi_put_rdata(axi_channel &axi, void *src, size_t n, bool last, uint8_t id, uint8_t start_addr, uint8_t offset) {
-  uint8_t rpos = (start_addr/n + offset) % (AXI_DATA_WIDTH/8/n);
-  assert(rpos*n < AXI_DATA_WIDTH/8);
-  memcpy((uint8_t*)axi.r.data + rpos*n, src, n);
+  //uint8_t rpos = (start_addr/n + offset) % (AXI_DATA_WIDTH/8/n);
+  //assert(rpos*n < AXI_DATA_WIDTH/8);
+  //memcpy((uint8_t*)axi.r.data + rpos*n, src, n);
+  n = 8;
+  memcpy(axi.r.data, src, n);
   axi.r.valid = 1;
   axi.r.last = (last) ? 1 : 0;
   axi.r.id = id;
