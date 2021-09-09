@@ -44,7 +44,7 @@ bool axi_check_raddr_fire(const axi_channel &axi) {
 
 // r channel: (1) put rdata; (2) check rdata fire
 void axi_put_rdata(axi_channel &axi, void *src, size_t n, bool last, uint8_t id) {
-  n = 8;
+  n = 8; // = bus width (in bytes)
   memcpy(axi.r.data, src, n);
   axi.r.valid = 1;
   axi.r.last = (last) ? 1 : 0;
