@@ -285,7 +285,7 @@ module dcache
    assign s2i_hit = (|s2i_hit_vec);
    
    // Select the matched way
-   assign s2i_match_vec = (fsm_state_ff==S_RELOAD_S1O_S2O) ? fsm_free_way : s2i_hit_vec;
+   assign s2i_match_vec = (fsm_state_ff==S_RELOAD_S1O_S2O) ? s2o_fsm_free_way : s2i_hit_vec;
    assign s2i_match_vec_ce = (p_ce | (fsm_state_ff==S_RELOAD_S1O_S2O));
    
    // Sel the dout of matched way
