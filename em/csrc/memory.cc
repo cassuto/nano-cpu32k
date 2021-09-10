@@ -23,6 +23,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include "cpu.hh"
+#include "pc-queue.hh"
 #include "memory.hh"
 
 /* cpu_ is optional */
@@ -74,8 +75,10 @@ Memory::match_mmio_handler(mmio_node *domain, phy_addr_t addr, bool w)
                 return node;
             }
         }
-        if (cpu)
+        if (cpu) {
+            cpu->get_pc_queue()->dump();
             fprintf(stderr, "%s(): accessing invalid mmio address %#x. emu_pc=%#x\n", __func__, addr, cpu->get_pc());
+        }
         else
             fprintf(stderr, "%s(): accessing invalid mmio address %#x.\n", __func__, addr);
         panic(1);
