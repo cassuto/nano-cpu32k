@@ -30,6 +30,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          bool dmmu_enable_uncached_seg_,
+         bool immu_enable_uncached_seg_,
          bool enable_icache_, bool enable_dcache_,
          int icache_p_ways_, int icache_p_sets_, int icache_p_line_,
          int dcache_p_ways_, int dcache_p_sets_, int dcache_p_line_,
@@ -50,6 +51,7 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       dmmu_tlb_count_log2(int(std::log2(dmmu_tlb_count_))),
       immu_tlb_count_log2(int(std::log2(immu_tlb_count_))),
       dmmu_enable_uncached_seg(dmmu_enable_uncached_seg_),
+      immu_enable_uncached_seg(immu_enable_uncached_seg_),
       enable_icache(enable_icache_),
       enable_dcache(enable_dcache_),
       icache_p_ways(icache_p_ways_),
@@ -145,6 +147,7 @@ CPU::step(vm_addr_t pc)
 
     vm_addr_t pc_nxt;
     phy_addr_t insn_pa;
+    bool insn_uncached;
     insn_t insn;
 
     tsc_clk(1);
@@ -156,7 +159,7 @@ CPU::step(vm_addr_t pc)
         goto handle_exception;
     }
 
-    switch (immu_translate_vma(pc, &insn_pa))
+    switch (immu_translate_vma(pc, &insn_pa, &insn_uncached))
     {
     case -EM_PAGE_FAULT:
         pc_nxt = raise_exception(pc, vect_EIPF, pc, 0);
@@ -172,7 +175,10 @@ CPU::step(vm_addr_t pc)
         }
 printf("pc=%#x\n", pc);
     /* Access ICache */
-    insn = (insn_t)icache->phy_readm32(insn_pa);
+    if (insn_uncached)
+        insn = (insn_t)mem->phy_readm32(insn_pa);
+    else
+        insn = (insn_t)icache->phy_readm32(insn_pa);
     pc_queue->push(pc, insn);
     pc_nxt = pc + INSN_LEN;
 

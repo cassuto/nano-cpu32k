@@ -50,6 +50,7 @@ static const struct option long_options[] = {
     {"wave-begin", required_argument, NULL, 0},               /* 16 */
     {"wave-end", required_argument, NULL, 0},                 /* 17 */
     {"commit-timeout-max", required_argument, NULL, 0},       /* 18 */
+    {"immu-enable-uncached-seg", required_argument, NULL, 0}, /* 19 */
     {"bin-load-addr", required_argument, NULL, 'a'},
     {"bin-pathname", required_argument, NULL, 'b'},
     {"reset-vector", required_argument, NULL, 'r'},
@@ -87,6 +88,7 @@ public:
         dmmu_tlb_count = 128;
         immu_tlb_count = 128;
         dmmu_enable_uncached_seg = true;
+        immu_enable_uncached_seg = true;
         enable_icache = true;
         enable_dcache = true;
         icache_p_ways = 2;
@@ -122,6 +124,7 @@ public:
     int ram_size;
     int dmmu_tlb_count, immu_tlb_count;
     bool dmmu_enable_uncached_seg;
+    bool immu_enable_uncached_seg;
     bool enable_icache, enable_dcache;
     int icache_p_ways, icache_p_sets, icache_p_line;
     int dcache_p_ways, dcache_p_sets, dcache_p_line;
@@ -253,6 +256,9 @@ parse_args(int argc, char **argv)
             case 18:
                 args.commit_timeout_max = atol(optarg);
                 break;
+            case 19:
+                args.immu_enable_uncached_seg = parse_bool(optarg, long_options[4].name);
+                break;
             default:
                 return usage(argv[0]);
             }
@@ -291,6 +297,7 @@ int main(int argc, char *argv[])
 
     emu_CPU = new CPU(args.dmmu_tlb_count, args.immu_tlb_count,
                       args.dmmu_enable_uncached_seg,
+                      args.immu_enable_uncached_seg,
                       args.enable_icache, args.enable_dcache,
                       args.icache_p_ways, args.icache_p_sets, args.icache_p_line,
                       args.dcache_p_ways, args.dcache_p_sets, args.dcache_p_line,
@@ -342,7 +349,8 @@ int main(int argc, char *argv[])
     {
         // RTL simulation use its independent memory and mmio space
         rtl_memory = new Memory(nullptr, args.ram_size, args.dram_phy_base, args.mmio_phy_base, args.mmio_phy_end_addr);
-        if (rtl_memory->load_address_fp(bin_fp, args.bin_load_addr)) {
+        if (rtl_memory->load_address_fp(bin_fp, args.bin_load_addr))
+        {
             return 1;
         }
 

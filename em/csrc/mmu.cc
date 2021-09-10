@@ -82,7 +82,7 @@ int CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool s
         /* no translation */
         *pa = va;
         if (dmmu_enable_uncached_seg)
-            *uncached = ((va >> (32 - 4)) == 0x8);
+            *uncached = !(va >> (32 - 1));
     }
 
     return 0;
@@ -96,8 +96,9 @@ int CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool s
  * @retval -EM_PAGE_FAULT Exception of Page Fault. 
  * @retval >= 0              No exception.
  */
-int CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa)
+int CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached)
 {
+    *uncached = false;
     if (msr.PSR.IMME)
     {
         vm_addr_t vpn = va >> VPN_SHIFT;
@@ -109,7 +110,12 @@ int CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa)
             {
                 return -EM_PAGE_FAULT;
             }
-            *pa = (msr.ITLBH[offset].PPN << PPN_SHIFT) | !((msr.DTLBH[offset].PPN >> (32 - PPN_SHIFT - 1))&0x1);
+            *pa = (msr.ITLBH[offset].PPN << PPN_SHIFT) | (va & ((1 << PPN_SHIFT) - 1));
+            if (immu_enable_uncached_seg)
+                /* Without any exception */
+                *uncached = (msr.ITLBH[offset].NC) || !((msr.ITLBH[offset].PPN >> (32 - PPN_SHIFT - 1))&0x1);
+            else
+                *uncached = (msr.ITLBH[offset].NC);
             return 0;
         }
         else
@@ -121,6 +127,8 @@ int CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa)
     {
         /* no translation */
         *pa = va;
+        if (immu_enable_uncached_seg)
+            *uncached = !(va >> (32 - 1));
     }
     return 0;
 }
