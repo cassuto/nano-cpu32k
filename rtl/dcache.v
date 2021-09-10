@@ -289,24 +289,10 @@ module dcache
    assign s2i_match_vec_ce = (p_ce | (fsm_state_ff==S_RELOAD_S1O_S2O));
    
    // Sel the dout of matched way
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s2o_match_vec), .din(s2o_payload), .dout(s2o_match_payload),
-                                                            /* verilator lint_off PINCONNECTEMPTY */
-                                                            .valid() /* unused */
-                                                            /* verilator lint_on PINCONNECTEMPTY */ );
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s2o_d (.sel(s2o_match_vec), .din(s2o_d), .dout(s2o_hit_dirty),
-                                                            /* verilator lint_off PINCONNECTEMPTY */
-                                                            .valid() /* unused */
-                                                            /* verilator lint_on PINCONNECTEMPTY */);
-
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s1o_free_dirty (.sel(fsm_free_way), .din(s1o_d), .dout(s1o_free_dirty),
-                                                            /* verilator lint_off PINCONNECTEMPTY */
-                                                            .valid() /* unused */
-                                                            /* verilator lint_on PINCONNECTEMPTY */);
-
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_wb_payload (.sel(s2o_fsm_free_way), .din(s2o_payload), .dout(s2o_wb_payload),
-                                                            /* verilator lint_off PINCONNECTEMPTY */
-                                                            .valid() /* unused */
-                                                            /* verilator lint_on PINCONNECTEMPTY */);
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s2o_match_vec), .din(s2o_payload), .dout(s2o_match_payload));
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s2o_d (.sel(s2o_match_vec), .din(s2o_d), .dout(s2o_hit_dirty));
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s1o_free_dirty (.sel(fsm_free_way), .din(s1o_d), .dout(s1o_free_dirty));
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_wb_payload (.sel(s2o_fsm_free_way), .din(s2o_payload), .dout(s2o_wb_payload));
                                                   
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(req), .Q(s1o_valid) );
    mDFF_lr # (.DW(1)) ff_s1o_inv (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(inv), .Q(s1o_inv) );

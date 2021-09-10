@@ -700,7 +700,7 @@ module ex
          end
    endgenerate
 
-   pmux #(.SELW(IW), .DW(`PC_W)) pmux_se_tgt (.sel(se_fail_vec), .din(se_tgt_vec), .dout(se_tgt), .valid(se_fail) );
+   pmux_v #(.SELW(IW), .DW(`PC_W)) pmux_se_tgt (.sel(se_fail_vec), .din(se_tgt_vec), .dout(se_tgt), .valid(se_fail) );
 
    always @(*)
       begin

@@ -333,10 +333,7 @@ module ex_epu
       );
 
    // Readout SR
-   pmux #(.SELW(`NCPU_SR_NUM), .DW(CONFIG_DW)) pmux_dout_sr (.sel(s1i_bank_off[`NCPU_SR_NUM-1:0]), .din(msr_sr), .dout(dout_sr),
-                                                            /* verilator lint_off PINCONNECTEMPTY */
-                                                            .valid() /* unused */
-                                                            /* verilator lint_on PINCONNECTEMPTY */ );
+   pmux #(.SELW(`NCPU_SR_NUM), .DW(CONFIG_DW)) pmux_dout_sr (.sel(s1i_bank_off[`NCPU_SR_NUM-1:0]), .din(msr_sr), .dout(dout_sr));
 
    // Decode for MSR bank addr
    assign s1i_bank_ps = (s1i_bank_addr == `NCPU_MSR_BANK_PS);

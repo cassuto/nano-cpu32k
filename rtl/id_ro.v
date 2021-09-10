@@ -103,10 +103,10 @@ module id_ro
             mDFF_l #(.DW(IW)) ff_s1o_cf_ex_s3_rev(.CLK(clk), .LOAD(p_ce), .D(cf_ex_s3_rev), .Q(s1o_cf_ex_s3_rev) );
             mDFF_l #(.DW(IW)) ff_s1o_cf_cmt_rev(.CLK(clk), .LOAD(p_ce), .D(cf_cmt_rev), .Q(s1o_cf_cmt_rev) );
 
-            pmux #(.SELW(IW), .DW(CONFIG_DW)) U_EX_S1_PMUX (.sel(s1o_cf_ex_s1_rev), .din(s1o_ex_s1_rf_dout_ff_rev), .dout(s1o_ex_s1_rf_dout_sel), .valid(s1o_use_ex_s1) );
-            pmux #(.SELW(IW), .DW(CONFIG_DW)) U_EX_S2_PMUX (.sel(s1o_cf_ex_s2_rev), .din(s1o_ex_s2_rf_dout_ff_rev), .dout(s1o_ex_s2_rf_dout_sel), .valid(s1o_use_ex_s2) );
-            pmux #(.SELW(IW), .DW(CONFIG_DW)) U_EX_S3_PMUX (.sel(s1o_cf_ex_s3_rev), .din(s1o_ex_s3_rf_dout_ff_rev), .dout(s1o_ex_s3_rf_dout_sel), .valid(s1o_use_ex_s3) );
-            pmux #(.SELW(IW), .DW(CONFIG_DW)) U_CMT_PMUX (.sel(s1o_cf_cmt_rev), .din(s1o_cmt_rf_wdat_ff_rev), .dout(s1o_cmt_rf_wdat_sel), .valid(s1o_use_cmt) );
+            pmux_v #(.SELW(IW), .DW(CONFIG_DW)) U_EX_S1_PMUX (.sel(s1o_cf_ex_s1_rev), .din(s1o_ex_s1_rf_dout_ff_rev), .dout(s1o_ex_s1_rf_dout_sel), .valid(s1o_use_ex_s1) );
+            pmux_v #(.SELW(IW), .DW(CONFIG_DW)) U_EX_S2_PMUX (.sel(s1o_cf_ex_s2_rev), .din(s1o_ex_s2_rf_dout_ff_rev), .dout(s1o_ex_s2_rf_dout_sel), .valid(s1o_use_ex_s2) );
+            pmux_v #(.SELW(IW), .DW(CONFIG_DW)) U_EX_S3_PMUX (.sel(s1o_cf_ex_s3_rev), .din(s1o_ex_s3_rf_dout_ff_rev), .dout(s1o_ex_s3_rf_dout_sel), .valid(s1o_use_ex_s3) );
+            pmux_v #(.SELW(IW), .DW(CONFIG_DW)) U_CMT_PMUX (.sel(s1o_cf_cmt_rev), .din(s1o_cmt_rf_wdat_ff_rev), .dout(s1o_cmt_rf_wdat_sel), .valid(s1o_use_cmt) );
             
             assign byp_dout[i*CONFIG_DW +: CONFIG_DW] = (s1o_use_ex_s1)
                                                             ? s1o_ex_s1_rf_dout_sel

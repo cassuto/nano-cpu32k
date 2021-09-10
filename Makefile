@@ -26,7 +26,8 @@ EM_LDFLAGS  += ../$(LIB_DRAMSIM3)
 
 INCS = -I$(SRC_DIR)
 DEFS = +define+SYNTHESIS=1
-FLAGS = $(DEFS) $(INCS) -Wno-UNUSED
+FLAGS = $(DEFS) $(INCS)
+#-Wno-UNUSED
 CFLAGS = -Wall -g -I../em/csrc $(EM_CXXFLAGS)
 LDFLAGS = -g $(EM_LDFLAGS)
 
