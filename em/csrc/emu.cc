@@ -105,6 +105,7 @@ bool Emu::clk()
         if (in_range)
         {
             trace_fp->dump(cycles);
+            trace_fp->flush();
         }
     }
 #endif
