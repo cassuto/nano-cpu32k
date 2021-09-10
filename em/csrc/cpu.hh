@@ -99,6 +99,7 @@ public:
     struct tcr_s TCR;
     cpu_unsigned_word_t IMR;
     cpu_unsigned_word_t IRR;
+    cpu_word_t SR[4];
 };
 
 class CPU

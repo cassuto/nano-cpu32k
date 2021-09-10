@@ -26,72 +26,78 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module ex_psr
 #(
-   parameter               CONFIG_DW = 0,
-   parameter [7:0]         CPUID_VER = 1,
-   parameter [9:0]         CPUID_REV = 0,
-   parameter [0:0]         CPUID_FIMM = 1,
-   parameter [0:0]         CPUID_FDMM = 1,
-   parameter [0:0]         CPUID_FICA = 0,
-   parameter [0:0]         CPUID_FDCA = 0,
-   parameter [0:0]         CPUID_FDBG = 0,
-   parameter [0:0]         CPUID_FFPU = 0,
-   parameter [0:0]         CPUID_FIRQC = 1,
-   parameter [0:0]         CPUID_FTSC = 1
+   parameter                           CONFIG_DW = 0,
+   parameter [7:0]                     CPUID_VER = 1,
+   parameter [9:0]                     CPUID_REV = 0,
+   parameter [0:0]                     CPUID_FIMM = 1,
+   parameter [0:0]                     CPUID_FDMM = 1,
+   parameter [0:0]                     CPUID_FICA = 0,
+   parameter [0:0]                     CPUID_FDCA = 0,
+   parameter [0:0]                     CPUID_FDBG = 0,
+   parameter [0:0]                     CPUID_FFPU = 0,
+   parameter [0:0]                     CPUID_FIRQC = 1,
+   parameter [0:0]                     CPUID_FTSC = 1
 )
 (
-   input                   clk,
-   input                   rst,
+   input                               clk,
+   input                               rst,
    // PSR
-   input                   msr_exc_ent,
-   output [`NCPU_PSR_DW-1:0] msr_psr,
-   output [`NCPU_PSR_DW-1:0] msr_psr_nold,
-   input                   msr_psr_rm_nxt,
-   output                  msr_psr_rm,
-   input                   msr_psr_rm_we,
-   input                   msr_psr_ire_nxt,
-   output                  msr_psr_ire,
-   input                   msr_psr_ire_we,
-   input                   msr_psr_imme_nxt,
-   output                  msr_psr_imme,
-   input                   msr_psr_imme_we,
-   input                   msr_psr_dmme_nxt,
-   output                  msr_psr_dmme,
-   input                   msr_psr_dmme_we,
+   input                               msr_exc_ent,
+   output [`NCPU_PSR_DW-1:0]           msr_psr,
+   output [`NCPU_PSR_DW-1:0]           msr_psr_nold,
+   input                               msr_psr_rm_nxt,
+   output                              msr_psr_rm,
+   input                               msr_psr_rm_we,
+   input                               msr_psr_ire_nxt,
+   output                              msr_psr_ire,
+   input                               msr_psr_ire_we,
+   input                               msr_psr_imme_nxt,
+   output                              msr_psr_imme,
+   input                               msr_psr_imme_we,
+   input                               msr_psr_dmme_nxt,
+   output                              msr_psr_dmme,
+   input                               msr_psr_dmme_we,
    // CPUID
-   output [CONFIG_DW-1:0]  msr_cpuid,
+   output [CONFIG_DW-1:0]              msr_cpuid,
    // EPSR
-   input [`NCPU_PSR_DW-1:0] msr_epsr_nxt,
-   output [`NCPU_PSR_DW-1:0] msr_epsr,
-   output [`NCPU_PSR_DW-1:0] msr_epsr_nobyp,
-   input                   msr_epsr_we,
+   input [`NCPU_PSR_DW-1:0]            msr_epsr_nxt,
+   output [`NCPU_PSR_DW-1:0]           msr_epsr,
+   output [`NCPU_PSR_DW-1:0]           msr_epsr_nobyp,
+   input                               msr_epsr_we,
    // EPC
-   input [CONFIG_DW-1:0]   msr_epc_nxt,
-   output [CONFIG_DW-1:0]  msr_epc,
-   input                   msr_epc_we,
+   input [CONFIG_DW-1:0]               msr_epc_nxt,
+   output [CONFIG_DW-1:0]              msr_epc,
+   input                               msr_epc_we,
    // ELSA
-   input [CONFIG_DW-1:0]   msr_elsa_nxt,
-   output [CONFIG_DW-1:0]  msr_elsa,
-   input                   msr_elsa_we,
+   input [CONFIG_DW-1:0]               msr_elsa_nxt,
+   output [CONFIG_DW-1:0]              msr_elsa,
+   input                               msr_elsa_we,
    // COREID
-   output [CONFIG_DW-1:0]  msr_coreid
+   output [CONFIG_DW-1:0]              msr_coreid,
+   // SR
+   output [CONFIG_DW*`NCPU_SR_NUM-1:0] msr_sr,
+   input [CONFIG_DW-1:0]               msr_sr_nxt,
+   input [`NCPU_SR_NUM-1:0]            msr_sr_we
 );
 
-   wire                    msr_psr_rm_r;
-   wire                    msr_psr_ire_r;
-   wire                    msr_psr_imme_r;
-   wire                    msr_psr_dmme_r;
-   wire                    msr_psr_rm_nold;
-   wire                    msr_psr_ire_nold;
-   wire                    msr_psr_imme_nold;
-   wire                    msr_psr_dmme_nold;
-   wire [`NCPU_PSR_DW-1:0] msr_epsr_r;
-   wire [CONFIG_DW-1:0]     msr_epc_r;
-   wire [CONFIG_DW-1:0]     msr_elsa_r;
-   wire                    psr_rm_set;
-   wire                    psr_imme_msk;
-   wire                    psr_dmme_msk;
-   wire                    psr_ire_msk;
-   wire                    psr_ld;
+   wire                                msr_psr_rm_r;
+   wire                                msr_psr_ire_r;
+   wire                                msr_psr_imme_r;
+   wire                                msr_psr_dmme_r;
+   wire                                msr_psr_rm_nold;
+   wire                                msr_psr_ire_nold;
+   wire                                msr_psr_imme_nold;
+   wire                                msr_psr_dmme_nold;
+   wire [`NCPU_PSR_DW-1:0]             msr_epsr_r;
+   wire [CONFIG_DW-1:0]                msr_epc_r;
+   wire [CONFIG_DW-1:0]                msr_elsa_r;
+   wire [CONFIG_DW*`NCPU_SR_NUM-1:0]   msr_sr_r;
+   wire                                psr_rm_set;
+   wire                                psr_imme_msk;
+   wire                                psr_dmme_msk;
+   wire                                psr_ire_msk;
+   wire                                psr_ld;
+   genvar                              i;
    
    assign psr_ld = msr_exc_ent;
    assign psr_rm_set = msr_exc_ent;
@@ -111,7 +117,12 @@ module ex_psr
    mDFF_lr #(.DW(CONFIG_DW)) ff_msr_epc (.CLK(clk), .RST(rst), .LOAD(msr_epc_we), .D(msr_epc_nxt), .Q(msr_epc_r) );
    // ELSA
    mDFF_lr #(.DW(CONFIG_DW)) dff_msr_elsa (.CLK(clk), .RST(rst), .LOAD(msr_elsa_we), .D(msr_elsa_nxt), .Q(msr_elsa_r) );
-
+   // SR
+   generate
+      for(i=0;i<`NCPU_SR_NUM;i=i+1)
+         mDFF_l #(.DW(CONFIG_DW)) dff_sr (.CLK(clk), .LOAD(msr_sr_we[i]), .D(msr_sr_nxt), .Q(msr_sr_r[i*CONFIG_DW +: CONFIG_DW]) );
+   endgenerate
+   
    // Bypass logic for PSR
    assign msr_psr_rm = (msr_psr_rm_we|psr_ld) ? (msr_psr_rm_nxt|psr_rm_set) : msr_psr_rm_r;
    assign msr_psr_ire = (msr_psr_ire_we|psr_ld) ? (msr_psr_ire_nxt&psr_ire_msk) : msr_psr_ire_r;
@@ -128,6 +139,12 @@ module ex_psr
    assign msr_epsr = msr_epsr_we ? msr_epsr_nxt : msr_epsr_r;
    assign msr_epc = msr_epc_we ? msr_epc_nxt : msr_epc_r;
    assign msr_elsa = msr_elsa_we ? msr_elsa_nxt : msr_elsa_r;
+   
+   // Bypass logic for SR
+   generate
+      for(i=0;i<`NCPU_SR_NUM;i=i+1)
+         assign msr_sr[i*CONFIG_DW +: CONFIG_DW] = (msr_sr_we[i]) ? msr_sr_nxt : msr_sr_r[i*CONFIG_DW +: CONFIG_DW];
+   endgenerate
 
    // No bypass
    assign msr_epsr_nobyp = msr_epsr_r;

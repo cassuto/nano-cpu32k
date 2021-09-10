@@ -210,6 +210,13 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
                 break;
             }
 
+            /* MSR bank - SR */
+            if (index >= MSR_BANK_SR && index <= MSR_SR_MAX)
+            {
+                msr.SR[(1<<index)-1] = val;
+                break;
+            }
+
             fprintf(stderr, "wmsr() invalid register index %#x at PC=%#x\n", index, pc);
             panic(1);
             break;
@@ -328,6 +335,13 @@ CPU::rmsr(msr_index_t index)
 
         default:
         {
+            /* MSR bank - SR */
+            if (index >= MSR_BANK_SR && index <= MSR_SR_MAX)
+            {
+                return msr.SR[(1<<index)-1];
+                break;
+            }
+
             fprintf(stderr, "rmsr() invalid register index %#x at PC=%#x\n", index, pc);
             panic(1);
             break;

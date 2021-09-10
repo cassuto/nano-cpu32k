@@ -157,9 +157,9 @@
 
 /* PSR write enable bitwidth */
 `ifdef NCPU_ENABLE_MSGPORT
-`define NCPU_WMSR_WE_W (16+`NCPU_MSR_BANK_OFF_AW)
+`define NCPU_WMSR_WE_W (17+`NCPU_MSR_BANK_OFF_AW)
 `else
-`define NCPU_WMSR_WE_W (14+`NCPU_MSR_BANK_OFF_AW)
+`define NCPU_WMSR_WE_W (15+`NCPU_MSR_BANK_OFF_AW)
 `endif
 
 
@@ -182,6 +182,7 @@
 `define NCPU_MSR_BANK_DBG	5
 `define NCPU_MSR_BANK_IRQC	6
 `define NCPU_MSR_BANK_TSC	7
+`define NCPU_MSR_BANK_SR 8
 
 //
 // PS (One-hot encoding)
@@ -252,6 +253,9 @@
 `define NCPU_MSR_TSC_TCR_I 29
 `define NCPU_MSR_TSC_TCR_P 30
 `define NCPU_MSR_TSC_TCR_RB1 31
+
+/* SR */
+`define NCPU_SR_NUM 4
 
 /*******************************************************************************
  * End of MSR definitions

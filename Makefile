@@ -8,6 +8,7 @@ TESTBENCH_DIR = testbench
 EM_DIR = em
 SRCS = $(foreach x,$(SRC_DIR), $(wildcard $(addprefix ${x}/*,.v) ) )
 SRCS += $(foreach x,$(SRC_DIR)/lib, $(wildcard $(addprefix ${x}/*,.v) ) )
+SRCS += $(foreach x,$(SRC_DIR)/general, $(wildcard $(addprefix ${x}/*,.v) ) )
 SRCS += $(foreach x,$(SRC_DIR)/fabric, $(wildcard $(addprefix ${x}/*,.v) ) )
 SRCS += $(foreach x,$(SRC_DIR)/port, $(wildcard $(addprefix ${x}/*,.v) ) )
 

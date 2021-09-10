@@ -101,6 +101,7 @@
 #define MSR_BANK_DBG (5 << MAX_MSR_BANK_BITS)
 #define MSR_BANK_IRQC (6 << MAX_MSR_BANK_BITS)
 #define MSR_BANK_TSC (7 << MAX_MSR_BANK_BITS)
+#define MSR_BANK_SR (8 << MAX_MSR_BANK_BITS)
 
 /*********************************************************************
 * MSR bank - PS
@@ -299,5 +300,12 @@
 #define MSR_TCR_P_SHIFT 30
 #define MSR_TCR_P (1 << MSR_TCR_P_SHIFT)
 
+/*********************************************************************
+* MSR bank - SR
+**********************************************************************/
+
+#define MSR_SR (MSR_BANK_SR + 0x0)
+#define MSR_SR_NUM 4
+#define MSR_SR_MAX ((1<<MSR_SR_NUM)-1)
 
 #endif /* OPCODES_H */

@@ -154,7 +154,11 @@ module ex_epu
    output                              msr_dcinv_we,
    // DCFLS
    output [CONFIG_DW-1:0]              msr_dcfls_nxt,
-   output                              msr_dcfls_we
+   output                              msr_dcfls_we,
+   // SR
+   input [CONFIG_DW*`NCPU_SR_NUM-1:0]  msr_sr,
+   output [CONFIG_DW-1:0]              msr_sr_nxt,
+   output [`NCPU_SR_NUM-1:0]           msr_sr_we
 );
 
    /*AUTOWIRE*/
@@ -181,6 +185,7 @@ module ex_epu
    wire                                s1i_bank_dbg;
    wire                                s1i_bank_irqc;
    wire                                s1i_bank_tsc;
+   wire                                s1i_bank_sr;
    wire [CONFIG_DW-1:0]                dout_ps;
    wire                                msr_imm_tlbl_sel;
    wire                                msr_imm_tlbh_sel;
@@ -201,6 +206,7 @@ module ex_epu
    wire                                msr_tsc_tsr_sel;
    wire                                msr_tsc_tcr_sel;
    wire [CONFIG_DW-1:0]                dout_tsc;
+   wire [CONFIG_DW-1:0]                dout_sr;
    wire                                exc_commit;
    wire                                set_elsa_as_pc;
    wire                                set_elsa;
@@ -227,6 +233,7 @@ module ex_epu
    wire                                s1i_msr_irqc_imr_we;
    wire                                s1i_msr_tsc_tsr_we;
    wire                                s1i_msr_tsc_tcr_we;
+   wire                                s1i_msr_sr_we;
    wire                                commit_wmsr_psr_we;
    wire                                commit_wmsr_epc_we;
    wire                                commit_wmsr_epsr_we;
@@ -245,6 +252,7 @@ module ex_epu
    wire                                commit_msr_irqc_imr_we;
    wire                                commit_msr_tsc_tsr_we;
    wire                                commit_msr_tsc_tcr_we;
+   wire                                commit_msr_sr_we;
    wire [`NCPU_MSR_BANK_OFF_AW-1:0]    commit_bank_off;
    wire                                wmsr_psr_rm;
    wire                                wmsr_psr_ire;
@@ -324,7 +332,13 @@ module ex_epu
          ({CONFIG_DW{msr_tsc_tcr_sel}} & msr_tsc_tcr)
       );
 
-   // Decode MSR s1i_bank_addr
+   // Readout SR
+   pmux #(.SELW(`NCPU_SR_NUM), .DW(CONFIG_DW)) pmux_dout_sr (.sel(s1i_bank_off[`NCPU_SR_NUM-1:0]), .din(msr_sr), .dout(dout_sr),
+                                                            /* verilator lint_off PINCONNECTEMPTY */
+                                                            .valid() /* unused */
+                                                            /* verilator lint_on PINCONNECTEMPTY */ );
+
+   // Decode for MSR bank addr
    assign s1i_bank_ps = (s1i_bank_addr == `NCPU_MSR_BANK_PS);
    assign s1i_bank_imm = (s1i_bank_addr == `NCPU_MSR_BANK_IMM);
    assign s1i_bank_dmm = (s1i_bank_addr == `NCPU_MSR_BANK_DMM);
@@ -333,6 +347,7 @@ module ex_epu
    assign s1i_bank_dbg = (s1i_bank_addr == `NCPU_MSR_BANK_DBG);
    assign s1i_bank_irqc = (s1i_bank_addr == `NCPU_MSR_BANK_IRQC);
    assign s1i_bank_tsc = (s1i_bank_addr == `NCPU_MSR_BANK_TSC);
+   assign s1i_bank_sr = (s1i_bank_addr == `NCPU_MSR_BANK_SR);
 
    // Result MUX
    assign epu_dout =
@@ -343,7 +358,8 @@ module ex_epu
          ({CONFIG_DW{s1i_bank_ic}} & dout_ic) |
          ({CONFIG_DW{s1i_bank_dc}} & dout_dc) |
          ({CONFIG_DW{s1i_bank_irqc}} & dout_irqc) |
-         ({CONFIG_DW{s1i_bank_tsc}} & dout_tsc)
+         ({CONFIG_DW{s1i_bank_tsc}} & dout_tsc) |
+         ({CONFIG_DW{s1i_bank_sr}} & dout_sr)
       );
    
    assign epu_dout_valid = (ex_valid & ex_epu_opc_bus[`NCPU_EPU_RMSR]);
@@ -385,6 +401,8 @@ module ex_epu
    assign s1i_msr_irqc_imr_we  = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_irqc & msr_irqc_imr_sel;
    assign s1i_msr_tsc_tsr_we   = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tsr_sel;
    assign s1i_msr_tsc_tcr_we   = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tcr_sel;
+   
+   assign s1i_msr_sr_we = ex_valid & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_sr;
 
    assign epu_wmsr_we = {s1i_wmsr_psr_we,
                         s1i_wmsr_epc_we,
@@ -404,6 +422,7 @@ module ex_epu
                         s1i_msr_irqc_imr_we,
                         s1i_msr_tsc_tsr_we,
                         s1i_msr_tsc_tcr_we,
+                        s1i_msr_sr_we,
                         s1i_bank_off};
 
    // Unpack commit wmsr we
@@ -426,6 +445,7 @@ module ex_epu
       commit_msr_irqc_imr_we,
       commit_msr_tsc_tsr_we,
       commit_msr_tsc_tcr_we,
+      commit_msr_sr_we,
       commit_bank_off} = commit_wmsr_we;
 
    // Unpack EPSR. Be consistend with ncpu32k_psr
@@ -513,6 +533,10 @@ module ex_epu
    assign msr_tsc_tcr_we = commit_msr_tsc_tcr_we;
    assign msr_tsc_tcr_nxt = commit_wmsr_dat;
 
+   // Commit SR
+   assign msr_sr_we = (commit_bank_off[`NCPU_SR_NUM-1:0] & {`NCPU_SR_NUM{commit_msr_sr_we}});
+   assign msr_sr_nxt = commit_wmsr_dat;
+   
    // Exceptions
    // Assert 2105051856
    assign exc_flush_tgt = ({CONFIG_AW-2{commit_EDTM}} & CONFIG_EDTM_VECTOR[2 +: CONFIG_AW-2]) |

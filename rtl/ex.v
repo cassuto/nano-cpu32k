@@ -237,7 +237,9 @@ module ex
    wire [`NCPU_PSR_DW-1:0] msr_psr_nold;        // From U_PSR of ex_psr.v
    wire                 msr_psr_rm_nxt;         // From U_EPU of ex_epu.v
    wire                 msr_psr_rm_we;          // From U_EPU of ex_epu.v
-   wire [`PC_W-1:0]     commit_E_FLUSH_TLB_npc; // To U_EPU of ex_epu.v
+   wire [CONFIG_DW*`NCPU_SR_NUM-1:0] msr_sr;    // From U_PSR of ex_psr.v
+   wire [CONFIG_DW-1:0] msr_sr_nxt;             // From U_EPU of ex_epu.v
+   wire [`NCPU_SR_NUM-1:0] msr_sr_we;           // From U_EPU of ex_epu.v
    // End of automatics
    /*AUTOINPUT*/
    wire [CONFIG_DW-1:0]                bru_dout;
@@ -272,6 +274,7 @@ module ex
    wire                                commit_EITM;
    wire                                commit_EIRQ;
    wire                                commit_E_FLUSH_TLB;
+   wire [`PC_W-1:0]                    commit_E_FLUSH_TLB_npc;
    wire  [`NCPU_WMSR_WE_W-1:0]         commit_wmsr_we;
    wire  [CONFIG_DW-1:0]               commit_wmsr_dat;
    wire                                se_flush;
@@ -457,6 +460,8 @@ module ex
        .msr_dcinv_we                    (msr_dcinv_we),
        .msr_dcfls_nxt                   (msr_dcfls_nxt[CONFIG_DW-1:0]),
        .msr_dcfls_we                    (msr_dcfls_we),
+       .msr_sr_nxt                      (msr_sr_nxt[CONFIG_DW-1:0]),
+       .msr_sr_we                       (msr_sr_we[`NCPU_SR_NUM-1:0]),
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
@@ -497,7 +502,8 @@ module ex
        .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
        .msr_dmmid                       (msr_dmmid[CONFIG_DW-1:0]),
        .msr_icid                        (msr_icid[CONFIG_DW-1:0]),
-       .msr_dcid                        (msr_dcid[CONFIG_DW-1:0]));
+       .msr_dcid                        (msr_dcid[CONFIG_DW-1:0]),
+       .msr_sr                          (msr_sr[CONFIG_DW*`NCPU_SR_NUM-1:0]));
 
    // BRU reused the adder of ALU
    assign add_s[0] =
@@ -654,6 +660,7 @@ module ex
        .msr_epc                         (msr_epc[CONFIG_DW-1:0]),
        .msr_elsa                        (msr_elsa[CONFIG_DW-1:0]),
        .msr_coreid                      (msr_coreid[CONFIG_DW-1:0]),
+       .msr_sr                          (msr_sr[CONFIG_DW*`NCPU_SR_NUM-1:0]),
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
@@ -671,7 +678,9 @@ module ex
        .msr_epc_nxt                     (msr_epc_nxt[CONFIG_DW-1:0]),
        .msr_epc_we                      (msr_epc_we),
        .msr_elsa_nxt                    (msr_elsa_nxt[CONFIG_DW-1:0]),
-       .msr_elsa_we                     (msr_elsa_we));
+       .msr_elsa_we                     (msr_elsa_we),
+       .msr_sr_nxt                      (msr_sr_nxt[CONFIG_DW-1:0]),
+       .msr_sr_we                       (msr_sr_we[`NCPU_SR_NUM-1:0]));
 
    // NPC adders
    generate
