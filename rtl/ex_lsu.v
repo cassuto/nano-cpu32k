@@ -391,6 +391,6 @@ module ex_lsu
    assign lsu_EDPF = (s1o_valid & s1o_EDPF);
    assign lsu_EALIGN = (s1o_valid & s1o_EALIGN);
    
-   assign lsu_vaddr = s2o_vaddr;
+   assign lsu_vaddr = s1o_vaddr;
 
 endmodule
