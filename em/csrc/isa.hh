@@ -306,6 +306,6 @@
 
 #define MSR_SR (MSR_BANK_SR + 0x0)
 #define MSR_SR_NUM 4
-#define MSR_SR_MAX ((1<<MSR_SR_NUM)-1)
+#define MSR_SR_MAX (MSR_BANK_SR + ((1<<MSR_SR_NUM)-1)) /* Address of each SR is one-hot encoding */
 
 #endif /* OPCODES_H */
