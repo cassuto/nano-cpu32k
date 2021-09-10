@@ -226,6 +226,8 @@ void Cache::phy_writem32(phy_addr_t addr, uint32_t val)
     if (enabled)
     {
         int way, entry;
+        if(!((addr & 0x3) == 0))
+        printf("una pa=%#x\n", addr);
         assert((addr & 0x3) == 0);
         access(addr, true, &way, &entry);
         lines[way][entry][addr & m_block_offset_mask] = val;
