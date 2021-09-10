@@ -167,6 +167,9 @@ CPU::step(vm_addr_t pc)
         goto handle_exception;
     }
 
+        if(pc==0x8000017c){
+            printf("%#x r4(0)=%#x r7=%#x\n", pc, get_reg(4), get_reg(7));
+        }
 printf("pc=%#x\n", pc);
     /* Access ICache */
     insn = (insn_t)icache->phy_readm32(insn_pa);
@@ -222,13 +225,7 @@ printf("pc=%#x\n", pc);
         break;
 
     case INS32_OP_ADD:
-        if(pc==0x80000178){
-            printf("80000178 r4(0)=%#x r7=%#x\n", get_reg(4), get_reg(7));
-        }
         set_reg(rd, get_reg(rs1) + get_reg(rs2));
-        if(pc==0x80000178){
-            printf("80000178 r4=%#x r7=%#x\n", get_reg(4), get_reg(7));
-        }
         break;
     case INS32_OP_ADD_I:
         set_reg(rd, get_reg(rs1) + (cpu_word_t)simm15);
