@@ -223,7 +223,7 @@ CPU::step(vm_addr_t pc)
     case INS32_OP_ADD:
         set_reg(rd, get_reg(rs1) + get_reg(rs2));
         if(pc==0x80000178){
-            printf("80000178 r4=%#x\n", get_reg(4));
+            printf("80000178 r4=%#x r7=%#x\n", get_reg(4), get_reg(7));
         }
         break;
     case INS32_OP_ADD_I:
