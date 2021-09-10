@@ -167,7 +167,7 @@ CPU::step(vm_addr_t pc)
         goto handle_exception;
     }
 
-printf("pc=%#x\n",pc);
+printf("pc=%#x pa=%#x\n",pc, insn_pa);
     /* Access ICache */
     insn = (insn_t)icache->phy_readm32(insn_pa);
     pc_queue->push(pc, insn);
