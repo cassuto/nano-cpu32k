@@ -242,6 +242,9 @@ CPU::step(vm_addr_t pc)
         vm_addr_t lnkpc = pc + INSN_LEN;
         set_reg(rd, lnkpc); /* link the returning address */
         pc_nxt = get_reg(rs1);
+        if(pc==0x800021d8){
+            printf("800021d8 tgt=%#x\n", pc_nxt);
+        }
         goto flush_pc;
     }
 
