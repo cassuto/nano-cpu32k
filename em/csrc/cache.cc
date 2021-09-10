@@ -276,6 +276,8 @@ uint32_t Cache::phy_readm32(phy_addr_t addr)
     if (enabled)
     {
         int way, entry;
+        if(!((addr & 0x3) == 0))
+        printf("una read pa=%#x\n", addr);
         assert((addr & 0x3) == 0);
         access(addr, false, &way, &entry);
         return lines[way][entry][addr & m_block_offset_mask] |
