@@ -167,7 +167,6 @@ CPU::step(vm_addr_t pc)
         goto handle_exception;
     }
 
-printf("pc=%#x pa=%#x\n",pc, insn_pa);
     /* Access ICache */
     insn = (insn_t)icache->phy_readm32(insn_pa);
     pc_queue->push(pc, insn);
@@ -223,6 +222,9 @@ printf("pc=%#x pa=%#x\n",pc, insn_pa);
 
     case INS32_OP_ADD:
         set_reg(rd, get_reg(rs1) + get_reg(rs2));
+        if(pc==0x80000178){
+            printf("80000178 r4=%#x\n", get_reg(4));
+        }
         break;
     case INS32_OP_ADD_I:
         set_reg(rd, get_reg(rs1) + (cpu_word_t)simm15);
@@ -421,9 +423,6 @@ printf("pc=%#x pa=%#x\n",pc, insn_pa);
             mem->phy_writem16(pa, (uint16_t)get_reg(rd));
         else
             dcache->phy_writem16(pa, (uint16_t)get_reg(rd));
-                if(pc==0x80001A18){
-            printf("80001A18 va=%#x dat=%#x\n", va, get_reg(rd));
-        }
     }
     break;
 
