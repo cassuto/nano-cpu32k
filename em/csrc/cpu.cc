@@ -170,10 +170,6 @@ CPU::step(vm_addr_t pc)
         goto handle_exception;
     }
 
-        if(pc==0x8000017c){
-            printf("%#x r4(0)=%#x r7=%#x\n", pc, get_reg(4), get_reg(7));
-        }
-printf("pc=%#x\n", pc);
     /* Access ICache */
     if (insn_uncached)
         insn = (insn_t)mem->phy_readm32(insn_pa);
