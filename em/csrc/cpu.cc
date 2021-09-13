@@ -171,7 +171,7 @@ CPU::step(vm_addr_t pc)
     }
 if(pc==0x8037a184)
 {
-  printf("%#x r4=%#x\n",pc, get_reg(4));
+  printf("%#x r4=%#x r5=%#x\n",pc, get_reg(4), get_reg(5));
 }
     /* Access ICache */
     if (insn_uncached)
