@@ -319,7 +319,7 @@ CPU::step(vm_addr_t pc)
             goto handle_exception;
         }
         if (pc==0x8037a248){
-          printf("%#x va=%#x rop=%d\n", pc, va, rs1);
+          printf("%#x va=%#x rop=%d v=%#x\n", pc, va, rs1, get_reg(rs1));
         }
         cpu_unsigned_word_t readout;
         if (uncached)
