@@ -169,9 +169,9 @@ CPU::step(vm_addr_t pc)
         pc_nxt = raise_exception(pc, vect_EITM, pc, 0);
         goto handle_exception;
     }
-if(pc==0x8037a184 || pc==0x8037a130)
+if(pc==0xc02c80e0)
 {
-  printf("%#x r4=%#x r5=%#x\n",pc, get_reg(4), get_reg(5));
+  printf("%#x r1=%#x\n",pc, get_reg(1));
 }
     /* Access ICache */
     if (insn_uncached)
