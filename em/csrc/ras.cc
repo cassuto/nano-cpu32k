@@ -52,6 +52,6 @@ void RAS::dump()
     for (int i = 0; i < ras_pos; i++)
     {
         const Symtable::sym_node *sym = symtable->find(ras[i].npc);
-        fprintf(stderr, "[%d] pc=%#08x npc=%#08x(%s)\n", i, ras[i].pc, ras[i].npc, sym ? sym->symbol : "?");
+        fprintf(stderr, "[%d] pc=%#08x npc=%#08x\t(%s)\n", i, ras[i].pc, ras[i].npc, sym ? sym->symbol : "?");
     }
 }

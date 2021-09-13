@@ -83,12 +83,12 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
 
 CPU::~CPU()
 {
+    delete dcache;
+    delete icache;
+    delete mem;
     delete ras;
     delete symtable;
     delete pc_queue;
-    delete mem;
-    delete icache;
-    delete dcache;
 }
 
 void CPU::set_reg(uint16_t addr, cpu_word_t val)
@@ -176,10 +176,10 @@ CPU::step(vm_addr_t pc)
         pc_nxt = raise_exception(pc, vect_EITM, pc, 0);
         goto handle_exception;
     }
-/*if(pc==0xc02c80e0 || pc==0xc02c7fdc)
+if(pc==0xc0383b94)
 {
   printf("%#x r1=%#x\n",pc, get_reg(1));
-}*/
+}
     /* Access ICache */
     if (insn_uncached)
         insn = (insn_t)mem->phy_readm32(insn_pa);
