@@ -169,10 +169,10 @@ CPU::step(vm_addr_t pc)
         pc_nxt = raise_exception(pc, vect_EITM, pc, 0);
         goto handle_exception;
     }
-if(pc==0xc02c80e0 || pc==0xc02c7fdc)
+/*if(pc==0xc02c80e0 || pc==0xc02c7fdc)
 {
   printf("%#x r1=%#x\n",pc, get_reg(1));
-}
+}*/
     /* Access ICache */
     if (insn_uncached)
         insn = (insn_t)mem->phy_readm32(insn_pa);
@@ -323,9 +323,6 @@ if(pc==0xc02c80e0 || pc==0xc02c7fdc)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
-        if(pc==0xc02c80b0){
-          printf("ldw %#x pa=%#x val=%#x\n", pc, pa, readout);
-        }
     }
     break;
 
