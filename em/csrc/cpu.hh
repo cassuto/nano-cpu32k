@@ -133,6 +133,7 @@ public:
 
     inline PCQueue *get_pc_queue() { return pc_queue; }
     inline RAS *get_ras() { return ras; }
+    inline Symtable *get_symtable() { return symtable; }
 
     /* irqc.cc */
     void irqc_set_interrupt(int channel, char raise);
@@ -175,6 +176,7 @@ private:
     Cache *icache, *dcache;
     int IRQ_TSC;
     PCQueue *pc_queue;
+    Symtable *symtable;
     RAS *ras;
     phy_addr_t vect_EINSN;
     phy_addr_t vect_EIRQ;

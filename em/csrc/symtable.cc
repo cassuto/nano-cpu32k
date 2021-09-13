@@ -23,35 +23,63 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 #include "symtable.hh"
-#include "ras.hh"
 
-RAS::RAS(Symtable *symtable_)
+Symtable::Symtable()
+    : sym_list(nullptr)
 {
-    ras = new info[stack_depth];
-    ras_pos = 0;
-    symtable = symtable_;
-}
-RAS::~RAS()
-{
-    delete ras;
 }
 
-void RAS::push(vm_addr_t pc, vm_addr_t npc)
+Symtable::~Symtable()
 {
-    ras[ras_pos] = info(pc, npc);
-    ras_pos = (ras_pos + 1) % stack_depth;
-}
-
-void RAS::pop()
-{
-    ras_pos =(ras_pos - 1) % stack_depth;
-}
-
-void RAS::dump()
-{
-    for (int i = 0; i < ras_pos; i++)
+    struct sym_node *node = sym_list, *tnode;
+    while (node)
     {
-        const Symtable::sym_node *sym = symtable->find(ras[i].npc);
-        fprintf(stderr, "[%d] pc=%#08x npc=%#08x(%s)\n", i, ras[i].pc, ras[i].npc, sym ? sym->symbol : "?");
+        tnode = node;
+        node = node->next;
+        delete tnode;
     }
+}
+
+/**
+ * @brief Load a symbol table file.
+ * @param symfile Symbol table file path;
+ * @return status code.
+ */
+int Symtable::load(const char *symfile)
+{
+    sym_node node;
+    char vm_addr[16];
+    FILE *fp = fopen(symfile, "r");
+    if (!fp)
+        return -EM_FAULT;
+    while (fscanf(fp, "%s%s%s", vm_addr, node.sym_type, node.symbol) != EOF)
+    {
+        sym_node *nd = new sym_node;
+        *nd = node;
+        nd->vm_addr = strtol(vm_addr, NULL, 16);
+        nd->next = sym_list;
+        sym_list = nd;
+    }
+    fclose(fp);
+    return 0;
+}
+
+/**
+ * Find a symbol by its virtual address.
+ * @param addr Start address of target symbol.
+ * @retval pointer to struct sym_node if succeeded.
+ * @retval NULL if no matched.
+ */
+const Symtable::sym_node *Symtable::find(vm_addr_t addr)
+{
+    struct sym_node *node = sym_list;
+    while (node)
+    {
+        if (node->vm_addr == addr)
+        {
+            return node;
+        }
+        node = node->next;
+    }
+    return NULL;
 }

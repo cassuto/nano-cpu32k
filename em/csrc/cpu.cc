@@ -28,6 +28,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "cache.hh"
 #include "pc-queue.hh"
 #include "ras.hh"
+#include "symtable.hh"
 
 CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          bool dmmu_enable_uncached_seg_,
@@ -63,7 +64,8 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       dcache_p_line(dcache_p_line_),
       IRQ_TSC(IRQ_TSC_),
       pc_queue(new PCQueue()),
-      ras(new RAS()),
+      symtable(new Symtable()),
+      ras(new RAS(symtable)),
       vect_EINSN(vect_EINSN_),
       vect_EIRQ(vect_EIRQ_),
       vect_ESYSCALL(vect_ESYSCALL_),
@@ -81,8 +83,9 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
 
 CPU::~CPU()
 {
-    delete pc_queue;
     delete ras;
+    delete symtable;
+    delete pc_queue;
     delete mem;
     delete icache;
     delete dcache;

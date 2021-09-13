@@ -6,7 +6,7 @@
 class RAS
 {
 public:
-    RAS();
+    RAS(Symtable *symtable_);
     ~RAS();
     void push(vm_addr_t pc, vm_addr_t npc);
     void pop();
@@ -31,6 +31,7 @@ private:
     const unsigned int stack_depth = 256;
     info *ras;
     unsigned int ras_pos;
+    Symtable *symtable;
 };
 
 #endif

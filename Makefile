@@ -48,6 +48,7 @@ SIM_CPPS = $(EM_DIR)/csrc/main.cc \
 			$(EM_DIR)/csrc/irqc.cc \
 			$(EM_DIR)/csrc/pc-queue.cc \
 			$(EM_DIR)/csrc/ras.cc \
+			$(EM_DIR)/csrc/symtable.cc \
 			$(EM_DIR)/csrc/emu.cc \
 			$(EM_DIR)/csrc/dpi-c.cc
 # Peripherals

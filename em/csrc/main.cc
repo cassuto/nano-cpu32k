@@ -26,6 +26,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "memory.hh"
 #include "emu.hh"
 #include "dpi-c.hh"
+#include "symtable.hh"
 #include "peripheral/device-tree.hh"
 #include <string>
 #include <getopt.h>
@@ -51,6 +52,7 @@ static const struct option long_options[] = {
     {"wave-end", required_argument, NULL, 0},                 /* 17 */
     {"commit-timeout-max", required_argument, NULL, 0},       /* 18 */
     {"immu-enable-uncached-seg", required_argument, NULL, 0}, /* 19 */
+    {"symbol-file", required_argument, NULL, 0},              /* 20 */
     {"bin-load-addr", required_argument, NULL, 'a'},
     {"bin-pathname", required_argument, NULL, 'b'},
     {"reset-vector", required_argument, NULL, 'r'},
@@ -107,6 +109,7 @@ public:
         wave_begin = 0;
         wave_end = 10000;
         commit_timeout_max = 100000;
+        symbol_file = "";
     }
 
     Mode mode;
@@ -137,6 +140,7 @@ public:
     uint64_t wave_begin;
     uint64_t wave_end;
     uint64_t commit_timeout_max;
+    std::string symbol_file;
 };
 
 static const char *optstirng = "-b:a:r:d:";
@@ -259,6 +263,9 @@ parse_args(int argc, char **argv)
             case 19:
                 args.immu_enable_uncached_seg = parse_bool(optarg, long_options[4].name);
                 break;
+            case 20:
+                args.symbol_file = optarg;
+                break;
             default:
                 return usage(argv[0]);
             }
@@ -320,6 +327,12 @@ int main(int argc, char *argv[])
     }
     if (emu_CPU->memory()->load_address_fp(bin_fp, args.bin_load_addr))
     {
+        return 1;
+    }
+
+    if (!args.symbol_file.empty() && emu_CPU->get_symtable()->load(args.symbol_file.c_str()))
+    {
+        fprintf(stderr, "Failed to open symbol file '%s'\n", args.symbol_file.c_str());
         return 1;
     }
 
