@@ -178,7 +178,7 @@ CPU::step(vm_addr_t pc)
     }
 if(pc==0xc0383b94)
 {
-  printf("%#x r1=%#x\n",pc, get_reg(1));
+  printf("%#x r4=%#x\n",pc, get_reg(4));
 }
     /* Access ICache */
     if (insn_uncached)
