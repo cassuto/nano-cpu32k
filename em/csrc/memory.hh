@@ -3,7 +3,7 @@
 
 #include "common.hh"
 #include "cpu.hh"
-#include "pc-queue.hh"
+#include "ras.hh"
 
 class MMIOCallback
 {
@@ -157,7 +157,7 @@ public:
         {
             if (cpu)
             {
-                cpu->get_pc_queue()->dump();
+                cpu->get_ras()->dump();
                 fprintf(stderr, "%s(): Memory out of bound: paddr=%#x emu_pc=%#x\n", __func__, addr, cpu->get_pc());
             }
             else

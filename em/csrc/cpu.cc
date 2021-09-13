@@ -27,6 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "memory.hh"
 #include "cache.hh"
 #include "pc-queue.hh"
+#include "ras.hh"
 
 CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          bool dmmu_enable_uncached_seg_,
@@ -62,6 +63,7 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       dcache_p_line(dcache_p_line_),
       IRQ_TSC(IRQ_TSC_),
       pc_queue(new PCQueue()),
+      ras(new RAS()),
       vect_EINSN(vect_EINSN_),
       vect_EIRQ(vect_EIRQ_),
       vect_ESYSCALL(vect_ESYSCALL_),
@@ -79,6 +81,8 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
 
 CPU::~CPU()
 {
+    delete pc_queue;
+    delete ras;
     delete mem;
     delete icache;
     delete dcache;
@@ -245,6 +249,10 @@ CPU::step(vm_addr_t pc)
         vm_addr_t lnkpc = pc + INSN_LEN;
         set_reg(rd, lnkpc); /* link the returning address */
         pc_nxt = get_reg(rs1);
+        if (rs1 == ADDR_RLNK)
+            ras->pop();
+        if (rd == ADDR_RLNK)
+            ras->push(pc, pc_nxt);
         goto flush_pc;
     }
 
@@ -258,6 +266,7 @@ CPU::step(vm_addr_t pc)
         vm_addr_t lnkpc = pc + INSN_LEN;
         set_reg(ADDR_RLNK, lnkpc); /* link the returning address */
         pc_nxt = pc + rel25_sig_ext(rel25);
+        ras->push(pc, pc_nxt);
         goto flush_pc;
     }
 

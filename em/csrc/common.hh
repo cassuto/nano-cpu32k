@@ -24,6 +24,7 @@ class Memory;
 class DeviceTree;
 class PCQueue;
 class DRAM;
+class RAS;
 
 #define EM_SUCCEEDED 0
 #define EM_FAULT 1

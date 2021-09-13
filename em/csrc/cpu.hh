@@ -132,6 +132,7 @@ public:
     cpu_word_t get_reg(uint16_t addr);
 
     inline PCQueue *get_pc_queue() { return pc_queue; }
+    inline RAS *get_ras() { return ras; }
 
     /* irqc.cc */
     void irqc_set_interrupt(int channel, char raise);
@@ -174,6 +175,7 @@ private:
     Cache *icache, *dcache;
     int IRQ_TSC;
     PCQueue *pc_queue;
+    RAS *ras;
     phy_addr_t vect_EINSN;
     phy_addr_t vect_EIRQ;
     phy_addr_t vect_ESYSCALL;
