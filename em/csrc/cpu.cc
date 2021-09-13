@@ -323,6 +323,9 @@ if(pc==0xc02c80e0 || pc==0xc02c7fdc)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
+        if(pc==0xc02c80b0){
+          printf("ldw %#x va=%#x val=%#x\n", pc, va, readout);
+        }
     }
     break;
 
