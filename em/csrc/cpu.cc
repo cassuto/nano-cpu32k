@@ -342,13 +342,14 @@ CPU::step(vm_addr_t pc)
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
+        if (pc==0x8037a1c8 || pc==0x8037a248){
+          printf("%#x va=%#x\n", pc, va);
+        }
         if (uncached)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if (pc==0x8037a1c8 || pc==0x8037a248){
-          printf("%#x va=%#x\n", pc, va);
-        }
+        
     }
     break;
 
