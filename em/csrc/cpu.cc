@@ -352,6 +352,9 @@ if(pc==0xc02c80e0 || pc==0xc02c7fdc)
         if(pc==0xc02c7fdc){
           printf("stw %#x va=%#x val=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
+        if(va==0xc035df28){
+          printf("hit %#X pa=%#x val=%#x\n", pc, pa, (uint32_t)get_reg(rd));
+        }
     }
     break;
 
