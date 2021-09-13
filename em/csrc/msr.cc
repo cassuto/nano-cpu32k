@@ -84,7 +84,7 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
     case MSR_DBGR_NUMPORT:
     {
         char buff[128], *p = buff;
-        snprintf(buff, sizeof(buff), "DEBUG NUM PORT - %#x %#x\n", val, pc);
+        snprintf(buff, sizeof(buff), "DEBUG NUM PORT - %#x emu_pc = %#x\n", val, pc);
         while (*p)
             fprintf(stdout, "%c", *p++);
         return;
