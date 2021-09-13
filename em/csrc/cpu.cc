@@ -329,6 +329,9 @@ if(pc==0xc0383b94)
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
+        if(pc==0xc008586c){
+            printf("ldw %#x va=%#x pa=%#x\n", pc, va, pa);
+        }
         cpu_unsigned_word_t readout;
         if (uncached)
             readout = mem->phy_readm32(pa);
