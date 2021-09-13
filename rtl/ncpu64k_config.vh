@@ -16,7 +16,7 @@
 
 /* Difftest configuration */
 `undef ENABLE_DIFFTEST
-`define ENABLE_DIFFTEST
+//`define ENABLE_DIFFTEST
 
 /* Assert in simulation */
 `define NCPU_ENABLE_ASSERT

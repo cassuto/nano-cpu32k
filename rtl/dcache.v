@@ -147,7 +147,7 @@ module dcache
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s1o_d;
    wire                                s1o_free_dirty;
    wire [CONFIG_P_PAGE_SIZE-1:0]       s1o_vpo;
-   reg [CONFIG_AW-1:0]                 s2i_paddr;
+   wire [CONFIG_AW-1:0]                s2i_paddr;
    wire [TAG_WIDTH-1:0]                s2i_tag                 [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire                                s2i_v                   [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2i_hit_vec;

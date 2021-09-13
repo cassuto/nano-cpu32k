@@ -346,6 +346,9 @@ CPU::step(vm_addr_t pc)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
+        if (pc==0xc037a1c8){
+          printf("%#x va=%#x\n", pc, va);
+        }
     }
     break;
 
