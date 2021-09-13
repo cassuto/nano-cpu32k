@@ -169,7 +169,7 @@ CPU::step(vm_addr_t pc)
         pc_nxt = raise_exception(pc, vect_EITM, pc, 0);
         goto handle_exception;
     }
-if(pc==0xc02c80e0)
+if(pc==0xc02c80e0 || pc==0xc02c7fdc)
 {
   printf("%#x r1=%#x\n",pc, get_reg(1));
 }
