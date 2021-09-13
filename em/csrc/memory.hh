@@ -2,6 +2,7 @@
 #define MEMORY_H_
 
 #include "common.hh"
+#include "cpu.hh"
 
 class MMIOCallback
 {
@@ -50,7 +51,10 @@ public:
         }
         else
         {
-            fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
+            if (cpu)
+                fprintf(stderr, "%s(): Memory out of bound: paddr=%#x emu_pc=%#x\n", __func__, addr, cpu->get_pc());
+            else
+                fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
             panic(1);
         }
     }
@@ -101,7 +105,10 @@ public:
         }
         else
         {
-            fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
+            if (cpu)
+                fprintf(stderr, "%s(): Memory out of bound: paddr=%#x emu_pc=%#x\n", __func__, addr, cpu->get_pc());
+            else
+                fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
             panic(1);
             return 0;
         }
@@ -121,7 +128,10 @@ public:
         }
         else
         {
-            fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
+            if (cpu)
+                fprintf(stderr, "%s(): Memory out of bound: paddr=%#x emu_pc=%#x\n", __func__, addr, cpu->get_pc());
+            else
+                fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
             panic(1);
             return 0;
         }
@@ -144,7 +154,10 @@ public:
         }
         else
         {
-            fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
+            if (cpu)
+                fprintf(stderr, "%s(): Memory out of bound: paddr=%#x emu_pc=%#x\n", __func__, addr, cpu->get_pc());
+            else
+                fprintf(stderr, "%s(): Memory out of bound: paddr=%#x\n", __func__, addr);
             panic(1);
             return 0;
         }

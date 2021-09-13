@@ -352,12 +352,12 @@ if(pc==0xc02c80e0 || pc==0xc02c7fdc)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if(pc==0xc02c1b14){
+        /*if(pc==0xc02c1b14){
           printf("stw %#x va=%#x val=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
         if(pa==0x80000098){
           printf("hit %#x pa=%#x val=%#x\n", pc, pa, (uint32_t)get_reg(rd));
-        }
+        }*/
     }
     break;
 
