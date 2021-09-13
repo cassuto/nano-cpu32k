@@ -314,9 +314,6 @@ CPU::step(vm_addr_t pc)
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
-        if (pc==0x8037a248){
-          printf("%#x va=%#x rop=%d v=%#x insn=%#x insn_pa=%#x\n", pc, va, rs1, get_reg(rs1), insn, insn_pa);
-        }
         cpu_unsigned_word_t readout;
         if (uncached)
             readout = mem->phy_readm32(pa);
@@ -344,9 +341,6 @@ CPU::step(vm_addr_t pc)
         case -EM_TLB_MISS:
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
-        }
-        if (pc==0x8037a1c8){
-          printf("%#x va=%#x\n", pc, va);
         }
         if (uncached)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));

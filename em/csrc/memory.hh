@@ -2,7 +2,6 @@
 #define MEMORY_H_
 
 #include "common.hh"
-#include "cpu.hh"
 
 class MMIOCallback
 {
@@ -47,9 +46,6 @@ public:
         }
         else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
         {
-          if (cpu /*&& addr==0x8037a248*/){
-            printf("w %#x pa=%#x\n", cpu->get_pc(), addr);
-          }
             memory[addr - dram_phy_start] = val;
         }
         else
