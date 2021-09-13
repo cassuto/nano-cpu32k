@@ -349,7 +349,9 @@ if(pc==0xc02c80e0 || pc==0xc02c7fdc)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        
+        if(pc==0xc02c7fdc){
+          printf("stw %#x va=%#x val=%#x\n", pc, va, (uint32_t)get_reg(rd));
+        }
     }
     break;
 
