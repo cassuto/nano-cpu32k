@@ -84,12 +84,8 @@ CPU::~CPU()
     delete dcache;
 }
 
-bool flag;
 void CPU::set_reg(uint16_t addr, cpu_word_t val)
 {
-  if(flag && addr==30){
-    printf("pc %#x w r30 = %#x\n", pc, val);
-  }
     if (addr >= 32)
     {
         fprintf(stderr, "set_reg() invalid register index at PC=%#x\n", pc);
@@ -350,11 +346,7 @@ CPU::step(vm_addr_t pc)
             goto handle_exception;
         }
         if (pc==0x8037a1c8){
-          flag=1;
           printf("%#x va=%#x\n", pc, va);
-        }
-        if(1 || pa==0x8037a248){
-          printf("w %#x pa=%#x\n", pc, pa);
         }
         if (uncached)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
@@ -437,9 +429,6 @@ CPU::step(vm_addr_t pc)
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
-        if(pa==0x8037a248){
-          printf("w %#x pa=%#x\n", pc, pa);
-        }
         if (uncached)
             mem->phy_writem16(pa, (uint16_t)get_reg(rd));
         else
@@ -505,9 +494,6 @@ CPU::step(vm_addr_t pc)
         case -EM_TLB_MISS:
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
-        }
-        if(pa==0x8037a248){
-          printf("w %#x pa=%#x\n", pc, pa);
         }
         if (uncached)
             mem->phy_writem8(pa, (uint8_t)get_reg(rd));
