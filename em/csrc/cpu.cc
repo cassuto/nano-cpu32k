@@ -353,7 +353,7 @@ CPU::step(vm_addr_t pc)
           flag=1;
           printf("%#x va=%#x\n", pc, va);
         }
-        if(pa==0x8037a248){
+        if(1 || pa==0x8037a248){
           printf("w %#x pa=%#x\n", pc, pa);
         }
         if (uncached)
