@@ -84,8 +84,12 @@ CPU::~CPU()
     delete dcache;
 }
 
+bool flag;
 void CPU::set_reg(uint16_t addr, cpu_word_t val)
 {
+  if(flag && addr==30){
+    printf("pc %#x w r30 = %#x\n", pc, val);
+  }
     if (addr >= 32)
     {
         fprintf(stderr, "set_reg() invalid register index at PC=%#x\n", pc);
@@ -346,6 +350,7 @@ CPU::step(vm_addr_t pc)
             goto handle_exception;
         }
         if (pc==0x8037a1c8){
+          flag=1;
           printf("%#x va=%#x\n", pc, va);
         }
         if (uncached)
