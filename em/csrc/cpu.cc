@@ -437,6 +437,9 @@ CPU::step(vm_addr_t pc)
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
+        if(pa==0x8037a248){
+          printf("w %#x pa=%#x\n", pc, pa);
+        }
         if (uncached)
             mem->phy_writem16(pa, (uint16_t)get_reg(rd));
         else
@@ -502,6 +505,9 @@ CPU::step(vm_addr_t pc)
         case -EM_TLB_MISS:
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
+        }
+        if(pa==0x8037a248){
+          printf("w %#x pa=%#x\n", pc, pa);
         }
         if (uncached)
             mem->phy_writem8(pa, (uint8_t)get_reg(rd));
