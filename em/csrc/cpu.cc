@@ -567,12 +567,14 @@ CPU::step(vm_addr_t pc)
 
     goto fetch_next;
 handle_exception:
-if(pc_nxt==0x4){
+fetch_next:
+flush_pc:
+
+if(pc_nxt==0xc0004758 || pc_nxt==0x80004758){
     printf("hit pc=%#x insn=%#x pa=%#x\n", pc, insn, insn_pa);
     //exit(1);
 }
-fetch_next:
-flush_pc:
+
     /* The only-one exit point */
     return pc_nxt;
 }
