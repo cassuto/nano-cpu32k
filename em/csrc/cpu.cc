@@ -570,7 +570,7 @@ handle_exception:
 fetch_next:
 flush_pc:
 if(pc_nxt==0x4){
-    printf("hit pc=%#x\n", pc);
+    printf("hit pc=%#x insn=%#x pa=%#x\n", pc, insn, insn_pa);
     exit(1);
 }
     /* The only-one exit point */
