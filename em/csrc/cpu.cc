@@ -253,6 +253,9 @@ CPU::step(vm_addr_t pc)
             ras->pop();
         if (rd == ADDR_RLNK)
             ras->push(pc, pc_nxt);
+        if(pc==0x126bd0){
+            printf("%#x tgt=%#x\n", pc_nxt);
+        }
         goto flush_pc;
     }
 
