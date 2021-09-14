@@ -301,8 +301,6 @@ module ex
    genvar i;
    integer j;
 
-   assign ex_lsu_load0 = ex_lsu_opc_bus[0*`NCPU_LSU_IOPW + `NCPU_LSU_LOAD];
-
    //
    // FUs
    //
@@ -732,6 +730,7 @@ module ex
          assign s3i_rf_wdat[i*CONFIG_DW +: CONFIG_DW] = s2o_rf_dout[i*CONFIG_DW +: CONFIG_DW];
    endgenerate
 
+   assign ex_lsu_load0 = ex_lsu_opc_bus[0*`NCPU_LSU_IOPW + `NCPU_LSU_LOAD];
 
    // Bypass
    assign ro_ex_s1_rf_dout = s1i_rf_dout;

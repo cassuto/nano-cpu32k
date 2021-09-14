@@ -91,6 +91,7 @@ CPU::~CPU()
     delete pc_queue;
 }
 
+bool flag;
 void CPU::set_reg(uint16_t addr, cpu_word_t val)
 {
     if (addr >= 32)
@@ -101,6 +102,9 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
     if (addr)
     {
         regfile.r[addr] = val;
+    }
+    if(flag && addr==30){
+        printf("w r30 val=%#x pc=%#x\n", val, pc);
     }
 }
 
@@ -184,6 +188,10 @@ CPU::step(vm_addr_t pc)
         insn = (insn_t)icache->phy_readm32(insn_pa);
     pc_queue->push(pc, insn);
     pc_nxt = pc + INSN_LEN;
+
+    if(pc==0xc0189ae8){
+        flag=1;
+    }
 
     /* decode and execute */
     opcode = insn & INS32_MASK_OPCODE;
@@ -571,8 +579,9 @@ fetch_next:
 flush_pc:
 
 if(pc_nxt==0xc00030d4 || pc_nxt==0x800030d4){
+    pc_queue->dump();
     printf("hit pc=%#x insn=%#x pa=%#x\n", pc, insn, insn_pa);
-    //exit(1);
+    exit(1);
 }
 
     /* The only-one exit point */
