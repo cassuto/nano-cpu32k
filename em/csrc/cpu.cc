@@ -581,6 +581,7 @@ flush_pc:
 if(pc_nxt==0xc00030d4 || pc_nxt==0x800030d4){
     pc_queue->dump();
     printf("hit pc=%#x insn=%#x pa=%#x\n", pc, insn, insn_pa);
+    flag=false;
     //exit(1);
 }
 
