@@ -176,10 +176,7 @@ CPU::step(vm_addr_t pc)
         pc_nxt = raise_exception(pc, vect_EITM, pc, 0);
         goto handle_exception;
     }
-if(pc==0xc0383b94)
-{
-  printf("%#x r4=%#x\n",pc, get_reg(4));
-}
+
     /* Access ICache */
     if (insn_uncached)
         insn = (insn_t)mem->phy_readm32(insn_pa);
@@ -329,9 +326,6 @@ if(pc==0xc0383b94)
             pc_nxt = raise_exception(pc, vect_EDTM, va, 0);
             goto handle_exception;
         }
-        if(pc==0xc008586c){
-            printf("ldw %#x va=%#x pa=%#x\n", pc, va, pa);
-        }
         cpu_unsigned_word_t readout;
         if (uncached)
             readout = mem->phy_readm32(pa);
@@ -364,12 +358,6 @@ if(pc==0xc0383b94)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        /*if(pc==0xc02c1b14){
-          printf("stw %#x va=%#x val=%#x\n", pc, va, (uint32_t)get_reg(rd));
-        }
-        if(pa==0x80000098){
-          printf("hit %#x pa=%#x val=%#x\n", pc, pa, (uint32_t)get_reg(rd));
-        }*/
     }
     break;
 
@@ -619,6 +607,7 @@ int CPU::check_vma_align(vm_addr_t va, int size)
     if (va & ((1 << size) - 1))
     {
         fprintf(stderr, "EALIGN: pc=%x va=%x\n", pc, va);
+        exit(1);
         return -EM_ALIGN_FAULT;
     }
     return 0;
