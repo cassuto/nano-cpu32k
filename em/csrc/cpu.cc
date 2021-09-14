@@ -557,7 +557,7 @@ CPU::step(vm_addr_t pc)
         break;
 
     default:
-        if (opcode != INS32_OP_LDWA && opcode != INS32_OP_STWA)
+        if (1)//(opcode != INS32_OP_LDWA && opcode != INS32_OP_STWA)
         {
             fprintf(stderr, "EINSN: opcode = %#x at pc %#x\n", opcode, pc);
         }
