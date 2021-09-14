@@ -557,7 +557,7 @@ CPU::step(vm_addr_t pc)
         break;
 
     default:
-        if (1)//(opcode != INS32_OP_LDWA && opcode != INS32_OP_STWA)
+        if (opcode != INS32_OP_LDWA && opcode != INS32_OP_STWA)
         {
             fprintf(stderr, "EINSN: opcode = %#x at pc %#x\n", opcode, pc);
         }
@@ -569,6 +569,10 @@ CPU::step(vm_addr_t pc)
 handle_exception:
 fetch_next:
 flush_pc:
+if(pc_nxt==0x4){
+    printf("hit pc=%#x\n", pc);
+    exit(1);
+}
     /* The only-one exit point */
     return pc_nxt;
 }
