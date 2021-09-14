@@ -333,7 +333,7 @@ CPU::step(vm_addr_t pc)
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
         if(pc==0xc0189e10){
-            printf("%#x va=%#x\n", pc, va);
+            printf("%#x va=%#x readout=%#x\n", pc, va, readout);
         }
     }
     break;
