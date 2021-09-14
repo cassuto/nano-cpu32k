@@ -581,7 +581,7 @@ flush_pc:
 if(pc_nxt==0xc00030d4 || pc_nxt==0x800030d4){
     pc_queue->dump();
     printf("hit pc=%#x insn=%#x pa=%#x\n", pc, insn, insn_pa);
-    exit(1);
+    //exit(1);
 }
 
     /* The only-one exit point */
