@@ -570,7 +570,7 @@ handle_exception:
 fetch_next:
 flush_pc:
 
-if(pc_nxt==0xc0004758 || pc_nxt==0x80004758){
+if(pc_nxt==0xc00030d4 || pc_nxt==0x800030d4){
     printf("hit pc=%#x insn=%#x pa=%#x\n", pc, insn, insn_pa);
     //exit(1);
 }
