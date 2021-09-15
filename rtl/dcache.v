@@ -482,15 +482,17 @@ module dcache
 
    // MUX for payload RAM addr
    always @(*)
-      case (fsm_state_ff)
-         S_REFILL,
-         S_WRITEBACK:
-            s2i_payload_addr = {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_DC_P_SETS], fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_DC_P_LINE-PAYLOAD_P_DW_BYTES]};
-         S_RELOAD_S1O_S2O:
-            s2i_payload_addr = s2o_payload_addr;
-         default:
-            s2i_payload_addr = s1o_vpo[PAYLOAD_P_DW_BYTES +: PAYLOAD_AW]; // {index,offset}
-      endcase
+      if (s2i_wb_re)
+         s2i_payload_addr = {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_DC_P_SETS], fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_DC_P_LINE-PAYLOAD_P_DW_BYTES]};
+      else
+         case (fsm_state_ff)
+            S_REFILL:
+               s2i_payload_addr = {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_DC_P_SETS], fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_DC_P_LINE-PAYLOAD_P_DW_BYTES]};
+            S_RELOAD_S1O_S2O:
+               s2i_payload_addr = s2o_payload_addr;
+            default:
+               s2i_payload_addr = s1o_vpo[PAYLOAD_P_DW_BYTES +: PAYLOAD_AW]; // {index,offset}
+         endcase
 
    // MUX for payload RAM din
    always @(*)
