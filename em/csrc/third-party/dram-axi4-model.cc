@@ -108,11 +108,16 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
     else if (ar.burst == 1)
     {
         assert(transaction_size / sizeof(uint64_t) <= MAX_AXI_DATA_LEN);
+        if (address==0x80007E40)
+            printf("Read Address = %#x data=", address);
         for (int i = 0; i < transaction_size / sizeof(uint64_t); i++)
         {
             meta->data[i] = mem->dram_readm64(address / sizeof(uint64_t));
+            if (address==0x80007E40)
+            printf("%#x ", meta->data[i]);
             address += sizeof(uint64_t);
         }
+        printf("\n");
     }
     // axi burst WRAP
     else if (ar.burst == 2)
