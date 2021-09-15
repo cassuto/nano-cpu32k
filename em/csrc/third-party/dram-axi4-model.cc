@@ -210,7 +210,7 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         dramsim3_meta *meta = static_cast<dramsim3_meta *>(wait_resp_b->req->meta);
         void *start_addr = mem->dram_refm64(waddr / sizeof(uint64_t));
         memcpy(start_addr, meta->data, meta->len * meta->size);
-        printf("flush data=");
+        printf("\nflush data= len=%d size=%d", meta->len, meta->size);
         for(int i=0;i<meta->len;i++){
             printf("%#x ", meta->data[i]);
         }
