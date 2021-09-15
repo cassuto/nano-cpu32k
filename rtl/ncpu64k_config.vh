@@ -26,12 +26,6 @@
 //`define NCPU_CHECK_X
 `undef NCPU_CHECK_X
 
-`ifdef SYNTHESIS
-`undef ENABLE_DIFFTEST
-`undef NCPU_ENABLE_ASSERT
-`undef NCPU_CHECK_X
-`endif
-
 /* Length of a insn */
 `define NCPU_P_INSN_LEN 2 /* $clog2(4) */
 `define NCPU_INSN_LEN (`NCPU_P_INSN_LEN<<1)

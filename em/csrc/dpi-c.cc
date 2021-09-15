@@ -118,7 +118,6 @@ void dpic_commit_inst(
     svBit EINT1,
     svBit EINT2)
 {
-    printf("%d %d\n", valid1, valid2);
     if (!dpic_enable)
         return;
 
