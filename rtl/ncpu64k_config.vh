@@ -15,7 +15,7 @@
 
 /* Assert in simulation */
 //`define NCPU_ENABLE_ASSERT
-//`undef NCPU_ENABLE_ASSERT
+`undef NCPU_ENABLE_ASSERT
 
 /* Check X state in simulation */
 //`define NCPU_CHECK_X
