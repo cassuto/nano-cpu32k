@@ -146,9 +146,11 @@ module dcache
    wire [TAG_V_RAM_DW-1:0]             s1o_tag_v               [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s1o_d;
    wire                                s1o_free_dirty;
+   wire [TAG_WIDTH-1:0]                s2i_free_tag;
    wire [CONFIG_P_PAGE_SIZE-1:0]       s1o_vpo;
    wire [CONFIG_AW-1:0]                s2i_paddr;
    wire [TAG_WIDTH-1:0]                s2i_tag                 [(1<<CONFIG_DC_P_WAYS)-1:0];
+   wire [TAG_WIDTH*(1<<CONFIG_DC_P_WAYS)-1:0] s2i_tag_packed;
    wire                                s2i_v                   [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2i_hit_vec;
    wire                                s2i_hit;
@@ -166,6 +168,7 @@ module dcache
    wire [PAYLOAD_DW-1:0]               s2o_match_payload;
    wire [PAYLOAD_DW-1:0]               s2o_wb_payload;
    wire                                s2o_free_dirty;
+   wire [TAG_WIDTH-1:0]                s2o_free_tag;
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_d;
    wire                                s2o_hit_dirty;
    wire [PAYLOAD_AW-1:0]               s2o_payload_addr;
@@ -278,6 +281,7 @@ module dcache
             assign s1o_d[way] = rf_bypass ? rf_d_ff : rf_d;
 
             assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];
+            assign s2i_tag_packed[way * TAG_WIDTH +: TAG_WIDTH] = s2i_tag[way];
 
             assign s2i_hit_vec[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_DC_P_LINE+CONFIG_DC_P_SETS]) );
          end
@@ -293,6 +297,7 @@ module dcache
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s2o_match_vec), .din(s2o_payload), .dout(s2o_match_payload));
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s2o_d (.sel(s2o_match_vec), .din(s2o_d), .dout(s2o_hit_dirty));
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s1o_free_dirty (.sel(fsm_free_way), .din(s1o_d), .dout(s1o_free_dirty));
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(TAG_WIDTH)) pmux_s2i_free_tag (.sel(fsm_free_way), .din(s2i_tag_packed), .dout(s2i_free_tag));
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_wb_payload (.sel(s2o_fsm_free_way), .din(s2o_payload), .dout(s2o_wb_payload));
                                                   
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(req), .Q(s1o_valid) );
@@ -311,6 +316,7 @@ module dcache
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
    mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_d (.CLK(clk), .LOAD(p_ce), .D(s1o_d), .Q(s2o_d) );
    mDFF_l # (.DW(1)) ff_s2o_free_dirty (.CLK(clk), .LOAD(p_ce), .D(s1o_free_dirty), .Q(s2o_free_dirty) );
+   mDFF_l # (.DW(TAG_WIDTH)) ff_s2o_free_tag (.CLK(clk), .LOAD(p_ce), .D(s2i_free_tag), .Q(s2o_free_tag) );
    mDFF_l # (.DW(PAYLOAD_AW)) ff_s2o_payload_addr (.CLK(clk), .LOAD(p_ce), .D(s2i_payload_addr), .Q(s2o_payload_addr) );
    mDFF_l # (.DW(CONFIG_DC_P_LINE)) ff_s2o_wb_addr (.CLK(clk), .LOAD(s2i_wb_re), .D(fsm_refill_cnt), .Q(s2o_wb_addr) );
    mDFF_l # (.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_ce), .D(s1o_size), .Q(s2o_size) );
@@ -562,9 +568,11 @@ module dcache
    assign dbus_ARREGION = 'b0;
    assign ar_clr = (dbus_ARREADY & dbus_ARVALID);
    
-   assign axi_paddr_nxt = (fsm_uncached_req)
+   assign axi_paddr_nxt = (fsm_uncached_req) /* Uncached read/write request */
                            ? s2o_paddr
-                           : {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_AW - CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}}};
+                           : (aw_set) /* Writeback request */
+                              ? {s2o_free_tag, s2o_line_addr, {CONFIG_DC_P_LINE{1'b0}}}
+                              : {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_AW - CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}}}; /* Refill request */
 
    // Address width adapter (truncate or fill zero)
    generate
