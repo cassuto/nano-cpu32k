@@ -111,6 +111,7 @@ bool Emu::clk()
 #endif
 
     cycles++;
+    printf("%d\n", cycles);
 
     return false;
 }
