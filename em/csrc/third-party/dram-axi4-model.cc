@@ -256,7 +256,7 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
 #endif
         axi_get_wdata(axi, data_start, src_addr, meta->size);
         meta->offset++;
-        // printf("accept a new write data\n");
+         printf("accept a new write data\n");
     }
     if (wait_req_w)
     {
