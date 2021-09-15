@@ -169,7 +169,7 @@ module dcache
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_d;
    wire                                s2o_hit_dirty;
    wire [PAYLOAD_AW-1:0]               s2o_payload_addr;
-   wire [PAYLOAD_AW-1:0]               s2o_wb_addr;
+   wire [CONFIG_DC_P_LINE-1:0]         s2o_wb_addr;
    wire [2:0]                          s2o_size;
    wire                                s2o_uncached;
    // FSM
@@ -312,7 +312,7 @@ module dcache
    mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_d (.CLK(clk), .LOAD(p_ce), .D(s1o_d), .Q(s2o_d) );
    mDFF_l # (.DW(1)) ff_s2o_free_dirty (.CLK(clk), .LOAD(p_ce), .D(s1o_free_dirty), .Q(s2o_free_dirty) );
    mDFF_l # (.DW(PAYLOAD_AW)) ff_s2o_payload_addr (.CLK(clk), .LOAD(p_ce), .D(s2i_payload_addr), .Q(s2o_payload_addr) );
-   mDFF_l # (.DW(PAYLOAD_AW)) ff_s2o_wb_addr (.CLK(clk), .LOAD(s2i_wb_re), .D(s2i_payload_addr), .Q(s2o_wb_addr) );
+   mDFF_l # (.DW(CONFIG_DC_P_LINE)) ff_s2o_wb_addr (.CLK(clk), .LOAD(s2i_wb_re), .D(fsm_refill_cnt), .Q(s2o_wb_addr) );
    mDFF_l # (.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_ce), .D(s1o_size), .Q(s2o_size) );
    mDFF_l # (.DW(CONFIG_DW)) ff_s2o_wdat (.CLK(clk), .LOAD(p_ce), .D(s1o_wdat), .Q(s2o_wdat) );
    mDFF_lr # (.DW(CONFIG_DW/8)) ff_s2o_wmsk (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_wmsk), .Q(s2o_wmsk) );
@@ -641,7 +641,7 @@ module dcache
       (
          .i_axi_din                          ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_payload : s2o_wdat),
          .i_axi_we                           ((fsm_state_ff == S_WRITEBACK) | (fsm_state_ff == S_UNCACHED_WRITE)),
-         .i_axi_addr                         ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_addr[CONFIG_DC_P_LINE-1:0] : dbus_AWADDR[CONFIG_DC_P_LINE-1:0]),
+         .i_axi_addr                         ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_addr : dbus_AWADDR[CONFIG_DC_P_LINE-1:0]),
          .o_axi_WSTRB                        (dbus_WSTRB),
          .o_axi_WDATA                        (dbus_WDATA)
       );
