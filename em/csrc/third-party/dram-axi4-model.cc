@@ -211,7 +211,7 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         void *start_addr = mem->dram_refm64(waddr / sizeof(uint64_t));
         memcpy(start_addr, meta->data, meta->len * meta->size);
         printf("\nflush data= len=%d size=%d ", meta->len, meta->size);
-        for(int i=0;i<meta->len;i++){
+        for(int i=0;i<meta->len* meta->size / sizeof(uint64_t);i++){
             printf("%#x ", meta->data[i]);
         }
         printf("\n");
@@ -251,13 +251,13 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         const void *src_addr = mem->dram_refm64((waddr + meta->offset * meta->size) / sizeof(uint64_t));
 #endif
         axi_get_wdata(axi, data_start, src_addr, meta->size);
-        meta->offset++;
-        // printf("accept a new write data\n");
         printf("offset=%#x data=", meta->offset);
-        for(int i=0;i<meta->len;i++){
+        for(int i=0;i<meta->offset * meta->size / sizeof(uint64_t);i++){
             printf("%#x ", meta->data[i]);
         }
         printf("\n");
+        meta->offset++;
+        // printf("accept a new write data\n");
     }
     if (wait_req_w)
     {
