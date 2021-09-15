@@ -161,21 +161,21 @@ endgenerate
    
    // synthesis translate_off
 `ifndef SYNTHESIS
-`ifdef NCPU_ENABLE_ASSERT
+//`ifdef NCPU_ENABLE_ASSERT
 
    // Assertions
    initial
       begin
          // Assertion (03061058)
          if (!(CONFIG_ITLB_P_SETS <= VPN_DW))
-            $fatal (0, "\n CONFIG_ITLB_P_SETS should <= VPN_DW\n");
+            $fatal (1, "\n CONFIG_ITLB_P_SETS should <= VPN_DW\n");
       end
       
-   always @(posedge clk)
+   /*always @(posedge clk)
       if (EITM & EIPF)
-         $fatal ("\n EITM and EIPF should be mutex\n");
+         $fatal (1, "\n EITM and EIPF should be mutex\n");*/
 
-`endif
+//`endif
 `endif
    // synthesis translate_on
 
