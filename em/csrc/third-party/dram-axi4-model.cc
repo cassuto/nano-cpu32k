@@ -216,7 +216,7 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         {
             uint64_t address = wait_resp_b->req->address % mem->get_size();
             mem->dram_writem64(address / sizeof(uint64_t) + i, meta->data[i]);
-             printf("flush write to memory[0x%ld] = 0x%lx\n", address);
+             printf("flush write to memory[0x%lx] = 0x%lx\n", address / sizeof(uint64_t) + i, meta->data[i]);
         }
 #endif
         delete meta;
