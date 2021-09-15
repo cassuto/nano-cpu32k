@@ -127,6 +127,7 @@ void dpic_commit_inst(
         rtl_num_commit++;
     if (valid1 | valid2)
         rtl_last_commit_cycle = dpic_emu->get_cycle();
+        printf("%d %d\n", valid1, valid2);
     if (dpic_emu->get_cycle() - rtl_last_commit_cycle > rtl_commit_timeout_max)
     {
         fprintf(stderr, "No commit after %ld cycles\n", dpic_emu->get_cycle() - rtl_last_commit_cycle);
