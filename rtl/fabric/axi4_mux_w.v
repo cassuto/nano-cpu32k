@@ -169,9 +169,9 @@ module axi4_mux_w
    assign s0_BRESP = m_BRESP;
    assign s0_BID = m_BID;
    assign s0_BUSER = m_BUSER;
-   assign s1_AWREADY = (m_WGRNT[0] & m_AWREADY);
-   assign s1_WREADY = (m_WGRNT[0] & m_WREADY);
-   assign s1_BVALID = (m_WGRNT[0] & m_BVALID);
+   assign s1_AWREADY = (m_WGRNT[1] & m_AWREADY);
+   assign s1_WREADY = (m_WGRNT[1] & m_WREADY);
+   assign s1_BVALID = (m_WGRNT[1] & m_BVALID);
    assign s1_BRESP = m_BRESP;
    assign s1_BID = m_BID;
    assign s1_BUSER = m_BUSER;

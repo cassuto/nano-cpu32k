@@ -130,7 +130,7 @@ void dpic_commit_inst(
 
     if (dpic_emu->get_cycle() - rtl_last_commit_cycle > rtl_commit_timeout_max)
     {
-        fprintf(stderr, "No commit after %ld cycles\n", dpic_emu->get_cycle() - rtl_last_commit_cycle);
+        fprintf(stderr, "[%ld] No commit after %ld cycles\n", rtl_last_commit_cycle, dpic_emu->get_cycle() - rtl_last_commit_cycle);
         difftest_terminate();
         return;
     }
