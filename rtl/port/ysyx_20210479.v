@@ -557,7 +557,6 @@ module ysyx_20210479
 	assign io_slave_bresp = 'b0;
 	assign io_slave_bid = 'b0;
 	assign io_slave_arready = 'b0;
-   assign io_master_arburst = 'b0;
 	assign io_slave_rvalid = 'b0;
 	assign io_slave_rresp = 'b0;
 	assign io_slave_rdata = 'b0;

@@ -1,7 +1,7 @@
 `ifndef NCPU64K_CONFIG_H_
 `define NCPU64K_CONFIG_H_
 
-/* Enable this synthesis switch, if you compiler doesn't support */
+/* Enable this synthesis switch, if your compiler doesn't support */
 //`ifndef SYNTHESIS
 //`define SYNTHESIS
 //`endif
@@ -25,6 +25,12 @@
 /* Check X state in simulation */
 //`define NCPU_CHECK_X
 `undef NCPU_CHECK_X
+
+`ifdef SYNTHESIS
+`undef ENABLE_DIFFTEST
+`undef NCPU_ENABLE_ASSERT
+`undef NCPU_CHECK_X
+`endif
 
 /* Length of a insn */
 `define NCPU_P_INSN_LEN 2 /* $clog2(4) */

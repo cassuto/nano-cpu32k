@@ -332,9 +332,6 @@ CPU::step(vm_addr_t pc)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
-        if(pc==0xc0189e10){
-            printf("%#x va=%#x readout=%#x r4=%#x\n", pc, va, readout, get_reg(4));
-        }
     }
     break;
 
@@ -361,9 +358,6 @@ CPU::step(vm_addr_t pc)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if(va==0xc101e460){
-            printf("stw %#x val=%#x \n", pc,(uint32_t)get_reg(rd) );
-        }
     }
     break;
 
@@ -575,13 +569,6 @@ CPU::step(vm_addr_t pc)
 handle_exception:
 fetch_next:
 flush_pc:
-
-if(pc_nxt==0xc00030d4 || pc_nxt==0x800030d4){
-    pc_queue->dump();
-    printf("hit pc=%#x insn=%#x pa=%#x\n", pc, insn, insn_pa);
-    //exit(1);
-}
-
     /* The only-one exit point */
     return pc_nxt;
 }

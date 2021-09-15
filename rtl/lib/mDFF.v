@@ -32,13 +32,8 @@ module mDFF # (
    input [DW-1:0] D, // Data input
    output reg [DW-1:0] Q // Data output
 );
-   always @(posedge CLK) begin
-`ifdef SYNTHESIS
-         Q <= D;
-`else
-         Q <= #1 D;
-`endif
-   end
+   always @(posedge CLK)
+      Q <= D;
 
    // synthesis translate_off
 `ifndef SYNTHESIS

@@ -51,11 +51,7 @@ module mDFF_lr # (
 `endif
          Q <= RST_VECTOR;
       else if (LOAD)
-`ifdef SYNTHESIS
          Q <= D;
-`else
-         Q <= #1 D;
-`endif
    end
 
    // synthesis translate_off

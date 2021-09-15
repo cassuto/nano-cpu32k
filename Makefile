@@ -24,15 +24,14 @@ EM_CXXFLAGS += -I../$(DRAMSIM3_HOME)/src
 EM_CXXFLAGS += -DWITH_DRAMSIM3 -DDRAMSIM3_CONFIG=\\\"$(DRAMSIM3_HOME)/configs/XiangShan.ini\\\" -DDRAMSIM3_OUTDIR=\\\"$(BUILD_DIR)\\\"
 EM_LDFLAGS  += ../$(LIB_DRAMSIM3)
 
-INCS = -I$(SRC_DIR)
-DEFS = +define+SYNTHESIS=1
-FLAGS = $(DEFS) $(INCS) -Wno-UNUSED
+# Simulation (Difftest)
+SIM_INCS = -I$(SRC_DIR)
+SIM_DEFS = +define+SYNTHESIS=1
+SIM_FLAGS = $(SIM_DEFS) $(SIM_INCS) -Wno-UNUSED
 CFLAGS = -Wall -g -I../em/csrc $(EM_CXXFLAGS)
 LDFLAGS = -g $(EM_LDFLAGS)
-
-# Simulation (Difftest)
+SIM_FLAGS += +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -LDFLAGS "$(LDFLAGS)" -CFLAGS "$(CFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
 SIM_TOPLEVEL = simtop
-SIM_FLAGS = +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -LDFLAGS "$(LDFLAGS)" -CFLAGS "$(CFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
 SIM_SRCS = $(SRCS) \
 			$(TESTBENCH_DIR)/simtop.v
 SIM_SRCS += $(foreach x,$(EM_DIR)/vsrc, $(wildcard $(addprefix ${x}/*,.v) ) )
@@ -60,30 +59,33 @@ SIM_CPPS += $(EM_DIR)/csrc/third-party/axi4.cc \
 			$(EM_DIR)/csrc/third-party/dram-axi4-model.cc
 
 # Lint
-LINT_TOPLEVEL = ysyx_20210479
 LINT_SRCS = $(SRCS)
+LINT_DEFS = +define+SYNTHESIS=1
+LINT_INCS = -I$(SRC_DIR)
+LINT_FLAGS = $(LINT_DEFS) $(LINT_INCS)
+LINT_TOPLEVEL = ysyx_20210479
 
 # YSYX Information
 MYINFO_FILE = myinfo.txt
 ID =$(shell sed '/^ID=/!d;s/.*=//' $(MYINFO_FILE))
 NAME =$(shell sed '/^Name=/!d;s/.*=//' $(MYINFO_FILE))
 
-build:  # $(LIB_DRAMSIM3)
-	verilator --cc -Wall --top-module $(SIM_TOPLEVEL) $(FLAGS) $(SIM_FLAGS) --build $(SIM_SRCS) $(SIM_CPPS)
+build_sim:  # $(LIB_DRAMSIM3)
+	verilator --cc -Wall --top-module $(SIM_TOPLEVEL) $(SIM_FLAGS) --build $(SIM_SRCS) $(SIM_CPPS)
 	git add . -A --ignore-errors
 	(echo $(NAME) && echo $(ID) && hostnamectl && date) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty  2>&1
 	sync
 
-sim: build
+sim: build_sim
 	./build/emu --mode=simulate-only -b ./build/vmlinux.bin --dump-wave=./build/dump.vcd
 	$(GTKWAVE) ./build/dump.vcd
 
-test: build
+test: build_sim
 	./build/emu --mode=difftest -b ./build/coremark.bin --dump-wave=./build/dump.vcd
 	$(GTKWAVE) ./build/dump.vcd
 
 lint:
-	-verilator --lint-only -Wall --top-module $(LINT_TOPLEVEL) $(FLAGS) $(LINT_SRCS)
+	-verilator --lint-only -Wall --top-module $(LINT_TOPLEVEL) $(LINT_FLAGS) $(LINT_SRCS)
 
 $(LIB_DRAMSIM3): $(dir $(LIB_DRAMSIM3)) $(dir $(LIB_DRAMSIM3))/Makefile
 	make -C $< -j$(NUM_JOBS) all

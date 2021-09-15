@@ -33,14 +33,9 @@ module mDFF_l # (
    input [DW-1:0] D, // Data input
    output reg [DW-1:0] Q // Data output
 );
-   always @(posedge CLK) begin
+   always @(posedge CLK)
       if (LOAD)
-`ifdef SYNTHESIS
          Q <= D;
-`else
-         Q <= #1 D;
-`endif
-   end
 
    // synthesis translate_off
 `ifndef SYNTHESIS

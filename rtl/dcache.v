@@ -676,12 +676,8 @@ module dcache
             $fatal(1, "Invalid size of icache (Must <= page size of MMU)");
          if (CONFIG_DC_P_LINE < PAYLOAD_P_DW_BYTES)
             $fatal(1, "Line size of icache is too small to accommodate with a fetching window");
-         if ((1<<CONFIG_IBUS_BYTES_LOG2) != (CONFIG_IBUS_DW/8))
-            $fatal(1, "Error value of CONFIG_IBUS_BYTES_LOG2");
-         if ((1<<CONFIG_IC_DW_BYTES_LOG2) != (CONFIG_IC_DW/8))
-            $fatal(1, "Error value of CONFIG_IC_DW_BYTES_LOG2");
-         if (CONFIG_IC_DW_BYTES_LOG2 < CONFIG_IBUS_BYTES_LOG2)
-            $fatal(1, "Invalid configuration of IBW or IBUS");
+         if ((1<<CONFIG_P_DW) != CONFIG_DW)
+            $fatal(1, "Error value of CONFIG_P_DW");
       end
 `endif
    // synthesis translate_on
