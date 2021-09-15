@@ -242,7 +242,7 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         void *src_addr = mem->dram_refm64((waddr + meta->offset * meta->size) / sizeof(uint64_t));
         void *dst_addr = src_addr;
 #endif
-        axi_get_wdata(axi, dst_addr, src_addr, meta->size);
+        axi_get_wdata(axi, dst_addr, src_addr, sizeof(uint64_t));
 
         printf("dat=%lx strb=%#x\n", axi.w.data[0], axi.w.strb);
 
