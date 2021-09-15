@@ -98,6 +98,9 @@ bool Emu::clk()
     dut_ptr->eval();
 #endif
 
+    if (dut_ptr->break_point)
+        fprintf(stderr, "[%lu] Hit RTL break point!\n");
+
 #if VM_TRACE == 1
     if (trace_fp)
     {

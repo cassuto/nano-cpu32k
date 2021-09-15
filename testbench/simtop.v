@@ -72,7 +72,9 @@ module simtop
    input  [`AXI_DATA_WIDTH-1:0]        `AXI_TOP_INTERFACE(r_bits_data)         [3:0],
    input                               `AXI_TOP_INTERFACE(r_bits_last),
    input  [`AXI_ID_WIDTH-1:0]          `AXI_TOP_INTERFACE(r_bits_id),
-   input  [`AXI_USER_WIDTH-1:0]        `AXI_TOP_INTERFACE(r_bits_user)
+   input  [`AXI_USER_WIDTH-1:0]        `AXI_TOP_INTERFACE(r_bits_user),
+   
+   output                              break_point
 );
    
    /*AUTOWIRE*/
@@ -278,6 +280,9 @@ module simtop
    assign io_uart_out_valid = 'b0;
    assign io_uart_out_ch = 'b0;
    assign io_uart_in_valid = 'b0;
+    
+   assign break_point = (U_DUT.U_CORE.U_EX.U_LSU.D_CACHE.s2i_d_waddr == 'h39) &&
+                           (U_DUT.U_CORE.U_EX.U_LSU.D_CACHE.s2i_d_we[2]);
     
 endmodule
 

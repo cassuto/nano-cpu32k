@@ -233,25 +233,11 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
             assert(wait_req_w != NULL);
         }
         dramsim3_meta *meta = static_cast<dramsim3_meta *>(wait_req_w->meta);
-        //void *data_start = meta->data + meta->offset * meta->size / sizeof(uint64_t);
         uint64_t waddr = axi.aw.addr % mem->get_size();
-#if 0
-        const void *src_addr = mem + (waddr + meta->offset * meta->size) / sizeof(uint64_t);
-#else
         assert(meta->size <= 8); // The current STRB supports no more than 8 bytes of data
         void *src_addr = mem->dram_refm64((waddr + meta->offset * meta->size) / sizeof(uint64_t));
         void *dst_addr = src_addr;
-#endif
         axi_get_wdata(axi, dst_addr, src_addr, sizeof(uint64_t));
-
-        printf("dat=%lx strb=%#x\n", axi.w.data[0], axi.w.strb);
-
-        printf("offset=%#lx data=", meta->offset);
-        uint64_t *dump = mem->dram_refm64(waddr / sizeof(uint64_t));
-        for(int i=0;i<meta->len * meta->size / sizeof(uint64_t);i++){
-            printf("%#lx ", dump[i]);
-        }
-        printf("\n");
 
         meta->offset++;
         // printf("accept a new write data\n");
