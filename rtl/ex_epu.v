@@ -609,6 +609,8 @@ module ex_epu
 
    // synthesis translate_off
 `ifndef SYNTHESIS
+`ifdef NCPU_ENABLE_ASSERT
+
    // Assertions
    always @(posedge clk)
       begin
@@ -634,6 +636,8 @@ module ex_epu
                commit_EINSN) > 'd1)
             $fatal (1, "Bugs on EPU exceptions");
       end
+
+`endif
 `endif
    // synthesis translate_on
 

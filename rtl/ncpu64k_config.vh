@@ -1,11 +1,6 @@
 `ifndef NCPU64K_CONFIG_H_
 `define NCPU64K_CONFIG_H_
 
-/* Enable this synthesis switch, if your compiler doesn't support */
-//`ifndef SYNTHESIS
-//`define SYNTHESIS
-//`endif
-
 /* Asynchronous/synchronous reset */
 //`define NCPU_RST_ASYNC
 `undef NCPU_RST_ASYNC
@@ -19,7 +14,7 @@
 `define ENABLE_DIFFTEST
 
 /* Assert in simulation */
-`define NCPU_ENABLE_ASSERT
+//`define NCPU_ENABLE_ASSERT
 //`undef NCPU_ENABLE_ASSERT
 
 /* Check X state in simulation */

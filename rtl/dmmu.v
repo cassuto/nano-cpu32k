@@ -166,6 +166,7 @@ endgenerate
 
    // synthesis translate_off
 `ifndef SYNTHESIS
+`ifdef NCPU_ENABLE_ASSERT
 
    // Assertions
    initial
@@ -183,6 +184,7 @@ endgenerate
       if (EDTM & EDPF)
          $fatal ("\n EDTM and EDPF should be mutex\n");
 
+`endif
 `endif
    // synthesis translate_on
 

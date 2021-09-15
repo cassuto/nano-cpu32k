@@ -668,6 +668,7 @@ module dcache
 
    // synthesis translate_off
 `ifndef SYNTHESIS
+`ifdef NCPU_ENABLE_ASSERT
    initial
       begin
          if ((1<<CONFIG_P_DW) != CONFIG_DW)
@@ -679,6 +680,7 @@ module dcache
          if ((1<<CONFIG_P_DW) != CONFIG_DW)
             $fatal(1, "Error value of CONFIG_P_DW");
       end
+`endif
 `endif
    // synthesis translate_on
 

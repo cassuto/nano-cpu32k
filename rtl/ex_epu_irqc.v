@@ -61,9 +61,13 @@ module ex_epu_irqc
 
    // synthesis translate_off
 `ifndef SYNTHESIS
+`ifdef NCPU_ENABLE_ASSERT
+
    initial
       if (CONFIG_NUM_IRQ > CONFIG_DW)
          $fatal ("\n invalid value of CONFIG_NUM_IRQ\n");
+
+`endif
 `endif
    // synthesis translate_on
 

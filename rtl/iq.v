@@ -186,6 +186,8 @@ module iq
    
    // synthesis translate_off
 `ifndef SYNTHESIS
+`ifdef NCPU_ENABLE_ASSERT
+
    initial
       begin
          if (CONFIG_P_IQ_DEPTH < CONFIG_P_FETCH_WIDTH)
@@ -197,6 +199,8 @@ module iq
    always @(posedge clk)
       if (~iq_ready & (|iq_push_cnt))
          $fatal(1, "BUG ON: FIFO is overflow.");
+
+`endif
 `endif
    // synthesis translate_on
 

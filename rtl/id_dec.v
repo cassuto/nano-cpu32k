@@ -436,11 +436,15 @@ module id_dec
 
    // synthesis translate_off
 `ifndef SYNTHESIS
+`ifdef NCPU_ENABLE_ASSERT
+
    initial
       begin
          if (`NCPU_EPU_EINSN != `NCPU_EPU_IOPW-1)
             $fatal(1, "\n Check `NCPU_EPU_EINSN, a particular value\n");
       end
+
+`endif
 `endif
    // synthesis translate_on
 

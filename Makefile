@@ -26,7 +26,7 @@ EM_LDFLAGS  += ../$(LIB_DRAMSIM3)
 
 # Simulation (Difftest)
 SIM_INCS = -I$(SRC_DIR)
-SIM_DEFS = +define+SYNTHESIS=1
+SIM_DEFS =
 SIM_FLAGS = $(SIM_DEFS) $(SIM_INCS) -Wno-UNUSED
 CFLAGS = -Wall -g -I../em/csrc $(EM_CXXFLAGS)
 LDFLAGS = -g $(EM_LDFLAGS)

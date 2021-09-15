@@ -459,6 +459,8 @@ module icache
 
    // synthesis translate_off
 `ifndef SYNTHESIS
+`ifdef NCPU_ENABLE_ASSERT
+
    initial
       begin
          if (CONFIG_P_PAGE_SIZE < CONFIG_IC_P_LINE + CONFIG_IC_P_SETS)
@@ -466,6 +468,8 @@ module icache
          if (CONFIG_IC_P_LINE < PAYLOAD_P_DW_BYTES)
             $fatal(1, "Line size of icache is too small to accommodate with a fetching window");
       end
+
+`endif
 `endif
    // synthesis translate_on
 
