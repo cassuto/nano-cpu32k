@@ -369,6 +369,7 @@ int main(int argc, char *argv[])
 
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU, rtl_memory);
         enable_difftest(emu_CPU, emu, args.commit_timeout_max);
+        fprintf(stderr, "Start\n");
         for (;;)
         {
             if (emu->clk())
