@@ -410,7 +410,7 @@ module dcache
 
    // Refill counter
    always @(*)
-      if (((fsm_state_ff==S_REFILL) & hds_axi_R) | ((fsm_state_ff==S_WRITEBACK) & s2i_wb_re))
+      if (((fsm_state_ff==S_REFILL) & hds_axi_R) | s2i_wb_re)
          fsm_refill_cnt_nxt = fsm_refill_cnt_nxt_carry[CONFIG_DC_P_LINE-1:0];
       else
          fsm_refill_cnt_nxt = fsm_refill_cnt;
@@ -504,7 +504,7 @@ module dcache
       endcase
 
    assign s2i_payload_re = (p_ce |
-                              ((fsm_state_ff==S_WRITEBACK) & s2i_wb_re) |
+                              s2i_wb_re |
                               (fsm_state_ff==S_RELOAD_S1O_S2O));
 
    // MUX for payload RAM we
@@ -643,14 +643,13 @@ module dcache
       );
 
    // Look ahead one address, since payload RAM takes 1 cycle to output the result
-   assign s2i_wb_re = (wvalid_set | hds_axi_W);
+   assign s2i_wb_re = (((fsm_state_ff!=S_UNCACHED_BOOT) & wvalid_set) | ((fsm_state_ff==S_WRITEBACK) & hds_axi_W));
 
    assign wvalid_set = (aw_set);
    assign wvalid_clr = (hds_axi_W_last);
    mDFF_lr #(.DW(1)) ff_dbus_WVALID (.CLK(clk), .RST(rst), .LOAD(wvalid_set|wvalid_clr), .D(wvalid_set|~wvalid_clr), .Q(dbus_WVALID) );
 
-   assign wlast_set = ((fsm_state_ff==S_WRITEBACK) & (s2i_wb_re & fsm_refill_cnt_nxt_carry[CONFIG_DC_P_LINE])) |
-                        (fsm_uncached_req);
+   assign wlast_set = ((s2i_wb_re & fsm_refill_cnt_nxt_carry[CONFIG_DC_P_LINE]) | fsm_uncached_req);
    assign wlast_clr = (wvalid_clr);
    mDFF_lr #(.DW(1)) ff_dbus_WLAST (.CLK(clk), .RST(rst), .LOAD(wlast_set|wlast_clr), .D(wlast_set|~wlast_clr), .Q(dbus_WLAST) );
 
