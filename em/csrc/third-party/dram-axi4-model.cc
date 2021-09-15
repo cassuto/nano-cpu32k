@@ -257,6 +257,11 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         axi_get_wdata(axi, data_start, src_addr, meta->size);
         meta->offset++;
         // printf("accept a new write data\n");
+        printf("offset=%#x data=", meta->offset);
+        for(int i=0;i<meta->len;i++){
+            printf("%#x ", meta->data[i]);
+        }
+        printf("\n");
     }
     if (wait_req_w)
     {
