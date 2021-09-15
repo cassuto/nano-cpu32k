@@ -24,21 +24,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  
 `include "ncpu64k_config.vh"
 
-/** @brief RAM block: Single Port & Synchronous (latency = 1) & Byte Enable
- * Parameters:
- *       DW      Data width (bits), which indicates the word length.
- *       AW      Address width (bits)
- * Ports:
- *       [in]  CLK     Clock
- *       [in]  ADDR    Address
- *       [in]  RE      Read Enable (High active)
- *       [out] DOUT    Read data
- *       [in]  WE      Write Byte Enable (High active)
- *                     (Where we [i] = = 1'b1 indicates that the i-th byte in
- *                      the word should be written, and other words should
- *                      remain unchanged)
- *       [in]  DIN     Write Data
- */
 module mRAM_s_s_be
 #(
    parameter DW = 0,
