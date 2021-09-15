@@ -467,6 +467,8 @@ module icache
             $fatal(1, "Invalid size of icache (Must <= page size of MMU)");
          if (CONFIG_IC_P_LINE < PAYLOAD_P_DW_BYTES)
             $fatal(1, "Line size of icache is too small to accommodate with a fetching window");
+         if (((1<<(CONFIG_IC_P_LINE-AXI_FETCH_SIZE))-1) >= (1<<8))
+            $fatal(1, "Line size of icache exceeds AXI4 burst length limit");
       end
 
 `endif

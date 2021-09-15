@@ -686,9 +686,11 @@ module dcache
          if ((1<<CONFIG_P_DW) != CONFIG_DW)
             $fatal(1, "The value of CONFIG_P_DW and CONFIG_DW do not match");
          if (CONFIG_P_PAGE_SIZE < CONFIG_DC_P_LINE + CONFIG_DC_P_SETS)
-            $fatal(1, "Invalid size of icache (Must <= page size of MMU)");
+            $fatal(1, "Invalid size of dcache (Must <= page size of MMU)");
          if (CONFIG_DC_P_LINE < PAYLOAD_P_DW_BYTES)
-            $fatal(1, "Line size of icache is too small to accommodate with a fetching window");
+            $fatal(1, "Line size of dcache is too small to accommodate with a fetching window");
+         if (((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1) >= (1<<8))
+            $fatal(1, "Line size of dcache exceeds AXI4 burst length limit");
          if ((1<<CONFIG_P_DW) != CONFIG_DW)
             $fatal(1, "Error value of CONFIG_P_DW");
       end
