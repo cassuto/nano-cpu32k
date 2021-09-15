@@ -114,7 +114,7 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
         {
             meta->data[i] = mem->dram_readm64(address / sizeof(uint64_t));
             if (address==0x80007E40)
-            printf("%#x ", meta->data[i]);
+            printf("%#lx ", meta->data[i]);
             address += sizeof(uint64_t);
         }
         printf("\n");
