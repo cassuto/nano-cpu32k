@@ -205,16 +205,7 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
             fprintf(stderr, "ERROR: write response fire for nothing in-flight.\n");
             assert(wait_resp_b != NULL);
         }
-        // flush data to memory
-        uint64_t waddr = wait_resp_b->req->address % mem->get_size();
         dramsim3_meta *meta = static_cast<dramsim3_meta *>(wait_resp_b->req->meta);
-        void *start_addr = mem->dram_refm64(waddr / sizeof(uint64_t));
-        memcpy(start_addr, meta->data, meta->len * meta->size);
-        printf("\nflush data= len=%d size=%d ", meta->len, meta->size);
-        for(int i=0;i<meta->len* meta->size / sizeof(uint64_t);i++){
-            printf("%#x ", meta->data[i]);
-        }
-        printf("\n");
         delete meta;
         delete wait_resp_b->req;
         delete wait_resp_b;
@@ -233,7 +224,7 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         // printf("accept a new write request to addr = 0x%lx, len = %d\n", axi.aw.addr, axi.aw.len);
     }
 
-    // write data fire: for the last write transaction
+    // write data fire
     if (axi_check_wdata_fire(axi))
     {
         if (wait_req_w == NULL)
@@ -242,21 +233,24 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
             assert(wait_req_w != NULL);
         }
         dramsim3_meta *meta = static_cast<dramsim3_meta *>(wait_req_w->meta);
-        void *data_start = meta->data + meta->offset * meta->size / sizeof(uint64_t);
+        //void *data_start = meta->data + meta->offset * meta->size / sizeof(uint64_t);
         uint64_t waddr = axi.aw.addr % mem->get_size();
 #if 0
         const void *src_addr = mem + (waddr + meta->offset * meta->size) / sizeof(uint64_t);
 #else
         assert(meta->size <= 8); // The current STRB supports no more than 8 bytes of data
-        const void *src_addr = mem->dram_refm64((waddr + meta->offset * meta->size) / sizeof(uint64_t));
+        void *src_addr = mem->dram_refm64((waddr + meta->offset * meta->size) / sizeof(uint64_t));
+        void *dst_addr = src_addr;
 #endif
-        axi_get_wdata(axi, data_start, src_addr, meta->size);
-        printf("w %#lx\n", axi.w.data[0]);
+        axi_get_wdata(axi, dst_addr, src_addr, meta->size);
+
         printf("offset=%#x data=", meta->offset);
+        uint64_t *dump = mem->dram_refm64(waddr / sizeof(uint64_t));
         for(int i=0;i<meta->len * meta->size / sizeof(uint64_t);i++){
-            printf("%#x ", meta->data[i]);
+            printf("%#x ", dump[i]);
         }
         printf("\n");
+
         meta->offset++;
         // printf("accept a new write data\n");
     }
