@@ -655,13 +655,14 @@ module dcache
       );
 
    // Look ahead one address, since payload RAM takes 1 cycle to output the result
-   assign s2i_wb_re = (((fsm_state_ff!=S_UNCACHED_BOOT) & wvalid_set) | ((fsm_state_ff==S_WRITEBACK) & hds_axi_W));
+   assign s2i_wb_re = (((fsm_state_ff!=S_UNCACHED_BOOT) & wvalid_set) |
+                        ((fsm_state_ff==S_WRITEBACK) & hds_axi_W & (|fsm_refill_cnt)));
 
    assign wvalid_set = (aw_set);
    assign wvalid_clr = (hds_axi_W_last);
    mDFF_lr #(.DW(1)) ff_dbus_WVALID (.CLK(clk), .RST(rst), .LOAD(wvalid_set|wvalid_clr), .D(wvalid_set|~wvalid_clr), .Q(dbus_WVALID) );
 
-   assign wlast_set = ((s2i_wb_re & fsm_refill_cnt_nxt_carry[CONFIG_DC_P_LINE]) | fsm_uncached_req);
+   assign wlast_set = (((fsm_state_ff==S_WRITEBACK) & hds_axi_W & fsm_refill_cnt_nxt_carry[CONFIG_DC_P_LINE]) | fsm_uncached_req);
    assign wlast_clr = (wvalid_clr);
    mDFF_lr #(.DW(1)) ff_dbus_WLAST (.CLK(clk), .RST(rst), .LOAD(wlast_set|wlast_clr), .D(wlast_set|~wlast_clr), .Q(dbus_WLAST) );
 
