@@ -483,7 +483,8 @@ module dcache
    // MUX for payload RAM addr
    always @(*)
       case (fsm_state_ff)
-         S_REFILL:
+         S_REFILL,
+         S_WRITEBACK:
             s2i_payload_addr = {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_DC_P_SETS], fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_DC_P_LINE-PAYLOAD_P_DW_BYTES]};
          S_RELOAD_S1O_S2O:
             s2i_payload_addr = s2o_payload_addr;
