@@ -251,8 +251,9 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         const void *src_addr = mem->dram_refm64((waddr + meta->offset * meta->size) / sizeof(uint64_t));
 #endif
         axi_get_wdata(axi, data_start, src_addr, meta->size);
+        printf("w %#lx\n", axi.w.data);
         printf("offset=%#x data=", meta->offset);
-        for(int i=0;i<meta->offset * meta->size / sizeof(uint64_t);i++){
+        for(int i=0;i<meta->len * meta->size / sizeof(uint64_t);i++){
             printf("%#x ", meta->data[i]);
         }
         printf("\n");
