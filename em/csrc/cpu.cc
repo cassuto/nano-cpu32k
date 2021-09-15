@@ -483,6 +483,9 @@ CPU::step(vm_addr_t pc)
         else
             readout = (((cpu_word_t)dcache->phy_readm8(pa)) ^ 0x80) - 0x80l; /* sign ext */
         set_reg(rd, readout);
+        if(pc==0xc0005570){
+            printf("ldb %#x va=%#x val=%#x\n", pc, va, readout);
+        }
     }
     break;
 
