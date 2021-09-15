@@ -117,6 +117,7 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
             printf("%#lx ", meta->data[i]);
             address += sizeof(uint64_t);
         }
+        if (address==0x80007E40)
         printf("\n");
     }
     // axi burst WRAP
