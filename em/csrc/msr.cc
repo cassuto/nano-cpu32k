@@ -214,22 +214,22 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             /* MSR bank - SR */
             if (index >= MSR_BANK_SR && index <= MSR_SR_MAX)
             {
-                msr_index_t tmp = index - MSR_BANK_SR;
+                index -= MSR_BANK_SR;
                 /* Decode onehot */
-                for (msr_index_t i = 0; tmp; tmp >>= 1, i++)
+                for (msr_index_t i = 0; index; index >>= 1, i++)
                 {
-                    if (tmp & 1)
+                    if (index & 1)
                     {
-                        printf("%x %d\n", index, i);
                         msr.SR[i] = val;
-                        break;
+                        goto out;
                     }
                 }
-                break;
+                /* fall through */
             }
 
             fprintf(stderr, "wmsr() invalid register index %#x at PC=%#x\n", index, pc);
             panic(1);
+        out:
             break;
         }
         } /* switch */
@@ -349,8 +349,16 @@ CPU::rmsr(msr_index_t index)
             /* MSR bank - SR */
             if (index >= MSR_BANK_SR && index <= MSR_SR_MAX)
             {
-                return msr.SR[(1 << index) - 1];
-                break;
+                index -= MSR_BANK_SR;
+                /* Decode onehot */
+                for (msr_index_t i = 0; index; index >>= 1, i++)
+                {
+                    if (index & 1)
+                    {
+                        return msr.SR[i];
+                    }
+                }
+                /* fall through */
             }
 
             fprintf(stderr, "rmsr() invalid register index %#x at PC=%#x\n", index, pc);
