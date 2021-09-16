@@ -110,6 +110,7 @@ module ex_lsu
    // PSR
    input                               msr_psr_dmme,
    input                               msr_psr_rm,
+   input                               msr_psr_dce,
    // DMMID
    output [CONFIG_DW-1:0]              msr_dmmid,
    // DTLBL
@@ -160,7 +161,8 @@ module ex_lsu
    wire                                s1o_sign_ext;
    wire                                s2i_tlb_uncached;
    wire                                s2i_tlb_exc;
-   wire                                s2i_dc_kill_req;
+   wire                                s2i_kill_req;
+   wire                                s2i_uncached;
    wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] s2i_tlb_ppn;
    wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] s2i_dc_ppn;
    wire                                s1o_EDTM;
@@ -168,6 +170,7 @@ module ex_lsu
    wire                                s1o_EALIGN;
    wire [CONFIG_AW-1:0]                s1o_vaddr;
    wire                                s1o_dcop;
+   wire                                s1o_msr_psr_dce;
    // Stage 3 Input / Stage 2 Output
    wire [CONFIG_DW-1:0]                s2o_dc_rdat;
    wire [CONFIG_DW-1:0]                s2o_dout_32b;
@@ -258,8 +261,10 @@ module ex_lsu
    assign s2i_tlb_exc = (s1o_EDTM | s1o_EDPF | s1o_EALIGN);
 
    // Kill the request to D$ if MMU raised exceptions or cache was inhibited
-   assign s2i_dc_kill_req = (s2i_tlb_exc);
+   assign s2i_kill_req = (s2i_tlb_exc);
 
+   assign s2i_uncached = (s2i_tlb_uncached | ~s1o_msr_psr_dce);
+   
    assign s2i_dc_ppn = (s1o_dcop)
                         ? s1o_vaddr[CONFIG_AW-1:CONFIG_P_PAGE_SIZE]
                         : s2i_tlb_ppn;
@@ -271,8 +276,8 @@ module ex_lsu
       .wdat                            (s1i_dc_wdat),
       .vpo                             (s1i_dc_vpo),
       .ppn_s2                          (s2i_dc_ppn),
-      .kill_req_s2                     (s2i_dc_kill_req),
-      .uncached_s2                     (s2i_tlb_uncached),
+      .kill_req_s2                     (s2i_kill_req),
+      .uncached_s2                     (s2i_uncached),
       .inv                             (msr_dcinv_we),
       .fls                             (msr_dcfls_we),
       .stall_req                       (dc_stall_req),
@@ -339,7 +344,7 @@ module ex_lsu
        .wdat                            (s1i_dc_wdat),           // Templated
        .vpo                             (s1i_dc_vpo),            // Templated
        .ppn_s2                          (s2i_dc_ppn),            // Templated
-       .kill_req_s2                     (s2i_dc_kill_req),       // Templated
+       .kill_req_s2                     (s2i_kill_req),       // Templated
        .uncached_s2                     (s2i_tlb_uncached),      // Templated
        .inv                             (msr_dcinv_we),          // Templated
        .fls                             (msr_dcfls_we),          // Templated
@@ -369,6 +374,7 @@ module ex_lsu
    // Control path
    mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_cke|flush_s1), .D(s1i_valid & ~flush_s1), .Q(s1o_valid) );
    mDFF_lr #(.DW(1)) ff_s1o_misalign (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(s1i_misalign), .Q(s1o_EALIGN) );
+   mDFF_lr #(.DW(1)) ff_s1o_msr_psr_dce (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(msr_psr_dce), .Q(s1o_msr_psr_dce) );
    
 
    assign s2o_dout_32b = s2o_dc_rdat;

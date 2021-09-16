@@ -116,6 +116,7 @@ module ex
    // PSR
    output                              msr_psr_imme,
    output                              msr_psr_rm,
+   output                              msr_psr_ice,
    // IMMID
    input [CONFIG_DW-1:0]               msr_immid,
    // ITLBL
@@ -226,9 +227,14 @@ module ex
    wire                 msr_epsr_we;            // From U_EPU of ex_epu.v
    wire                 msr_exc_ent;            // From U_EPU of ex_epu.v
    wire [`NCPU_PSR_DW-1:0] msr_psr;             // From U_PSR of ex_psr.v
+   wire                 msr_psr_dce;            // From U_PSR of ex_psr.v
+   wire                 msr_psr_dce_nxt;        // From U_EPU of ex_epu.v
+   wire                 msr_psr_dce_we;         // From U_EPU of ex_epu.v
    wire                 msr_psr_dmme;           // From U_PSR of ex_psr.v
    wire                 msr_psr_dmme_nxt;       // From U_EPU of ex_epu.v
    wire                 msr_psr_dmme_we;        // From U_EPU of ex_epu.v
+   wire                 msr_psr_ice_nxt;        // From U_EPU of ex_epu.v
+   wire                 msr_psr_ice_we;         // From U_EPU of ex_epu.v
    wire                 msr_psr_imme_nxt;       // From U_EPU of ex_epu.v
    wire                 msr_psr_imme_we;        // From U_EPU of ex_epu.v
    wire                 msr_psr_ire;            // From U_PSR of ex_psr.v
@@ -434,6 +440,10 @@ module ex
        .msr_psr_ire_nxt                 (msr_psr_ire_nxt),
        .msr_psr_ire_we                  (msr_psr_ire_we),
        .msr_exc_ent                     (msr_exc_ent),
+       .msr_psr_ice_nxt                 (msr_psr_ice_nxt),
+       .msr_psr_ice_we                  (msr_psr_ice_we),
+       .msr_psr_dce_nxt                 (msr_psr_dce_nxt),
+       .msr_psr_dce_we                  (msr_psr_dce_we),
        .msr_epc_nxt                     (msr_epc_nxt[CONFIG_DW-1:0]),
        .msr_epc_we                      (msr_epc_we),
        .msr_epsr_nxt                    (msr_epsr_nxt[`NCPU_PSR_DW-1:0]),
@@ -618,6 +628,7 @@ module ex
        .dbus_BUSER                      (dbus_BUSER[AXI_USER_WIDTH-1:0]),
        .msr_psr_dmme                    (msr_psr_dmme),
        .msr_psr_rm                      (msr_psr_rm),
+       .msr_psr_dce                     (msr_psr_dce),
        .msr_dmm_tlbl_idx                (msr_dmm_tlbl_idx[CONFIG_DTLB_P_SETS-1:0]),
        .msr_dmm_tlbl_nxt                (msr_dmm_tlbl_nxt[CONFIG_DW-1:0]),
        .msr_dmm_tlbl_we                 (msr_dmm_tlbl_we),
@@ -652,6 +663,8 @@ module ex
        .msr_psr_ire                     (msr_psr_ire),
        .msr_psr_imme                    (msr_psr_imme),
        .msr_psr_dmme                    (msr_psr_dmme),
+       .msr_psr_ice                     (msr_psr_ice),
+       .msr_psr_dce                     (msr_psr_dce),
        .msr_cpuid                       (msr_cpuid[CONFIG_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
        .msr_epsr_nobyp                  (msr_epsr_nobyp[`NCPU_PSR_DW-1:0]),
@@ -671,6 +684,10 @@ module ex
        .msr_psr_imme_we                 (msr_psr_imme_we),
        .msr_psr_dmme_nxt                (msr_psr_dmme_nxt),
        .msr_psr_dmme_we                 (msr_psr_dmme_we),
+       .msr_psr_ice_nxt                 (msr_psr_ice_nxt),
+       .msr_psr_ice_we                  (msr_psr_ice_we),
+       .msr_psr_dce_nxt                 (msr_psr_dce_nxt),
+       .msr_psr_dce_we                  (msr_psr_dce_we),
        .msr_epsr_nxt                    (msr_epsr_nxt[`NCPU_PSR_DW-1:0]),
        .msr_epsr_we                     (msr_epsr_we),
        .msr_epc_nxt                     (msr_epc_nxt[CONFIG_DW-1:0]),

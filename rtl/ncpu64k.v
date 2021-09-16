@@ -194,6 +194,7 @@ module ncpu64k
    wire [CONFIG_DW-1:0] msr_imm_tlbl_nxt;       // From U_EX of ex.v
    wire                 msr_imm_tlbl_we;        // From U_EX of ex.v
    wire [CONFIG_DW-1:0] msr_immid;              // From U_FNT of frontend.v
+   wire                 msr_psr_ice;            // From U_EX of ex.v
    wire                 msr_psr_imme;           // From U_EX of ex.v
    wire                 msr_psr_rm;             // From U_EX of ex.v
    wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_waddr;// From U_EX of ex.v
@@ -279,6 +280,7 @@ module ncpu64k
        .bpu_wb_upd                      (bpu_wb_upd[`BPU_UPD_W-1:0]),
        .msr_psr_imme                    (msr_psr_imme),
        .msr_psr_rm                      (msr_psr_rm),
+       .msr_psr_ice                     (msr_psr_ice),
        .msr_imm_tlbl_idx                (msr_imm_tlbl_idx[CONFIG_ITLB_P_SETS-1:0]),
        .msr_imm_tlbl_nxt                (msr_imm_tlbl_nxt[CONFIG_DW-1:0]),
        .msr_imm_tlbl_we                 (msr_imm_tlbl_we),
@@ -427,6 +429,7 @@ module ncpu64k
        .tsc_irq                         (tsc_irq),
        .msr_psr_imme                    (msr_psr_imme),
        .msr_psr_rm                      (msr_psr_rm),
+       .msr_psr_ice                     (msr_psr_ice),
        .msr_imm_tlbl_idx                (msr_imm_tlbl_idx[CONFIG_ITLB_P_SETS-1:0]),
        .msr_imm_tlbl_nxt                (msr_imm_tlbl_nxt[CONFIG_DW-1:0]),
        .msr_imm_tlbl_we                 (msr_imm_tlbl_we),

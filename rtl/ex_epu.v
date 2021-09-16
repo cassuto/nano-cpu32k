@@ -105,6 +105,10 @@ module ex_epu
    output                              msr_psr_ire_nxt,
    output                              msr_psr_ire_we,
    output                              msr_exc_ent,
+   output                              msr_psr_ice_nxt,
+   output                              msr_psr_ice_we,
+   output                              msr_psr_dce_nxt,
+   output                              msr_psr_dce_we,
    // CPUID
    input [CONFIG_DW-1:0]               msr_cpuid,
    // EPC
@@ -258,10 +262,8 @@ module ex_epu
    wire                                wmsr_psr_ire;
    wire                                wmsr_psr_imme;
    wire                                wmsr_psr_dmme;
-/* verilator lint_off UNUSED */
-   wire [9:0]                          wmsr_psr_res; // unsued
-   wire [9:0]                          epsr_res; // unsued
-/* verilator lint_on UNUSED */
+   wire                                wmsr_psr_ice;
+   wire                                wmsr_psr_dce;
    wire                                msr_exc_ent_ff;
    wire                                save_psr;
    genvar i;
@@ -445,11 +447,11 @@ module ex_epu
       commit_msr_sr_we,
       commit_bank_off} = commit_wmsr_we;
 
-   // Unpack EPSR. Be consistend with ncpu32k_psr
-   assign {epsr_res[9],epsr_res[8],epsr_dmme_nobpy,epsr_imme_nobpy,epsr_ire_nobpy,epsr_rm_nobpy,epsr_res[3],epsr_res[2], epsr_res[1],epsr_res[0]} = msr_epsr_nobyp;
+   // Unpack EPSR.
+   assign {epsr_dmme_nobpy,epsr_imme_nobpy,epsr_ire_nobpy,epsr_rm_nobpy} = msr_epsr_nobyp[7:4];
 
-   // Unpack WMSR PSR. Be consistend with ncpu32k_psr
-   assign {wmsr_psr_res[9],wmsr_psr_res[8],wmsr_psr_dmme,wmsr_psr_imme,wmsr_psr_ire,wmsr_psr_rm,wmsr_psr_res[3],wmsr_psr_res[2], wmsr_psr_res[1],wmsr_psr_res[0]} = commit_wmsr_dat[9:0];
+   // Unpack WMSR PSR.
+   assign {wmsr_psr_dce,wmsr_psr_ice,wmsr_psr_dmme,wmsr_psr_imme,wmsr_psr_ire,wmsr_psr_rm} = commit_wmsr_dat[9:4];
 
    // For the convenience of maintaining EPC, SYSCALL and the other exceptions are treated differently from RET and WMSR.
    assign exc_commit = (commit_ESYSCALL | commit_ERET |
@@ -468,6 +470,10 @@ module ex_epu
    assign msr_psr_dmme_nxt = commit_wmsr_psr_we ? wmsr_psr_dmme : epsr_dmme_nobpy;
    assign msr_psr_ire_we = (commit_wmsr_psr_we | commit_ERET);
    assign msr_psr_ire_nxt = commit_wmsr_psr_we ? wmsr_psr_ire : epsr_ire_nobpy;
+   assign msr_psr_ice_we = commit_wmsr_psr_we;
+   assign msr_psr_ice_nxt = wmsr_psr_ice;
+   assign msr_psr_dce_we = commit_wmsr_psr_we;
+   assign msr_psr_dce_nxt = wmsr_psr_dce;
 
    mDFF_r #(.DW(1)) ff_msr_exc_ent_r (.CLK(clk), .RST(rst), .D(msr_exc_ent), .Q(msr_exc_ent_ff) );
 

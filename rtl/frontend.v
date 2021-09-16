@@ -72,6 +72,7 @@ module frontend
    // PSR
    input                               msr_psr_imme,
    input                               msr_psr_rm,
+   input                               msr_psr_ice,
    // IMMID
    output [CONFIG_DW-1:0]              msr_immid,
    // TLBL
@@ -122,9 +123,6 @@ module frontend
    /*AUTOINPUT*/
    wire                                p_ce;
    wire [CONFIG_P_PAGE_SIZE-1:0]       vpo;
-   wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2;
-   wire                                uncached_s2;
-   wire                                kill_req_s2;
    wire                                pred_branch_taken;
    wire [`PC_W-1:0]                    pred_branch_tgt;
    wire [CONFIG_AW-1:0]                pc;
@@ -139,6 +137,11 @@ module frontend
    wire [`PC_W-1:0]                    s1o_pc                           [FW-1:0];
    wire [`FNT_EXC_W-1:0]               s1o_exc;
    wire [FW-1:0]                       s1o_fetch_aligned;
+   wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] s1o_tlb_ppn;
+   wire                                s1o_tlb_uncached;
+   wire                                s1o_msr_psr_ice;
+   wire                                s2i_kill_req;
+   wire                                s2i_uncached;
    wire [CONFIG_P_FETCH_WIDTH:0]       s1o_push_cnt;
    wire [CONFIG_P_FETCH_WIDTH:0]       s1o_push_offset;
    wire [`PC_W*FW-1:0]                 s1o_bpu_npc_packed;
@@ -168,6 +171,9 @@ module frontend
       .ins                             (iq_ins[]),
       .valid                           (s2o_valid),
       .stall_ex_req                    (icop_stall_req),
+      .uncached_s2                     (s2i_uncached),
+      .kill_req_s2                     (s2i_kill_req),
+      .ppn_s2                          (s1o_tlb_ppn),
       )
    */
    icache
@@ -210,9 +216,9 @@ module frontend
        .clk                             (clk),
        .rst                             (rst),
        .vpo                             (vpo[CONFIG_P_PAGE_SIZE-1:0]),
-       .ppn_s2                          (ppn_s2[CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0]),
-       .uncached_s2                     (uncached_s2),
-       .kill_req_s2                     (kill_req_s2),
+       .ppn_s2                          (s1o_tlb_ppn),           // Templated
+       .uncached_s2                     (s2i_uncached),       // Templated
+       .kill_req_s2                     (s2i_kill_req),          // Templated
        .msr_icinv_nxt                   (msr_icinv_nxt[CONFIG_DW-1:0]),
        .msr_icinv_we                    (msr_icinv_we),
        .ibus_ARREADY                    (ibus_ARREADY),
@@ -264,10 +270,10 @@ module frontend
          .rst                             (rst),
          .re                              (p_ce),
          .vpn                             (s1i_fetch_vaddr[CONFIG_P_PAGE_SIZE +: CONFIG_AW-CONFIG_P_PAGE_SIZE]),
-         .ppn                             (ppn_s2),
+         .ppn                             (s1o_tlb_ppn),
          .EITM                            (s1o_exc[`FNT_EXC_EITM]),
          .EIPF                            (s1o_exc[`FNT_EXC_EIPF]),
-         .uncached                        (uncached_s2),
+         .uncached                        (s1o_tlb_uncached),
          // PSR
          .msr_psr_imme                    (msr_psr_imme),
          .msr_psr_rm                      (msr_psr_rm),
@@ -283,7 +289,9 @@ module frontend
          .msr_imm_tlbh_we                 (msr_imm_tlbh_we)
       );
       
-   assign kill_req_s2 = (|s1o_exc);
+   assign s2i_kill_req = (|s1o_exc);
+   
+   assign s2i_uncached = (s1o_tlb_uncached | ~s1o_msr_psr_ice);
 
    // Collect branch predication info
    generate
@@ -341,6 +349,7 @@ module frontend
    mDFF_lr # (.DW(FW)) ff_s1o_fetch_aligned (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_fetch_aligned & {FW{~flush}}), .Q(s1o_fetch_aligned) );
    mDFF_lr # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s2o_push_cnt (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1o_push_cnt & {CONFIG_P_FETCH_WIDTH+1{~flush}}), .Q(s2o_push_cnt) );
    mDFF_lr # (.DW(`FNT_EXC_W)) ff_s2o_exc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_exc), .Q(s2o_exc) );
+   mDFF_lr # (.DW(1)) ff_s1o_msr_psr_ice (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(msr_psr_ice), .Q(s1o_msr_psr_ice) );
 
    // Data path
    mDFF_l # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s1o_push_offset (.CLK(clk), .LOAD(p_ce), .D(s1i_push_offset), .Q(s1o_push_offset) );
