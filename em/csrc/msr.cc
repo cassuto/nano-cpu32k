@@ -214,12 +214,13 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             /* MSR bank - SR */
             if (index >= MSR_BANK_SR && index <= MSR_SR_MAX)
             {
-                index -= MSR_BANK_SR;
+                msr_index_t tmp = index - MSR_BANK_SR;
                 /* Decode onehot */
-                for (msr_index_t i = 0; index; index >>= 1, i++)
+                for (msr_index_t i = 0; tmp; tmp >>= 1, i++)
                 {
-                    if (index & 1)
+                    if (tmp & 1)
                     {
+                        printf("%x %d\n", index, i);
                         msr.SR[i] = val;
                         break;
                     }
