@@ -126,10 +126,10 @@ module dcache
    // Stage 1 Output / Stage 2 Input
    wire                                s1o_inv;
    wire                                s1o_fls;
-   wire                                s2i_ready;
+   reg                                 s2i_ready;
    wire                                s2i_d_we                [(1<<CONFIG_DC_P_WAYS)-1:0];
    reg [TAG_V_RAM_AW-1:0]              s2i_d_waddr;
-   reg                                 s2i_d_wdat;
+   reg                                 s2i_d_wdat              [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [PAYLOAD_DW/8-1:0]             s2i_payload_we          [(1<<CONFIG_DC_P_WAYS)-1:0];
    wire [PAYLOAD_DW/8-1:0]             s2i_payload_tgt_we;
    reg [PAYLOAD_DW-1:0]                s2i_payload_din;
@@ -170,7 +170,7 @@ module dcache
    wire                                s2o_free_dirty;
    wire [TAG_WIDTH-1:0]                s2o_free_tag;
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_d;
-   wire                                s2o_hit_dirty;
+   wire                                s2o_match_dirty;
    wire [PAYLOAD_AW-1:0]               s2o_payload_addr;
    wire [CONFIG_DC_P_LINE-1:0]         s2o_wb_addr;
    wire [2:0]                          s2o_size;
@@ -269,14 +269,14 @@ module dcache
                   .RDATA   (rf_d),
                   .WE      (s2i_d_we[way]),
                   .WADDR   (s2i_d_waddr),
-                  .WDATA   (s2i_d_wdat)
+                  .WDATA   (s2i_d_wdat[way])
                );
 
             // Bypass D flag
             assign rf_conflict = ((s1i_line_addr == s2i_d_waddr) & s2i_d_we[way]);
-
+            
             mDFF_lr #(.DW(1)) ff_bypass (.CLK(clk), .RST(rst), .LOAD(rf_conflict | s1i_tag_v_re), .D(rf_conflict | ~s1i_tag_v_re), .Q(rf_bypass) );
-            mDFF_l #(.DW(1)) ff_rd_d (.CLK(clk), .LOAD(s1i_tag_v_re), .D(s2i_d_wdat), .Q(rf_d_ff) );
+            mDFF_l #(.DW(1)) ff_rd_d (.CLK(clk), .LOAD(s1i_tag_v_re), .D(s2i_d_wdat[way]), .Q(rf_d_ff) );
 
             assign s1o_d[way] = rf_bypass ? rf_d_ff : rf_d;
 
@@ -295,10 +295,10 @@ module dcache
    
    // Sel the dout of matched way
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s2o_match_vec), .din(s2o_payload), .dout(s2o_match_payload));
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s2o_d (.sel(s2o_match_vec), .din(s2o_d), .dout(s2o_hit_dirty));
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s2o_d (.sel(s2o_match_vec), .din(s2o_d), .dout(s2o_match_dirty));
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_wb_payload (.sel(s2o_fsm_free_way), .din(s2o_payload), .dout(s2o_wb_payload));
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s1o_free_dirty (.sel(fsm_free_way), .din(s1o_d), .dout(s1o_free_dirty));
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(TAG_WIDTH)) pmux_s2i_free_tag (.sel(fsm_free_way), .din(s2i_tag_packed), .dout(s2i_free_tag));
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_wb_payload (.sel(s2o_fsm_free_way), .din(s2o_payload), .dout(s2o_wb_payload));
                                                   
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(req), .Q(s1o_valid) );
    mDFF_lr # (.DW(1)) ff_s1o_inv (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(inv), .Q(s1o_inv) );
@@ -332,6 +332,7 @@ module dcache
          ar_set = 'b0;
          aw_set = 'b0;
          fsm_uncached_req = 'b0;
+         s2i_ready = 'b0;
          case (fsm_state_ff)
             S_BOOT:
                if (fsm_boot_cnt_nxt_carry[CONFIG_DC_P_SETS])
@@ -343,10 +344,12 @@ module dcache
                      fsm_state_nxt = S_INVALIDATE;
                   else if (s1o_fls)
                      fsm_state_nxt = s2i_hit ? S_FLUSH : S_IDLE;
-                  else if (s1o_valid & uncached_s2 & ~kill_req_s2) // Uncached access
+                  else if (uncached_s2 & ~kill_req_s2) // Uncached access
                      fsm_state_nxt = S_UNCACHED_BOOT;
-                  else if (s1o_valid & ~s2i_hit & ~uncached_s2 & ~kill_req_s2) // Miss
+                  else if (~s2i_hit & ~uncached_s2 & ~kill_req_s2) // Miss
                      fsm_state_nxt = S_REPLACE;
+                  else if (s2i_hit & ~uncached_s2 & ~kill_req_s2) // Hit
+                     s2i_ready = 'b1;
 
             S_REPLACE:
                begin
@@ -374,8 +377,8 @@ module dcache
 
             S_FLUSH:
                begin
-                  fsm_state_nxt = (s2o_hit_dirty) ? S_WRITEBACK : S_IDLE;
-                  aw_set = s2o_hit_dirty;
+                  fsm_state_nxt = (s2o_match_dirty) ? S_WRITEBACK : S_IDLE;
+                  aw_set = s2o_match_dirty;
                end
 
             S_UNCACHED_BOOT:
@@ -397,9 +400,6 @@ module dcache
             default: ;
          endcase
       end
-
-   // Cache line hit and no invalidate or flush
-   assign s2i_ready = ((fsm_state_ff==S_IDLE) & s1o_valid & ~s1o_inv & ~s1o_fls & ~uncached_s2 & s2i_hit & ~kill_req_s2);
 
    mDFF_r # (.DW(4), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
    
@@ -471,13 +471,16 @@ module dcache
       endcase
 
    // MUX for D flag RAM din
-   always @(*)
-      case (fsm_state_ff)
-         S_IDLE:
-            s2i_d_wdat = (|s1o_wmsk);
-         default: // S_BOOT, S_INVALIDATE, S_REPLACE:
-            s2i_d_wdat = 'b0;
-      endcase
+   generate
+      for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
+         always @(*)
+            case (fsm_state_ff)
+               S_IDLE:
+                  s2i_d_wdat[way] = s1o_d[way] | (|s1o_wmsk);
+               default: // S_BOOT, S_INVALIDATE, S_REPLACE:
+                  s2i_d_wdat[way] = 'b0;
+            endcase
+   endgenerate
 
    // D flag RAM write enable
    generate
@@ -568,11 +571,14 @@ module dcache
    assign dbus_ARREGION = 'b0;
    assign ar_clr = (dbus_ARREADY & dbus_ARVALID);
    
-   assign axi_paddr_nxt = (fsm_uncached_req) /* Uncached read/write request */
-                           ? s2o_paddr
-                           : (aw_set) /* Replace & Writeback request */
-                              ? {s2o_free_tag, s2o_line_addr, {CONFIG_DC_P_LINE{1'b0}}}
-                              : {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_AW - CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}}}; /* Refill request */
+   assign axi_paddr_nxt = (fsm_uncached_req)
+                           ? /* Uncached read/write request */
+                              s2o_paddr
+                           : ((fsm_state_ff==S_REPLACE) & aw_set)
+                              ? /* Writeback request when replace */
+                                 {s2o_free_tag, s2o_line_addr, {CONFIG_DC_P_LINE{1'b0}}}
+                              : /* Writeback request when refill or flush */
+                                 {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_AW - CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}}};
 
    // Address width adapter (truncate or fill zero)
    generate
