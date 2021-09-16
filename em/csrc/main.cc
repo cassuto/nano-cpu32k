@@ -108,7 +108,7 @@ public:
         vcdfile = "dump.vcd";
         wave_begin = 0;
         wave_end = 10000;
-        commit_timeout_max = 100000;
+        commit_timeout_max = 1000000;
         symbol_file = "";
     }
 
