@@ -48,6 +48,8 @@ public:
         }
         else if (addr >= dram_phy_start && addr < (dram_phy_start + memory_size))
         {
+            if(addr==0x80ffffca && cpu)
+            printf("==================== pc=%#x\n", cpu->get_pc());
             memory[addr - dram_phy_start] = val;
         }
         else

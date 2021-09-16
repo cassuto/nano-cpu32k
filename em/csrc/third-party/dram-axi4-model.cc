@@ -241,9 +241,6 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
 
         meta->offset++;
         // printf("accept a new write data\n");
-        if((waddr + meta->offset * meta->size) == 0xffffca) {
-            printf("=============\n");
-        }
     }
     if (wait_req_w)
     {
