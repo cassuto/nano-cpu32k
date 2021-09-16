@@ -2,6 +2,7 @@
 #define CPU_H_
 
 #include "common.hh"
+#include "isa.hh"
 
 struct regfile_s
 {
@@ -99,7 +100,7 @@ public:
     struct tcr_s TCR;
     cpu_unsigned_word_t IMR;
     cpu_unsigned_word_t IRR;
-    cpu_word_t SR[4];
+    cpu_word_t SR[MSR_SR_NUM];
 };
 
 class CPU
