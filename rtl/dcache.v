@@ -676,7 +676,7 @@ module dcache
    assign hds_axi_W_last = (hds_axi_W & dbus_WLAST);
 
    // AXI - B
-   assign dbus_BREADY = (fsm_state_ff == S_WRITEBACK);
+   assign dbus_BREADY = (fsm_state_ff == S_WRITEBACK) | (fsm_state_ff == S_UNCACHED_WRITE);
    assign hds_axi_B = (dbus_BREADY & dbus_BVALID);
 
    // DCID Register
