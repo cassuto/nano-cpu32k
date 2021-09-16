@@ -30,6 +30,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "ras.hh"
 #include "symtable.hh"
 
+#include "emu.hh"
+
 CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          bool dmmu_enable_uncached_seg_,
          bool immu_enable_uncached_seg_,
@@ -362,6 +364,10 @@ printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
+        if (pa==0x80375dbc){
+            extern Emu *emu;
+            printf("stw [%lu] %#x va=%#x val=%#x\n", emu->get_cycle(), pc, va, (uint32_t)get_reg(rd));
+        }
     }
     break;
 

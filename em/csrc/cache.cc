@@ -24,7 +24,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "memory.hh"
 #include "cache.hh"
-#include "emu.hh"
 
 template <typename T>
 static inline T **create_2d(size_t d1, size_t d2)
