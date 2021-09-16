@@ -629,8 +629,8 @@ module dcache
    assign dbus_AWPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign dbus_AWID = {AXI_ID_WIDTH{1'b0}};
    assign dbus_AWUSER = {AXI_USER_WIDTH{1'b0}};
-   assign dbus_AWLEN = (fsm_state_ff==S_UNCACHED_READ) ? 'b0 : ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
-   assign dbus_AWSIZE = (fsm_state_ff==S_UNCACHED_READ) ? s2o_size : AXI_FETCH_SIZE;
+   assign dbus_AWLEN = (fsm_state_ff==S_UNCACHED_WRITE) ? 'b0 : ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
+   assign dbus_AWSIZE = (fsm_state_ff==S_UNCACHED_WRITE) ? s2o_size : AXI_FETCH_SIZE;
    assign dbus_AWBURST = `AXI_BURST_TYPE_INCR;
    assign dbus_AWLOCK = 'b0;
    assign dbus_AWCACHE = `AXI_AWCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
