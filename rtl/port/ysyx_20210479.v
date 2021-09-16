@@ -98,11 +98,11 @@ module ysyx_20210479
    localparam                           CONFIG_P_ISSUE_WIDTH = 1;
    localparam                           CONFIG_P_PAGE_SIZE = 13;
    localparam                           CONFIG_IC_P_LINE = 6;
-   localparam                           CONFIG_IC_P_SETS = 6;
-   localparam                           CONFIG_IC_P_WAYS = 2;
+   localparam                           CONFIG_IC_P_SETS = 4;
+   localparam                           CONFIG_IC_P_WAYS = 1;
    localparam                           CONFIG_DC_P_LINE = 6;
-   localparam                           CONFIG_DC_P_SETS = 6;
-   localparam                           CONFIG_DC_P_WAYS = 2;
+   localparam                           CONFIG_DC_P_SETS = 4;
+   localparam                           CONFIG_DC_P_WAYS = 1;
    localparam                           CONFIG_PHT_P_NUM = 2;
    localparam                           CONFIG_BTB_P_NUM = 2;
    localparam                           CONFIG_P_IQ_DEPTH = 2;

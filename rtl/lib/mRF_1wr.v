@@ -21,40 +21,33 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
- 
+
 `include "ncpu64k_config.vh"
 
-module mRAM_s_s
+module mRF_1wr
 #(
    parameter DW = 0,
    parameter AW = 0
 )
 (
    input CLK,
-   input [AW-1:0] ADDR,
    input RE,
-   output [DW-1:0] DOUT,
+   input [AW-1:0] ADDR,
+   output [DW-1:0] RDATA,
    input WE,
-   input [DW-1:0] DIN
+   input [DW-1:0] WDATA
 );
+   reg [DW-1:0] regfile [(1<<AW)-1:0];
+   reg [DW-1:0] ff_dout;
+   
+   always @(posedge CLK)
+      begin
+         if (WE)
+            regfile[ADDR] <= WDATA;
+         if (RE)
+            ff_dout <= regfile[ADDR];
+      end
 
-`ifdef NCPU_USE_TECHLIB
-   // TODO
-   
-`else
-   // General RTL
-   reg [DW-1:0] mem_vector [(1<<AW)-1:0];
-   reg [DW-1:0] dff_rdat;
-   genvar i;
-   
-   always @(posedge CLK)
-      if (RE)
-         dff_rdat <= mem_vector[ADDR];
-   assign DOUT = dff_rdat;
-         
-   always @(posedge CLK)
-      if (WE)
-         mem_vector[ADDR] <= DIN;
-`endif
+   assign RDATA = ff_dout;
 
 endmodule

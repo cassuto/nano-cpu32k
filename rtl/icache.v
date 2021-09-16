@@ -162,7 +162,7 @@ module icache
          begin : gen_ways
             mRAM_s_s_be
                #(
-                  .DW   (PAYLOAD_DW),
+                  .P_DW (PAYLOAD_P_DW_BYTES + 3),
                   .AW   (PAYLOAD_AW)
                )
             U_PAYLOAD_RAM
@@ -175,7 +175,7 @@ module icache
                   .DIN  (s1i_payload_din)
                );
 
-            mRAM_s_s
+            mRF_1wr
                #(
                   .DW   (TAG_V_RAM_DW),
                   .AW   (TAG_V_RAM_AW)
@@ -185,9 +185,9 @@ module icache
                   .CLK  (clk),
                   .ADDR (s1i_line_addr),
                   .RE   (s1i_tag_v_re),
-                  .DOUT (s1o_tag_v[way]),
+                  .RDATA (s1o_tag_v[way]),
                   .WE   (s1i_tag_v_we[way]),
-                  .DIN  (s1i_replace_tag_v)
+                  .WDATA (s1i_replace_tag_v)
                );
 
             assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];

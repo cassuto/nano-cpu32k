@@ -5,6 +5,7 @@ GTKWAVE = e:/gtkwave-win32/gtkwave/bin/gtkwave
 NUM_JOBS = 8
 SRC_DIR = rtl
 TESTBENCH_DIR = testbench
+PDK_RTL_DIR = pdk-lib/rtl
 EM_DIR = em
 SRCS = $(foreach x,$(SRC_DIR), $(wildcard $(addprefix ${x}/*,.v) ) )
 SRCS += $(foreach x,$(SRC_DIR)/lib, $(wildcard $(addprefix ${x}/*,.v) ) )
@@ -32,9 +33,11 @@ CFLAGS = -Wall -g -I../em/csrc $(EM_CXXFLAGS)
 LDFLAGS = -g $(EM_LDFLAGS)
 SIM_FLAGS += +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -LDFLAGS "$(LDFLAGS)" -CFLAGS "$(CFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
 SIM_TOPLEVEL = simtop
-SIM_SRCS = $(SRCS) \
-			$(TESTBENCH_DIR)/simtop.v
+SIM_SRCS = $(SRCS)
 SIM_SRCS += $(foreach x,$(EM_DIR)/vsrc, $(wildcard $(addprefix ${x}/*,.v) ) )
+SIM_SRCS += $(TESTBENCH_DIR)/simtop.v
+SIM_SRCS += $(PDK_RTL_DIR)/S011HD1P_X32Y2D128.v \
+			$(PDK_RTL_DIR)/S011HD1P_X32Y2D128_BW.v
 
 # CPU Model
 SIM_CPPS = $(EM_DIR)/csrc/main.cc \

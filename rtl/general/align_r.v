@@ -43,25 +43,25 @@ module align_r
    
    generate
       if (PAYLOAD_P_DW_BYTES == AXI_P_DW_BYTES)
-            begin
-               assign o_ram_din = i_axi_RDATA;
-               assign o_ram_wmsk = {(1<<PAYLOAD_P_DW_BYTES){i_ram_we}};
-            end
+         begin
+            assign o_ram_din = i_axi_RDATA;
+            assign o_ram_wmsk = {(1<<PAYLOAD_P_DW_BYTES){i_ram_we}};
+         end
       else if (PAYLOAD_P_DW_BYTES < AXI_P_DW_BYTES)
-            begin
-               localparam WIN_NUM = (AXI_BYTES/PAYLOAD_BYTES);
-               localparam WIN_P_NUM = (AXI_P_DW_BYTES - PAYLOAD_P_DW_BYTES);
-               localparam WIN_DW = (PAYLOAD_BYTES*8);
-               localparam WIN_P_DW_BYTES = (PAYLOAD_P_DW_BYTES);
-               
-               wire [WIN_DW-1:0] RDATA_win [WIN_NUM-1:0];
-               
-               for(i=0;i<WIN_NUM;i=i+1)
-                  assign RDATA_win[i] = i_axi_RDATA[i*WIN_DW +: WIN_DW];
-               
-               assign o_ram_din = RDATA_win[i_ram_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
-               assign o_ram_wmsk = {(1<<PAYLOAD_P_DW_BYTES){i_ram_we}};
-            end
+         begin
+            localparam WIN_NUM = (AXI_BYTES/PAYLOAD_BYTES);
+            localparam WIN_P_NUM = (AXI_P_DW_BYTES - PAYLOAD_P_DW_BYTES);
+            localparam WIN_DW = (PAYLOAD_BYTES*8);
+            localparam WIN_P_DW_BYTES = (PAYLOAD_P_DW_BYTES);
+            
+            wire [WIN_DW-1:0] RDATA_win [WIN_NUM-1:0];
+            
+            for(i=0;i<WIN_NUM;i=i+1)
+               assign RDATA_win[i] = i_axi_RDATA[i*WIN_DW +: WIN_DW];
+            
+            assign o_ram_din = RDATA_win[i_ram_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            assign o_ram_wmsk = {(1<<PAYLOAD_P_DW_BYTES){i_ram_we}};
+         end
       else
          begin
             localparam WIN_NUM = (PAYLOAD_BYTES/AXI_BYTES);

@@ -33,9 +33,9 @@
 `define NCPU_INSN_DW (`NCPU_INSN_LEN*8)
 `define PC_W (CONFIG_AW-`NCPU_P_INSN_LEN)
 
-/* Use technology library */
-//`define NCPU_USE_TECHLIB
-`undef NCPU_USE_TECHLIB
+/* Use SMIC std cell library */
+`define NCPU_USE_S011_STD_CELL_LIB
+//`undef NCPU_USE_S011_STD_CELL_LIB
 
 /* AXI Definitions */
 /* Burst types */
