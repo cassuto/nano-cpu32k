@@ -246,7 +246,7 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
         axi_get_wdata(axi, dst_addr, src_addr, sizeof(uint64_t));
 
         meta->offset++;
-        // printf("accept a new write data\n");
+         printf("accept a new write data. waddr=%#lx\n", waddr);
     }
     if (wait_req_w)
     {
@@ -317,6 +317,7 @@ void DRAM::dramsim3_helper_falling(axi_channel &axi)
     if (wait_resp_b)
     {
         dramsim3_meta *meta = static_cast<dramsim3_meta *>(wait_resp_b->req->meta);
+        printf("B \n");
         axi_put_wack(axi, meta->id);
     }
 }
