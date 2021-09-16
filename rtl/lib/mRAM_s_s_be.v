@@ -62,12 +62,6 @@ module mRAM_s_s_be
    generate
       if (((1<<P_DW) == SRAM_DW) && (AW == SRAM_AW))
          begin
-            wire [SRAM_DW-1:0] we_bmsk;
-            
-            // Convert byte mask to bit mask
-            for(i=0;i<(1<<P_DW_BYTES);i=i+1)
-               assign we_bmsk[i*8 +: 8] = {8{WE[i]}};
-
             S011HD1P_X32Y2D128_BW U_S011HD1P_X32Y2D128_BW
                (
                   .Q                      (DOUT),
@@ -89,10 +83,7 @@ module mRAM_s_s_be
             wire [SRAM_DW-1:0] sram_q;
             wire [SRAM_DW-1:0] sram_bwen;
             wire [SRAM_DW-1:0] sram_d;
-            
             wire [WIN_DW-1:0] DOUT_win [WIN_NUM-1:0];
-            
-            
 
             // Din address encoder
             for(i=0;i<WIN_NUM;i=i+1)
