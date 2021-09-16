@@ -298,7 +298,7 @@ module ex_lsu
         .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),
         .AXI_ID_WIDTH                   (AXI_ID_WIDTH),
         .AXI_USER_WIDTH                 (AXI_USER_WIDTH))
-   D_CACHE
+   U_D_CACHE
       (/*AUTOINST*/
        // Outputs
        .stall_req                       (dc_stall_req),          // Templated

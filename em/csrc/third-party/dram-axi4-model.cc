@@ -97,7 +97,6 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
     uint8_t beatlen = ar.len + 1;
     uint64_t transaction_size = beatsize * beatlen;
     assert(beatsize <= 8);
-    //assert((transaction_size % sizeof(uint64_t)) == 0);
     // axi burst FIXED
     if (ar.burst == 0x0)
     {
@@ -107,16 +106,13 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
     // axi burst INCR
     else if (ar.burst == 1)
     {
-        //assert(transaction_size / sizeof(uint64_t) <= MAX_AXI_DATA_LEN);
         int wordlen = transaction_size / sizeof(uint64_t);
         if (transaction_size % sizeof(uint64_t))
             ++wordlen;
-        //printf("addr=%#x\n", address);
-        //printf("wordlen=%d\n", transaction_size);
+        assert(wordlen <= MAX_AXI_DATA_LEN);
         for (int i = 0; i < wordlen; i++)
         {
             meta->data[i] = mem->dram_readm64(address / sizeof(uint64_t));
-            //printf("%d %#lx\n", i, meta->data[i]);
             address += sizeof(uint64_t);
         }
     }
@@ -125,6 +121,7 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
     {
         uint64_t low = (address / transaction_size) * transaction_size;
         uint64_t high = low + transaction_size;
+        // TODO: untested
         int wordlen = transaction_size / sizeof(uint64_t);
         if (transaction_size % sizeof(uint64_t))
             ++wordlen;

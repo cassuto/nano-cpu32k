@@ -281,11 +281,9 @@ module simtop
    assign io_uart_out_ch = 'b0;
    assign io_uart_in_valid = 'b0;
     
-   assign break_point = /*(U_DUT.U_CORE.U_EX.U_LSU.D_CACHE.s2i_payload_addr == 'h398) &&
-                           (|U_DUT.U_CORE.U_EX.U_LSU.D_CACHE.s2i_payload_we[2]);*/
-                           (U_DUT.U_CORE.dbus_AWADDR == 'h80FFFFC0) &
-                           U_DUT.U_CORE.dbus_AWVALID;
-   //assign break_point = 'b0;
+   /*assign break_point = (U_DUT.U_CORE.dbus_AWADDR == 'h80FFFFC0) &
+                           U_DUT.U_CORE.dbus_AWVALID;*/
+   assign break_point = 'b0;
     
 endmodule
 

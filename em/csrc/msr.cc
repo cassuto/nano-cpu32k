@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "cpu.hh"
 #include "isa.hh"
+#include "ras.hh"
 #include "cache.hh"
 
 static const int cpuid_ver = 1;
@@ -86,6 +87,7 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
         snprintf(buff, sizeof(buff), "DEBUG NUM PORT - %#x emu_pc = %#x\n", val, pc);
         while (*p)
             fprintf(stdout, "%c", *p++);
+        ras->dump();
         return;
     }
 

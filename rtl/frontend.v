@@ -191,7 +191,7 @@ module frontend
         .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),
         .AXI_ID_WIDTH                   (AXI_ID_WIDTH),
         .AXI_USER_WIDTH                 (AXI_USER_WIDTH))
-   U_ICACHE
+   U_I_CACHE
       (/*AUTOINST*/
        // Outputs
        .stall_req                       (ic_stall_req),          // Templated
@@ -338,10 +338,10 @@ module frontend
    assign s1i_fetch_vaddr = {pc_nxt[CONFIG_AW-1:P_FETCH_DW_BYTES], {P_FETCH_DW_BYTES{1'b0}}}; // Aligned by fetch window
 
    // Count the number of unaligned inst
-   popcnt #(.DW(FW), .P_DW(CONFIG_P_FETCH_WIDTH)) U_CUI (.bitmap(~s1i_fetch_aligned), .count(s1i_push_offset) );
+   popcnt #(.DW(FW), .P_DW(CONFIG_P_FETCH_WIDTH)) popc_1 (.bitmap(~s1i_fetch_aligned), .count(s1i_push_offset) );
 
    // Count the number of valid inst
-   popcnt #(.DW(FW), .P_DW(CONFIG_P_FETCH_WIDTH)) U_CVI (.bitmap(s1o_fetch_aligned & s2i_valid_msk), .count(s1o_push_cnt) );
+   popcnt #(.DW(FW), .P_DW(CONFIG_P_FETCH_WIDTH)) popc_2 (.bitmap(s1o_fetch_aligned & s2i_valid_msk), .count(s1o_push_cnt) );
    
    assign vpo = s1i_fetch_vaddr[CONFIG_P_PAGE_SIZE-1:0];
 
@@ -377,8 +377,8 @@ module frontend
    assign iq_push_cnt = (s2o_push_cnt & {CONFIG_P_FETCH_WIDTH+1{s2o_valid & p_ce}});
    assign iq_push_offset = (s2o_push_offset);
 
-   // Fetch Buffer
-   iq
+   // Prefetch Buffer
+   prefetch_buf
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_AW                      (CONFIG_AW),
@@ -387,7 +387,7 @@ module frontend
         .CONFIG_P_IQ_DEPTH              (CONFIG_P_IQ_DEPTH),
         .CONFIG_PHT_P_NUM               (CONFIG_PHT_P_NUM),
         .CONFIG_BTB_P_NUM               (CONFIG_BTB_P_NUM))
-   U_IQ
+   U_PREFETCH_BUF
       (/*AUTOINST*/
        // Outputs
        .iq_ready                        (iq_ready),

@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module iq
+module prefetch_buf
 #(
    parameter                           CONFIG_AW = 32,
    parameter                           CONFIG_P_FETCH_WIDTH = 2,
