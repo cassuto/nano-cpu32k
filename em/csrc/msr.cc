@@ -30,7 +30,6 @@ static const int cpuid_ver = 1;
 static const int cpuid_rev = 0;
 static const bool enable_imm = 1;
 static const bool enable_dmm = 1;
-static const bool enable_dbg = 1;
 static const bool enable_fpu = 0;
 static const bool enable_tsc = 1;
 static const bool enable_irqc = 1;
@@ -352,4 +351,9 @@ CPU::rmsr(msr_index_t index)
         warn_illegal_access_reg("MSR.PSR");
 
     return 0;
+}
+
+void CPU::init_msr(bool support_dbg)
+{
+    enable_dbg = support_dbg;
 }

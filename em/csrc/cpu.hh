@@ -144,6 +144,8 @@ public:
     inline vm_addr_t get_pc() { return pc; }
     inline void set_pc(vm_addr_t npc) { pc = npc; }
 
+    void init_msr(bool support_dbg);
+
 private:
     vm_addr_t raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall);
     int check_vma_align(vm_addr_t va, int size);
@@ -187,6 +189,7 @@ private:
     phy_addr_t vect_EDTM;
     phy_addr_t vect_EALGIN;
     phy_addr_t vect_EINT;
+    bool enable_dbg;
 };
 
 #endif // CPU_H_

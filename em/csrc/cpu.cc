@@ -74,7 +74,8 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       vect_EITM(vect_EITM_),
       vect_EDTM(vect_EDTM_),
       vect_EALGIN(vect_EALGIN_),
-      vect_EINT(vect_EINT_)
+      vect_EINT(vect_EINT_),
+      enable_dbg(true)
 {
     mem = new Memory(this, memory_size_, dram_phy_base_, mmio_phy_base_, mmio_phy_end_addr_);
     icache = new Cache(mem, enable_icache, icache_p_ways, icache_p_sets, icache_p_line);

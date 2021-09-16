@@ -208,13 +208,6 @@ void Cache::phy_writem8(phy_addr_t addr, uint8_t val)
 
 void Cache::phy_writem16(phy_addr_t addr, uint16_t val)
 {
-            if(addr==0x80ffffca) {
-            extern CPU *emu_CPU;
-            extern Emu *emu;
-        printf("==================== [%lu] %#x val=%#x\n", emu->get_cycle(), emu_CPU->get_pc(), val);
-        //panic(1);
-        }
-
     if (enabled)
     {
         int way, entry;
@@ -234,8 +227,6 @@ void Cache::phy_writem32(phy_addr_t addr, uint32_t val)
     if (enabled)
     {
         int way, entry;
-        if(!((addr & 0x3) == 0))
-        printf("una pa=%#x\n", addr);
         assert((addr & 0x3) == 0);
         access(addr, true, &way, &entry);
         lines[way][entry][addr & m_block_offset_mask] = val;
@@ -284,8 +275,6 @@ uint32_t Cache::phy_readm32(phy_addr_t addr)
     if (enabled)
     {
         int way, entry;
-        if(!((addr & 0x3) == 0))
-        printf("una read pa=%#x\n", addr);
         assert((addr & 0x3) == 0);
         access(addr, false, &way, &entry);
         return lines[way][entry][addr & m_block_offset_mask] |
