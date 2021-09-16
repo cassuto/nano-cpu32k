@@ -308,7 +308,7 @@ module ex
    integer j;
 
    //
-   // FUs
+   // U/V Pipelines
    //
    generate
       for(i=0;i<IW;i=i+1)
@@ -357,7 +357,7 @@ module ex
    endgenerate
 
    //
-   // The first FU
+   // U Pipeline
    //
    
    ex_bru
