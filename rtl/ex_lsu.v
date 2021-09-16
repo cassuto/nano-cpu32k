@@ -133,7 +133,7 @@ module ex_lsu
    localparam CONFIG_P_DW_BYTES        = (CONFIG_P_DW-3);
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 dc_stall_req;           // From D_CACHE of dcache.v
+   wire                 dc_stall_req;           // From U_D_CACHE of dcache.v
    // End of automatics
    wire                                p_cke;
    // Stage 1 Input
@@ -172,7 +172,6 @@ module ex_lsu
    wire                                s1o_dcop;
    wire                                s1o_msr_psr_dce;
    // Stage 3 Input / Stage 2 Output
-   wire [CONFIG_DW-1:0]                s2o_dc_rdat;
    wire [CONFIG_DW-1:0]                s2o_dout_32b;
    wire [7:0]                          s2o_dout_8b;
    wire [15:0]                         s2o_dout_16b;
@@ -281,7 +280,7 @@ module ex_lsu
       .inv                             (msr_dcinv_we),
       .fls                             (msr_dcfls_we),
       .stall_req                       (dc_stall_req),
-      .dout                            (s2o_dc_rdat),
+      .dout                            (s2o_dout_32b),
    )
    */
    dcache
@@ -302,7 +301,7 @@ module ex_lsu
       (/*AUTOINST*/
        // Outputs
        .stall_req                       (dc_stall_req),          // Templated
-       .dout                            (s2o_dc_rdat),           // Templated
+       .dout                            (s2o_dout_32b),          // Templated
        .dbus_ARVALID                    (dbus_ARVALID),
        .dbus_ARADDR                     (dbus_ARADDR[AXI_ADDR_WIDTH-1:0]),
        .dbus_ARPROT                     (dbus_ARPROT[2:0]),
@@ -344,8 +343,8 @@ module ex_lsu
        .wdat                            (s1i_dc_wdat),           // Templated
        .vpo                             (s1i_dc_vpo),            // Templated
        .ppn_s2                          (s2i_dc_ppn),            // Templated
-       .kill_req_s2                     (s2i_kill_req),       // Templated
-       .uncached_s2                     (s2i_tlb_uncached),      // Templated
+       .kill_req_s2                     (s2i_kill_req),          // Templated
+       .uncached_s2                     (s2i_uncached),          // Templated
        .inv                             (msr_dcinv_we),          // Templated
        .fls                             (msr_dcfls_we),          // Templated
        .dbus_ARREADY                    (dbus_ARREADY),
@@ -376,8 +375,6 @@ module ex_lsu
    mDFF_lr #(.DW(1)) ff_s1o_misalign (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(s1i_misalign), .Q(s1o_EALIGN) );
    mDFF_lr #(.DW(1)) ff_s1o_msr_psr_dce (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(msr_psr_dce), .Q(s1o_msr_psr_dce) );
    
-
-   assign s2o_dout_32b = s2o_dc_rdat;
 
    assign lsu_stall_req = (dc_stall_req);
 
