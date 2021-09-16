@@ -250,8 +250,8 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
     }
     if (wait_req_w)
     {
-        printf("1\n");
         dramsim3_meta *meta = static_cast<dramsim3_meta *>(wait_req_w->meta);
+        printf("1 %d %d\n", meta->offset == meta->len, dram->will_accept(wait_req_w->address, true));
         // if this is the last beat
         if (meta->offset == meta->len && dram->will_accept(wait_req_w->address, true))
         {
