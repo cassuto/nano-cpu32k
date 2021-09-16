@@ -386,6 +386,9 @@ CPU::step(vm_addr_t pc)
         else
             readout = (cpu_unsigned_word_t)dcache->phy_readm16(pa);
         set_reg(rd, readout);
+        if(pc==0xc0002178){
+            printf("ldhu %#x va=%#x pa=%#x val=%#x\n", pc, va, pa, readout);
+        }
     }
     break;
     case INS32_OP_LDH:
@@ -483,9 +486,6 @@ CPU::step(vm_addr_t pc)
         else
             readout = (((cpu_word_t)dcache->phy_readm8(pa)) ^ 0x80) - 0x80l; /* sign ext */
         set_reg(rd, readout);
-        /*if(pc==0xc0005588){
-            printf("ldb %#x va=%#x pa=%#x val=%#x\n", pc, va, pa, readout);
-        }*/
     }
     break;
 

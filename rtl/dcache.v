@@ -570,7 +570,7 @@ module dcache
    
    assign axi_paddr_nxt = (fsm_uncached_req) /* Uncached read/write request */
                            ? s2o_paddr
-                           : (aw_set) /* Writeback request */
+                           : (aw_set) /* Replace & Writeback request */
                               ? {s2o_free_tag, s2o_line_addr, {CONFIG_DC_P_LINE{1'b0}}}
                               : {s2o_paddr[CONFIG_DC_P_LINE +: CONFIG_AW - CONFIG_DC_P_LINE], {CONFIG_DC_P_LINE{1'b0}}}; /* Refill request */
 
