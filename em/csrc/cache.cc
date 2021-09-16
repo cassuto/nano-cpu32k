@@ -24,6 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "memory.hh"
 #include "cache.hh"
+#include "emu.hh"
 
 template <typename T>
 static inline T **create_2d(size_t d1, size_t d2)
@@ -209,7 +210,8 @@ void Cache::phy_writem16(phy_addr_t addr, uint16_t val)
 {
             if(addr==0x80ffffca) {
             extern CPU *emu_CPU;
-        printf("==================== %#x val=%#x\n", emu_CPU->get_pc(), val);
+            extern Emu *emu;
+        printf("==================== [%lu] %#x val=%#x\n", emu->get_cycle(), emu_CPU->get_pc(), val);
         //panic(1);
         }
 
