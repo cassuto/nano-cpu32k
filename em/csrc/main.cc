@@ -145,7 +145,7 @@ public:
 
 static const char *optstirng = "-b:a:r:d:";
 static Args args;
-static CPU *emu_CPU;
+/*static*/ CPU *emu_CPU;
 static DeviceTree *emu_dev;
 static Emu *emu;
 static Memory *rtl_memory;

@@ -193,8 +193,12 @@ void Cache::access(phy_addr_t pa, bool store, int *hit_way, int *hit_entry)
 
 void Cache::phy_writem8(phy_addr_t addr, uint8_t val)
 {
-        if(addr==0x80ffffca)
-        printf("====================\n");
+    printf("%#x\n", addr);
+        if(addr==0x80ffffca) {
+            extern CPU *emu_CPU;
+        printf("==================== %#x\n", emu_CPU->get_pc());
+        panic(1);
+        }
 
     if (enabled)
     {
