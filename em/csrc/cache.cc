@@ -209,10 +209,10 @@ void Cache::phy_writem16(phy_addr_t addr, uint16_t val)
 {
             if(addr==0x80ffffca) {
             extern CPU *emu_CPU;
-        printf("==================== %#x\n", emu_CPU->get_pc());
-        panic(1);
+        printf("==================== %#x val=%#x\n", emu_CPU->get_pc(), val);
+        //panic(1);
         }
-        
+
     if (enabled)
     {
         int way, entry;
