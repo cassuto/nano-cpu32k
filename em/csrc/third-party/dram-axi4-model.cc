@@ -110,6 +110,7 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
         //assert(transaction_size / sizeof(uint64_t) <= MAX_AXI_DATA_LEN);
         int wordlen = (transaction_size + 1) / sizeof(uint64_t);
         printf("addr=%#x\n", address);
+        printf("wordlen=%d\n", wordlen);
         for (int i = 0; i < wordlen; i++)
         {
             meta->data[i] = mem->dram_readm64(address / sizeof(uint64_t));
