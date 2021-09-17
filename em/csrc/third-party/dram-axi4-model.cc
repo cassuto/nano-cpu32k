@@ -21,8 +21,6 @@
 #include "axi4.hh"
 #include "dram-axi4-model.hh"
 
-#include "emu.hh"
-
 DRAM::DRAM(Memory *mem_)
     : mem(mem_),
       dram(nullptr),
@@ -112,14 +110,10 @@ void DRAM::axi_read_data(const axi_ar_channel &ar, dramsim3_meta *meta)
         if (transaction_size % sizeof(uint64_t))
             ++wordlen;
         assert(wordlen <= MAX_AXI_DATA_LEN);
-        if(address==0x340)
-        printf("addr = %#lx\n", address);
         for (int i = 0; i < wordlen; i++)
         {
             meta->data[i] = mem->dram_readm64(address / sizeof(uint64_t));
             address += sizeof(uint64_t);
-            if(address==0x340)
-            printf("%d %#lx\n",i,meta->data[i] );
         }
     }
     // axi burst WRAP
@@ -160,10 +154,6 @@ CoDRAMRequest *DRAM::dramsim3_request(const axi_channel &axi, bool is_write)
     // WRITE
     if (is_write)
     {
-        if(address==0x340) {
-            extern Emu *emu;
-        printf("wwwww [%lu]\n", emu->get_cycle());
-        }
         meta->len = axi.aw.len + 1;
         meta->size = 1 << axi.aw.size;
         meta->offset = 0;
@@ -233,7 +223,7 @@ void DRAM::dramsim3_helper_rising(const axi_channel &axi)
     {
         if (wait_req_w != NULL)
         {
-            printf("ERROR: The last write request has not finished.\n");
+            fprintf(stderr, "ERROR: The last write request has not finished.\n");
             assert(wait_req_w == NULL);
         }
         wait_req_w = dramsim3_request(axi, true);

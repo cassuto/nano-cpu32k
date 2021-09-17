@@ -51,8 +51,9 @@ module mRAM_s_s_be
    genvar i;
    
    // Address register
-   assign addr_w = (RE | (|WE)) ? ADDR : re_addr_ff;
    mDFF_l #(.DW(AW)) ff_re_addr (.CLK(CLK), .LOAD(RE), .D(ADDR), .Q(re_addr_ff) );
+   
+   assign addr_w = (RE | (|WE)) ? ADDR : re_addr_ff;
    
    // Convert byte mask to bit mask
    for(i=0;i<(1<<P_DW_BYTES);i=i+1)

@@ -31,8 +31,8 @@ module mRF_1wr
 )
 (
    input CLK,
-   input RE,
    input [AW-1:0] ADDR,
+   input RE,
    output [DW-1:0] RDATA,
    input WE,
    input [DW-1:0] WDATA

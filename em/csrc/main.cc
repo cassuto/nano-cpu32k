@@ -93,12 +93,12 @@ public:
         immu_enable_uncached_seg = true;
         enable_icache = true;
         enable_dcache = true;
-        icache_p_ways = 2;
+        icache_p_ways = 1;
         icache_p_sets = 6;
-        icache_p_line = 6;
-        dcache_p_ways = 2;
+        icache_p_line = 4;
+        dcache_p_ways = 1;
         dcache_p_sets = 6;
-        dcache_p_line = 6;
+        dcache_p_line = 4;
         dram_phy_base = 0x80000000;
         mmio_phy_base = 0x00000000;
         mmio_phy_end_addr = 0x7fffffff;
