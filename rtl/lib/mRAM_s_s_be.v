@@ -40,20 +40,13 @@ module mRAM_s_s_be
 
 `ifdef NCPU_USE_S011_STD_CELL_LIB
    localparam P_DW_BYTES = (P_DW-3);
-   
    // Parameters for SMIC 128x64 bit SRAM cell
    localparam SRAM_DW = 128;
    localparam SRAM_AW = 6;
    localparam SRAM_P_DW_BYTES = 4; // = $clog2(SRAM_DW/8)
    
-   wire [AW-1:0] addr_w;
-   wire [AW-1:0] ADDR_ff;
    wire [(1<<P_DW)-1:0] we_bmsk;
    genvar i;
-   
-   // Address register
-   assign addr_w = (RE) ? ADDR : ADDR_ff;
-   mDFF_l #(.DW(AW)) ff_ADDR (.CLK(CLK), .LOAD(RE), .D(ADDR), .Q(ADDR_ff) );
    
    // Convert byte mask to bit mask
    for(i=0;i<(1<<P_DW_BYTES);i=i+1)
@@ -69,7 +62,7 @@ module mRAM_s_s_be
                   .CEN                    (1'b0),     // Low active
                   .WEN                    (~|WE),     // Low active
                   .BWEN                   (~we_bmsk), // Low active
-                  .A                      (addr_w),
+                  .A                      (ADDR),
                   .D                      (DIN)
                );
          end
@@ -87,7 +80,7 @@ module mRAM_s_s_be
 
             // Din address encoder
             for(i=0;i<WIN_NUM;i=i+1)
-               assign sram_bwen[i*WIN_DW +: WIN_DW] = (we_bmsk & {WIN_DW{addr_w[WIN_P_DW_BYTES +: WIN_P_NUM] == i}});
+               assign sram_bwen[i*WIN_DW +: WIN_DW] = (we_bmsk & {WIN_DW{ADDR[WIN_P_DW_BYTES +: WIN_P_NUM] == i}});
             for(i=0;i<WIN_NUM;i=i+1)
                assign sram_d[i*WIN_DW +: WIN_DW] = DIN;
 
@@ -98,14 +91,14 @@ module mRAM_s_s_be
                   .CEN                    (1'b0),        // Low active
                   .WEN                    (~|WE),        // Low active
                   .BWEN                   (~sram_bwen),  // Low active
-                  .A                      (addr_w[(SRAM_P_DW_BYTES - P_DW_BYTES) +: SRAM_AW]),
+                  .A                      (ADDR[(SRAM_P_DW_BYTES - P_DW_BYTES) +: SRAM_AW]),
                   .D                      (sram_d)
                );
             
             // Dout address decoder
             for(i=0;i<WIN_NUM;i=i+1)
                assign DOUT_win[i] = sram_q[i*WIN_DW +: WIN_DW];
-            assign DOUT = DOUT_win[addr_w[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            assign DOUT = DOUT_win[ADDR[WIN_P_DW_BYTES +: WIN_P_NUM]];
          end
       else
          begin
@@ -117,19 +110,25 @@ module mRAM_s_s_be
    // General RTL
    reg [DW-1:0] mem_vector [(1<<AW)-1:0];
    reg [DW-1:0] dff_rdat;
+   reg re_ff;
    genvar i;
-   
+
    always @(posedge CLK)
       if (RE)
          dff_rdat <= mem_vector[ADDR];
-   assign DOUT = dff_rdat;
-         
    generate
       for(i=0;i<DW;i=i+8)
          always @(posedge CLK)
             if (WE[i/8])
                mem_vector[ADDR][i+:8] <= DIN[i+:8];
    endgenerate
+   
+   // The following logic is used to simulate the behavior of ASIC SRAM cell
+   localparam [(1<<P_DW)-1:0] UNCERTAIN_VAL = {(1<<P_DW)/2{2'b01}};
+   
+   mDFF #(.DW(1)) ff_re (.CLK(CLK), .D(RE), .Q(re_ff) );
+   assign DOUT = (re_ff) ? dff_rdat : UNCERTAIN_VAL;
+   
 `endif
 
 endmodule
