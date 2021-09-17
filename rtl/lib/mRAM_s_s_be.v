@@ -46,7 +46,13 @@ module mRAM_s_s_be
    localparam SRAM_P_DW_BYTES = 4; // = $clog2(SRAM_DW/8)
    
    wire [(1<<P_DW)-1:0] we_bmsk;
+   wire [AW-1:0] addr_w;
+   wire [AW-1:0] re_addr_ff;
    genvar i;
+   
+   // Address register
+   assign addr_w = (RE | (|WE)) ? ADDR : re_addr_ff;
+   mDFF_l #(.DW(AW)) ff_re_addr (.CLK(CLK), .LOAD(RE), .D(ADDR), .Q(re_addr_ff) );
    
    // Convert byte mask to bit mask
    for(i=0;i<(1<<P_DW_BYTES);i=i+1)
@@ -62,7 +68,7 @@ module mRAM_s_s_be
                   .CEN                    (1'b0),     // Low active
                   .WEN                    (~|WE),     // Low active
                   .BWEN                   (~we_bmsk), // Low active
-                  .A                      (ADDR),
+                  .A                      (addr_w),
                   .D                      (DIN)
                );
          end
@@ -80,7 +86,7 @@ module mRAM_s_s_be
 
             // Din address encoder
             for(i=0;i<WIN_NUM;i=i+1)
-               assign sram_bwen[i*WIN_DW +: WIN_DW] = (we_bmsk & {WIN_DW{ADDR[WIN_P_DW_BYTES +: WIN_P_NUM] == i}});
+               assign sram_bwen[i*WIN_DW +: WIN_DW] = (we_bmsk & {WIN_DW{addr_w[WIN_P_DW_BYTES +: WIN_P_NUM] == i}});
             for(i=0;i<WIN_NUM;i=i+1)
                assign sram_d[i*WIN_DW +: WIN_DW] = DIN;
 
@@ -91,14 +97,14 @@ module mRAM_s_s_be
                   .CEN                    (1'b0),        // Low active
                   .WEN                    (~|WE),        // Low active
                   .BWEN                   (~sram_bwen),  // Low active
-                  .A                      (ADDR[(SRAM_P_DW_BYTES - P_DW_BYTES) +: SRAM_AW]),
+                  .A                      (addr_w[(SRAM_P_DW_BYTES - P_DW_BYTES) +: SRAM_AW]),
                   .D                      (sram_d)
                );
             
             // Dout address decoder
             for(i=0;i<WIN_NUM;i=i+1)
                assign DOUT_win[i] = sram_q[i*WIN_DW +: WIN_DW];
-            assign DOUT = DOUT_win[ADDR[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            assign DOUT = DOUT_win[addr_w[WIN_P_DW_BYTES +: WIN_P_NUM]];
          end
       else
          begin
@@ -124,11 +130,9 @@ module mRAM_s_s_be
    
    // The following logic is used to simulate the behavior of ASIC SRAM cell
    localparam [(1<<P_DW)-1:0] UNCERTAIN_VAL = {(1<<P_DW)/2{2'b01}};
-   wire re_ff;
    wire we_ff;
-   mDFF #(.DW(1)) ff_re (.CLK(CLK), .D(RE), .Q(re_ff) );
    mDFF #(.DW(1)) ff_we (.CLK(CLK), .D(|WE), .Q(we_ff) );
-   assign DOUT = (re_ff & ~we_ff) ? dff_rdat : UNCERTAIN_VAL;
+   assign DOUT = (we_ff) ? UNCERTAIN_VAL : dff_rdat;
    
 `endif
 
