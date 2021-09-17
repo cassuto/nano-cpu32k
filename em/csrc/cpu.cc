@@ -517,6 +517,9 @@ printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
             mem->phy_writem8(pa, (uint8_t)get_reg(rd));
         else
             dcache->phy_writem8(pa, (uint8_t)get_reg(rd));
+        if (pc==0x8000468c){
+            printf("ldb %#x va=%#x w=%#x\n",pc,va, (uint8_t)get_reg(rd));
+        }
     }
     break;
 
