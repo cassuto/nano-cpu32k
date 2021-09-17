@@ -474,7 +474,7 @@ printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
         else
             readout = (cpu_unsigned_word_t)dcache->phy_readm8(pa);
         set_reg(rd, readout);
-        if(pc==0x80004d1c){
+        if(pc==0xc0004d1c){
             printf("ldb %#x va=%#x val=%#x\n", pc, va, readout);
         }
     }
