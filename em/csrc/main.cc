@@ -94,11 +94,11 @@ public:
         enable_icache = true;
         enable_dcache = true;
         icache_p_ways = 1;
-        icache_p_sets = 6;
-        icache_p_line = 4;
+        icache_p_sets = 4;
+        icache_p_line = 6;
         dcache_p_ways = 1;
-        dcache_p_sets = 6;
-        dcache_p_line = 4;
+        dcache_p_sets = 4;
+        dcache_p_line = 6;
         dram_phy_base = 0x80000000;
         mmio_phy_base = 0x00000000;
         mmio_phy_end_addr = 0x7fffffff;
@@ -360,10 +360,10 @@ int main(int argc, char *argv[])
 
     case ModeDifftest:
     {
-        // Configure the reference CPU
+        /* Configure the reference CPU */
         emu_CPU->init_msr(false);
 
-        // RTL simulation use its independent memory and mmio space
+        /* RTL simulation uses its independent memory and mmio space */
         rtl_memory = new Memory(nullptr, args.ram_size, args.dram_phy_base, args.mmio_phy_base, args.mmio_phy_end_addr);
         if (rtl_memory->load_address_fp(bin_fp, args.bin_load_addr))
         {
