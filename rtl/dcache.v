@@ -466,6 +466,8 @@ module dcache
       case (fsm_state_ff)
          S_IDLE:
             s2i_d_waddr = s1o_line_addr;
+         S_RELOAD_S1O_S2O:
+            s2i_d_waddr = s2o_line_addr;
          default:
             s2i_d_waddr = s1i_line_addr;
       endcase
