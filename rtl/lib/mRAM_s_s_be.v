@@ -46,8 +46,8 @@ module mRAM_s_s_be
    localparam SRAM_P_DW_BYTES = 4; // = $clog2(SRAM_DW/8)
    
    wire [(1<<P_DW)-1:0] we_bmsk;
-   wire [AW-1:0] addr_w;
    wire [AW-1:0] re_addr_ff;
+   wire [AW-1:0] addr_w;
    genvar i;
    
    // Address register
@@ -104,7 +104,7 @@ module mRAM_s_s_be
             // Dout address decoder
             for(i=0;i<WIN_NUM;i=i+1)
                assign DOUT_win[i] = sram_q[i*WIN_DW +: WIN_DW];
-            assign DOUT = DOUT_win[addr_w[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            assign DOUT = DOUT_win[re_addr_ff[WIN_P_DW_BYTES +: WIN_P_NUM]];
          end
       else
          begin
