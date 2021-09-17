@@ -474,9 +474,9 @@ printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
         else
             readout = (cpu_unsigned_word_t)dcache->phy_readm8(pa);
         set_reg(rd, readout);
-        if(pc==0xc0004d1c){
+        /*if(pc==0xc0004d1c){
             printf("ldb %#x va=%#x val=%#x\n", pc, va, readout);
-        }
+        }*/
     }
     break;
     case INS32_OP_LDB:
@@ -520,8 +520,8 @@ printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
             mem->phy_writem8(pa, (uint8_t)get_reg(rd));
         else
             dcache->phy_writem8(pa, (uint8_t)get_reg(rd));
-        if (pc==0x8000468c){
-            printf("ldb %#x va=%#x w=%#x\n",pc,va, (uint8_t)get_reg(rd));
+        if (pa==0x8000aa5f){
+            printf("stb %#x va=%#x w=%#x\n",pc,va, (uint8_t)get_reg(rd));
         }
     }
     break;
