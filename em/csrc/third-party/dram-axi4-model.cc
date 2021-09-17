@@ -21,6 +21,8 @@
 #include "axi4.hh"
 #include "dram-axi4-model.hh"
 
+#include "emu.hh"
+
 DRAM::DRAM(Memory *mem_)
     : mem(mem_),
       dram(nullptr),
@@ -158,8 +160,10 @@ CoDRAMRequest *DRAM::dramsim3_request(const axi_channel &axi, bool is_write)
     // WRITE
     if (is_write)
     {
-        if(address==0x340)
-        printf("wwwww\n");
+        if(address==0x340) {
+            extern Emu *emu;
+        printf("wwwww [%lu]\n", emu->get_cycle());
+        }
         meta->len = axi.aw.len + 1;
         meta->size = 1 << axi.aw.size;
         meta->offset = 0;
