@@ -125,8 +125,10 @@ module mRAM_s_s_be
    // The following logic is used to simulate the behavior of ASIC SRAM cell
    localparam [(1<<P_DW)-1:0] UNCERTAIN_VAL = {(1<<P_DW)/2{2'b01}};
    wire re_ff;
+   wire we_ff;
    mDFF #(.DW(1)) ff_re (.CLK(CLK), .D(RE), .Q(re_ff) );
-   assign DOUT = (re_ff) ? dff_rdat : UNCERTAIN_VAL;
+   mDFF #(.DW(1)) ff_we (.CLK(CLK), .D(|WE), .Q(we_ff) );
+   assign DOUT = (re_ff & ~we_ff) ? dff_rdat : UNCERTAIN_VAL;
    
 `endif
 
