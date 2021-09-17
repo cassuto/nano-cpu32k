@@ -41,7 +41,7 @@ module mRAM_s_s_be
 `ifdef NCPU_USE_S011_STD_CELL_LIB
    localparam P_DW_BYTES = (P_DW-3);
    
-   // SMIC 128x64 bit SRAM cell
+   // Parameters for SMIC 128x64 bit SRAM cell
    localparam SRAM_DW = 128;
    localparam SRAM_AW = 6;
    localparam SRAM_P_DW_BYTES = 4; // = $clog2(SRAM_DW/8)
@@ -49,6 +49,7 @@ module mRAM_s_s_be
    wire [AW-1:0] addr_w;
    wire [AW-1:0] ADDR_ff;
    wire [(1<<P_DW)-1:0] we_bmsk;
+   genvar i;
    
    // Address register
    assign addr_w = (RE) ? ADDR : ADDR_ff;
@@ -57,8 +58,7 @@ module mRAM_s_s_be
    // Convert byte mask to bit mask
    for(i=0;i<(1<<P_DW_BYTES);i=i+1)
       assign we_bmsk[i*8 +: 8] = {8{WE[i]}};
-
-   genvar i;
+   
    generate
       if (((1<<P_DW) == SRAM_DW) && (AW == SRAM_AW))
          begin
@@ -66,9 +66,9 @@ module mRAM_s_s_be
                (
                   .Q                      (DOUT),
                   .CLK                    (CLK),
-                  .CEN                    (1'b1),
-                  .WEN                    (WE),
-                  .BWEN                   (we_bmsk),
+                  .CEN                    (1'b0),     // Low active
+                  .WEN                    (~|WE),     // Low active
+                  .BWEN                   (~we_bmsk), // Low active
                   .A                      (addr_w),
                   .D                      (DIN)
                );
@@ -95,9 +95,9 @@ module mRAM_s_s_be
                (
                   .Q                      (sram_q),
                   .CLK                    (CLK),
-                  .CEN                    (1'b1),
-                  .WEN                    (|WE),
-                  .BWEN                   (sram_bwen),
+                  .CEN                    (1'b0),        // Low active
+                  .WEN                    (~|WE),        // Low active
+                  .BWEN                   (~sram_bwen),  // Low active
                   .A                      (addr_w[(SRAM_P_DW_BYTES - P_DW_BYTES) +: SRAM_AW]),
                   .D                      (sram_d)
                );
@@ -109,7 +109,7 @@ module mRAM_s_s_be
          end
       else
          begin
-            initial $fatal(1, "SRAM geometry size is unsupported.");
+            initial $fatal(1, "SRAM with the specified size is unsupported.");
          end
    endgenerate
    
