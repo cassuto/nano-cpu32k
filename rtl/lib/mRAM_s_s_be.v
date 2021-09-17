@@ -77,7 +77,6 @@ module mRAM_s_s_be
             localparam WIN_P_NUM = (SRAM_P_DW_BYTES - P_DW_BYTES);
             localparam WIN_NUM = (1<<WIN_P_NUM);
             localparam WIN_DW = (1<<P_DW);
-            localparam WIN_P_DW_BYTES = (P_DW_BYTES);
             
             wire [SRAM_DW-1:0] sram_q;
             wire [SRAM_DW-1:0] sram_bwen;
@@ -86,7 +85,7 @@ module mRAM_s_s_be
 
             // Din address encoder
             for(i=0;i<WIN_NUM;i=i+1)
-               assign sram_bwen[i*WIN_DW +: WIN_DW] = (we_bmsk & {WIN_DW{addr_w[WIN_P_DW_BYTES +: WIN_P_NUM] == i}});
+               assign sram_bwen[i*WIN_DW +: WIN_DW] = (we_bmsk & {WIN_DW{addr_w[WIN_P_NUM-1:0] == i}});
             for(i=0;i<WIN_NUM;i=i+1)
                assign sram_d[i*WIN_DW +: WIN_DW] = DIN;
 
@@ -97,14 +96,14 @@ module mRAM_s_s_be
                   .CEN                    (1'b0),        // Low active
                   .WEN                    (~|WE),        // Low active
                   .BWEN                   (~sram_bwen),  // Low active
-                  .A                      (addr_w[(SRAM_P_DW_BYTES - P_DW_BYTES) +: SRAM_AW]),
+                  .A                      (addr_w[WIN_P_NUM +: SRAM_AW]),
                   .D                      (sram_d)
                );
             
             // Dout address decoder
             for(i=0;i<WIN_NUM;i=i+1)
                assign DOUT_win[i] = sram_q[i*WIN_DW +: WIN_DW];
-            assign DOUT = DOUT_win[re_addr_ff[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            assign DOUT = DOUT_win[re_addr_ff[WIN_P_NUM-1:0]];
          end
       else
          begin
