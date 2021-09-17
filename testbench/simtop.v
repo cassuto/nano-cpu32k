@@ -285,10 +285,10 @@ module simtop
                            (|U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.s2i_payload_we[1]);*/
                            /*(U_DUT.U_CORE.dbus_AWADDR == 'h80000340) &
                            (U_DUT.U_CORE.dbus_AWVALID);*/
-                           (U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.s2i_d_waddr == 'hD) &
+                           /*(U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.s2i_d_waddr == 'hD) &
                            (U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.s2i_d_we[1]) &
-                           (U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.s2i_d_wdat[1] == 'b1);
-   //assign break_point = 'b0;
+                           (U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.s2i_d_wdat[1] == 'b1);*/
+   'b0;
     
 endmodule
 
