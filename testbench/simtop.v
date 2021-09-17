@@ -286,7 +286,8 @@ module simtop
                            /*(U_DUT.U_CORE.dbus_AWADDR == 'h8000AA40) &
                            (U_DUT.U_CORE.dbus_AWVALID);*/
                            (U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.s1i_line_addr == 'h9) &
-                           (|U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.s1i_tag_v_we[1]);
+                           (|U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.s1i_tag_v_we[1]) &
+                           (U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.s1i_replace_tag_v[0] == 'b0);
    //assign break_point = 'b0;
     
 endmodule
