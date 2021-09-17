@@ -477,6 +477,8 @@ module dcache
             case (fsm_state_ff)
                S_IDLE:
                   s2i_d_wdat[way] = s1o_d[way] | (|s1o_wmsk);
+               S_RELOAD_S1O_S2O:
+                  s2i_d_wdat[way] = s2o_d[way] | (|s2o_wmsk);
                default: // S_BOOT, S_INVALIDATE, S_REPLACE:
                   s2i_d_wdat[way] = 'b0;
             endcase
@@ -485,9 +487,11 @@ module dcache
    // D flag RAM write enable
    generate
       for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
-         assign s2i_d_we[way] = (s1i_tag_v_we[way] | // S_BOOT, S_INVALIDATE, S_REPLACE:
-                                 (s2i_ready & s2i_hit_vec[way]) | // S_IDLE
-                                 (fsm_state_ff==S_RELOAD_S1O_S2O));
+         assign s2i_d_we[way] = (fsm_state_ff==S_BOOT) |
+                                 (fsm_state_ff==S_INVALIDATE) |
+                                 ((fsm_state_ff==S_REPLACE) & (s2o_fsm_free_way[way])) |
+                                 ((fsm_state_ff==S_RELOAD_S1O_S2O) & s2o_fsm_free_way[way]) |
+                                 (s2i_ready & s2i_hit_vec[way]);
    endgenerate
 
    // MUX for physical addr tag to match
