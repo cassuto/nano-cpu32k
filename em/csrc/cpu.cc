@@ -335,9 +335,6 @@ CPU::step(vm_addr_t pc)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
-        if (pc==0xc0383768){
-printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
-        }
     }
     break;
 
@@ -364,10 +361,6 @@ printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if (pa==0x80375dbc){
-            extern Emu *emu;
-            printf("stw [%lu] %#x va=%#x val=%#x\n", emu->get_cycle(), pc, va, (uint32_t)get_reg(rd));
-        }
     }
     break;
 
@@ -396,9 +389,6 @@ printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
         else
             readout = (cpu_unsigned_word_t)dcache->phy_readm16(pa);
         set_reg(rd, readout);
-        if(pc==0xc0002178){
-            printf("ldhu %#x va=%#x pa=%#x val=%#x\n", pc, va, pa, readout);
-        }
     }
     break;
     case INS32_OP_LDH:
@@ -474,9 +464,6 @@ printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
         else
             readout = (cpu_unsigned_word_t)dcache->phy_readm8(pa);
         set_reg(rd, readout);
-        /*if(pc==0xc0004d1c){
-            printf("ldb %#x va=%#x val=%#x\n", pc, va, readout);
-        }*/
     }
     break;
     case INS32_OP_LDB:
@@ -520,10 +507,6 @@ printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
             mem->phy_writem8(pa, (uint8_t)get_reg(rd));
         else
             dcache->phy_writem8(pa, (uint8_t)get_reg(rd));
-        if (pa==0x8000aa5f){
-            extern Emu *emu;
-            printf("stb [%lu] %#x va=%#x w=%#x\n", emu->get_cycle() ,pc,va, (uint8_t)get_reg(rd));
-        }
     }
     break;
 

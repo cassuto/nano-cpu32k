@@ -79,17 +79,17 @@ module ex_bru
                         (ex_bru_opc_bus[`NCPU_BRU_BLEU] & (cmp_lt_u | cmp_eq)) |
                         (ex_bru_opc_bus[`NCPU_BRU_BLE] & (cmp_lt_s | cmp_eq));
 
-   assign b_taken = (ex_valid & (bcc_taken | ex_bru_opc_bus[`NCPU_BRU_JMPREG] | ex_bru_opc_bus[`NCPU_BRU_JMPREL]));
+   assign b_taken = (ex_valid & (bcc_taken | is_breg | is_brel));
 
    assign b_tgt =
       // PC-relative 15b addressing
       ({`PC_W{bcc_taken}} & (ex_pc + ex_imm[CONFIG_AW-1:`NCPU_P_INSN_LEN])) |
       // PC-relative 25b addressing
-      ({`PC_W{ex_bru_opc_bus[`NCPU_BRU_JMPREL]}} & (ex_pc + ex_operand2[CONFIG_AW-1:`NCPU_P_INSN_LEN])) |
+      ({`PC_W{is_brel}} & (ex_pc + ex_operand2[CONFIG_AW-1:`NCPU_P_INSN_LEN])) |
       // Absolute addressing FIXME: alignment check
-      ({`PC_W{ex_bru_opc_bus[`NCPU_BRU_JMPREG]}} & ex_operand1[CONFIG_AW-1:`NCPU_P_INSN_LEN]);
+      ({`PC_W{is_breg}} & ex_operand1[CONFIG_AW-1:`NCPU_P_INSN_LEN]);
 
-   assign b_lnk = ((ex_bru_opc_bus[`NCPU_BRU_JMPREL] | ex_bru_opc_bus[`NCPU_BRU_JMPREG]) & ex_rf_we);
+   assign b_lnk = ((is_brel | is_breg) & ex_rf_we);
 
    assign bru_dout = {npc, {`NCPU_P_INSN_LEN{1'b0}}};
    assign bru_dout_valid = b_lnk;
