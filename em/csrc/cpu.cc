@@ -521,7 +521,8 @@ printf("pc=%#x va=%#x pa=%#x val=%#x\n", pc, va,pa, readout);
         else
             dcache->phy_writem8(pa, (uint8_t)get_reg(rd));
         if (pa==0x8000aa5f){
-            printf("stb %#x va=%#x w=%#x\n",pc,va, (uint8_t)get_reg(rd));
+            extern Emu *emu;
+            printf("stb [%lu] %#x va=%#x w=%#x\n", emu->get_cycle() ,pc,va, (uint8_t)get_reg(rd));
         }
     }
     break;
