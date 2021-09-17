@@ -108,16 +108,15 @@ module mRAM_s_s_be
    
 `else
    // General RTL
-   reg [DW-1:0] mem_vector [(1<<AW)-1:0];
-   reg [DW-1:0] dff_rdat;
-   reg re_ff;
+   reg [(1<<P_DW)-1:0] mem_vector [(1<<AW)-1:0];
+   reg [(1<<P_DW)-1:0] dff_rdat;
    genvar i;
 
    always @(posedge CLK)
       if (RE)
          dff_rdat <= mem_vector[ADDR];
    generate
-      for(i=0;i<DW;i=i+8)
+      for(i=0;i<(1<<P_DW);i=i+8)
          always @(posedge CLK)
             if (WE[i/8])
                mem_vector[ADDR][i+:8] <= DIN[i+:8];
@@ -125,7 +124,7 @@ module mRAM_s_s_be
    
    // The following logic is used to simulate the behavior of ASIC SRAM cell
    localparam [(1<<P_DW)-1:0] UNCERTAIN_VAL = {(1<<P_DW)/2{2'b01}};
-   
+   wire re_ff;
    mDFF #(.DW(1)) ff_re (.CLK(CLK), .D(RE), .Q(re_ff) );
    assign DOUT = (re_ff) ? dff_rdat : UNCERTAIN_VAL;
    
