@@ -290,6 +290,7 @@ module ex
    wire                                flush_s2;
    // Stage 1 Input
    wire [IW-1:0]                       s1i_cmt_valid;
+   wire                                s1i_lsu_req_valid;
    wire [CONFIG_DW*IW-1:0]             s1i_rf_dout_1, s1i_rf_dout;
    wire [IW-1:0]                       s1i_rf_we;
    // Stage 2 Input / Stage 1 Output
@@ -537,7 +538,7 @@ module ex
 
 
    /* ex_lsu AUTO_TEMPLATE (
-         .ex_valid         (s1i_cmt_valid[0]),
+         .ex_valid         (s1i_lsu_req_valid),
          .ex_lsu_opc_bus   (ex_lsu_opc_bus[0*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
          .add_sum          (add_sum[0]),
          .ex_operand2      (ex_operand2[0*CONFIG_DW +: CONFIG_DW]),
@@ -725,6 +726,8 @@ module ex
          for(j=1;j<IW;j=j+1)
             cmt_valid_msk[j] = cmt_valid_msk[j-1] & ~se_fail_vec[j-1];
       end
+   
+   assign s1i_cmt_valid = (ex_valid & cmt_valid_msk);
 
    // Write BPU
    assign bpu_wb = ex_valid[0];
@@ -785,7 +788,7 @@ module ex
    assign p_ce_s3 = ~(lsu_stall_req);
    
    // Avoid repeated firing while EX(s1) stalling
-   assign s1i_cmt_valid = (ex_valid & cmt_valid_msk & {IW{p_ce_s1}});
+   assign s1i_lsu_req_valid = (s1i_cmt_valid[0] & p_ce_s1);
    
    assign se_flush = (s1o_se_flush & p_ce_s2);
    
@@ -828,7 +831,7 @@ module ex
    mDFF_l # (.DW(`PC_W)) ff_commit_E_FLUSH_TLB_npc (.CLK(clk), .LOAD(p_ce_s1), .D(epu_E_FLUSH_TLB_npc), .Q(commit_E_FLUSH_TLB_npc) );
    
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s2o_rf_waddr (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_rf_waddr), .Q(s2o_rf_waddr) );
-   mDFF_lr # (.DW(IW)) ff_s2o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|flush_s2), .D(s1o_rf_we & {IW{~flush_s2}}), .Q(s2o_rf_we) );
+   mDFF_lr # (.DW(IW)) ff_s2o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|flush_s2), .D(s1o_rf_we & {IW{~flush_s2 & p_ce_s1}}), .Q(s2o_rf_we) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_s2o_rf_dout (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_rf_dout), .Q(s2o_rf_dout) );
    mDFF_l # (.DW(1)) ff_s2o_lsu_load (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_lsu_load0), .Q(s2o_lsu_load0) );
 
@@ -854,7 +857,7 @@ module ex
    // Once the first channel induced an exception, the remaining channels would be invalidated.
    // However, the first channel should be committed to difftest, with architectural state unchanged.
    mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_valid[0]), .Q(s2o_valid[0]) );
-   mDFF_lr # (.DW(IW-1)) ff_s2o_valid2 (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|flush_s2), .D(s1o_valid[IW-1:1] & {IW-1{~flush_s2}}), .Q(s2o_valid[IW-1:1]) );
+   mDFF_lr # (.DW(IW-1)) ff_s2o_valid2 (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|flush_s2), .D(s1o_valid[IW-1:1] & {IW-1{~flush_s2 & p_ce_s1}}), .Q(s2o_valid[IW-1:1]) );
    
    mDFF_lr # (.DW(1)) ff_s2o_exc (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(exc_flush), .Q(s2o_exc) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s1o_pc (.CLK(clk), .LOAD(p_ce_s1), .D(ex_pc), .Q(s1o_pc) );
