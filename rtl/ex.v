@@ -745,7 +745,7 @@ module ex
    assign test_stall = test_stall_ff[TEST_STALL_P] & ~flush_s1;
    
    initial
-      $display("Stall testing is enabled!");
+      $display("=====\n[WARNING] Stall testing enabled!\n=====\n");
 `define test_stall test_stall
 `else
 `define test_stall 'b0
