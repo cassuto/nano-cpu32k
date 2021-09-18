@@ -397,7 +397,7 @@ int main(int argc, char *argv[])
                 break;
             }
             cycle = emu->get_cycle();
-            if (cycle - last_cycle >= 10000UL)
+            if (cycle - last_cycle >= 100000UL)
             {
                 last_cycle = cycle;
                 fprintf(stderr, "\r[%lu]", cycle);
