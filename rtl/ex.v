@@ -807,26 +807,28 @@ module ex
    wire                                s2o_exc;
    wire [`PC_W*IW-1:0]                 s1o_pc;
    wire [`PC_W*IW-1:0]                 s2o_pc;
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid;
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid_ff, commit_valid;
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc;
    wire                                commit_exc;
 
    wire dft_stall_req_s1 = (icinv_stall_req | test_stall); // Stall req from s1
    wire dft_stall_req_s3 = (lsu_stall_req); // Stall req from s3
    
-   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1|dft_stall_req_s1), .D(s1i_cmt_valid & {IW{~flush_s1 & ~dft_stall_req_s1}}), .Q(s1o_valid) );
+   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_cmt_valid & {IW{~flush_s1}}), .Q(s1o_valid) );
    
    // Once the first channel induced an exception, the remaining channels would be invalidated.
    // However, the first channel that causes the exception should notify difftest to synchronize architectural event.
    mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_valid[0]), .Q(s2o_valid[0]) );
-   mDFF_lr # (.DW(IW-1)) ff_s2o_valid2 (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|flush_s2), .D(s1o_valid[IW-1:1] & {IW-1{~flush_s2}}), .Q(s2o_valid[IW-1:1]) );
+   mDFF_lr # (.DW(IW-1)) ff_s2o_valid2 (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|flush_s2), .D(s1o_valid[IW-1:1] & {IW-1{~flush_s2 & ~dft_stall_req_s1}}), .Q(s2o_valid[IW-1:1]) );
    
    mDFF_lr # (.DW(1)) ff_s2o_exc (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(exc_flush), .Q(s2o_exc) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s1o_pc (.CLK(clk), .LOAD(p_ce_s1), .D(ex_pc), .Q(s1o_pc) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s2o_pc (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_pc), .Q(s2o_pc) );
-   mDFF_lr # (.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s3|dft_stall_req_s3), .D(s2o_valid & {IW{~dft_stall_req_s3}}), .Q(commit_valid) );
+   mDFF_lr # (.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s3), .D(s2o_valid), .Q(commit_valid_ff) );
    mDFF_l # (.DW(`PC_W*IW)) ff_commit_pc (.CLK(clk), .LOAD(p_ce_s3), .D(s2o_pc), .Q(commit_pc) );
    mDFF_lr # (.DW(1)) ff_commit_exc (.CLK(clk), .RST(rst), .LOAD(p_ce_s3), .D(s2o_exc), .Q(commit_exc) );
+   
+   assign commit_valid = (commit_valid_ff & {IW{~dft_stall_req_s3}});
 `endif
 
 `ifdef ENABLE_DIFFTEST
