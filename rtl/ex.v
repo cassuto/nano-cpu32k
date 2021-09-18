@@ -733,7 +733,7 @@ module ex
 
    // Stall signal generator
 `ifdef NCPU_TEST_STALL
-   localparam TEST_STALL_P = 1;
+   localparam TEST_STALL_P = 0;
    wire test_stall;
    reg [TEST_STALL_P:0] test_stall_ff;
    
@@ -745,7 +745,7 @@ module ex
    assign test_stall = test_stall_ff[TEST_STALL_P] & ~flush_s1;
    
    initial
-      $display("=====\n[WARNING] Stall testing enabled!\n=====\n");
+      $display("=====\n[WARNING] Stall testing enabled (TEST_STALL_P=%d) \n=====\n", TEST_STALL_P);
 `define test_stall test_stall
 `else
 `define test_stall 'b0
