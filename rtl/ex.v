@@ -731,23 +731,20 @@ module ex
    assign ro_ex_s2_load0 = s1o_lsu_load0;
    assign ro_ex_s3_load0 = s2o_lsu_load0;
 
-   localparam TEST_STALL_P = 1;
    wire test_stall;
-   generate
-      if (TEST_STALL_P < 0)
-         assign test_stall = 'b0;
+`ifdef NCPU_TEST_STALL
+   localparam TEST_STALL_P = 1;
+   reg [TEST_STALL_P:0] test_stall_ff;
+   
+   always @(posedge clk)
+      if (rst | flush_s1)
+         test_stall_ff <= 'b0;
       else
-         begin
-            reg [TEST_STALL_P:0] test_stall_ff;
-            
-            always @(posedge clk)
-               if (rst | flush_s1)
-                  test_stall_ff <= 'b0;
-               else
-                  test_stall_ff <= test_stall_ff + 'b1;
-            assign test_stall = test_stall_ff[TEST_STALL_P] & ~flush_s1;
-         end
-   endgenerate
+         test_stall_ff <= test_stall_ff + 'b1;
+   assign test_stall = test_stall_ff[TEST_STALL_P] & ~flush_s1;
+`else
+   assign test_stall = 'b0;
+`endif
    
    // Stall if ICINV is temporarily unavailable during access
    assign icinv_stall_req = (msr_icinv_we & ~msr_icinv_ready);
