@@ -731,9 +731,10 @@ module ex
    assign ro_ex_s2_load0 = s1o_lsu_load0;
    assign ro_ex_s3_load0 = s2o_lsu_load0;
 
-   wire test_stall;
+   // Stall signal generator
 `ifdef NCPU_TEST_STALL
    localparam TEST_STALL_P = 1;
+   wire test_stall;
    reg [TEST_STALL_P:0] test_stall_ff;
    
    always @(posedge clk)
@@ -742,8 +743,12 @@ module ex
       else
          test_stall_ff <= test_stall_ff + 'b1;
    assign test_stall = test_stall_ff[TEST_STALL_P] & ~flush_s1;
+   
+   initial
+      $display("Stall testing is enabled!");
+`define test_stall test_stall
 `else
-   assign test_stall = 'b0;
+`define test_stall 'b0
 `endif
    
    // Stall if ICINV is temporarily unavailable during access
@@ -758,9 +763,9 @@ module ex
    // | lsu_stall_req       |  Frontend   | EX(s1,s2,s3)           |
    // +---------------------+-------------+------------------------+
    //
-   assign stall = (lsu_stall_req | icinv_stall_req | test_stall);
+   assign stall = (lsu_stall_req | icinv_stall_req | `test_stall);
    assign p_ce_s1 = (p_ce_s1_no_icinv_stall & ~icinv_stall_req);
-   assign p_ce_s1_no_icinv_stall = ~(lsu_stall_req | test_stall);
+   assign p_ce_s1_no_icinv_stall = ~(lsu_stall_req | `test_stall);
    assign p_ce_s2 = ~(lsu_stall_req);
    assign p_ce_s3 = ~(lsu_stall_req);
    
@@ -816,7 +821,7 @@ module ex
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc;
    wire                                commit_exc;
 
-   wire s1i_dft_stall_req = (icinv_stall_req | test_stall); // Stall req from s1
+   wire s1i_dft_stall_req = (icinv_stall_req | `test_stall); // Stall req from s1
    wire s1o_dft_stall_req;
    wire s3i_dft_stall_req = (lsu_stall_req); // Stall req from s3
    
