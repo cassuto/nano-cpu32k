@@ -818,7 +818,7 @@ module ex
    
    // Once the first channel induced an exception, the remaining channels would be invalidated.
    // However, the first channel that causes the exception should notify difftest to synchronize architectural event.
-   mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_valid[0]), .Q(s2o_valid[0]) );
+   mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_valid[0] & ~dft_stall_req_s1), .Q(s2o_valid[0]) );
    mDFF_lr # (.DW(IW-1)) ff_s2o_valid2 (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|flush_s2), .D(s1o_valid[IW-1:1] & {IW-1{~flush_s2 & ~dft_stall_req_s1}}), .Q(s2o_valid[IW-1:1]) );
    
    mDFF_lr # (.DW(1)) ff_s2o_exc (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(exc_flush), .Q(s2o_exc) );
