@@ -31,7 +31,6 @@ module cmt
 )
 (
    input                               clk,
-   input                               stall,
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat,
    input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_we,

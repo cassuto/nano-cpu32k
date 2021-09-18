@@ -12,7 +12,7 @@ module difftest
 (
    input                               clk,
    input                               rst,
-   input                               stall,
+   input                               p_ce_s3,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid,
    input [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc,
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat,
@@ -29,7 +29,7 @@ module difftest
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat_ff;
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_we_ff;
    
-   mDFF_r #(.DW(1<<CONFIG_P_ISSUE_WIDTH)) ff_commit_valid (.CLK(clk), .RST(rst), .D(commit_valid & {(1<<CONFIG_P_ISSUE_WIDTH){~stall}}), .Q(commit_valid_ff));
+   mDFF_r #(.DW(1<<CONFIG_P_ISSUE_WIDTH)) ff_commit_valid (.CLK(clk), .RST(rst), .D(commit_valid & {(1<<CONFIG_P_ISSUE_WIDTH){p_ce_s3}}), .Q(commit_valid_ff));
    mDFF #(.DW(`PC_W*(1<<CONFIG_P_ISSUE_WIDTH))) ff_commit_pc (.CLK(clk), .D(commit_pc), .Q(commit_pc_ff));
    mDFF #(.DW(`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH))) ff_commit_rf_waddr (.CLK(clk), .D(commit_rf_waddr), .Q(commit_rf_waddr_ff));
    mDFF #(.DW(CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH))) ff_commit_rf_wdat (.CLK(clk), .D(commit_rf_wdat), .Q(commit_rf_wdat_ff));

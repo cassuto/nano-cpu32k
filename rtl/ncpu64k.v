@@ -514,7 +514,6 @@ module ncpu64k
        .arf_RDATA                       (arf_RDATA[(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0]),
        // Inputs
        .clk                             (clk),
-       .stall                           (stall),
        .commit_rf_wdat                  (commit_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .commit_rf_waddr                 (commit_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .commit_rf_we                    (commit_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
@@ -533,7 +532,7 @@ module ncpu64k
       (
          .clk                             (clk),
          .rst                             (rst),
-         .stall                           (stall),
+         .p_ce_s3                         (U_EX.p_ce_s3),
          .commit_valid                    (U_EX.commit_valid),
          .commit_pc                       (U_EX.commit_pc),
          .commit_rf_wdat                  (commit_rf_wdat),
