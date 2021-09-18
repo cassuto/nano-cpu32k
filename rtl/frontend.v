@@ -67,8 +67,6 @@ module frontend
    input [`PC_W-1:0]                   bpu_wb_pc,
    input [`PC_W-1:0]                   bpu_wb_npc_act,
    input [`BPU_UPD_W-1:0]              bpu_wb_upd,
-   // To EX
-   output                              icop_stall_req,
    // PSR
    input                               msr_psr_imme,
    input                               msr_psr_rm,
@@ -88,6 +86,7 @@ module frontend
    // ICINV
    input [CONFIG_DW-1:0]               msr_icinv_nxt,
    input                               msr_icinv_we,
+   output                              msr_icinv_ready,
    // AXI Master
    input                               ibus_ARREADY,
    output                              ibus_ARVALID,
@@ -116,9 +115,9 @@ module frontend
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 ic_stall_req;           // From U_ICACHE of icache.v
-   wire [`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_ins;// From U_ICACHE of icache.v
-   wire                 iq_ready;               // From U_IQ of iq.v
+   wire                 ic_stall_req;           // From U_I_CACHE of icache.v
+   wire [`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_ins;// From U_I_CACHE of icache.v
+   wire                 iq_ready;               // From U_PREFETCH_BUF of prefetch_buf.v
    // End of automatics
    /*AUTOINPUT*/
    wire                                p_ce;
@@ -170,7 +169,6 @@ module frontend
       .stall_req                       (ic_stall_req),
       .ins                             (iq_ins[]),
       .valid                           (s2o_valid),
-      .stall_ex_req                    (icop_stall_req),
       .uncached_s2                     (s2i_uncached),
       .kill_req_s2                     (s2i_kill_req),
       .ppn_s2                          (s1o_tlb_ppn),
@@ -195,10 +193,10 @@ module frontend
       (/*AUTOINST*/
        // Outputs
        .stall_req                       (ic_stall_req),          // Templated
-       .stall_ex_req                    (icop_stall_req),        // Templated
        .ins                             (iq_ins[`NCPU_INSN_DW*(1<<CONFIG_P_FETCH_WIDTH)-1:0]), // Templated
        .valid                           (s2o_valid),             // Templated
        .msr_icid                        (msr_icid[CONFIG_DW-1:0]),
+       .msr_icinv_ready                 (msr_icinv_ready),
        .ibus_ARVALID                    (ibus_ARVALID),
        .ibus_ARADDR                     (ibus_ARADDR[AXI_ADDR_WIDTH-1:0]),
        .ibus_ARPROT                     (ibus_ARPROT[2:0]),
@@ -217,7 +215,7 @@ module frontend
        .rst                             (rst),
        .vpo                             (vpo[CONFIG_P_PAGE_SIZE-1:0]),
        .ppn_s2                          (s1o_tlb_ppn),           // Templated
-       .uncached_s2                     (s2i_uncached),       // Templated
+       .uncached_s2                     (s2i_uncached),          // Templated
        .kill_req_s2                     (s2i_kill_req),          // Templated
        .msr_icinv_nxt                   (msr_icinv_nxt[CONFIG_DW-1:0]),
        .msr_icinv_we                    (msr_icinv_we),

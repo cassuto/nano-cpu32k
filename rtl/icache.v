@@ -43,7 +43,6 @@ module icache
    input                               clk,
    input                               rst,
    output                              stall_req,
-   output                              stall_ex_req,
    input [CONFIG_P_PAGE_SIZE-1:0]      vpo,
    input [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2,
    input                               uncached_s2,
@@ -55,6 +54,7 @@ module icache
    // ICINV
    input [CONFIG_DW-1:0]               msr_icinv_nxt,
    input                               msr_icinv_we,
+   output                              msr_icinv_ready,
 
    // AXI Master (Inst Bus)
    input                               ibus_ARREADY,
@@ -378,7 +378,7 @@ module icache
 
    assign stall_req = (fsm_state_ff != S_IDLE);
 
-   assign stall_ex_req = (msr_icinv_we & stall_req); // Stall the EX if icache is temporarily unable to receive a new operation
+   assign msr_icinv_ready = (~stall_req); // Tell if I$ is temporarily unable to receive ICINV operation
 
    assign s2i_refill_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] ==
                                  fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);

@@ -107,8 +107,6 @@ module ex
    output [`PC_W-1:0]                  bpu_wb_pc,
    output [`PC_W-1:0]                  bpu_wb_npc_act,
    output [`BPU_UPD_W-1:0]             bpu_wb_upd,
-   // From I$
-   input                               icop_stall_req,
    // IRQs
    input [CONFIG_NUM_IRQ-1:0]          irqs,
    output                              irq_async,
@@ -132,6 +130,7 @@ module ex
    // ICINV
    output [CONFIG_DW-1:0]              msr_icinv_nxt,
    output                              msr_icinv_we,
+   input                               msr_icinv_ready,
    // AXI Master (Cached access)
    input                               dbus_ARREADY,
    output                              dbus_ARVALID,
@@ -259,6 +258,8 @@ module ex
    wire [`BPU_UPD_W-1:0]               ex_bpu_upd_unpacked           [IW-1:0];
    wire [`PC_W-1:0]                    npc                           [IW-1:0];
    reg [IW-1:0]                        cmt_valid_msk;
+   wire                                icinv_stall_req;
+   wire                                p_ce_s1_no_icinv_stall;
    wire [IW-1:0]                       se_fail_vec;
    wire [`PC_W*IW-1:0]                 se_tgt_vec;
    wire                                se_fail;
@@ -446,6 +447,7 @@ module ex
        .rst                             (rst),
        .flush_s1                        (flush_s1),
        .p_ce_s1                         (p_ce_s1),
+       .p_ce_s1_no_icinv_stall          (p_ce_s1_no_icinv_stall),
        .p_ce_s2                         (p_ce_s2),
        .ex_pc                           (ex_pc[0*`PC_W +: `PC_W]), // Templated
        .ex_npc                          (npc[0]),                // Templated
@@ -739,13 +741,17 @@ module ex
          test_stall_ff <= ~test_stall_ff;
    assign test_stall = test_stall_ff & ~flush_s1;
    
+   // Stall if ICINV is temporarily unavailable during access
+   assign icinv_stall_req = (msr_icinv_we & ~msr_icinv_ready);
+   
    //
    // Pipeline stall scope table:
-   // icop_stall_req:   Frontend & EX(s1)
-   // lsu_stall_req:    Frontend & EX(s1,s2,s3)
+   // icinv_stall_req:   Frontend & EX(s1)
+   // lsu_stall_req:     Frontend & EX(s1,s2,s3)
    //
-   assign stall = (lsu_stall_req | icop_stall_req | test_stall);
-   assign p_ce_s1 = ~(lsu_stall_req | icop_stall_req | test_stall);
+   assign stall = (lsu_stall_req | icinv_stall_req | test_stall);
+   assign p_ce_s1 = (p_ce_s1_no_icinv_stall & ~test_stall);
+   assign p_ce_s1_no_icinv_stall = ~(lsu_stall_req | test_stall);
    assign p_ce_s2 = ~(lsu_stall_req);
    assign p_ce_s3 = ~(lsu_stall_req);
    

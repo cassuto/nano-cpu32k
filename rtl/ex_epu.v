@@ -45,6 +45,7 @@ module ex_epu
    input                               rst,
    input                               flush_s1,
    input                               p_ce_s1,
+   input                               p_ce_s1_no_icinv_stall,
    input                               p_ce_s2,
    input [`PC_W-1:0]                   ex_pc,
    input [`PC_W-1:0]                   ex_npc,
@@ -526,7 +527,9 @@ module ex_epu
    assign msr_dmm_tlbh_we = s1o_commit_msr_dmm_tlbh_we;
 
    // Commit IC
-   assign msr_icinv_we = s1i_msr_ic_inv_we;
+   // Not fire until the pipeline clock is enabled, to avoid interlock between front-end and back-end
+   // and avoid repeated operation.
+   assign msr_icinv_we = (s1i_msr_ic_inv_we & p_ce_s1_no_icinv_stall);
    assign msr_icinv_nxt = s1i_msr_wdat;
 
    // Commit DC

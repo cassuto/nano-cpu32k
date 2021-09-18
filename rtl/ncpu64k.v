@@ -176,7 +176,6 @@ module ncpu64k
    wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_waddr;// From U_ID of id.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_we;// From U_ID of id.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_valid;// From U_ID of id.v
-   wire                 icop_stall_req;         // From U_FNT of frontend.v
    wire [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd;// From U_FNT of frontend.v
    wire [`FNT_EXC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc;// From U_FNT of frontend.v
    wire [`NCPU_INSN_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins;// From U_FNT of frontend.v
@@ -186,6 +185,7 @@ module ncpu64k
    wire                 irq_async;              // From U_EX of ex.v
    wire [CONFIG_DW-1:0] msr_icid;               // From U_FNT of frontend.v
    wire [CONFIG_DW-1:0] msr_icinv_nxt;          // From U_EX of ex.v
+   wire                 msr_icinv_ready;        // From U_FNT of frontend.v
    wire                 msr_icinv_we;           // From U_EX of ex.v
    wire [CONFIG_ITLB_P_SETS-1:0] msr_imm_tlbh_idx;// From U_EX of ex.v
    wire [CONFIG_DW-1:0] msr_imm_tlbh_nxt;       // From U_EX of ex.v
@@ -248,9 +248,9 @@ module ncpu64k
        .id_pc                           (id_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .id_exc                          (id_exc[`FNT_EXC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .id_bpu_upd                      (id_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .icop_stall_req                  (icop_stall_req),
        .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
        .msr_icid                        (msr_icid[CONFIG_DW-1:0]),
+       .msr_icinv_ready                 (msr_icinv_ready),
        .ibus_ARVALID                    (ibus_ARVALID),
        .ibus_ARADDR                     (ibus_ARADDR[AXI_ADDR_WIDTH-1:0]),
        .ibus_ARPROT                     (ibus_ARPROT[2:0]),
@@ -485,10 +485,10 @@ module ncpu64k
        .ex_operand2                     (ex_operand2[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_rf_waddr                     (ex_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_rf_we                        (ex_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .icop_stall_req                  (icop_stall_req),
        .irqs                            (irqs[CONFIG_NUM_IRQ-1:0]),
        .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
        .msr_icid                        (msr_icid[CONFIG_DW-1:0]),
+       .msr_icinv_ready                 (msr_icinv_ready),
        .dbus_ARREADY                    (dbus_ARREADY),
        .dbus_RVALID                     (dbus_RVALID),
        .dbus_RDATA                      (dbus_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
