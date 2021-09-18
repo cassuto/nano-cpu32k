@@ -335,6 +335,9 @@ CPU::step(vm_addr_t pc)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
+        if(pc==0x80000194){
+            printf("LDW %#x va=%#x dat=%#x\n", pc, va, readout);
+        }
     }
     break;
 
