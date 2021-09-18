@@ -748,7 +748,7 @@ module ex
       $display("=====\n[WARNING] Stall testing enabled (TEST_STALL_P=%d) \n=====\n", TEST_STALL_P);
 `define test_stall test_stall
 `else
-`define test_stall 'b0
+`define test_stall 1'b0
 `endif
    
    // Stall if ICINV is temporarily unavailable during access

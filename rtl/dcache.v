@@ -157,6 +157,7 @@ module dcache
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2i_match_vec;
    wire                                s2i_match_vec_ce;
    wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2o_fsm_free_way;
+   wire [(1<<CONFIG_DC_P_WAYS)-1:0]    s2i_wb_way;
    // Stage 2 Output / Stage 3 Input
    wire                                s2o_fls;
    wire [CONFIG_DC_P_SETS-1:0]         s2o_line_addr;
@@ -293,10 +294,13 @@ module dcache
    assign s2i_match_vec = (fsm_state_ff==S_RELOAD_S1O_S2O) ? s2o_fsm_free_way : s2i_hit_vec;
    assign s2i_match_vec_ce = (p_ce | (fsm_state_ff==S_RELOAD_S1O_S2O));
    
+   // Select the way to be written back
+   assign s2i_wb_way = (s2o_fls) ? s2o_match_vec : s2o_fsm_free_way;
+   
    // Sel the dout of matched way
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_payload (.sel(s2o_match_vec), .din(s2o_payload), .dout(s2o_match_payload));
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s2o_d (.sel(s2o_match_vec), .din(s2o_d), .dout(s2o_match_dirty));
-   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_wb_payload (.sel(s2o_fsm_free_way), .din(s2o_payload), .dout(s2o_wb_payload));
+   pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s2o_wb_payload (.sel(s2i_wb_way), .din(s2o_payload), .dout(s2o_wb_payload));
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(1)) pmux_s1o_free_dirty (.sel(fsm_free_way), .din(s1o_d), .dout(s1o_free_dirty));
    pmux #(.SELW(1<<CONFIG_DC_P_WAYS), .DW(TAG_WIDTH)) pmux_s2i_free_tag (.sel(fsm_free_way), .din(s2i_tag_packed), .dout(s2i_free_tag));
                                                   
