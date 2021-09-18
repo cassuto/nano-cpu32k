@@ -264,7 +264,7 @@ module ex
    wire                                agu_en;
    wire [`BPU_UPD_W-1:0]               ex_bpu_upd_unpacked           [IW-1:0];
    wire [`PC_W-1:0]                    npc                           [IW-1:0];
-   reg [IW-1:0]                        valid_msk;
+   reg [IW-1:0]                        cmt_valid_msk;
    wire [IW-1:0]                       se_fail_vec;
    wire [`PC_W*IW-1:0]                 se_tgt_vec;
    wire                                se_fail;
@@ -289,8 +289,7 @@ module ex
    wire                                flush_s1;
    wire                                flush_s2;
    // Stage 1 Input
-   wire [IW-1:0]                       s1i_valid;
-   wire                                s1i_lsu_valid;
+   wire [IW-1:0]                       s1i_cmt_valid;
    wire [CONFIG_DW*IW-1:0]             s1i_rf_dout_1, s1i_rf_dout;
    wire [IW-1:0]                       s1i_rf_we;
    // Stage 2 Input / Stage 1 Output
@@ -538,7 +537,7 @@ module ex
 
 
    /* ex_lsu AUTO_TEMPLATE (
-         .ex_valid         (s1i_lsu_valid),
+         .ex_valid         (s1i_cmt_valid[0]),
          .ex_lsu_opc_bus   (ex_lsu_opc_bus[0*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
          .add_sum          (add_sum[0]),
          .ex_operand2      (ex_operand2[0*CONFIG_DW +: CONFIG_DW]),
@@ -612,7 +611,7 @@ module ex
        .rst                             (rst),
        .stall                           (stall),
        .flush_s1                        (flush_s1),
-       .ex_valid                        (s1i_lsu_valid),         // Templated
+       .ex_valid                        (s1i_cmt_valid[0]),      // Templated
        .ex_lsu_opc_bus                  (ex_lsu_opc_bus[0*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]), // Templated
        .add_sum                         (add_sum[0]),            // Templated
        .ex_operand2                     (ex_operand2[0*CONFIG_DW +: CONFIG_DW]), // Templated
@@ -722,12 +721,10 @@ module ex
 
    always @(*)
       begin
-         valid_msk[0] = 'b1;
+         cmt_valid_msk[0] = 'b1;
          for(j=1;j<IW;j=j+1)
-            valid_msk[j] = valid_msk[j-1] & ~se_fail_vec[j-1];
+            cmt_valid_msk[j] = cmt_valid_msk[j-1] & ~se_fail_vec[j-1];
       end
-   
-   assign s1i_valid = (ex_valid & valid_msk);
 
    // Write BPU
    assign bpu_wb = ex_valid[0];
@@ -739,7 +736,7 @@ module ex
    assign bpu_wb_npc_act = se_tgt_vec[0 +: `PC_W];
    assign bpu_wb_upd = ex_bpu_upd[0*`BPU_UPD_W +: `BPU_UPD_W];
    
-   assign s1i_rf_we = (s1i_valid & ex_rf_we);
+   assign s1i_rf_we = (s1i_cmt_valid & ex_rf_we);
 
    // MUX for ARF write data
    assign s3i_rf_wdat[0 +: CONFIG_DW] = (s2o_lsu_load0)
@@ -788,7 +785,7 @@ module ex
    assign p_ce_s3 = ~(lsu_stall_req);
    
    // Avoid repeated firing while EX(s1) stalling
-   assign s1i_lsu_valid = (ex_valid[0] & p_ce_s1);
+   assign s1i_cmt_valid = (ex_valid & cmt_valid_msk & {IW{p_ce_s1}});
    
    assign se_flush = (s1o_se_flush & p_ce_s2);
    
@@ -852,7 +849,7 @@ module ex
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc;
    wire                                commit_exc;
 
-   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_valid & {IW{~flush_s1}}), .Q(s1o_valid) );
+   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_cmt_valid & {IW{~flush_s1}}), .Q(s1o_valid) );
    
    // Once the first channel induced an exception, the remaining channels would be invalidated.
    // However, the first channel should be committed to difftest, with architectural state unchanged.
