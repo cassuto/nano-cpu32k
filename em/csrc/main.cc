@@ -395,7 +395,7 @@ int main(int argc, char *argv[])
                 retcode = -1;
                 break;
             }
-            if (emu->get_cycle() % 10000 == 0)
+            if ((emu->get_cycle() % 10000) == 0)
                 printf("\r[%lu]", emu->get_cycle());
         }
         printf("\n");
