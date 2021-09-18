@@ -862,9 +862,9 @@ module ex
    mDFF_lr # (.DW(1)) ff_s2o_exc (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(exc_flush), .Q(s2o_exc) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s1o_pc (.CLK(clk), .LOAD(p_ce_s1), .D(ex_pc), .Q(s1o_pc) );
    mDFF_l # (.DW(`PC_W*IW)) ff_s2o_pc (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_pc), .Q(s2o_pc) );
-   mDFF_lr # (.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s2o_valid), .Q(commit_valid) );
-   mDFF_l # (.DW(`PC_W*IW)) ff_commit_pc (.CLK(clk), .LOAD(p_ce_s1), .D(s2o_pc), .Q(commit_pc) );
-   mDFF_lr # (.DW(1)) ff_commit_exc (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s2o_exc), .Q(commit_exc) );
+   mDFF_lr # (.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s3), .D(s2o_valid), .Q(commit_valid) );
+   mDFF_l # (.DW(`PC_W*IW)) ff_commit_pc (.CLK(clk), .LOAD(p_ce_s3), .D(s2o_pc), .Q(commit_pc) );
+   mDFF_lr # (.DW(1)) ff_commit_exc (.CLK(clk), .RST(rst), .LOAD(p_ce_s3), .D(s2o_exc), .Q(commit_exc) );
 `endif
 
 `ifdef ENABLE_DIFFTEST
