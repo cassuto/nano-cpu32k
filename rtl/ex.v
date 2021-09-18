@@ -731,7 +731,7 @@ module ex
    assign ro_ex_s2_load0 = s1o_lsu_load0;
    assign ro_ex_s3_load0 = s2o_lsu_load0;
 
-   localparam TEST_STALL_P = 0;
+   localparam TEST_STALL_P = 1;
    wire test_stall;
    generate
       if (TEST_STALL_P < 0)
