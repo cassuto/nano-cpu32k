@@ -397,11 +397,10 @@ int main(int argc, char *argv[])
                 break;
             }
             cycle = emu->get_cycle();
-            printf("\r[%lu]", cycle);
-            if (cycle - last_cycle >= 10000)
+            if (cycle - last_cycle >= 10000UL)
             {
                 last_cycle = cycle;
-                //printf("\r[%lu]", cycle);
+                printf("\r[%lu]", cycle);
             }
         }
         printf("\n");
