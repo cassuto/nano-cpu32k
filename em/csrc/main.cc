@@ -388,6 +388,7 @@ int main(int argc, char *argv[])
     {
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU, emu_CPU->memory());
         printf("\n");
+        uint64_t cycle, last_cycle = 0;
         for (uint64_t i = 0; /*i < 1000*/; i++)
         {
             if (emu->clk())
@@ -395,8 +396,12 @@ int main(int argc, char *argv[])
                 retcode = -1;
                 break;
             }
-            if ((emu->get_cycle() % 10000) == 0)
-                printf("\r[%lu]", emu->get_cycle());
+            cycle = emu->get_cycle();
+            if (cycle - last_cycle >= 10000)
+            {
+                last_cycle = cycle;
+                printf("\r[%lu]", cycle);
+            }
         }
         printf("\n");
         emu->finish();
