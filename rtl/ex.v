@@ -737,7 +737,7 @@ module ex
          test_stall_ff <= 'b0;
       else
          test_stall_ff <= ~test_stall_ff;
-   assign test_stall = ~flush_s1;
+   assign test_stall = test_stall_ff & ~flush_s1;
    
    //
    // Pipeline stall scope table:
