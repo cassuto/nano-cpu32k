@@ -156,13 +156,6 @@
 /* PSR register bitwidth */
 `define NCPU_PSR_DW 10
 
-/* PSR write enable bitwidth */
-`ifdef NCPU_ENABLE_MSGPORT
-`define NCPU_WMSR_WE_W (14+`NCPU_MSR_BANK_OFF_AW)
-`else
-`define NCPU_WMSR_WE_W (12+`NCPU_MSR_BANK_OFF_AW)
-`endif
-
 
 /*******************************************************************************
  * Start of MSR definitions

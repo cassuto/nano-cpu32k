@@ -186,18 +186,12 @@ module ex
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire                 epu_EINSN;              // From U_EPU of ex_epu.v
-   wire                 epu_EIPF;               // From U_EPU of ex_epu.v
-   wire                 epu_EIRQ;               // From U_EPU of ex_epu.v
-   wire                 epu_EITM;               // From U_EPU of ex_epu.v
-   wire                 epu_ERET;               // From U_EPU of ex_epu.v
-   wire                 epu_ESYSCALL;           // From U_EPU of ex_epu.v
-   wire                 epu_E_FLUSH_TLB;        // From U_EPU of ex_epu.v
-   wire [`PC_W-1:0]     epu_E_FLUSH_TLB_npc;    // From U_EPU of ex_epu.v
    wire [CONFIG_DW-1:0] epu_dout;               // From U_EPU of ex_epu.v
    wire                 epu_dout_valid;         // From U_EPU of ex_epu.v
-   wire [CONFIG_DW-1:0] epu_wmsr_dat;           // From U_EPU of ex_epu.v
-   wire [`NCPU_WMSR_WE_W-1:0] epu_wmsr_we;      // From U_EPU of ex_epu.v
+   wire                 epu_s2i_EALIGN;         // From U_LSU of ex_lsu.v
+   wire                 epu_s2i_EDPF;           // From U_LSU of ex_lsu.v
+   wire                 epu_s2i_EDTM;           // From U_LSU of ex_lsu.v
+   wire [CONFIG_AW-1:0] epu_s2i_vaddr;          // From U_LSU of ex_lsu.v
    wire                 exc_flush;              // From U_EPU of ex_epu.v
    wire [`PC_W-1:0]     exc_flush_tgt;          // From U_EPU of ex_epu.v
    wire                 lsu_stall_req;          // From U_LSU of ex_lsu.v
@@ -269,28 +263,11 @@ module ex
    wire [`PC_W*IW-1:0]                 se_tgt_vec;
    wire                                se_fail;
    wire [`PC_W-1:0]                    se_tgt;
-   wire  [`PC_W-1:0]                   commit_epc;
-   wire [`PC_W-1:0]                    commit_nepc;
-   wire                                commit_EDTM;
-   wire                                commit_EDPF;
-   wire                                commit_EALIGN;
-   wire  [CONFIG_AW-1:0]               commit_LSA;
-   wire                                commit_ERET;
-   wire                                commit_ESYSCALL;
-   wire                                commit_EINSN;
-   wire                                commit_EIPF;
-   wire                                commit_EITM;
-   wire                                commit_EIRQ;
-   wire                                commit_E_FLUSH_TLB;
-   wire [`PC_W-1:0]                    commit_E_FLUSH_TLB_npc;
-   wire  [`NCPU_WMSR_WE_W-1:0]         commit_wmsr_we;
-   wire  [CONFIG_DW-1:0]               commit_wmsr_dat;
    wire                                se_flush;
    wire                                flush_s1;
    wire                                flush_s2;
    // Stage 1 Input
    wire [IW-1:0]                       s1i_cmt_valid;
-   wire                                s1i_lsu_req_valid;
    wire [CONFIG_DW*IW-1:0]             s1i_rf_dout_1, s1i_rf_dout;
    wire [IW-1:0]                       s1i_rf_we;
    // Stage 2 Input / Stage 1 Output
@@ -391,13 +368,14 @@ module ex
       );
 
    /* ex_epu AUTO_TEMPLATE (
-         .ex_valid         (ex_valid[0]),
+         .ex_valid         (s1i_cmt_valid[0]),
          .ex_pc            (ex_pc[0*`PC_W +: `PC_W]),
          .ex_npc           (npc[0]),
          .ex_epu_opc_bus   (ex_epu_opc_bus[0*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
          .ex_operand1      (ex_operand1[0*CONFIG_DW +: CONFIG_DW]),
          .ex_operand2      (ex_operand2[0*CONFIG_DW +: CONFIG_DW]),
          .ex_imm           (ex_imm[0*CONFIG_DW +: CONFIG_DW]),
+         .s2i_\(.*\)       (epu_s2i_\1[]),
       ) */
    ex_epu
       #(/*AUTOINSTPARAM*/
@@ -420,16 +398,6 @@ module ex
        // Outputs
        .epu_dout                        (epu_dout[CONFIG_DW-1:0]),
        .epu_dout_valid                  (epu_dout_valid),
-       .epu_wmsr_dat                    (epu_wmsr_dat[CONFIG_DW-1:0]),
-       .epu_wmsr_we                     (epu_wmsr_we[`NCPU_WMSR_WE_W-1:0]),
-       .epu_ERET                        (epu_ERET),
-       .epu_ESYSCALL                    (epu_ESYSCALL),
-       .epu_EINSN                       (epu_EINSN),
-       .epu_EIPF                        (epu_EIPF),
-       .epu_EITM                        (epu_EITM),
-       .epu_EIRQ                        (epu_EIRQ),
-       .epu_E_FLUSH_TLB                 (epu_E_FLUSH_TLB),
-       .epu_E_FLUSH_TLB_npc             (epu_E_FLUSH_TLB_npc[`PC_W-1:0]),
        .exc_flush                       (exc_flush),
        .exc_flush_tgt                   (exc_flush_tgt[`PC_W-1:0]),
        .irq_async                       (irq_async),
@@ -476,30 +444,20 @@ module ex
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
-       .stall                           (stall),
+       .flush_s1                        (flush_s1),
+       .p_ce_s1                         (p_ce_s1),
+       .p_ce_s2                         (p_ce_s2),
        .ex_pc                           (ex_pc[0*`PC_W +: `PC_W]), // Templated
        .ex_npc                          (npc[0]),                // Templated
-       .ex_valid                        (ex_valid[0]),           // Templated
+       .ex_valid                        (s1i_cmt_valid[0]),      // Templated
        .ex_epu_opc_bus                  (ex_epu_opc_bus[0*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]), // Templated
        .ex_operand1                     (ex_operand1[0*CONFIG_DW +: CONFIG_DW]), // Templated
        .ex_operand2                     (ex_operand2[0*CONFIG_DW +: CONFIG_DW]), // Templated
        .ex_imm                          (ex_imm[0*CONFIG_DW +: CONFIG_DW]), // Templated
-       .commit_epc                      (commit_epc[`PC_W-1:0]),
-       .commit_nepc                     (commit_nepc[`PC_W-1:0]),
-       .commit_EDTM                     (commit_EDTM),
-       .commit_EDPF                     (commit_EDPF),
-       .commit_EALIGN                   (commit_EALIGN),
-       .commit_E_FLUSH_TLB              (commit_E_FLUSH_TLB),
-       .commit_LSA                      (commit_LSA[CONFIG_AW-1:0]),
-       .commit_ERET                     (commit_ERET),
-       .commit_ESYSCALL                 (commit_ESYSCALL),
-       .commit_EINSN                    (commit_EINSN),
-       .commit_EIPF                     (commit_EIPF),
-       .commit_EITM                     (commit_EITM),
-       .commit_EIRQ                     (commit_EIRQ),
-       .commit_wmsr_we                  (commit_wmsr_we[`NCPU_WMSR_WE_W-1:0]),
-       .commit_wmsr_dat                 (commit_wmsr_dat[CONFIG_DW-1:0]),
-       .commit_E_FLUSH_TLB_npc          (commit_E_FLUSH_TLB_npc[`PC_W-1:0]),
+       .s2i_EDTM                        (epu_s2i_EDTM),          // Templated
+       .s2i_EDPF                        (epu_s2i_EDPF),          // Templated
+       .s2i_EALIGN                      (epu_s2i_EALIGN),        // Templated
+       .s2i_vaddr                       (epu_s2i_vaddr[CONFIG_AW-1:0]), // Templated
        .irqs                            (irqs[CONFIG_NUM_IRQ-1:0]),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
        .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
@@ -538,14 +496,14 @@ module ex
 
 
    /* ex_lsu AUTO_TEMPLATE (
-         .ex_valid         (s1i_lsu_req_valid),
+         .ex_valid         (s1i_cmt_valid[0]),
          .ex_lsu_opc_bus   (ex_lsu_opc_bus[0*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
          .add_sum          (add_sum[0]),
          .ex_operand2      (ex_operand2[0*CONFIG_DW +: CONFIG_DW]),
-         .lsu_EDTM         (commit_EDTM),
-         .lsu_EDPF         (commit_EDPF),
-         .lsu_EALIGN       (commit_EALIGN),
-         .lsu_vaddr        (commit_LSA),
+         .lsu_EDTM         (epu_s2i_EDTM),
+         .lsu_EDPF         (epu_s2i_EDPF),
+         .lsu_EALIGN       (epu_s2i_EALIGN),
+         .lsu_vaddr        (epu_s2i_vaddr[]),
          .lsu_dout         (s2o_lsu_dout0),
       ) */
    ex_lsu
@@ -600,17 +558,17 @@ module ex
        .dbus_WLAST                      (dbus_WLAST),
        .dbus_WUSER                      (dbus_WUSER[AXI_USER_WIDTH-1:0]),
        .dbus_BREADY                     (dbus_BREADY),
-       .lsu_EDTM                        (commit_EDTM),           // Templated
-       .lsu_EDPF                        (commit_EDPF),           // Templated
-       .lsu_EALIGN                      (commit_EALIGN),         // Templated
-       .lsu_vaddr                       (commit_LSA),            // Templated
+       .lsu_EDTM                        (epu_s2i_EDTM),          // Templated
+       .lsu_EDPF                        (epu_s2i_EDPF),          // Templated
+       .lsu_EALIGN                      (epu_s2i_EALIGN),        // Templated
+       .lsu_vaddr                       (epu_s2i_vaddr[CONFIG_AW-1:0]), // Templated
        .lsu_dout                        (s2o_lsu_dout0),         // Templated
        .msr_dmmid                       (msr_dmmid[CONFIG_DW-1:0]),
        .msr_dcid                        (msr_dcid[CONFIG_DW-1:0]),
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
-       .stall                           (stall),
+       .p_ce_s1                         (p_ce_s1),
        .flush_s1                        (flush_s1),
        .ex_valid                        (s1i_cmt_valid[0]),      // Templated
        .ex_lsu_opc_bus                  (ex_lsu_opc_bus[0*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]), // Templated
@@ -728,6 +686,8 @@ module ex
       end
    
    assign s1i_cmt_valid = (ex_valid & cmt_valid_msk);
+   
+   assign se_flush = (s1o_se_flush & p_ce_s2);
 
    // Write BPU
    assign bpu_wb = ex_valid[0];
@@ -769,13 +729,15 @@ module ex
    assign ro_ex_s2_load0 = s1o_lsu_load0;
    assign ro_ex_s3_load0 = s2o_lsu_load0;
 
-   reg test_stall;
+   reg test_stall_ff;
+   wire test_stall;
    
    always @(posedge clk)
-      if (rst)
-         test_stall <= 'b0;
+      if (rst | flush_s1)
+         test_stall_ff <= 'b0;
       else
-         test_stall <= ~test_stall;
+         test_stall_ff <= ~test_stall_ff;
+   assign test_stall = ~flush_s1;
    
    //
    // Pipeline stall scope table:
@@ -787,19 +749,6 @@ module ex
    assign p_ce_s2 = ~(lsu_stall_req);
    assign p_ce_s3 = ~(lsu_stall_req);
    
-   // Avoid repeated firing while EX(s1) stalling
-   assign s1i_lsu_req_valid = (s1i_cmt_valid[0] & p_ce_s1);
-   
-   assign se_flush = (s1o_se_flush & p_ce_s2);
-   
-   assign flush = (exc_flush | se_flush);
-   // Maintain the priority of exception or speculative execution failure
-   // Highest - Exception
-   // Lowest - Speculative execution failure
-   assign flush_tgt = (exc_flush)
-                        ? exc_flush_tgt
-                        : s1o_se_flush_tgt; /* (se_flush) */ 
-   
    //
    // Pipeline flush scope table:
    // exc_flush:  (Output of) Frontend & ID & EX(s1,s2)
@@ -807,6 +756,14 @@ module ex
    //
    assign flush_s1 = (exc_flush | se_flush);
    assign flush_s2 = (exc_flush);
+   
+   assign flush = (exc_flush | se_flush);
+   // Maintain the priority of exception or speculative execution failure
+   // Highest - Exception
+   // Lowest - Speculative execution failure
+   assign flush_tgt = (exc_flush)
+                        ? exc_flush_tgt
+                        : s1o_se_flush_tgt; /* (se_flush) */
    
    //
    // Pipeline stages
@@ -817,18 +774,6 @@ module ex
    mDFF_lr # (.DW(IW)) ff_s1o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_rf_we & {IW{~flush_s1}}), .Q(s1o_rf_we) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_s1o_rf_dout (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_rf_dout), .Q(s1o_rf_dout) );
    mDFF_lr # (.DW(1)) ff_s1o_lsu_load (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(ex_lsu_load0 & ~flush_s1), .Q(s1o_lsu_load0) );
-   mDFF_l # (.DW(`PC_W)) ff_commit_epc (.CLK(clk), .LOAD(p_ce_s1), .D(ex_pc[0 +: `PC_W]), .Q(commit_epc) );
-   mDFF_l # (.DW(`PC_W)) ff_commit_nepc (.CLK(clk), .LOAD(p_ce_s1), .D(npc[0]), .Q(commit_nepc) );
-   mDFF_lr # (.DW(1)) ff_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_ERET & ~flush_s1), .Q(commit_ERET) );
-   mDFF_lr # (.DW(1)) ff_commit_ESYSCALL (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_ESYSCALL & ~flush_s1), .Q(commit_ESYSCALL) );
-   mDFF_lr # (.DW(1)) ff_commit_EINSN (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_EINSN & ~flush_s1), .Q(commit_EINSN) );
-   mDFF_lr # (.DW(1)) ff_commit_EIPF (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_EIPF & ~flush_s1), .Q(commit_EIPF) );
-   mDFF_lr # (.DW(1)) ff_commit_EITM (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_EITM & ~flush_s1), .Q(commit_EITM) );
-   mDFF_lr # (.DW(1)) ff_commit_EIRQ (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_EIRQ & ~flush_s1), .Q(commit_EIRQ) );
-   mDFF_lr # (.DW(1)) ff_commit_E_FLUSH_TLB (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_E_FLUSH_TLB & ~flush_s1), .Q(commit_E_FLUSH_TLB) );
-   mDFF_lr # (.DW(`NCPU_WMSR_WE_W)) ff_commit_wmsr_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_wmsr_we  & {`NCPU_WMSR_WE_W{~flush_s1}}), .Q(commit_wmsr_we) );
-   mDFF_l # (.DW(CONFIG_DW)) ff_commit_wmsr_dat (.CLK(clk), .LOAD(p_ce_s1), .D(epu_wmsr_dat), .Q(commit_wmsr_dat) );
-   mDFF_l # (.DW(`PC_W)) ff_commit_E_FLUSH_TLB_npc (.CLK(clk), .LOAD(p_ce_s1), .D(epu_E_FLUSH_TLB_npc), .Q(commit_E_FLUSH_TLB_npc) );
    
    mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s2o_rf_waddr (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_rf_waddr), .Q(s2o_rf_waddr) );
    mDFF_lr # (.DW(IW)) ff_s2o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|flush_s2), .D(s1o_rf_we & {IW{~flush_s2 & p_ce_s1}}), .Q(s2o_rf_we) );

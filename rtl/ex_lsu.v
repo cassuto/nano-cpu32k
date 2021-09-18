@@ -43,7 +43,7 @@ module ex_lsu
 (
    input                               clk,
    input                               rst,
-   input                               stall,
+   input                               p_ce_s1,
    input                               flush_s1,
    output                              lsu_stall_req,
    input                               ex_valid,
@@ -135,7 +135,6 @@ module ex_lsu
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 dc_stall_req;           // From U_D_CACHE of dcache.v
    // End of automatics
-   wire                                p_cke;
    // Stage 1 Input
    wire                                s1i_valid;
    wire                                s1i_load;
@@ -179,7 +178,7 @@ module ex_lsu
    wire [2:0]                          s2o_size;
    wire                                s2o_sign_ext;
 
-   assign s1i_valid = ex_valid & (s1i_load|s1i_store|s1i_dcop);
+   assign s1i_valid = ex_valid & ~flush_s1 & (s1i_load|s1i_store|s1i_dcop);
    assign s1i_load = ex_lsu_opc_bus[`NCPU_LSU_LOAD];
    assign s1i_store = ex_lsu_opc_bus[`NCPU_LSU_STORE];
    assign s1i_sign_ext = ex_lsu_opc_bus[`NCPU_LSU_SIGN_EXT];
@@ -221,11 +220,10 @@ module ex_lsu
 
    assign s1i_dc_vpo = s1i_dc_vaddr[CONFIG_P_PAGE_SIZE-1:0];
 
-   assign s1i_dc_req = (p_cke & s1i_valid & ~flush_s1);
+   // Not fire until the pipeline clock is enabled, to avoid repeated operation
+   assign s1i_dc_req = (p_ce_s1 & s1i_valid);
 
    assign s1i_tlb_req = (s1i_dc_req & ~s1i_dcop);
-
-   assign p_cke = (~stall);
 
    dmmu
       #(/*AUTOINSTPARAM*/
@@ -362,18 +360,18 @@ module ex_lsu
        .dbus_BUSER                      (dbus_BUSER[AXI_USER_WIDTH-1:0]));
 
    // Data path
-   mDFF_l #(.DW(3)) ff_s1o_size (.CLK(clk), .LOAD(p_cke), .D(s1i_size), .Q(s1o_size) );
-   mDFF_l #(.DW(CONFIG_AW)) ff_s1o_vaddr (.CLK(clk), .LOAD(p_cke), .D(s1i_dc_vaddr), .Q(s1o_vaddr) );
-   mDFF_l #(.DW(1)) ff_s1o_sign_ext (.CLK(clk), .LOAD(p_cke), .D(s1i_sign_ext), .Q(s1o_sign_ext) );
-   mDFF_l #(.DW(1)) ff_s1o_dcop (.CLK(clk), .LOAD(p_cke), .D(s1i_dcop), .Q(s1o_dcop) );
-   mDFF_l #(.DW(CONFIG_AW)) ff_s2o_vaddr (.CLK(clk), .LOAD(p_cke), .D(s1o_vaddr), .Q(s2o_vaddr) );
-   mDFF_l #(.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_cke), .D(s1o_size), .Q(s2o_size) );
-   mDFF_l #(.DW(1)) ff_s2o_sign_ext (.CLK(clk), .LOAD(p_cke), .D(s1o_sign_ext), .Q(s2o_sign_ext) );
+   mDFF_l #(.DW(3)) ff_s1o_size (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_size), .Q(s1o_size) );
+   mDFF_l #(.DW(CONFIG_AW)) ff_s1o_vaddr (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_dc_vaddr), .Q(s1o_vaddr) );
+   mDFF_l #(.DW(1)) ff_s1o_sign_ext (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_sign_ext), .Q(s1o_sign_ext) );
+   mDFF_l #(.DW(1)) ff_s1o_dcop (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_dcop), .Q(s1o_dcop) );
+   mDFF_l #(.DW(CONFIG_AW)) ff_s2o_vaddr (.CLK(clk), .LOAD(p_ce_s1), .D(s1o_vaddr), .Q(s2o_vaddr) );
+   mDFF_l #(.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_ce_s1), .D(s1o_size), .Q(s2o_size) );
+   mDFF_l #(.DW(1)) ff_s2o_sign_ext (.CLK(clk), .LOAD(p_ce_s1), .D(s1o_sign_ext), .Q(s2o_sign_ext) );
 
    // Control path
-   mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_cke|flush_s1), .D(s1i_valid & ~flush_s1), .Q(s1o_valid) );
-   mDFF_lr #(.DW(1)) ff_s1o_misalign (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(s1i_misalign), .Q(s1o_EALIGN) );
-   mDFF_lr #(.DW(1)) ff_s1o_msr_psr_dce (.CLK(clk), .RST(rst), .LOAD(p_cke), .D(msr_psr_dce), .Q(s1o_msr_psr_dce) );
+   mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_valid), .Q(s1o_valid) );
+   mDFF_lr #(.DW(1)) ff_s1o_misalign (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_misalign), .Q(s1o_EALIGN) );
+   mDFF_lr #(.DW(1)) ff_s1o_msr_psr_dce (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(msr_psr_dce), .Q(s1o_msr_psr_dce) );
    
 
    assign lsu_stall_req = (dc_stall_req);
