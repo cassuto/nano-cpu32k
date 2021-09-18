@@ -745,9 +745,13 @@ module ex
    assign icinv_stall_req = (msr_icinv_we & ~msr_icinv_ready);
    
    //
-   // Pipeline stall scope table:
-   // icinv_stall_req:   Frontend & EX(s1)
-   // lsu_stall_req:     Frontend & EX(s1,s2,s3)
+   // Pipeline stall scope:
+   // +---------------------+--------------------------------------+
+   // | Signal              | Scope                                |
+   // +---------------------+-------------+------------------------+
+   // | icinv_stall_req     |  Frontend   | EX(s1)                 |
+   // | lsu_stall_req       |  Frontend   | EX(s1,s2,s3)           |
+   // +---------------------+-------------+------------------------+
    //
    assign stall = (lsu_stall_req | icinv_stall_req | test_stall);
    assign p_ce_s1 = (p_ce_s1_no_icinv_stall & ~test_stall);
@@ -756,9 +760,13 @@ module ex
    assign p_ce_s3 = ~(lsu_stall_req);
    
    //
-   // Pipeline flush scope table:
-   // exc_flush:  (Output of) Frontend & ID & EX(s1,s2)
-   // se_flush:   (Output of) Frontend & ID & EX(s1)
+   // Pipeline flush scope:
+   // +---------------------+--------------------------------------+
+   // | Signal              | Scope                                |
+   // +---------------------+----------------------+---------------+
+   // | exc_flush           | (Output of) Frontend | ID & EX(s1,s2)|
+   // | se_flush            | (Output of) Frontend | ID & EX(s1)   |
+   // +---------------------+----------------------+---------------+
    //
    assign flush_s1 = (exc_flush | se_flush);
    assign flush_s2 = (exc_flush);

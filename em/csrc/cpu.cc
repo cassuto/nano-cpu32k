@@ -361,6 +361,10 @@ CPU::step(vm_addr_t pc)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
+        if (pa==0x80000020){
+            extern Emu *emu;
+            printf("stw [%lu] %#x va=%#x val=%#x\n", emu->get_cycle(), pc, va, (uint32_t)get_reg(rd) );
+        }
     }
     break;
 
