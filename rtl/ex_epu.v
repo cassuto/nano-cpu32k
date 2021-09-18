@@ -528,7 +528,7 @@ module ex_epu
 
    // Commit IC
    // Not fire until the pipeline clock is enabled, to avoid interlock between front-end and back-end
-   // and avoid repeated operation.
+   // and avoid repeated operation during pipeline stall.
    assign msr_icinv_we = (s1i_msr_ic_inv_we & p_ce_s1_no_icinv_stall);
    assign msr_icinv_nxt = s1i_msr_wdat;
 

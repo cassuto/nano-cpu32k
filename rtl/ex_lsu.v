@@ -220,7 +220,7 @@ module ex_lsu
 
    assign s1i_dc_vpo = s1i_dc_vaddr[CONFIG_P_PAGE_SIZE-1:0];
 
-   // Not fire until the pipeline clock is enabled, to avoid repeated operation
+   // Not fire until the pipeline clock is enabled, to avoid repeated operation during pipeline stall
    assign s1i_dc_req = (p_ce_s1 & s1i_valid);
 
    assign s1i_tlb_req = (s1i_dc_req & ~s1i_dcop);

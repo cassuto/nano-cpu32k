@@ -739,7 +739,7 @@ module ex
          test_stall_ff <= 'b0;
       else
          test_stall_ff <= ~test_stall_ff;
-   assign test_stall = test_stall_ff & ~flush_s1;
+   assign test_stall = 'b0; //test_stall_ff & ~flush_s1;
    
    // Stall if ICINV is temporarily unavailable during access
    assign icinv_stall_req = (msr_icinv_we & ~msr_icinv_ready);
