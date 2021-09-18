@@ -250,9 +250,6 @@ module ex_epu
    wire                                commit_msr_imm_tlbh_we;
    wire                                commit_msr_dmm_tlbl_we;
    wire                                commit_msr_dmm_tlbh_we;
-   wire                                commit_msr_ic_inv_we;
-   wire                                commit_msr_dc_inv_we;
-   wire                                commit_msr_dc_fls_we;
    wire                                commit_msr_irqc_imr_we;
    wire                                commit_msr_tsc_tsr_we;
    wire                                commit_msr_tsc_tcr_we;
@@ -415,9 +412,6 @@ module ex_epu
                         s1i_msr_imm_tlbh_we,
                         s1i_msr_dmm_tlbl_we,
                         s1i_msr_dmm_tlbh_we,
-                        s1i_msr_ic_inv_we,
-                        s1i_msr_dc_inv_we,
-                        s1i_msr_dc_fls_we,
                         s1i_msr_irqc_imr_we,
                         s1i_msr_tsc_tsr_we,
                         s1i_msr_tsc_tcr_we,
@@ -438,9 +432,6 @@ module ex_epu
       commit_msr_imm_tlbh_we,
       commit_msr_dmm_tlbl_we,
       commit_msr_dmm_tlbh_we,
-      commit_msr_ic_inv_we,
-      commit_msr_dc_inv_we,
-      commit_msr_dc_fls_we,
       commit_msr_irqc_imr_we,
       commit_msr_tsc_tsr_we,
       commit_msr_tsc_tcr_we,
@@ -517,14 +508,14 @@ module ex_epu
    assign msr_dmm_tlbh_we = commit_msr_dmm_tlbh_we;
 
    // Commit IC
-   assign msr_icinv_we = commit_msr_ic_inv_we;
-   assign msr_icinv_nxt = commit_wmsr_dat;
+   assign msr_icinv_we = s1i_msr_ic_inv_we;
+   assign msr_icinv_nxt = epu_wmsr_dat;
 
    // Commit DC
-   assign msr_dcinv_we = commit_msr_dc_inv_we;
-   assign msr_dcinv_nxt = commit_wmsr_dat;
-   assign msr_dcfls_we = commit_msr_dc_fls_we;
-   assign msr_dcfls_nxt = commit_wmsr_dat;
+   assign msr_dcinv_we = s1i_msr_dc_inv_we;
+   assign msr_dcinv_nxt = epu_wmsr_dat;
+   assign msr_dcfls_we = s1i_msr_dc_fls_we;
+   assign msr_dcfls_nxt = epu_wmsr_dat;
 
    // Commit IRQC
    assign msr_irqc_imr_we = commit_msr_irqc_imr_we;

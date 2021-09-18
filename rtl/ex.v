@@ -250,7 +250,9 @@ module ex
    /*AUTOINPUT*/
    wire [CONFIG_DW-1:0]                bru_dout;
    wire                                bru_dout_valid;
-   wire                                p_ce;
+   wire                                p_ce_s1;
+   wire                                p_ce_s2;
+   wire                                p_ce_s3;
    wire                                ex_lsu_load0;
    wire                                add_s                         [IW-1:0];
    wire [CONFIG_DW-1:0]                add_sum                       [IW-1:0];
@@ -288,6 +290,7 @@ module ex
    wire                                flush_s2;
    // Stage 1 Input
    wire [IW-1:0]                       s1i_valid;
+   wire                                s1i_lsu_valid;
    wire [CONFIG_DW*IW-1:0]             s1i_rf_dout_1, s1i_rf_dout;
    wire [IW-1:0]                       s1i_rf_we;
    // Stage 2 Input / Stage 1 Output
@@ -535,7 +538,7 @@ module ex
 
 
    /* ex_lsu AUTO_TEMPLATE (
-         .ex_valid         (ex_valid[0]),
+         .ex_valid         (s1i_lsu_valid),
          .ex_lsu_opc_bus   (ex_lsu_opc_bus[0*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
          .add_sum          (add_sum[0]),
          .ex_operand2      (ex_operand2[0*CONFIG_DW +: CONFIG_DW]),
@@ -609,7 +612,7 @@ module ex
        .rst                             (rst),
        .stall                           (stall),
        .flush_s1                        (flush_s1),
-       .ex_valid                        (ex_valid[0]),           // Templated
+       .ex_valid                        (s1i_lsu_valid),         // Templated
        .ex_lsu_opc_bus                  (ex_lsu_opc_bus[0*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]), // Templated
        .add_sum                         (add_sum[0]),            // Templated
        .ex_operand2                     (ex_operand2[0*CONFIG_DW +: CONFIG_DW]), // Templated
@@ -766,11 +769,28 @@ module ex
    assign ro_ex_s2_load0 = s1o_lsu_load0;
    assign ro_ex_s3_load0 = s2o_lsu_load0;
 
-   assign stall = (lsu_stall_req | icop_stall_req);
+   reg test_stall;
    
-   assign p_ce = (~stall);
+   always @(posedge clk)
+      if (rst)
+         test_stall <= 'b0;
+      else
+         test_stall <= ~test_stall;
    
-   assign se_flush = (p_ce & s1o_se_flush);
+   //
+   // Pipeline stall scope table:
+   // icop_stall_req:   Frontend & EX(s1)
+   // lsu_stall_req:    Frontend & EX(s1,s2,s3)
+   //
+   assign stall = (lsu_stall_req | icop_stall_req | test_stall);
+   assign p_ce_s1 = ~(lsu_stall_req | icop_stall_req | test_stall);
+   assign p_ce_s2 = ~(lsu_stall_req);
+   assign p_ce_s3 = ~(lsu_stall_req);
+   
+   // Avoid repeated firing while EX(s1) stalling
+   assign s1i_lsu_valid = (ex_valid[0] & p_ce_s1);
+   
+   assign se_flush = (s1o_se_flush & p_ce_s2);
    
    assign flush = (exc_flush | se_flush);
    // Maintain the priority of exception or speculative execution failure
@@ -791,33 +811,33 @@ module ex
    //
    // Pipeline stages
    //
-   mDFF_lr # (.DW(1)) ff_s1o_se_flush (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(se_fail & ~flush_s1), .Q(s1o_se_flush) );
-   mDFF_l # (.DW(`PC_W)) ff_s1o_se_flush_tgt (.CLK(clk), .LOAD(p_ce), .D(se_tgt), .Q(s1o_se_flush_tgt) );
-   mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s1o_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(ex_rf_waddr), .Q(s1o_rf_waddr) );
-   mDFF_lr # (.DW(IW)) ff_s1o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(s1i_rf_we & {IW{~flush_s1}}), .Q(s1o_rf_we) );
-   mDFF_l # (.DW(CONFIG_DW*IW)) ff_s1o_rf_dout (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(s1o_rf_dout) );
-   mDFF_lr # (.DW(1)) ff_s1o_lsu_load (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(ex_lsu_load0 & ~flush_s1), .Q(s1o_lsu_load0) );
-   mDFF_l # (.DW(`PC_W)) ff_commit_epc (.CLK(clk), .LOAD(p_ce), .D(ex_pc[0 +: `PC_W]), .Q(commit_epc) );
-   mDFF_l # (.DW(`PC_W)) ff_commit_nepc (.CLK(clk), .LOAD(p_ce), .D(npc[0]), .Q(commit_nepc) );
-   mDFF_lr # (.DW(1)) ff_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_ERET & ~flush_s1), .Q(commit_ERET) );
-   mDFF_lr # (.DW(1)) ff_commit_ESYSCALL (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_ESYSCALL & ~flush_s1), .Q(commit_ESYSCALL) );
-   mDFF_lr # (.DW(1)) ff_commit_EINSN (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_EINSN & ~flush_s1), .Q(commit_EINSN) );
-   mDFF_lr # (.DW(1)) ff_commit_EIPF (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_EIPF & ~flush_s1), .Q(commit_EIPF) );
-   mDFF_lr # (.DW(1)) ff_commit_EITM (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_EITM & ~flush_s1), .Q(commit_EITM) );
-   mDFF_lr # (.DW(1)) ff_commit_EIRQ (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_EIRQ & ~flush_s1), .Q(commit_EIRQ) );
-   mDFF_lr # (.DW(1)) ff_commit_E_FLUSH_TLB (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_E_FLUSH_TLB & ~flush_s1), .Q(commit_E_FLUSH_TLB) );
-   mDFF_lr # (.DW(`NCPU_WMSR_WE_W)) ff_commit_wmsr_we (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(epu_wmsr_we  & {`NCPU_WMSR_WE_W{~flush_s1}}), .Q(commit_wmsr_we) );
-   mDFF_l # (.DW(CONFIG_DW)) ff_commit_wmsr_dat (.CLK(clk), .LOAD(p_ce), .D(epu_wmsr_dat), .Q(commit_wmsr_dat) );
-   mDFF_l # (.DW(`PC_W)) ff_commit_E_FLUSH_TLB_npc (.CLK(clk), .LOAD(p_ce), .D(epu_E_FLUSH_TLB_npc), .Q(commit_E_FLUSH_TLB_npc) );
+   mDFF_lr # (.DW(1)) ff_s1o_se_flush (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(se_fail & ~flush_s1), .Q(s1o_se_flush) );
+   mDFF_l # (.DW(`PC_W)) ff_s1o_se_flush_tgt (.CLK(clk), .LOAD(p_ce_s1), .D(se_tgt), .Q(s1o_se_flush_tgt) );
+   mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s1o_rf_waddr (.CLK(clk), .LOAD(p_ce_s1), .D(ex_rf_waddr), .Q(s1o_rf_waddr) );
+   mDFF_lr # (.DW(IW)) ff_s1o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_rf_we & {IW{~flush_s1}}), .Q(s1o_rf_we) );
+   mDFF_l # (.DW(CONFIG_DW*IW)) ff_s1o_rf_dout (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_rf_dout), .Q(s1o_rf_dout) );
+   mDFF_lr # (.DW(1)) ff_s1o_lsu_load (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(ex_lsu_load0 & ~flush_s1), .Q(s1o_lsu_load0) );
+   mDFF_l # (.DW(`PC_W)) ff_commit_epc (.CLK(clk), .LOAD(p_ce_s1), .D(ex_pc[0 +: `PC_W]), .Q(commit_epc) );
+   mDFF_l # (.DW(`PC_W)) ff_commit_nepc (.CLK(clk), .LOAD(p_ce_s1), .D(npc[0]), .Q(commit_nepc) );
+   mDFF_lr # (.DW(1)) ff_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_ERET & ~flush_s1), .Q(commit_ERET) );
+   mDFF_lr # (.DW(1)) ff_commit_ESYSCALL (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_ESYSCALL & ~flush_s1), .Q(commit_ESYSCALL) );
+   mDFF_lr # (.DW(1)) ff_commit_EINSN (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_EINSN & ~flush_s1), .Q(commit_EINSN) );
+   mDFF_lr # (.DW(1)) ff_commit_EIPF (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_EIPF & ~flush_s1), .Q(commit_EIPF) );
+   mDFF_lr # (.DW(1)) ff_commit_EITM (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_EITM & ~flush_s1), .Q(commit_EITM) );
+   mDFF_lr # (.DW(1)) ff_commit_EIRQ (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_EIRQ & ~flush_s1), .Q(commit_EIRQ) );
+   mDFF_lr # (.DW(1)) ff_commit_E_FLUSH_TLB (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_E_FLUSH_TLB & ~flush_s1), .Q(commit_E_FLUSH_TLB) );
+   mDFF_lr # (.DW(`NCPU_WMSR_WE_W)) ff_commit_wmsr_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(epu_wmsr_we  & {`NCPU_WMSR_WE_W{~flush_s1}}), .Q(commit_wmsr_we) );
+   mDFF_l # (.DW(CONFIG_DW)) ff_commit_wmsr_dat (.CLK(clk), .LOAD(p_ce_s1), .D(epu_wmsr_dat), .Q(commit_wmsr_dat) );
+   mDFF_l # (.DW(`PC_W)) ff_commit_E_FLUSH_TLB_npc (.CLK(clk), .LOAD(p_ce_s1), .D(epu_E_FLUSH_TLB_npc), .Q(commit_E_FLUSH_TLB_npc) );
    
-   mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s2o_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(s1o_rf_waddr), .Q(s2o_rf_waddr) );
-   mDFF_lr # (.DW(IW)) ff_s2o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s2), .D(s1o_rf_we & {IW{~flush_s2}}), .Q(s2o_rf_we) );
-   mDFF_l # (.DW(CONFIG_DW*IW)) ff_s2o_rf_dout (.CLK(clk), .LOAD(p_ce), .D(s1o_rf_dout), .Q(s2o_rf_dout) );
-   mDFF_l # (.DW(1)) ff_s2o_lsu_load (.CLK(clk), .LOAD(p_ce), .D(s1o_lsu_load0), .Q(s2o_lsu_load0) );
+   mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_s2o_rf_waddr (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_rf_waddr), .Q(s2o_rf_waddr) );
+   mDFF_lr # (.DW(IW)) ff_s2o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|flush_s2), .D(s1o_rf_we & {IW{~flush_s2}}), .Q(s2o_rf_we) );
+   mDFF_l # (.DW(CONFIG_DW*IW)) ff_s2o_rf_dout (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_rf_dout), .Q(s2o_rf_dout) );
+   mDFF_l # (.DW(1)) ff_s2o_lsu_load (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_lsu_load0), .Q(s2o_lsu_load0) );
 
-   mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_commit_rf_waddr (.CLK(clk), .LOAD(p_ce), .D(s2o_rf_waddr), .Q(commit_rf_waddr) );
-   mDFF_lr # (.DW(IW)) ff_commit_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s2o_rf_we), .Q(commit_rf_we) );
-   mDFF_l # (.DW(CONFIG_DW*IW)) ff_commit_rf_wdat (.CLK(clk), .LOAD(p_ce), .D(s3i_rf_wdat), .Q(commit_rf_wdat) );
+   mDFF_l # (.DW(`NCPU_REG_AW*IW)) ff_commit_rf_waddr (.CLK(clk), .LOAD(p_ce_s3), .D(s2o_rf_waddr), .Q(commit_rf_waddr) );
+   mDFF_lr # (.DW(IW)) ff_commit_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s3), .D(s2o_rf_we), .Q(commit_rf_we) );
+   mDFF_l # (.DW(CONFIG_DW*IW)) ff_commit_rf_wdat (.CLK(clk), .LOAD(p_ce_s3), .D(s3i_rf_wdat), .Q(commit_rf_wdat) );
    
 `ifdef ENABLE_DIFFTEST
    //
@@ -832,19 +852,19 @@ module ex
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc;
    wire                                commit_exc;
 
-   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s1), .D(s1i_valid & {IW{~flush_s1}}), .Q(s1o_valid) );
+   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_valid & {IW{~flush_s1}}), .Q(s1o_valid) );
    
    // Once the first channel induced an exception, the remaining channels would be invalidated.
    // However, the first channel should be committed to difftest, with architectural state unchanged.
-   mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid[0]), .Q(s2o_valid[0]) );
-   mDFF_lr # (.DW(IW-1)) ff_s2o_valid2 (.CLK(clk), .RST(rst), .LOAD(p_ce|flush_s2), .D(s1o_valid[IW-1:1] & {IW-1{~flush_s2}}), .Q(s2o_valid[IW-1:1]) );
+   mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_valid[0]), .Q(s2o_valid[0]) );
+   mDFF_lr # (.DW(IW-1)) ff_s2o_valid2 (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|flush_s2), .D(s1o_valid[IW-1:1] & {IW-1{~flush_s2}}), .Q(s2o_valid[IW-1:1]) );
    
-   mDFF_lr # (.DW(1)) ff_s2o_exc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(exc_flush), .Q(s2o_exc) );
-   mDFF_l # (.DW(`PC_W*IW)) ff_s1o_pc (.CLK(clk), .LOAD(p_ce), .D(ex_pc), .Q(s1o_pc) );
-   mDFF_l # (.DW(`PC_W*IW)) ff_s2o_pc (.CLK(clk), .LOAD(p_ce), .D(s1o_pc), .Q(s2o_pc) );
-   mDFF_lr # (.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s2o_valid), .Q(commit_valid) );
-   mDFF_l # (.DW(`PC_W*IW)) ff_commit_pc (.CLK(clk), .LOAD(p_ce), .D(s2o_pc), .Q(commit_pc) );
-   mDFF_lr # (.DW(1)) ff_commit_exc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s2o_exc), .Q(commit_exc) );
+   mDFF_lr # (.DW(1)) ff_s2o_exc (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(exc_flush), .Q(s2o_exc) );
+   mDFF_l # (.DW(`PC_W*IW)) ff_s1o_pc (.CLK(clk), .LOAD(p_ce_s1), .D(ex_pc), .Q(s1o_pc) );
+   mDFF_l # (.DW(`PC_W*IW)) ff_s2o_pc (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_pc), .Q(s2o_pc) );
+   mDFF_lr # (.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s2o_valid), .Q(commit_valid) );
+   mDFF_l # (.DW(`PC_W*IW)) ff_commit_pc (.CLK(clk), .LOAD(p_ce_s1), .D(s2o_pc), .Q(commit_pc) );
+   mDFF_lr # (.DW(1)) ff_commit_exc (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s2o_exc), .Q(commit_exc) );
 `endif
 
 `ifdef ENABLE_DIFFTEST
