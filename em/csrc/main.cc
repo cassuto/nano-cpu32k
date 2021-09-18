@@ -387,7 +387,7 @@ int main(int argc, char *argv[])
     case ModeSimulateOnly:
     {
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU, emu_CPU->memory());
-        printf("\n");
+        fprintf(stderr, "\n");
         uint64_t cycle, last_cycle = 0;
         for (uint64_t i = 0; /*i < 1000*/; i++)
         {
@@ -400,10 +400,11 @@ int main(int argc, char *argv[])
             if (cycle - last_cycle >= 10000UL)
             {
                 last_cycle = cycle;
-                printf("\r[%lu]", cycle);
+                fprintf(stderr, "\r[%lu]", cycle);
+                fflush(stderr);
             }
         }
-        printf("\n");
+        fprintf(stderr, "\n");
         emu->finish();
         break;
     }
