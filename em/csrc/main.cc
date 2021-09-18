@@ -387,14 +387,18 @@ int main(int argc, char *argv[])
     case ModeSimulateOnly:
     {
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU, emu_CPU->memory());
-        for (int i = 0; /*i < 1000*/; i++)
+        printf("\n");
+        for (uint64_t i = 0; /*i < 1000*/; i++)
         {
             if (emu->clk())
             {
                 retcode = -1;
                 break;
             }
+            if (emu->get_cycle() % 100000)
+                printf("\r[%lu]", emu->get_cycle());
         }
+        printf("\n");
         emu->finish();
         break;
     }

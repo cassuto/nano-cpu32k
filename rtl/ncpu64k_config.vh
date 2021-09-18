@@ -13,6 +13,10 @@
 //`undef ENABLE_DIFFTEST
 `define ENABLE_DIFFTEST
 
+/* Print MSGR in simulation */
+`define NCPU_ENABLE_MSGPORT
+//`undef NCPU_ENABLE_MSGPORT
+
 /* Assert in simulation */
 //`define NCPU_ENABLE_ASSERT
 `undef NCPU_ENABLE_ASSERT
@@ -22,11 +26,12 @@
 `undef NCPU_CHECK_X
 
 /* Test stall */
-`undef NCPU_TEST_STALL
 //`define NCPU_TEST_STALL
+`undef NCPU_TEST_STALL
 
 `ifdef SYNTHESIS
 `undef ENABLE_DIFFTEST
+`undef NCPU_ENABLE_MSGPORT
 `undef NCPU_ENABLE_ASSERT
 `undef NCPU_CHECK_X
 `undef NCPU_TEST_STALL
