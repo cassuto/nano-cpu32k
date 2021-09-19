@@ -186,7 +186,7 @@ void dpic_commit_inst(
                 validated = false;
                 break;
             }
-            if (insn[i] != emu_insn)
+            if (!emu_excp && insn[i] != emu_insn)
             {
                 difftest_report_item("INST", emu_insn, insn[i]);
                 validated = false;
