@@ -190,7 +190,7 @@ module id_dec
    wire [CONFIG_DW-1:0]                rel25;
    wire [`NCPU_EPU_IOPW-1:0]           epu_opc_no_EINSN;
    
-   assign msk = ((~|id_exc) & id_valid);
+   assign msk = ((~|id_exc) & ~irq_async & id_valid);
    
    assign f_opcode = id_ins[6:0] & {7{msk}}; // 7'b000000 is `add r0,r0,r0`, i.e., NOP.
    assign f_rd = id_ins[11:7];
@@ -344,7 +344,7 @@ module id_dec
    assign epu_opc_no_EINSN[`NCPU_EPU_EIRQ] = irq_async;
    assign epu_opc_no_EINSN[`NCPU_EPU_EINSN] = 1'b0;
 
-   // Insn is to be emulated
+   // Insn is unsupported by hardware or unrecognizable
    assign epu_opc_bus[`NCPU_EPU_EINSN] =
       ~(
          // ALU opcodes

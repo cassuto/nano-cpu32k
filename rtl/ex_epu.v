@@ -547,16 +547,16 @@ module ex_epu
    
    // Exceptions
    // Assert 2105051856
-   assign exc_flush_tgt = ({CONFIG_AW-2{s2i_EDTM}} & CONFIG_EDTM_VECTOR[2 +: CONFIG_AW-2]) |
-                           ({CONFIG_AW-2{s2i_EDPF}} & CONFIG_EDPF_VECTOR[2 +: CONFIG_AW-2]) |
-                           ({CONFIG_AW-2{s2i_EALIGN}} & CONFIG_EALIGN_VECTOR[2 +: CONFIG_AW-2]) |
-                           ({CONFIG_AW-2{s1o_commit_E_FLUSH_TLB}} & s1o_commit_nepc) |
-                           ({CONFIG_AW-2{s1o_commit_ESYSCALL}} & CONFIG_ESYSCALL_VECTOR[2 +: CONFIG_AW-2]) |
-                           ({CONFIG_AW-2{s1o_commit_ERET}} & msr_epc[2 +: CONFIG_AW-2]) |
-                           ({CONFIG_AW-2{s1o_commit_EITM}} & CONFIG_EITM_VECTOR[2 +: CONFIG_AW-2]) |
-                           ({CONFIG_AW-2{s1o_commit_EIPF}} & CONFIG_EIPF_VECTOR[2 +: CONFIG_AW-2]) |
-                           ({CONFIG_AW-2{s1o_commit_EIRQ}} & CONFIG_EIRQ_VECTOR[2 +: CONFIG_AW-2]) |
-                           ({CONFIG_AW-2{s1o_commit_EINSN}} & CONFIG_EINSN_VECTOR[2 +: CONFIG_AW-2]);
+   assign exc_flush_tgt = ({`PC_W{s2i_EDTM}} & CONFIG_EDTM_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
+                           ({`PC_W{s2i_EDPF}} & CONFIG_EDPF_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
+                           ({`PC_W{s2i_EALIGN}} & CONFIG_EALIGN_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
+                           ({`PC_W{s1o_commit_E_FLUSH_TLB}} & s1o_commit_nepc) |
+                           ({`PC_W{s1o_commit_ESYSCALL}} & CONFIG_ESYSCALL_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
+                           ({`PC_W{s1o_commit_ERET}} & msr_epc[`NCPU_P_INSN_LEN +: `PC_W]) |
+                           ({`PC_W{s1o_commit_EITM}} & CONFIG_EITM_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
+                           ({`PC_W{s1o_commit_EIPF}} & CONFIG_EIPF_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
+                           ({`PC_W{s1o_commit_EIRQ}} & CONFIG_EIRQ_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
+                           ({`PC_W{s1o_commit_EINSN}} & CONFIG_EINSN_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]);
 
    assign exc_flush = p_ce_s2 & (s2i_EDTM |
                         s2i_EDPF |
