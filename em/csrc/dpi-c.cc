@@ -185,9 +185,9 @@ void dpic_step()
             {
                 uint8_t rs1 = INS32_GET_BITS(rtl_insn[i], RS1);
                 uint8_t rd = INS32_GET_BITS(rtl_insn[i], RD);
-                uint8_t uimm15 = INS32_GET_BITS(rtl_insn[i], IMM15);
+                uint16_t uimm15 = INS32_GET_BITS(rtl_insn[i], IMM15);
                 cpu_unsigned_word_t val = rtl_regfile[rd];
-                printf("%#x rmsr %#x\n", rtl_cmt_pc[i], (rtl_regfile[rs1] | uimm15));
+                //printf("%#x rmsr %#x\n", rtl_cmt_pc[i], (rtl_regfile[rs1] | uimm15));
                 switch (rtl_regfile[rs1] | uimm15)
                 {
                     case MSR_TSR:
