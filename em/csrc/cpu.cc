@@ -338,6 +338,9 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
+        if(pc==0xc000438c){
+            printf("ldw %#x va=%#x pa=%#x v=%#x\n", pc, va,pa,readout);
+        }
     }
     break;
 
