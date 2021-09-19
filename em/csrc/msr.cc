@@ -83,16 +83,22 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
         /* MSR bank - DBG */
     case MSR_DBGR_NUMPORT:
     {
-        char buff[128], *p = buff;
-        snprintf(buff, sizeof(buff), "DEBUG NUM PORT - %#x emu_pc = %#x\n", val, pc);
-        while (*p)
-            fprintf(stdout, "%c", *p++);
-        //ras->dump();
+        if (enable_dbg)
+        {
+            char buff[128], *p = buff;
+            snprintf(buff, sizeof(buff), "DEBUG NUM PORT - %#x emu_pc = %#x\n", val, pc);
+            while (*p)
+                fprintf(stdout, "%c", *p++);
+            //ras->dump();
+        }
         return;
     }
 
     case MSR_DBGR_MSGPORT:
-        fprintf(stdout, "%c", val);
+        if (enable_dbg)
+        {
+            fprintf(stdout, "%c", val);
+        }
         return;
     }
 
