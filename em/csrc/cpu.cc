@@ -47,7 +47,7 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          phy_addr_t vect_EDPF_,
          phy_addr_t vect_EITM_,
          phy_addr_t vect_EDTM_,
-         phy_addr_t vect_EALGIN_,
+         phy_addr_t vect_EALIGN_,
          phy_addr_t vect_EINT_)
     : msr(immu_tlb_count_, dmmu_tlb_count_),
       dmmu_tlb_count(dmmu_tlb_count_),
@@ -75,7 +75,7 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       vect_EDPF(vect_EDPF_),
       vect_EITM(vect_EITM_),
       vect_EDTM(vect_EDTM_),
-      vect_EALGIN(vect_EALGIN_),
+      vect_EALIGN(vect_EALIGN_),
       vect_EINT(vect_EINT_),
       enable_dbg(true)
 {
@@ -318,7 +318,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
         if (check_vma_align(va, 2) < 0)
         {
-            pc_nxt = raise_exception(pc, vect_EALGIN, va, 0);
+            pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);
             goto handle_exception;
         }
         phy_addr_t pa = 0;
@@ -346,7 +346,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
         if (check_vma_align(va, 2) < 0)
         {
-            pc_nxt = raise_exception(pc, vect_EALGIN, va, 0);
+            pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);
             goto handle_exception;
         }
         phy_addr_t pa = 0;
@@ -372,7 +372,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
         if (check_vma_align(va, 1) < 0)
         {
-            pc_nxt = raise_exception(pc, vect_EALGIN, va, 0);
+            pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);
             goto handle_exception;
         }
         phy_addr_t pa = 0;
@@ -399,7 +399,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
         if (check_vma_align(va, 1) < 0)
         {
-            pc_nxt = raise_exception(pc, vect_EALGIN, va, 0);
+            pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);
             goto handle_exception;
         }
         phy_addr_t pa = 0;
@@ -426,7 +426,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
         if (check_vma_align(va, 1) < 0)
         {
-            pc_nxt = raise_exception(pc, vect_EALGIN, va, 0);
+            pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);
             goto handle_exception;
         }
         phy_addr_t pa = 0;
@@ -596,8 +596,16 @@ void CPU::run_step()
 vm_addr_t
 CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall)
 {
+    if( (vector == vect_EITM) ||
+        (vector == vect_EIPF) ||
+        (vector == vect_EINSN) ||
+        (vector == vect_EDTM) ||
+        (vector == vect_EDPF) ||
+        (vector == vect_EALIGN) )
+    {
+        msr.ELSA = lsa;
+    }
     msr.EPC = pc + (is_syscall ? INSN_LEN : 0);
-    msr.ELSA = lsa;
     /* save old PSR */
     msr.EPSR = msr.PSR;
     /* set up new PSR for exception */

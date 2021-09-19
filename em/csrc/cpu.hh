@@ -127,7 +127,7 @@ public:
         phy_addr_t vect_EDPF_,
         phy_addr_t vect_EITM_,
         phy_addr_t vect_EDTM_,
-        phy_addr_t vect_EALGIN_,
+        phy_addr_t vect_EALIGN_,
         phy_addr_t vect_EINT_);
     ~CPU();
 
@@ -199,7 +199,7 @@ private:
     phy_addr_t vect_EDPF;
     phy_addr_t vect_EITM;
     phy_addr_t vect_EDTM;
-    phy_addr_t vect_EALGIN;
+    phy_addr_t vect_EALIGN;
     phy_addr_t vect_EINT;
     bool enable_dbg;
 };

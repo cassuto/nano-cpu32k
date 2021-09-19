@@ -83,7 +83,7 @@ public:
         vect_EDPF = 0x80000018;
         vect_EITM = 0x8000001c;
         vect_EDTM = 0x80000020;
-        vect_EALGIN = 0x80000024;
+        vect_EALIGN = 0x80000024;
         vect_EINT = 0x80000028;
 
         ram_size = 32 * 1024 * 1024;
@@ -122,7 +122,7 @@ public:
     phy_addr_t vect_EDPF;
     phy_addr_t vect_EITM;
     phy_addr_t vect_EDTM;
-    phy_addr_t vect_EALGIN;
+    phy_addr_t vect_EALIGN;
     phy_addr_t vect_EINT;
     int ram_size;
     int dmmu_tlb_count, immu_tlb_count;
@@ -317,7 +317,7 @@ int main(int argc, char *argv[])
                       args.vect_EDPF,
                       args.vect_EITM,
                       args.vect_EDTM,
-                      args.vect_EALGIN,
+                      args.vect_EALIGN,
                       args.vect_EINT);
 
     FILE *bin_fp = fopen(args.bin_pathname.c_str(), "rb");
