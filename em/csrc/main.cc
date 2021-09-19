@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
     case ModeDifftest:
     {
         /* Configure the reference CPU */
-        emu_CPU->init_msr(false);
+        emu_CPU->msr_set_cpuid(false);
 
         /* RTL simulation uses its independent memory and mmio space */
         rtl_memory = new Memory(nullptr, args.ram_size, args.dram_phy_base, args.mmio_phy_base, args.mmio_phy_end_addr);

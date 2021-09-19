@@ -527,7 +527,8 @@ module ncpu64k
         // Parameters
         .CONFIG_DW                      (CONFIG_DW),
         .CONFIG_AW                      (CONFIG_AW),
-        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH))
+        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
+        .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ))
    U_DIFFTEST
       (
          .clk                             (clk),
@@ -537,11 +538,14 @@ module ncpu64k
          .p_ce_s2                         (U_EX.p_ce_s2),
          .p_ce_s3                         (U_EX.p_ce_s3),
          .id_ins                          (id_ins),
+         .id_irqc_irr                     (U_EX.U_EPU.U_IRQC.msr_irqc_irr),
          .commit_valid                    (U_EX.commit_valid),
          .commit_pc                       (U_EX.commit_pc),
          .commit_rf_wdat                  (commit_rf_wdat),
          .commit_rf_waddr                 (commit_rf_waddr),
          .commit_rf_we                    (commit_rf_we),
+         .commit_excp                     (U_EX.commit_excp),
+         .commit_excp_vect                ({U_EX.commit_excp_vect, 2'b0}),
          .regfile                         (U_CMT.U_ARF.regfile)
       );
 `endif

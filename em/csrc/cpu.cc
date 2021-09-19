@@ -143,7 +143,7 @@ rel15_sig_ext(uint16_t rel15)
 }
 
 vm_addr_t
-CPU::step(vm_addr_t pc, bool *excp, insn_t *fetched_insn)
+CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
 {
     uint16_t opcode;
     uint16_t rs1;
@@ -160,9 +160,9 @@ CPU::step(vm_addr_t pc, bool *excp, insn_t *fetched_insn)
     bool insn_uncached;
     insn_t insn;
 
-    if (excp) *excp = false;
+    if (event) event->excp = false;
 
-    tsc_clk(1);
+    if (!difftest) tsc_clk();
 
     /* response asynchronous interrupts */
     if (irqc_handle_irqs() == -EM_IRQ)
@@ -189,7 +189,7 @@ CPU::step(vm_addr_t pc, bool *excp, insn_t *fetched_insn)
         insn = (insn_t)icache->phy_readm32(insn_pa);
     pc_queue->push(pc, insn);
     pc_nxt = pc + INSN_LEN;
-    if (fetched_insn) *fetched_insn =  insn;
+    if (event) event->insn = insn;
 
     /* decode and execute */
     opcode = insn & INS32_MASK_OPCODE;
@@ -573,7 +573,7 @@ CPU::step(vm_addr_t pc, bool *excp, insn_t *fetched_insn)
 
     goto fetch_next;
 handle_exception:
-    if (excp) *excp = true;
+    if (event) event->excp = true;
 fetch_next:
 flush_pc:
     /* The only-one exit point */
@@ -582,7 +582,7 @@ flush_pc:
 
 void CPU::run_step()
 {
-    vm_addr_t npc = step(pc);
+    vm_addr_t npc = step(pc, false);
     //printf("pc = %#x, npc=%#x\n", pc, npc);
     pc = npc;
 }

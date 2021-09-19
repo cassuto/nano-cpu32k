@@ -8,22 +8,19 @@
  * Emulate a clk edge of TSC.
  * @retval >= 0 If not any exception.
  */
-void CPU::tsc_clk(int delta)
+void CPU::tsc_clk()
 {
     if (msr.TCR.EN)
     {
-        while (delta--)
+        if (msr.TCR.I && (msr.TSR & CNT_MASK) == msr.TCR.CNT)
         {
-            if (msr.TCR.I && (msr.TSR & CNT_MASK) == msr.TCR.CNT)
-            {
-                msr.TCR.P = 1;
-                tsc_update_tcr();
-            }
-            ++msr.TSR;
-            if (msr.TSR == 0)
-            {
-                fprintf(stderr, "TSR overflow.\n");
-            }
+            msr.TCR.P = 1;
+            tsc_update_tcr();
+        }
+        ++msr.TSR;
+        if (msr.TSR == 0)
+        {
+            fprintf(stderr, "TSR overflow.\n");
         }
     }
 }

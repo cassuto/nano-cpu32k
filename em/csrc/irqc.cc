@@ -6,12 +6,17 @@
  * @param channel Number of target channel
  * @param raise Nonzero if IRQ is raised.
  */
-void CPU::irqc_set_interrupt(int channel, char raise)
+void CPU::irqc_set_interrupt(int channel, bool raise)
 {
     if (raise)
         msr.IRR |= (1 << channel);
     else
         msr.IRR &= ~(1 << channel);
+}
+
+void CPU::irqc_set_irr(cpu_unsigned_word_t val)
+{
+    msr.IRR = val;
 }
 
 /**

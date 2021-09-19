@@ -103,6 +103,12 @@ public:
     cpu_word_t SR[MSR_SR_NUM];
 };
 
+struct ArchEvent
+{
+    bool excp;
+    insn_t insn;
+};
+
 class CPU
 {
 public:
@@ -126,7 +132,7 @@ public:
     ~CPU();
 
     void reset(vm_addr_t reset_vect);
-    vm_addr_t step(vm_addr_t pc, bool *excp = nullptr, insn_t *fetched_insn = nullptr);
+    vm_addr_t step(vm_addr_t pc, bool difftest, ArchEvent *event = nullptr);
     void run_step();
 
     void set_reg(uint16_t addr, cpu_word_t val);
@@ -137,7 +143,8 @@ public:
     inline Symtable *get_symtable() { return symtable; }
 
     /* irqc.cc */
-    void irqc_set_interrupt(int channel, char raise);
+    void irqc_set_interrupt(int channel, bool raise);
+    void irqc_set_irr(cpu_unsigned_word_t val);
     int irqc_is_masked(int channel);
     int irqc_handle_irqs();
 
@@ -145,7 +152,11 @@ public:
     inline vm_addr_t get_pc() { return pc; }
     inline void set_pc(vm_addr_t npc) { pc = npc; }
 
-    void init_msr(bool support_dbg);
+    inline phy_addr_t get_vect_EIRQ() const { return vect_EIRQ; }
+
+    /* msr.cc */
+    void msr_set_cpuid(bool support_dbg);
+    void msr_set_tsr(cpu_unsigned_word_t val);
 
 private:
     vm_addr_t raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall);
@@ -161,7 +172,7 @@ private:
     void warn_illegal_access_reg(const char *reg);
 
     /* tsc.cc */
-    void tsc_clk(int delta);
+    void tsc_clk();
     void tsc_update_tcr();
 
 private:

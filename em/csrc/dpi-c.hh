@@ -5,25 +5,19 @@
 #include "Vsimtop.h"
 
 extern "C" void dpic_commit_inst(
-    svBit valid1,
-    int pc1,
-    int insn1,
-    svBit wen1,
-    char wnum1,
-    int wdata1,
-    svBit valid2,
-    int pc2,
-    int insn2,
-    svBit wen2,
-    char wnum2,
-    int wdata2,
-    svBit EINT1,
-    svBit EINT2
+    int cmt_index,
+    svBit valid,
+    int pc,
+    int insn,
+    svBit wen,
+    char wnum,
+    int wdata,
+    svBit excp,
+    int excp_vect,
+    int irqc_irr
 );
 
-extern "C" void dpic_clk(
-    int msr_tsr
-);
+extern "C" void dpic_step();
 
 extern "C" void dpic_regfile(
     int r0,

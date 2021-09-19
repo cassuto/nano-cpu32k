@@ -36,6 +36,16 @@ static cpu_word_t rtl_regfile[32];
 static vm_addr_t rtl_pc;
 static uint64_t rtl_num_commit, rtl_last_commit_cycle, rtl_commit_timeout_max;
 static PCQueue *rtl_pc_queue;
+static const int rtl_num_channel = 2;
+static svBit rtl_valid[rtl_num_channel];
+static int rtl_cmt_pc[rtl_num_channel];
+static int rtl_insn[rtl_num_channel];
+static svBit rtl_wen[rtl_num_channel];
+static char rtl_wnum[rtl_num_channel];
+static int rtl_wdata[rtl_num_channel];
+static svBit rtl_excp[rtl_num_channel];
+static int rtl_excp_vect[rtl_num_channel];
+static int rtl_irqc_irr[rtl_num_channel];
 
 void enable_difftest(CPU *cpu_, Emu *emu_, uint64_t commit_timeout_max_)
 {
@@ -87,7 +97,7 @@ static bool difftest_compare_reg(bool verbose)
     return false;
 }
 
-static void difftest_report_reg(int num_commit, svBit valid[], int pc[])
+static void difftest_report_reg(svBit valid[], int pc[])
 {
     fprintf(stderr, "Verilog PC:\n");
     rtl_pc_queue->dump();
@@ -96,7 +106,7 @@ static void difftest_report_reg(int num_commit, svBit valid[], int pc[])
 
     fprintf(stderr, "--------------------------------------------------------------\n");
     fprintf(stderr, "[%lu cycle] Architectural Register Error!\n", dpic_emu->get_cycle());
-    for (int i = 0; i < num_commit; i++)
+    for (int i = 0; i < rtl_num_channel; i++)
     {
         if (valid[i])
             fprintf(stderr, "At pc[%d] = %#8x\n", i + 1, pc[i]);
@@ -106,34 +116,48 @@ static void difftest_report_reg(int num_commit, svBit valid[], int pc[])
 }
 
 void dpic_commit_inst(
-    svBit valid1,
-    int pc1,
-    int insn1,
-    svBit wen1,
-    char wnum1,
-    int wdata1,
-    svBit valid2,
-    int pc2,
-    int insn2,
-    svBit wen2,
-    char wnum2,
-    int wdata2,
-    svBit EINT1,
-    svBit EINT2)
+    int cmt_index,
+    svBit valid,
+    int pc,
+    int insn,
+    svBit wen,
+    char wnum,
+    int wdata,
+    svBit excp,
+    int excp_vect,
+    int irqc_irr)
+{
+    if (!dpic_enable)
+        return;
+    assert((unsigned int)cmt_index < rtl_num_channel);
+
+    rtl_valid[(unsigned int)cmt_index] = valid;
+    rtl_cmt_pc[(unsigned int)cmt_index] = pc;
+    rtl_insn[(unsigned int)cmt_index] = insn;
+    rtl_wen[(unsigned int)cmt_index] = wen;
+    rtl_wnum[(unsigned int)cmt_index] = wnum;
+    rtl_wdata[(unsigned int)cmt_index] = wdata;
+    rtl_excp[(unsigned int)cmt_index] = excp;
+    rtl_excp_vect[(unsigned int)cmt_index] = excp_vect;
+    rtl_irqc_irr[(unsigned int)cmt_index] = irqc_irr;
+}
+
+void dpic_step()
 {
     if (!dpic_enable)
         return;
 
-    if (valid1)
-        rtl_num_commit++;
-    if (valid2)
-        rtl_num_commit++;
-    if (valid1 | valid2)
-        rtl_last_commit_cycle = dpic_emu->get_cycle();
+    bool has_inst_committed = false;
+    for (int i = 0; i < rtl_num_channel; i++)
+        if (rtl_valid[i])
+        {
+            rtl_num_commit++;
+            has_inst_committed = true;
+        }
 
     if (dpic_emu->get_cycle() - rtl_last_commit_cycle > rtl_commit_timeout_max)
     {
-        fprintf(stderr, "[%ld] No commit after %ld cycles\n", rtl_last_commit_cycle, dpic_emu->get_cycle() - rtl_last_commit_cycle);
+        fprintf(stderr, "[%ld] No instruction commits after %ld cycles\n", rtl_last_commit_cycle, dpic_emu->get_cycle() - rtl_last_commit_cycle);
         difftest_terminate();
         return;
     }
@@ -141,54 +165,57 @@ void dpic_commit_inst(
     if (dpic_emu->get_cycle() % 100000 == 0)
         fprintf(stderr, "[%ld] emu PC = %#x rtl PC=%#x\n", dpic_emu->get_cycle(), dpic_emu_CPU->get_pc(), rtl_pc);
 
-    const int num_commit = 2;
+    if (!has_inst_committed)
+        return;
 
-    svBit valid[num_commit];
-    int pc[num_commit];
-    int insn[num_commit];
-    svBit wen[num_commit];
-    char wnum[num_commit];
-    int wdata[num_commit];
-
-    /* Hardcoded number of commit */
-    valid[0] = valid1;
-    valid[1] = valid2;
-    pc[0] = pc1;
-    pc[1] = pc2;
-    insn[0] = insn1;
-    insn[1] = insn2;
-    wen[0] = wen1;
-    wen[1] = wen2;
-    wnum[0] = wnum1;
-    wnum[1] = wnum2;
-    wdata[0] = wdata1;
-    wdata[1] = wdata2;
+    rtl_last_commit_cycle = dpic_emu->get_cycle();
 
     bool validated = true;
-    for (int i = 0; i < num_commit; i++)
+    for (int i = 0; i < rtl_num_channel; i++)
     {
-        if (valid[i])
+        if (rtl_valid[i])
         {
-            rtl_pc = pc[i];
-            rtl_pc_queue->push(pc[i], insn[i]);
-            if (wen[i])
-                rtl_regfile[(unsigned)wnum[i]] = wdata[i];
+            rtl_pc = rtl_cmt_pc[i];
+            rtl_pc_queue->push(rtl_cmt_pc[i], rtl_insn[i]);
+            if (rtl_wen[i])
+                rtl_regfile[(unsigned)rtl_wnum[i]] = rtl_wdata[i];
 
-            bool emu_excp;
-            insn_t emu_insn;
+            /* Handle RMSR carefully */
+            if (!rtl_excp && (rtl_insn[i] & INS32_MASK_OPCODE) == INS32_OP_RMSR)
+            {
+                uint8_t rs1 = INS32_GET_BITS(rtl_insn[i], RS1);
+                uint8_t rd = INS32_GET_BITS(rtl_insn[i], RD);
+                uint8_t uimm15 = INS32_GET_BITS(rtl_insn[i], IMM15);
+                cpu_unsigned_word_t val = rtl_regfile[rd];
+                switch ((rtl_regfile[rs1] | uimm15))
+                {
+                    case MSR_TSR:
+                        /* Synchronize the value of TSR before reading */
+                        dpic_emu_CPU->msr_set_tsr(val);
+                        break;
+                }
+            }
+
+            /* Synchronize the asynchronous exception from RTL */
+            if (rtl_excp[i] && (rtl_excp_vect[i] == dpic_emu_CPU->get_vect_EIRQ()))
+            {
+                dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr[i]);
+            }
+
+            ArchEvent emu_event;
             vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
-            vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc, &emu_excp, &emu_insn);
+            vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc, true, &emu_event);
             dpic_emu_CPU->set_pc(emu_npc);
 
-            if (pc[i] != emu_pc)
+            if (rtl_cmt_pc[i] != emu_pc)
             {
-                difftest_report_item("PC", emu_pc, pc[i]);
+                difftest_report_item("PC", emu_pc, rtl_cmt_pc[i]);
                 validated = false;
                 break;
             }
-            if (!emu_excp && insn[i] != emu_insn)
+            if (!emu_event.excp && rtl_insn[i] != emu_event.insn)
             {
-                difftest_report_item("INST", emu_insn, insn[i]);
+                difftest_report_item("INST", emu_event.insn, rtl_insn[i]);
                 validated = false;
                 break;
             }
@@ -198,7 +225,7 @@ void dpic_commit_inst(
     if (difftest_compare_reg(false))
     {
         if (validated)
-            difftest_report_reg(num_commit, valid, pc);
+            difftest_report_reg(rtl_valid, rtl_cmt_pc);
         validated = false;
     }
 
@@ -206,11 +233,6 @@ void dpic_commit_inst(
     {
         difftest_terminate();
     }
-}
-
-void dpic_clk(
-    int msr_tsr)
-{
 }
 
 void dpic_regfile(

@@ -373,7 +373,12 @@ CPU::rmsr(msr_index_t index)
     return 0;
 }
 
-void CPU::init_msr(bool support_dbg)
+void CPU::msr_set_cpuid(bool support_dbg)
 {
     enable_dbg = support_dbg;
+}
+
+void CPU::msr_set_tsr(cpu_unsigned_word_t val)
+{
+    msr.TSR = val;
 }
