@@ -470,7 +470,7 @@ module ex_epu
                               s2i_EDTM | s2i_EDPF | s2i_EALIGN |
                               s1o_commit_EIRQ);
 
-   assign msr_exc_ent = (s1o_exc_commit & ~s1o_commit_ERET);
+   assign msr_exc_ent = (s1o_exc_commit & ~s1o_commit_ERET & ~s1o_commit_E_FLUSH_TLB);
    // Commit PSR. Assert (03060934)
    assign msr_psr_rm_we = (s1o_commit_wmsr_psr_we | s1o_commit_ERET);
    assign msr_psr_rm_nxt = s1o_commit_wmsr_psr_we ? s1o_wmsr_psr_rm : epsr_rm_nobpy;
