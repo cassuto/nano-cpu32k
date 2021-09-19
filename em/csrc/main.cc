@@ -317,8 +317,7 @@ int main(int argc, char *argv[])
                       args.vect_EDPF,
                       args.vect_EITM,
                       args.vect_EDTM,
-                      args.vect_EALIGN,
-                      args.vect_EINT);
+                      args.vect_EALIGN);
 
     FILE *bin_fp = fopen(args.bin_pathname.c_str(), "rb");
     if (!bin_fp)

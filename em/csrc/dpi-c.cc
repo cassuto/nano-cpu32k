@@ -197,10 +197,6 @@ void dpic_step()
             }
 
             /* Synchronize the asynchronous exception from RTL */
-            if (rtl_excp[i])
-            {
-                printf("%#x %#x\n", rtl_excp_vect[i], dpic_emu_CPU->get_vect_EIRQ());
-            }
             if (rtl_excp[i] && (rtl_excp_vect[i] == dpic_emu_CPU->get_vect_EIRQ()))
             {
                 dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr[i]);

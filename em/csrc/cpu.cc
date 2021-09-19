@@ -47,8 +47,7 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
          phy_addr_t vect_EDPF_,
          phy_addr_t vect_EITM_,
          phy_addr_t vect_EDTM_,
-         phy_addr_t vect_EALIGN_,
-         phy_addr_t vect_EINT_)
+         phy_addr_t vect_EALIGN_)
     : msr(immu_tlb_count_, dmmu_tlb_count_),
       dmmu_tlb_count(dmmu_tlb_count_),
       immu_tlb_count(immu_tlb_count_),
@@ -76,7 +75,6 @@ CPU::CPU(int dmmu_tlb_count_, int immu_tlb_count_,
       vect_EITM(vect_EITM_),
       vect_EDTM(vect_EDTM_),
       vect_EALIGN(vect_EALIGN_),
-      vect_EINT(vect_EINT_),
       enable_dbg(true)
 {
     mem = new Memory(this, memory_size_, dram_phy_base_, mmio_phy_base_, mmio_phy_end_addr_);
