@@ -396,8 +396,10 @@ module ex_epu
    assign s1i_msr_tsc_tcr_we   = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tcr_sel;
    
    assign s1i_msr_sr_we        = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_sr;
+   
+   ////////////////////////////////////////////////////////////////////////////////
 
-   // Pack commit wmsr we
+   // Pack `wmsr we`
    assign s1i_wmsr_we = {s1i_wmsr_psr_we,
                         s1i_wmsr_epc_we,
                         s1i_wmsr_epsr_we,
@@ -452,11 +454,15 @@ module ex_epu
    // Unpack WMSR PSR.
    assign {s1o_wmsr_psr_dce,s1o_wmsr_psr_ice,s1o_wmsr_psr_dmme,s1o_wmsr_psr_imme,s1o_wmsr_psr_ire,s1o_wmsr_psr_rm} = s1o_commit_wmsr_dat[9:4];
 
+   // Save PSR / Restore from EPSR
    assign msr_psr_save = (p_ce_s2 & (s1o_commit_ESYSCALL |
-                              s1o_commit_EITM | s1o_commit_EIPF |
-                              s1o_commit_EINSN |
-                              s2i_EDTM | s2i_EDPF | s2i_EALIGN |
-                              s1o_commit_EIRQ));
+                                    s1o_commit_EITM |
+                                    s1o_commit_EIPF |
+                                    s1o_commit_EINSN |
+                                    s2i_EDTM |
+                                    s2i_EDPF |
+                                    s2i_EALIGN |
+                                    s1o_commit_EIRQ));
    assign msr_psr_restore = (p_ce_s2 & s1o_commit_ERET);
    
    // Commit PSR. Assert (03060934)
@@ -477,6 +483,7 @@ module ex_epu
    assign msr_epsr_we = s1o_commit_wmsr_epsr_we;
    assign msr_epsr_nxt = s1o_commit_wmsr_dat[`NCPU_PSR_DW-1:0];
    
+   // Commit EPC
    assign msr_epc_nxt = (s1o_commit_wmsr_epc_we)
                            ? s1o_commit_wmsr_dat
                            // EPC stores the next address of syscall instruction 
