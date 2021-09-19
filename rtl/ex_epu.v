@@ -73,7 +73,6 @@ module ex_epu
 
    // PSR
    input [`NCPU_PSR_DW-1:0]            msr_psr,
-   input [`NCPU_PSR_DW-1:0]            msr_psr_nold,
    input                               msr_psr_ire,
    output                              msr_psr_rm_nxt,
    output                              msr_psr_rm_we,
@@ -83,11 +82,12 @@ module ex_epu
    output                              msr_psr_dmme_we,
    output                              msr_psr_ire_nxt,
    output                              msr_psr_ire_we,
-   output                              msr_exc_ent,
    output                              msr_psr_ice_nxt,
    output                              msr_psr_ice_we,
    output                              msr_psr_dce_nxt,
    output                              msr_psr_dce_we,
+   output                              msr_psr_save,
+   output                              msr_psr_restore,
    // CPUID
    input [CONFIG_DW-1:0]               msr_cpuid,
    // EPC
@@ -96,7 +96,6 @@ module ex_epu
    output                              msr_epc_we,
    // EPSR
    input [`NCPU_PSR_DW-1:0]            msr_epsr,
-   input [`NCPU_PSR_DW-1:0]            msr_epsr_nobyp,
    output [`NCPU_PSR_DW-1:0]           msr_epsr_nxt,
    output                              msr_epsr_we,
    // ELSA
@@ -196,10 +195,6 @@ module ex_epu
    wire                                msr_tsc_tcr_sel;
    wire [CONFIG_DW-1:0]                dout_tsc;
    wire [CONFIG_DW-1:0]                dout_sr;
-   wire                                epsr_rm_nobpy;
-   wire                                epsr_ire_nobpy;
-   wire                                epsr_imme_nobpy;
-   wire                                epsr_dmme_nobpy;
    wire                                s1i_wmsr_psr_we;
    wire                                s1i_wmsr_epc_we;
    wire                                s1i_wmsr_epsr_we;
@@ -262,9 +257,6 @@ module ex_epu
    wire                                s1o_wmsr_psr_dmme;
    wire                                s1o_wmsr_psr_ice;
    wire                                s1o_wmsr_psr_dce;
-   wire                                s1o_msr_exc_ent_ff;
-   wire                                s1o_save_psr;
-   wire                                s1o_exc_commit;
    wire                                s1o_set_elsa_as_pc;
    wire                                s1o_set_elsa;
    wire [CONFIG_DW-1:0]                s1o_lsa_nxt;
@@ -455,49 +447,43 @@ module ex_epu
       s1o_commit_msr_tsc_tsr_we,
       s1o_commit_msr_tsc_tcr_we,
       s1o_commit_msr_sr_we,
-      s1o_commit_bank_off} = s1o_commit_wmsr_we;
-
-   // Unpack EPSR.
-   assign {epsr_dmme_nobpy,epsr_imme_nobpy,epsr_ire_nobpy,epsr_rm_nobpy} = msr_epsr_nobyp[7:4];
+      s1o_commit_bank_off} = ({NCPU_WMSR_WE_W{p_ce_s2}} & s1o_commit_wmsr_we);
 
    // Unpack WMSR PSR.
    assign {s1o_wmsr_psr_dce,s1o_wmsr_psr_ice,s1o_wmsr_psr_dmme,s1o_wmsr_psr_imme,s1o_wmsr_psr_ire,s1o_wmsr_psr_rm} = s1o_commit_wmsr_dat[9:4];
 
-   // For the convenience of maintaining EPC, SYSCALL and the other exceptions are treated differently from RET and WMSR.
-   assign s1o_exc_commit = (s1o_commit_ESYSCALL | s1o_commit_ERET |
+   assign msr_psr_save = (p_ce_s2 & (s1o_commit_ESYSCALL |
                               s1o_commit_EITM | s1o_commit_EIPF |
                               s1o_commit_EINSN |
                               s2i_EDTM | s2i_EDPF | s2i_EALIGN |
-                              s1o_commit_EIRQ);
-
-   assign msr_exc_ent = (s1o_exc_commit & ~s1o_commit_ERET & ~s1o_commit_E_FLUSH_TLB);
+                              s1o_commit_EIRQ));
+   assign msr_psr_restore = (p_ce_s2 & s1o_commit_ERET);
+   
    // Commit PSR. Assert (03060934)
-   assign msr_psr_rm_we = (s1o_commit_wmsr_psr_we | s1o_commit_ERET);
-   assign msr_psr_rm_nxt = s1o_commit_wmsr_psr_we ? s1o_wmsr_psr_rm : epsr_rm_nobpy;
-   assign msr_psr_imme_we = (s1o_commit_wmsr_psr_we | s1o_commit_ERET);
-   assign msr_psr_imme_nxt = s1o_commit_wmsr_psr_we ? s1o_wmsr_psr_imme : epsr_imme_nobpy;
-   assign msr_psr_dmme_we = (s1o_commit_wmsr_psr_we | s1o_commit_ERET);
-   assign msr_psr_dmme_nxt = s1o_commit_wmsr_psr_we ? s1o_wmsr_psr_dmme : epsr_dmme_nobpy;
-   assign msr_psr_ire_we = (s1o_commit_wmsr_psr_we | s1o_commit_ERET);
-   assign msr_psr_ire_nxt = s1o_commit_wmsr_psr_we ? s1o_wmsr_psr_ire : epsr_ire_nobpy;
+   assign msr_psr_rm_we = s1o_commit_wmsr_psr_we;
+   assign msr_psr_rm_nxt = s1o_wmsr_psr_rm;
+   assign msr_psr_imme_we = s1o_commit_wmsr_psr_we;
+   assign msr_psr_imme_nxt = s1o_wmsr_psr_imme;
+   assign msr_psr_dmme_we = s1o_commit_wmsr_psr_we;
+   assign msr_psr_dmme_nxt = s1o_wmsr_psr_dmme;
+   assign msr_psr_ire_we = s1o_commit_wmsr_psr_we;
+   assign msr_psr_ire_nxt = s1o_wmsr_psr_ire;
    assign msr_psr_ice_we = s1o_commit_wmsr_psr_we;
    assign msr_psr_ice_nxt = s1o_wmsr_psr_ice;
    assign msr_psr_dce_we = s1o_commit_wmsr_psr_we;
    assign msr_psr_dce_nxt = s1o_wmsr_psr_dce;
 
-   mDFF_r #(.DW(1)) ff_msr_exc_ent_r (.CLK(clk), .RST(rst), .D(msr_exc_ent), .Q(s1o_msr_exc_ent_ff) );
-
-   // Save PSR to EPSR at the first edge of exception signal
-   assign s1o_save_psr = msr_exc_ent & ~s1o_msr_exc_ent_ff;
-
    // Commit EPSR
-   assign msr_epsr_we = (s1o_commit_wmsr_epsr_we | s1o_save_psr);
-   assign msr_epsr_nxt = s1o_commit_wmsr_epsr_we ? s1o_commit_wmsr_dat[`NCPU_PSR_DW-1:0] : msr_psr_nold;
-   // In syscall, EPC is a pointer to the next insn to syscall, while in general EPC points to the insn
-   // that raised the exception.
-   assign msr_epc_nxt = s1o_commit_wmsr_epc_we ? s1o_commit_wmsr_dat :
-                        s1o_commit_ESYSCALL ? {s1o_commit_nepc,2'b0} : {s1o_commit_epc,2'b0};
-   assign msr_epc_we = msr_exc_ent | s1o_commit_wmsr_epc_we;
+   assign msr_epsr_we = s1o_commit_wmsr_epsr_we;
+   assign msr_epsr_nxt = s1o_commit_wmsr_dat[`NCPU_PSR_DW-1:0];
+   
+   assign msr_epc_nxt = (s1o_commit_wmsr_epc_we)
+                           ? s1o_commit_wmsr_dat
+                           // EPC stores the next address of syscall instruction 
+                           : (s1o_commit_ESYSCALL)
+                              ? {s1o_commit_nepc,2'b0}
+                              : {s1o_commit_epc,2'b0};
+   assign msr_epc_we = (msr_psr_save | s1o_commit_wmsr_epc_we);
 
    // Commit ELSA  Assert (03100705)
    assign s1o_set_elsa_as_pc = (s1o_commit_EITM | s1o_commit_EIPF | s1o_commit_EINSN);

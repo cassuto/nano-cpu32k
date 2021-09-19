@@ -215,10 +215,8 @@ module ex
    wire [CONFIG_DW-1:0] msr_epc_nxt;            // From U_EPU of ex_epu.v
    wire                 msr_epc_we;             // From U_EPU of ex_epu.v
    wire [`NCPU_PSR_DW-1:0] msr_epsr;            // From U_PSR of ex_psr.v
-   wire [`NCPU_PSR_DW-1:0] msr_epsr_nobyp;      // From U_PSR of ex_psr.v
    wire [`NCPU_PSR_DW-1:0] msr_epsr_nxt;        // From U_EPU of ex_epu.v
    wire                 msr_epsr_we;            // From U_EPU of ex_epu.v
-   wire                 msr_exc_ent;            // From U_EPU of ex_epu.v
    wire [`NCPU_PSR_DW-1:0] msr_psr;             // From U_PSR of ex_psr.v
    wire                 msr_psr_dce;            // From U_PSR of ex_psr.v
    wire                 msr_psr_dce_nxt;        // From U_EPU of ex_epu.v
@@ -233,9 +231,10 @@ module ex
    wire                 msr_psr_ire;            // From U_PSR of ex_psr.v
    wire                 msr_psr_ire_nxt;        // From U_EPU of ex_epu.v
    wire                 msr_psr_ire_we;         // From U_EPU of ex_epu.v
-   wire [`NCPU_PSR_DW-1:0] msr_psr_nold;        // From U_PSR of ex_psr.v
+   wire                 msr_psr_restore;        // From U_EPU of ex_epu.v
    wire                 msr_psr_rm_nxt;         // From U_EPU of ex_epu.v
    wire                 msr_psr_rm_we;          // From U_EPU of ex_epu.v
+   wire                 msr_psr_save;           // From U_EPU of ex_epu.v
    wire [CONFIG_DW*`NCPU_SR_NUM-1:0] msr_sr;    // From U_PSR of ex_psr.v
    wire [CONFIG_DW-1:0] msr_sr_nxt;             // From U_EPU of ex_epu.v
    wire [`NCPU_SR_NUM-1:0] msr_sr_we;           // From U_EPU of ex_epu.v
@@ -411,11 +410,12 @@ module ex
        .msr_psr_dmme_we                 (msr_psr_dmme_we),
        .msr_psr_ire_nxt                 (msr_psr_ire_nxt),
        .msr_psr_ire_we                  (msr_psr_ire_we),
-       .msr_exc_ent                     (msr_exc_ent),
        .msr_psr_ice_nxt                 (msr_psr_ice_nxt),
        .msr_psr_ice_we                  (msr_psr_ice_we),
        .msr_psr_dce_nxt                 (msr_psr_dce_nxt),
        .msr_psr_dce_we                  (msr_psr_dce_we),
+       .msr_psr_save                    (msr_psr_save),
+       .msr_psr_restore                 (msr_psr_restore),
        .msr_epc_nxt                     (msr_epc_nxt[CONFIG_DW-1:0]),
        .msr_epc_we                      (msr_epc_we),
        .msr_epsr_nxt                    (msr_epsr_nxt[`NCPU_PSR_DW-1:0]),
@@ -462,12 +462,10 @@ module ex
        .s2i_vaddr                       (epu_s2i_vaddr[CONFIG_AW-1:0]), // Templated
        .irqs                            (irqs[CONFIG_NUM_IRQ-1:0]),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
-       .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
        .msr_psr_ire                     (msr_psr_ire),
        .msr_cpuid                       (msr_cpuid[CONFIG_DW-1:0]),
        .msr_epc                         (msr_epc[CONFIG_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
-       .msr_epsr_nobyp                  (msr_epsr_nobyp[`NCPU_PSR_DW-1:0]),
        .msr_elsa                        (msr_elsa[CONFIG_DW-1:0]),
        .msr_coreid                      (msr_coreid[CONFIG_DW-1:0]),
        .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
@@ -621,7 +619,6 @@ module ex
       (/*AUTOINST*/
        // Outputs
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
-       .msr_psr_nold                    (msr_psr_nold[`NCPU_PSR_DW-1:0]),
        .msr_psr_rm                      (msr_psr_rm),
        .msr_psr_ire                     (msr_psr_ire),
        .msr_psr_imme                    (msr_psr_imme),
@@ -630,7 +627,6 @@ module ex
        .msr_psr_dce                     (msr_psr_dce),
        .msr_cpuid                       (msr_cpuid[CONFIG_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
-       .msr_epsr_nobyp                  (msr_epsr_nobyp[`NCPU_PSR_DW-1:0]),
        .msr_epc                         (msr_epc[CONFIG_DW-1:0]),
        .msr_elsa                        (msr_elsa[CONFIG_DW-1:0]),
        .msr_coreid                      (msr_coreid[CONFIG_DW-1:0]),
@@ -638,7 +634,8 @@ module ex
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
-       .msr_exc_ent                     (msr_exc_ent),
+       .msr_psr_save                    (msr_psr_save),
+       .msr_psr_restore                 (msr_psr_restore),
        .msr_psr_rm_nxt                  (msr_psr_rm_nxt),
        .msr_psr_rm_we                   (msr_psr_rm_we),
        .msr_psr_ire_nxt                 (msr_psr_ire_nxt),

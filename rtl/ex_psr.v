@@ -42,9 +42,9 @@ module ex_psr
    input                               clk,
    input                               rst,
    // PSR
-   input                               msr_exc_ent,
+   input                               msr_psr_save,
+   input                               msr_psr_restore,
    output [`NCPU_PSR_DW-1:0]           msr_psr,
-   output [`NCPU_PSR_DW-1:0]           msr_psr_nold,
    input                               msr_psr_rm_nxt,
    output                              msr_psr_rm,
    input                               msr_psr_rm_we,
@@ -68,7 +68,6 @@ module ex_psr
    // EPSR
    input [`NCPU_PSR_DW-1:0]            msr_epsr_nxt,
    output [`NCPU_PSR_DW-1:0]           msr_epsr,
-   output [`NCPU_PSR_DW-1:0]           msr_epsr_nobyp,
    input                               msr_epsr_we,
    // EPC
    input [CONFIG_DW-1:0]               msr_epc_nxt,
@@ -96,6 +95,7 @@ module ex_psr
    wire                                msr_psr_dmme_nold;
    wire                                msr_psr_ice_ff;
    wire                                msr_psr_dce_ff;
+   wire [`NCPU_PSR_DW-1:0]             msr_psr_nold;
    wire [`NCPU_PSR_DW-1:0]             msr_epsr_ff;
    wire [CONFIG_DW-1:0]                msr_epc_ff;
    wire [CONFIG_DW-1:0]                msr_elsa_ff;
@@ -105,24 +105,51 @@ module ex_psr
    wire                                psr_dmme_msk;
    wire                                psr_ire_msk;
    wire                                psr_ld;
+   wire                                psr_rm_we;
+   wire                                psr_rm_nxt;
+   wire                                psr_imme_we;
+   wire                                psr_imme_nxt;
+   wire                                psr_dmme_we;
+   wire                                psr_dmme_nxt;
+   wire                                psr_ire_we;
+   wire                                psr_ire_nxt;
+   wire                                epsr_we;
+   wire [`NCPU_PSR_DW-1:0]             epsr_nxt;
+   wire                                epsr_rm_nold;
+   wire                                epsr_ire_nold;
+   wire                                epsr_imme_nold;
+   wire                                epsr_dmme_nold;
    genvar                              i;
    
-   assign psr_ld = msr_exc_ent;
-   assign psr_rm_set = msr_exc_ent;
-   assign psr_imme_msk = ~msr_exc_ent;
-   assign psr_dmme_msk = ~msr_exc_ent;
-   assign psr_ire_msk = ~msr_exc_ent;
+   // Save PSR
+   assign psr_ld = msr_psr_save;
+   assign psr_rm_set = msr_psr_save;
+   assign psr_imme_msk = ~msr_psr_save;
+   assign psr_dmme_msk = ~msr_psr_save;
+   assign psr_ire_msk = ~msr_psr_save;
+   assign epsr_we = (msr_epsr_we | msr_psr_save);
+   assign epsr_nxt = msr_psr_save ? msr_psr_nold : msr_epsr_nxt;
+   
+   // Restore PSR
+   assign psr_rm_we = (msr_psr_rm_we | msr_psr_restore);
+   assign psr_rm_nxt = (msr_psr_restore) ? epsr_rm_nold : msr_psr_rm_nxt;
+   assign psr_imme_we = (msr_psr_imme_we | msr_psr_restore);
+   assign psr_imme_nxt = (msr_psr_restore) ? epsr_imme_nold : msr_psr_imme_nxt;
+   assign psr_dmme_we = (msr_psr_dmme_we | msr_psr_restore);
+   assign psr_dmme_nxt = (msr_psr_restore) ? epsr_dmme_nold : msr_psr_dmme_nxt;
+   assign psr_ire_we = (msr_psr_ire_we | msr_psr_restore);
+   assign psr_ire_nxt = (msr_psr_restore) ? epsr_ire_nold : msr_psr_ire_nxt;
 
    // Flip-flops
    // PSR
-   mDFF_lr #(.DW(1), .RST_VECTOR(1'b1)) ff_msr_psr_rm (.CLK(clk), .RST(rst), .LOAD(msr_psr_rm_we|psr_ld), .D(msr_psr_rm_nxt|psr_rm_set), .Q(msr_psr_rm_ff) );
-   mDFF_lr #(.DW(1)) ff_msr_psr_ire (.CLK(clk), .RST(rst), .LOAD(msr_psr_ire_we|psr_ld), .D(msr_psr_ire_nxt&psr_ire_msk), .Q(msr_psr_ire_ff) );
-   mDFF_lr #(.DW(1)) ff_msr_psr_imme (.CLK(clk), .RST(rst), .LOAD(msr_psr_imme_we|psr_ld), .D(msr_psr_imme_nxt&psr_imme_msk), .Q(msr_psr_imme_ff) );
-   mDFF_lr #(.DW(1)) ff_msr_psr_dmme (.CLK(clk), .RST(rst), .LOAD(msr_psr_dmme_we|psr_ld), .D(msr_psr_dmme_nxt&psr_dmme_msk), .Q(msr_psr_dmme_ff) );
+   mDFF_lr #(.DW(1), .RST_VECTOR(1'b1)) ff_msr_psr_rm (.CLK(clk), .RST(rst), .LOAD(psr_rm_we|psr_ld), .D(psr_rm_nxt|psr_rm_set), .Q(msr_psr_rm_ff) );
+   mDFF_lr #(.DW(1)) ff_msr_psr_ire (.CLK(clk), .RST(rst), .LOAD(psr_ire_we|psr_ld), .D(psr_ire_nxt&psr_ire_msk), .Q(msr_psr_ire_ff) );
+   mDFF_lr #(.DW(1)) ff_msr_psr_imme (.CLK(clk), .RST(rst), .LOAD(psr_imme_we|psr_ld), .D(psr_imme_nxt&psr_imme_msk), .Q(msr_psr_imme_ff) );
+   mDFF_lr #(.DW(1)) ff_msr_psr_dmme (.CLK(clk), .RST(rst), .LOAD(psr_dmme_we|psr_ld), .D(psr_dmme_nxt&psr_dmme_msk), .Q(msr_psr_dmme_ff) );
    mDFF_lr #(.DW(1)) ff_msr_psr_ice (.CLK(clk), .RST(rst), .LOAD(msr_psr_ice_we), .D(msr_psr_ice_nxt), .Q(msr_psr_ice_ff) );
    mDFF_lr #(.DW(1)) ff_msr_psr_dce (.CLK(clk), .RST(rst), .LOAD(msr_psr_dce_we), .D(msr_psr_dce_nxt), .Q(msr_psr_dce_ff) );
    // EPSR
-   mDFF_lr #(.DW(`NCPU_PSR_DW)) ff_msr_epsr (.CLK(clk), .RST(rst), .LOAD(msr_epsr_we), .D(msr_epsr_nxt), .Q(msr_epsr_ff) );
+   mDFF_lr #(.DW(`NCPU_PSR_DW)) ff_msr_epsr (.CLK(clk), .RST(rst), .LOAD(epsr_we), .D(epsr_nxt), .Q(msr_epsr_ff) );
    // EPC
    mDFF_lr #(.DW(CONFIG_DW)) ff_msr_epc (.CLK(clk), .RST(rst), .LOAD(msr_epc_we), .D(msr_epc_nxt), .Q(msr_epc_ff) );
    // ELSA
@@ -134,21 +161,21 @@ module ex_psr
    endgenerate
    
    // Bypass logic for PSR
-   assign msr_psr_rm = (msr_psr_rm_we|psr_ld) ? (msr_psr_rm_nxt|psr_rm_set) : msr_psr_rm_ff;
-   assign msr_psr_ire = (msr_psr_ire_we|psr_ld) ? (msr_psr_ire_nxt&psr_ire_msk) : msr_psr_ire_ff;
-   assign msr_psr_imme = (msr_psr_imme_we|psr_ld) ? (msr_psr_imme_nxt&psr_imme_msk) : msr_psr_imme_ff;
-   assign msr_psr_dmme = (msr_psr_dmme_we|psr_ld) ? (msr_psr_dmme_nxt&psr_dmme_msk) : msr_psr_dmme_ff;
+   assign msr_psr_rm = (psr_rm_we|psr_ld) ? (psr_rm_nxt|psr_rm_set) : msr_psr_rm_ff;
+   assign msr_psr_ire = (psr_ire_we|psr_ld) ? (psr_ire_nxt&psr_ire_msk) : msr_psr_ire_ff;
+   assign msr_psr_imme = (psr_imme_we|psr_ld) ? (psr_imme_nxt&psr_imme_msk) : msr_psr_imme_ff;
+   assign msr_psr_dmme = (psr_dmme_we|psr_ld) ? (psr_dmme_nxt&psr_dmme_msk) : msr_psr_dmme_ff;
 
-   // Bypass without exception related modification
-   assign msr_psr_rm_nold = (msr_psr_rm_we) ? msr_psr_rm_nxt : msr_psr_rm_ff;
-   assign msr_psr_ire_nold = (msr_psr_ire_we) ? msr_psr_ire_nxt : msr_psr_ire_ff;
-   assign msr_psr_imme_nold = (msr_psr_imme_we) ? msr_psr_imme_nxt : msr_psr_imme_ff;
-   assign msr_psr_dmme_nold = (msr_psr_dmme_we) ? msr_psr_dmme_nxt : msr_psr_dmme_ff;
+   // Bypass (not include `psr_ld`)
+   assign msr_psr_rm_nold = (psr_rm_we) ? psr_rm_nxt : msr_psr_rm_ff;
+   assign msr_psr_ire_nold = (psr_ire_we) ? psr_ire_nxt : msr_psr_ire_ff;
+   assign msr_psr_imme_nold = (psr_imme_we) ? psr_imme_nxt : msr_psr_imme_ff;
+   assign msr_psr_dmme_nold = (psr_dmme_we) ? psr_dmme_nxt : msr_psr_dmme_ff;
    assign msr_psr_ice = (msr_psr_ice_we) ? (msr_psr_ice_nxt) : msr_psr_ice_ff;
    assign msr_psr_dce = (msr_psr_dce_we) ? (msr_psr_dce_nxt) : msr_psr_dce_ff;
    
    // Bypass logic for E*
-   assign msr_epsr = msr_epsr_we ? msr_epsr_nxt : msr_epsr_ff;
+   assign msr_epsr = epsr_we ? epsr_nxt : msr_epsr_ff;
    assign msr_epc = msr_epc_we ? msr_epc_nxt : msr_epc_ff;
    assign msr_elsa = msr_elsa_we ? msr_elsa_nxt : msr_elsa_ff;
    
@@ -158,14 +185,14 @@ module ex_psr
          assign msr_sr[i*CONFIG_DW +: CONFIG_DW] = (msr_sr_we[i]) ? msr_sr_nxt : msr_sr_ff[i*CONFIG_DW +: CONFIG_DW];
    endgenerate
 
-   // No bypass
-   assign msr_epsr_nobyp = msr_epsr_ff;
-
    // Pack PSR
    assign msr_psr = {msr_psr_dce,msr_psr_ice,msr_psr_dmme,msr_psr_imme,msr_psr_ire,msr_psr_rm,1'b0,1'b0,1'b0,1'b0};
 
    assign msr_psr_nold = {msr_psr_dce,msr_psr_ice,msr_psr_dmme_nold,msr_psr_imme_nold,msr_psr_ire_nold,msr_psr_rm_nold,1'b0,1'b0,1'b0,1'b0};
 
+   // Unpack EPSR
+   assign {epsr_dmme_nold,epsr_imme_nold,epsr_ire_nold,epsr_rm_nold} = msr_epsr_ff[7:4];
+   
    // CPUID
    assign msr_cpuid = {{CONFIG_DW-26{1'b0}},CPUID_FTSC,CPUID_FIRQC,CPUID_FFPU,CPUID_FDBG,CPUID_FDCA,CPUID_FICA,CPUID_FDMM,CPUID_FIMM,CPUID_REV[9:0],CPUID_VER[7:0]};
 
