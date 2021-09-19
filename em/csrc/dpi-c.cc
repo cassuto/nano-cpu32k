@@ -181,6 +181,7 @@ void dpic_step()
                 rtl_regfile[(unsigned)rtl_wnum[i]] = rtl_wdata[i];
 
             /* Handle RMSR carefully */
+            printf("rtl_excp = %d\n", rtl_excp);
             if (!rtl_excp && (rtl_insn[i] & INS32_MASK_OPCODE) == INS32_OP_RMSR)
             {
                 uint8_t rs1 = INS32_GET_BITS(rtl_insn[i], RS1);
