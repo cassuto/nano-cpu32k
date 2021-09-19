@@ -105,7 +105,7 @@ public:
         IRQ_TSC = 0;
         bin_load_addr = dram_phy_base;
         device_clk_div = 100;
-        vcdfile = "dump.vcd";
+        vcdfile = "";
         wave_begin = 0;
         wave_end = 10000;
         commit_timeout_max = 100000;

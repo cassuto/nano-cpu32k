@@ -187,12 +187,10 @@ void dpic_step()
                 uint8_t rd = INS32_GET_BITS(rtl_insn[i], RD);
                 uint16_t uimm15 = INS32_GET_BITS(rtl_insn[i], IMM15);
                 cpu_unsigned_word_t val = rtl_regfile[rd];
-                //printf("%#x rmsr %#x\n", rtl_cmt_pc[i], (rtl_regfile[rs1] | uimm15));
                 switch (rtl_regfile[rs1] | uimm15)
                 {
                     case MSR_TSR:
                         /* Synchronize the value of TSR before reading */
-                        printf("val = %d\n", val);
                         dpic_emu_CPU->msr_set_tsr(val);
                         break;
                 }
