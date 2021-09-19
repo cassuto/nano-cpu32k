@@ -126,7 +126,7 @@ public:
     ~CPU();
 
     void reset(vm_addr_t reset_vect);
-    vm_addr_t step(vm_addr_t pc);
+    vm_addr_t step(vm_addr_t pc, bool *excp = nullptr, insn_t *fetched_insn = nullptr);
     void run_step();
 
     void set_reg(uint16_t addr, cpu_word_t val);

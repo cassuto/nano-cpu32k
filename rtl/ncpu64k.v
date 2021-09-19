@@ -532,7 +532,11 @@ module ncpu64k
       (
          .clk                             (clk),
          .rst                             (rst),
+         .stall                           (stall),
+         .p_ce_s1                         (U_EX.p_ce_s1),
+         .p_ce_s2                         (U_EX.p_ce_s2),
          .p_ce_s3                         (U_EX.p_ce_s3),
+         .id_ins                          (id_ins),
          .commit_valid                    (U_EX.commit_valid),
          .commit_pc                       (U_EX.commit_pc),
          .commit_rf_wdat                  (commit_rf_wdat),

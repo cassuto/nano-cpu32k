@@ -7,11 +7,13 @@
 extern "C" void dpic_commit_inst(
     svBit valid1,
     int pc1,
+    int insn1,
     svBit wen1,
     char wnum1,
     int wdata1,
     svBit valid2,
     int pc2,
+    int insn2,
     svBit wen2,
     char wnum2,
     int wdata2,

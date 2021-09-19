@@ -12,7 +12,11 @@ module difftest
 (
    input                               clk,
    input                               rst,
+   input                               stall,
+   input                               p_ce_s1,
+   input                               p_ce_s2,
    input                               p_ce_s3,
+   input [`NCPU_INSN_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid,
    input [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc,
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat,
@@ -20,20 +24,36 @@ module difftest
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_we,
    input [CONFIG_DW-1:0]               regfile [(1<<`NCPU_REG_AW)-1:0]
 );
+   localparam IW = (1<<CONFIG_P_ISSUE_WIDTH);
+   
    //
    // Difftest access point
    //
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid_ff;
-   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc_ff;
-   wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr_ff;
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat_ff;
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_we_ff;
+   wire p_ce_id;
+   wire [`NCPU_INSN_DW*IW-1:0] ex_ins, ex_s1o_ins, ex_s2o_ins, ex_s3o_ins;
+   wire [`NCPU_INSN_DW*IW-1:0] commit_ins;
+   wire [IW-1:0] commit_valid_ff;
+   wire [`PC_W*IW-1:0] commit_pc_ff;
+   wire [`NCPU_REG_AW*IW-1:0] commit_rf_waddr_ff;
+   wire [CONFIG_DW*IW-1:0] commit_rf_wdat_ff;
+   wire [IW-1:0] commit_rf_we_ff;
    
-   mDFF_r #(.DW(1<<CONFIG_P_ISSUE_WIDTH)) ff_commit_valid (.CLK(clk), .RST(rst), .D(commit_valid & {(1<<CONFIG_P_ISSUE_WIDTH){p_ce_s3}}), .Q(commit_valid_ff));
-   mDFF #(.DW(`PC_W*(1<<CONFIG_P_ISSUE_WIDTH))) ff_commit_pc (.CLK(clk), .D(commit_pc), .Q(commit_pc_ff));
-   mDFF #(.DW(`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH))) ff_commit_rf_waddr (.CLK(clk), .D(commit_rf_waddr), .Q(commit_rf_waddr_ff));
-   mDFF #(.DW(CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH))) ff_commit_rf_wdat (.CLK(clk), .D(commit_rf_wdat), .Q(commit_rf_wdat_ff));
-   mDFF_r #(.DW(1<<CONFIG_P_ISSUE_WIDTH)) ff_commit_rf_we (.CLK(clk), .RST(rst), .D(commit_rf_we), .Q(commit_rf_we_ff));
+   // Extra pipeline in ID
+   assign p_ce_id = (~stall);
+   mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_ex_ins (.CLK(clk), .LOAD(p_ce_id), .D(id_ins), .Q(ex_ins) );
+   
+   // Extra pipeline in EX
+   mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_ex_s1o_ins (.CLK(clk), .LOAD(p_ce_s1), .D(ex_ins), .Q(ex_s1o_ins) );
+   mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_ex_s2o_ins (.CLK(clk), .LOAD(p_ce_s2), .D(ex_s1o_ins), .Q(ex_s2o_ins) );
+   mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_ex_s3o_ins (.CLK(clk), .LOAD(p_ce_s3), .D(ex_s2o_ins), .Q(ex_s3o_ins) );
+   
+   // Extra pipeline in CMT
+   mDFF_r #(.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .D(commit_valid & {IW{p_ce_s3}}), .Q(commit_valid_ff));
+   mDFF #(.DW(`PC_W*IW)) ff_commit_pc (.CLK(clk), .D(commit_pc), .Q(commit_pc_ff));
+   mDFF #(.DW(`NCPU_REG_AW*IW)) ff_commit_rf_waddr (.CLK(clk), .D(commit_rf_waddr), .Q(commit_rf_waddr_ff));
+   mDFF #(.DW(CONFIG_DW*IW)) ff_commit_rf_wdat (.CLK(clk), .D(commit_rf_wdat), .Q(commit_rf_wdat_ff));
+   mDFF_r #(.DW(IW)) ff_commit_rf_we (.CLK(clk), .RST(rst), .D(commit_rf_we), .Q(commit_rf_we_ff));
+   mDFF # (.DW(`NCPU_INSN_DW*IW)) ff_commit_ins (.CLK(clk), .D(ex_s3o_ins), .Q(commit_ins) );
    
    
    difftest_commit_inst U_DIFFTEST_COMMIT_INST
@@ -41,11 +61,13 @@ module difftest
          .clk                             (clk),
          .valid1                          (commit_valid_ff[0]),
          .pc1                             ({commit_pc_ff[0*`PC_W +: `PC_W], {`NCPU_P_INSN_LEN{1'b0}}}),
+         .insn1                           (commit_ins[0*`NCPU_INSN_DW +: `NCPU_INSN_DW]),
          .wen1                            (commit_rf_we_ff[0]),
          .wnum1                           (commit_rf_waddr_ff[0*`NCPU_REG_AW +: `NCPU_REG_AW]),
          .wdata1                          (commit_rf_wdat_ff[0*CONFIG_DW +: CONFIG_DW]),
          .valid2                          (commit_valid_ff[1]),
          .pc2                             ({commit_pc_ff[1*`PC_W +: `PC_W], {`NCPU_P_INSN_LEN{1'b0}}}),
+         .insn2                           (commit_ins[1*`NCPU_INSN_DW +: `NCPU_INSN_DW]),
          .wen2                            (commit_rf_we_ff[1]),
          .wnum2                           (commit_rf_waddr_ff[1*`NCPU_REG_AW +: `NCPU_REG_AW]),
          .wdata2                          (commit_rf_wdat_ff[1*CONFIG_DW +: CONFIG_DW]),
@@ -96,9 +118,9 @@ module difftest
          .msr_tsc_count                   ('b0) // TODO
       );
 
-   wire [31:0] dbg_commit_pc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0];
+   wire [31:0] dbg_commit_pc[IW-1:0];
    generate
-      for(genvar i=0;i<(1<<CONFIG_P_ISSUE_WIDTH);i=i+1)  
+      for(genvar i=0;i<IW;i=i+1)  
          begin
             assign dbg_commit_pc[i] = {commit_pc[i*`PC_W +: `PC_W], 2'b00};
          end

@@ -143,7 +143,7 @@ rel15_sig_ext(uint16_t rel15)
 }
 
 vm_addr_t
-CPU::step(vm_addr_t pc)
+CPU::step(vm_addr_t pc, bool *excp, insn_t *fetched_insn)
 {
     uint16_t opcode;
     uint16_t rs1;
@@ -159,6 +159,8 @@ CPU::step(vm_addr_t pc)
     phy_addr_t insn_pa;
     bool insn_uncached;
     insn_t insn;
+
+    if (excp) *excp = false;
 
     tsc_clk(1);
 
@@ -187,6 +189,7 @@ CPU::step(vm_addr_t pc)
         insn = (insn_t)icache->phy_readm32(insn_pa);
     pc_queue->push(pc, insn);
     pc_nxt = pc + INSN_LEN;
+    if (fetched_insn) *fetched_insn =  insn;
 
     /* decode and execute */
     opcode = insn & INS32_MASK_OPCODE;
@@ -570,6 +573,7 @@ CPU::step(vm_addr_t pc)
 
     goto fetch_next;
 handle_exception:
+    if (excp) *excp = true;
 fetch_next:
 flush_pc:
     /* The only-one exit point */

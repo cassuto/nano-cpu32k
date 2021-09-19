@@ -59,7 +59,7 @@ static void difftest_terminate()
     panic(0);
 }
 
-static void difftest_report_pc(vm_addr_t right, vm_addr_t wrong)
+static void difftest_report_item(const char *item, cpu_unsigned_word_t right, cpu_unsigned_word_t wrong)
 {
     fprintf(stderr, "Verilog PC:\n");
     rtl_pc_queue->dump();
@@ -68,7 +68,7 @@ static void difftest_report_pc(vm_addr_t right, vm_addr_t wrong)
 
     fprintf(stderr, "--------------------------------------------------------------\n");
     fprintf(stderr, "[%lu cycle] PC Error!\n", dpic_emu->get_cycle());
-    fprintf(stderr, "PC different: (right = %#8x, wrong = %#8x)\n", right, wrong);
+    fprintf(stderr, "%s different: (right = %#8x, wrong = %#8x)\n", item, right, wrong);
     fprintf(stderr, "--------------------------------------------------------------\n");
 }
 
@@ -87,7 +87,7 @@ static bool difftest_compare_reg(bool verbose)
     return false;
 }
 
-static void difftest_report_reg(svBit valid1, svBit valid2, int pc1, int pc2)
+static void difftest_report_reg(int num_commit, svBit valid[], int pc[])
 {
     fprintf(stderr, "Verilog PC:\n");
     rtl_pc_queue->dump();
@@ -96,10 +96,11 @@ static void difftest_report_reg(svBit valid1, svBit valid2, int pc1, int pc2)
 
     fprintf(stderr, "--------------------------------------------------------------\n");
     fprintf(stderr, "[%lu cycle] Architectural Register Error!\n", dpic_emu->get_cycle());
-    if (valid1)
-        fprintf(stderr, "At pc[1] = %#8x\n", pc1);
-    if (valid2)
-        fprintf(stderr, "At pc[2] = %#8x\n", pc2);
+    for (int i = 0; i < num_commit; i++)
+    {
+        if (valid[i])
+            fprintf(stderr, "At pc[%d] = %#8x\n", i + 1, pc[i]);
+    }
     difftest_compare_reg(true);
     fprintf(stderr, "--------------------------------------------------------------\n");
 }
@@ -107,11 +108,13 @@ static void difftest_report_reg(svBit valid1, svBit valid2, int pc1, int pc2)
 void dpic_commit_inst(
     svBit valid1,
     int pc1,
+    int insn1,
     svBit wen1,
     char wnum1,
     int wdata1,
     svBit valid2,
     int pc2,
+    int insn2,
     svBit wen2,
     char wnum2,
     int wdata2,
@@ -138,45 +141,64 @@ void dpic_commit_inst(
     if (dpic_emu->get_cycle() % 100000 == 0)
         fprintf(stderr, "[%ld] emu PC = %#x rtl PC=%#x\n", dpic_emu->get_cycle(), dpic_emu_CPU->get_pc(), rtl_pc);
 
+    const int num_commit = 2;
+
+    svBit valid[num_commit];
+    int pc[num_commit];
+    int insn[num_commit];
+    svBit wen[num_commit];
+    char wnum[num_commit];
+    int wdata[num_commit];
+
+    /* Hardcoded number of commit */
+    valid[0] = valid1;
+    valid[1] = valid2;
+    pc[0] = pc1;
+    pc[1] = pc2;
+    insn[0] = insn1;
+    insn[1] = insn2;
+    wen[0] = wen1;
+    wen[1] = wen2;
+    wnum[0] = wnum1;
+    wnum[1] = wnum2;
+    wdata[0] = wdata1;
+    wdata[1] = wdata2;
+
     bool validated = true;
-    if (valid1)
+    for (int i = 0; i < num_commit; i++)
     {
-        rtl_pc = pc1;
-        rtl_pc_queue->push(pc1, 0); // FIXME
-        if (wen1)
-            rtl_regfile[(unsigned)wnum1] = wdata1;
-
-        vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
-        vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc);
-        dpic_emu_CPU->set_pc(emu_npc);
-
-        if (pc1 != emu_pc)
+        if (valid[i])
         {
-            difftest_report_pc(emu_pc, pc1);
-            validated = false;
+            rtl_pc = pc[i];
+            rtl_pc_queue->push(pc[i], insn[i]);
+            if (wen[i])
+                rtl_regfile[(unsigned)wnum[i]] = wdata[i];
+
+            bool emu_excp;
+            insn_t emu_insn;
+            vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
+            vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc, &emu_excp, &emu_insn);
+            dpic_emu_CPU->set_pc(emu_npc);
+
+            if (pc[i] != emu_pc)
+            {
+                difftest_report_item("PC", emu_pc, pc[i]);
+                validated = false;
+                break;
+            }
+            if (insn[i] != emu_insn)
+            {
+                difftest_report_item("INST", emu_insn, insn[i]);
+                validated = false;
+                break;
+            }
         }
     }
-    if (valid2)
-    {
-        rtl_pc = pc2;
-        rtl_pc_queue->push(pc2, 0); // FIXME
-        if (wen2)
-            rtl_regfile[(unsigned)wnum2] = wdata2;
 
-        vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
-        vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc);
-        dpic_emu_CPU->set_pc(emu_npc);
-
-        if (pc2 != emu_pc)
-        {
-            difftest_report_pc(emu_pc, pc2);
-            validated = false;
-        }
-    }
     if (difftest_compare_reg(false))
     {
         if (validated)
-            difftest_report_reg(valid1, valid2, pc1, pc2);
+            difftest_report_reg(num_commit, valid, pc);
         validated = false;
     }
 
