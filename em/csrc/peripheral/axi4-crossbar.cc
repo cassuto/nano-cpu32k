@@ -282,9 +282,9 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     axi.r.valid = 0;
 
     // RDATA: if finished, we try the next rdata response
-    if (!wait_resp_r)
+    if (!wait_resp_r && wait_req_r)
     {
-        if (wait_req_r && wait_req_r->is_mmio)
+        if (wait_req_r->is_mmio)
         {
             wait_resp_r = new Axi4CrossbarResponse();
             wait_resp_r->req = wait_req_r;
@@ -298,6 +298,7 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
                 wait_resp_r = new Axi4CrossbarResponse();
                 wait_resp_r->req = wait_req_r;
                 wait_resp_r->dram_resp = dram_resp;
+                printf("rvalid\n");
             }
         }
     }
