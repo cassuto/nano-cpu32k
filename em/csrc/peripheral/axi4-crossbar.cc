@@ -204,10 +204,8 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
     if (axi_check_raddr_fire(axi))
     {
         wait_req_r = axi_request(axi, false);
-        if (!wait_req_r->is_mmio) {
-            printf("add req\n");
+        if (!wait_req_r->is_mmio)
             dramsim->add_request(wait_req_r->dram_req);
-        }
     }
 
     // the last write transaction is acknowledged
@@ -245,8 +243,8 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
             assert(wait_req_w);
         }
 
-        assert(wait_req_w->size <= 8);                                                // The current STRB supports no more than 8 bytes of data
-        uint64_t waddr = wait_req_w->address + wait_req_w->offset * wait_req_w->size; //axi.aw.addr;
+        assert(wait_req_w->size <= 8); // The current STRB supports no more than 8 bytes of data
+        uint64_t waddr = wait_req_w->address + wait_req_w->offset * wait_req_w->size;
 
         // FIXME For MMIO, wstrb behaves incorrectly
         uint64_t wdat = pread(waddr, wait_req_w->size);

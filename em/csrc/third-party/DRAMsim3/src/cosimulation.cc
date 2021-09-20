@@ -62,6 +62,7 @@ CoDRAMResponse *ComplexCoDRAMsim3::check_response(std::queue<CoDRAMResponse*> &r
         return NULL;
     auto resp = resp_queue.front();
     auto now = get_clock_ticks();
+    printf("----%lu %lu\n", resp->finish_time, now);
     if (resp->finish_time <= now) {
         resp->resp_time = now;
         resp_queue.pop();
