@@ -58,8 +58,10 @@ CoDRAMResponse *ComplexCoDRAMsim3::check_write_response() {
 }
 
 CoDRAMResponse *ComplexCoDRAMsim3::check_response(std::queue<CoDRAMResponse*> &resp_queue) {
-    if (resp_queue.empty())
+    if (resp_queue.empty()) {
+        printf("empty\n");
         return NULL;
+    }
     auto resp = resp_queue.front();
     auto now = get_clock_ticks();
     printf("----%lu %lu\n", resp->finish_time, now);
