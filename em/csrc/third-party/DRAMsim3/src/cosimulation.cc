@@ -62,7 +62,6 @@ CoDRAMResponse *ComplexCoDRAMsim3::check_response(std::queue<CoDRAMResponse*> &r
         return NULL;
     auto resp = resp_queue.front();
     auto now = get_clock_ticks();
-    printf("----%lu %lu\n", resp->finish_time, now);
     if (resp->finish_time <= now) {
         resp->resp_time = now;
         resp_queue.pop();
@@ -72,8 +71,8 @@ CoDRAMResponse *ComplexCoDRAMsim3::check_response(std::queue<CoDRAMResponse*> &r
 }
 
 void ComplexCoDRAMsim3::callback(uint64_t addr, bool is_write) {
-     std::cout << "cycle " << std::dec << get_clock_ticks() << " callback "
-               << "is_write " << std::dec << is_write << " addr " << std::hex << addr << std::endl;
+    // std::cout << "cycle " << std::dec << get_clock_ticks() << " callback "
+    //           << "is_write " << std::dec << is_write << " addr " << std::hex << addr << std::endl;
     // search for the first matched request
     auto iter = req_list.begin();
     while (iter != req_list.end()) {

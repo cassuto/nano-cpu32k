@@ -181,6 +181,9 @@ Axi4CrossbarRequest *Axi4Crossbar::axi_request(const axi_channel &axi, bool is_w
 
 void Axi4Crossbar::clk_rising(const axi_channel &axi)
 {
+    // ticks DRAMsim3 according to CPU_FREQ:DRAM_FREQ
+    dramsim->tick();
+
     // read data fire: check the last read request
     if (axi_check_rdata_fire(axi))
     {
