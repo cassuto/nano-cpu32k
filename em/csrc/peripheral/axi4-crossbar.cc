@@ -204,8 +204,10 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
     if (axi_check_raddr_fire(axi))
     {
         wait_req_r = axi_request(axi, false);
-        if (!wait_req_r->is_mmio)
+        if (!wait_req_r->is_mmio) {
+            printf("add req\n");
             dramsim->add_request(wait_req_r->dram_req);
+        }
     }
 
     // the last write transaction is acknowledged
@@ -299,7 +301,6 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
                 wait_resp_r->req = wait_req_r;
                 wait_resp_r->dram_resp = dram_resp;
             }
-            printf("rvalid\n");
         }
     }
     // if there's some data response, put it onto axi bus
