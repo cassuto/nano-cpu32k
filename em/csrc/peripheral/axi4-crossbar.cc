@@ -307,8 +307,7 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     axi_addr_t raddr;
     if (axi_get_raddr(axi, raddr))
     {
-        assert(wait_req_r);
-        bool fire = (wait_req_r->is_mmio) ? true : dramsim->will_accept(raddr, false);
+        bool fire = wait_req_r && ((wait_req_r->is_mmio) ? true : dramsim->will_accept(raddr, false));
         if (fire)
         {
             axi_accept_raddr(axi);
