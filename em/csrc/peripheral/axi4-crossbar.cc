@@ -293,7 +293,6 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
         else
         {
             CoDRAMResponse *dram_resp = dramsim->check_read_response();
-            printf("1233\n");
             if (dram_resp)
             {
                 wait_resp_r = new Axi4CrossbarResponse();
