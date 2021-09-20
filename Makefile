@@ -56,10 +56,9 @@ SIM_CPPS = $(EM_DIR)/csrc/main.cc \
 # Peripherals
 SIM_CPPS += $(EM_DIR)/csrc/peripheral/device-tree.cc \
 			$(EM_DIR)/csrc/peripheral/pb-uart.cc \
-			$(EM_DIR)/csrc/peripheral/virt-uart.cc
-# Third-party lib
-SIM_CPPS += $(EM_DIR)/csrc/third-party/axi4.cc \
-			$(EM_DIR)/csrc/third-party/dram-axi4-model.cc
+			$(EM_DIR)/csrc/peripheral/virt-uart.cc \
+			$(EM_DIR)/csrc/peripheral/axi4.cc \
+			$(EM_DIR)/csrc/peripheral/axi4-crossbar.cc
 
 # Lint
 LINT_SRCS = $(SRCS)

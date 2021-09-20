@@ -28,7 +28,7 @@ private:
     uint64_t num_inst_commit;
     uint64_t cycles;
     CPU *cpu;
-    DRAM *dram;
+    Axi4Crossbar *axi_crossbar;
     VerilatedVcdC *trace_fp;
 };
 

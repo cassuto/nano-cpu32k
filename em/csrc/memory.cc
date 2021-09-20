@@ -132,6 +132,11 @@ void Memory::mmio_register_writem32(phy_addr_t start_addr, phy_addr_t end_addr, 
     mmio_append_node(&mmio32, 1, start_addr, end_addr, callback, opaque);
 }
 
+void Memory::mmio_register_writem64(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
+{
+    mmio_append_node(&mmio64, 1, start_addr, end_addr, callback, opaque);
+}
+
 void Memory::mmio_register_readm8(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
 {
     mmio_append_node(&mmio8, 0, start_addr, end_addr, callback, opaque);
@@ -145,4 +150,9 @@ void Memory::mmio_register_readm16(phy_addr_t start_addr, phy_addr_t end_addr, M
 void Memory::mmio_register_readm32(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
 {
     mmio_append_node(&mmio32, 0, start_addr, end_addr, callback, opaque);
+}
+
+void Memory::mmio_register_readm64(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
+{
+    mmio_append_node(&mmio64, 0, start_addr, end_addr, callback, opaque);
 }

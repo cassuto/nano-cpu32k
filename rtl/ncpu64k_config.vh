@@ -171,9 +171,6 @@
  * Start of MSR definitions
  ******************************************************************************/
 
-// PSR register bitwidth
-`define NCPU_PSR_DW 10
-
 `define NCPU_MSR_BANK_OFF_AW 9
 `define NCPU_MSR_BANK_AW (14-9) // 14 is the bitwidth of imm14
 

@@ -20,8 +20,8 @@
 #include <verilated_vcd_c.h>
 #include "cpu.hh"
 #include "memory.hh"
-#include "third-party/axi4.hh"
-#include "third-party/dram-axi4-model.hh"
+#include "peripheral/axi4.hh"
+#include "peripheral/axi4-crossbar.hh"
 #include "emu.hh"
 
 Emu::Emu(const char *vcdfile_,
@@ -35,7 +35,7 @@ Emu::Emu(const char *vcdfile_,
       num_inst_commit(0),
       cycles(0),
       cpu(cpu_),
-      dram(new DRAM(mem_)),
+      axi_crossbar(new Axi4Crossbar(mem_)),
       trace_fp(nullptr)
 {
     reset(10);
@@ -55,6 +55,7 @@ Emu::Emu(const char *vcdfile_,
 Emu::~Emu()
 {
     delete dut_ptr;
+    delete axi_crossbar;
 }
 
 void Emu::reset(int cycles)
@@ -78,25 +79,17 @@ bool Emu::clk()
     dut_ptr->clock = 0;
     dut_ptr->eval();
 
-#if 1 // WITH_DRAMSIM3
     axi_channel axi;
     axi_copy_from_dut_ptr(dut_ptr, axi);
-    //    axi.aw.addr -= 0x80000000UL;
-    //    axi.ar.addr -= 0x80000000UL;
-    dram->dramsim3_helper_rising(axi);
-#endif
+    axi_crossbar->clk_rising(axi);
 
     dut_ptr->clock = 1;
     dut_ptr->eval();
 
-#if 1 // WITH_DRAMSIM3
     axi_copy_from_dut_ptr(dut_ptr, axi);
-    //    axi.aw.addr -= 0x80000000UL;
-    //    axi.ar.addr -= 0x80000000UL;
-    dram->dramsim3_helper_falling(axi);
+    axi_crossbar->clk_falling(axi);
     axi_set_dut_ptr(dut_ptr, axi);
     dut_ptr->eval();
-#endif
 
     if (dut_ptr->break_point)
         fprintf(stderr, "[%lu] Hit RTL break point!\n", cycles);

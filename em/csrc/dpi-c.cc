@@ -197,10 +197,7 @@ void dpic_step()
             }
 
             /* Synchronize the asynchronous exception from RTL */
-            if (rtl_excp[i] && (rtl_excp_vect[i] == dpic_emu_CPU->get_vect_EIRQ()))
-            {
-                dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr[i]);
-            }
+            dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr[i]);
 
             ArchEvent emu_event;
             vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
