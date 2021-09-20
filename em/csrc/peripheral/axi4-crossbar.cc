@@ -108,9 +108,11 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
     {
         int wordlen = transaction_size / beatsize;
         assert(wordlen <= MAX_AXI_DATA_LEN);
+        printf("ar=%lx\n", address);
         for (int i = 0; i < wordlen; i++)
         {
             req->data[i * beatsize / sizeof(uint64_t)] = pread(address, beatsize);
+            printf("%lx %lx\n", i * beatsize / sizeof(uint64_t), req->data[i * beatsize / sizeof(uint64_t)] );
             address += beatsize;
         }
     }
