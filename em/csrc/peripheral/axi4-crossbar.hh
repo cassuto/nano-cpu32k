@@ -41,6 +41,7 @@ public:
     void clk_falling(axi_channel &axi);
 
 private:
+    bool is_mmio(uint64_t address);
     uint64_t pread(uint64_t address, uint8_t beatsize);
     void pwrite(uint64_t address, uint64_t dat, uint8_t beatsize);
     Axi4CrossbarRequest *axi_request(const axi_channel &axi, bool is_write);

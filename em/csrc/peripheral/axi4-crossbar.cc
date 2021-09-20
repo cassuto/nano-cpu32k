@@ -37,6 +37,11 @@ Axi4Crossbar::~Axi4Crossbar()
     delete dramsim;
 }
 
+bool Axi4Crossbar::is_mmio(uint64_t address)
+{
+    return ((address >= mem->get_mmio_phy_base()) && (address <= mem->get_mmio_phy_end_addr()));
+}
+
 uint64_t Axi4Crossbar::pread(uint64_t address, uint8_t beatsize)
 {
     uint64_t dat;
@@ -145,7 +150,7 @@ Axi4CrossbarRequest *Axi4Crossbar::axi_request(const axi_channel &axi, bool is_w
 
     req->address = (is_write) ? axi.aw.addr : axi.ar.addr;
     req->is_write = is_write;
-    req->is_mmio = ((req->address >= mem->get_mmio_phy_base()) && (req->address <= mem->get_mmio_phy_end_addr()));
+    req->is_mmio = is_mmio(req->address);
     if (is_write)
     {
         req->len = axi.aw.len + 1;
@@ -179,10 +184,10 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
     // read data fire: check the last read request
     if (axi_check_rdata_fire(axi))
     {
-        if (wait_resp_r == NULL)
+        if (wait_resp_r == nullptr)
         {
             fprintf(stderr, "ERROR: There's no in-flight read request.\n");
-            assert(wait_resp_r != NULL);
+            assert(wait_resp_r);
         }
         wait_resp_r->req->offset++;
         // check whether the last rdata response has finished
@@ -191,7 +196,7 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
             delete wait_resp_r->req;
             delete wait_resp_r->dram_resp;
             delete wait_resp_r;
-            wait_resp_r = NULL;
+            wait_resp_r = nullptr;
         }
     }
 
@@ -206,24 +211,24 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
     // the last write transaction is acknowledged
     if (axi_check_wack_fire(axi))
     {
-        if (wait_resp_b == NULL)
+        if (wait_resp_b == nullptr)
         {
             fprintf(stderr, "ERROR: write response fire for nothing in-flight.\n");
-            assert(wait_resp_b != NULL);
+            assert(wait_resp_b);
         }
         delete wait_resp_b->req;
         delete wait_resp_b->dram_resp;
         delete wait_resp_b;
-        wait_resp_b = NULL;
+        wait_resp_b = nullptr;
     }
 
     // write address fire: accept a new write request
     if (axi_check_waddr_fire(axi))
     {
-        if (wait_req_w != NULL)
+        if (wait_req_w)
         {
             fprintf(stderr, "ERROR: The last write request has not finished.\n");
-            assert(wait_req_w == NULL);
+            assert(wait_req_w == nullptr);
         }
         wait_req_w = axi_request(axi, true);
         // printf("accept a new write request to addr = 0x%lx, len = %d\n", axi.aw.addr, axi.aw.len);
@@ -232,10 +237,10 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
     // write data fire
     if (axi_check_wdata_fire(axi))
     {
-        if (wait_req_w == NULL)
+        if (wait_req_w == nullptr)
         {
             fprintf(stderr, "ERROR: wdata fire for nothing in-flight.\n");
-            assert(wait_req_w != NULL);
+            assert(wait_req_w);
         }
 
         assert(wait_req_w->size <= 8);                                                // The current STRB supports no more than 8 bytes of data
@@ -254,14 +259,14 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
     {
         if (wait_req_w->is_mmio)
         {
-            wait_req_w = NULL;
+            wait_req_w = nullptr;
         }
         else
         {
             if (dramsim->will_accept(wait_req_w->address, true))
             {
                 dramsim->add_request(wait_req_w->dram_req);
-                wait_req_w = NULL;
+                wait_req_w = nullptr;
             }
         }
     }
@@ -305,9 +310,9 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
 
     // RADDR: check whether the read request can be accepted
     axi_addr_t raddr;
-    if (axi_get_raddr(axi, raddr))
+    if (wait_req_r == nullptr && axi_get_raddr(axi, raddr))
     {
-        bool fire = wait_req_r && ((wait_req_r->is_mmio) ? true : dramsim->will_accept(raddr, false));
+        bool fire = is_mmio(axi.ar.addr) ? true : dramsim->will_accept(raddr, false);
         if (fire)
         {
             axi_accept_raddr(axi);
@@ -318,9 +323,9 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     // WREQ: check whether the write request can be accepted
     // Note: block the next write here to simplify logic
     axi_addr_t waddr;
-    if (wait_req_w == NULL && axi_get_waddr(axi, waddr))
+    if (wait_req_w == nullptr && axi_get_waddr(axi, waddr))
     {
-        bool fire = (wait_req_w->is_mmio) ? true : dramsim->will_accept(waddr, true);
+        bool fire = is_mmio(axi.aw.addr) ? true : dramsim->will_accept(waddr, true);
         if (fire)
         {
             axi_accept_waddr(axi);
@@ -330,7 +335,7 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     }
 
     // WDATA: check whether the write data can be accepted
-    if (wait_req_w != NULL)
+    if (wait_req_w)
     {
         // we have to check whether the last finished write request has been accepted by dramsim
         bool fire = (wait_req_w->is_mmio) ? true : dramsim->will_accept(wait_req_w->address, true);
