@@ -202,6 +202,7 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
             delete wait_resp_r->dram_resp;
             delete wait_resp_r;
             wait_resp_r = nullptr;
+            wait_req_r = nullptr;
         }
     }
 
