@@ -298,8 +298,8 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
                 wait_resp_r = new Axi4CrossbarResponse();
                 wait_resp_r->req = wait_req_r;
                 wait_resp_r->dram_resp = dram_resp;
-                printf("rvalid\n");
             }
+            printf("rvalid\n");
         }
     }
     // if there's some data response, put it onto axi bus
