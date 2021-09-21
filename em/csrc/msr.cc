@@ -139,6 +139,10 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr.ELSA = val;
             break;
 
+        case MSR_EVECT:
+            msr.EVECT = val;
+            break;
+
         /* MSR bank - ICA */
         case MSR_ICINV:
             icache->invalidate(val);
@@ -295,6 +299,9 @@ CPU::rmsr(msr_index_t index)
 
         case MSR_ELSA:
             return msr.ELSA;
+
+        case MSR_EVECT:
+            return msr.EVECT;
 
         case MSR_COREID:
             /* SMP is not supported yet */

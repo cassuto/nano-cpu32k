@@ -22,61 +22,58 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-`include "ncpu64k_config.vh"
-
 module align_w
 #(
-   parameter                           AXI_P_DW_BYTES = 0,
-   parameter                           PAYLOAD_P_DW_BYTES = 0,
-   parameter                           I_AXI_ADDR_AW = 0
+   parameter                           IN_P_DW_BYTES = 0,
+   parameter                           OUT_P_DW_BYTES = 0,
+   parameter                           IN_AW = 0
 )
 (
-   input [(1<<PAYLOAD_P_DW_BYTES)*8-1:0] i_axi_din,
-   input                               i_axi_we,
-   input [I_AXI_ADDR_AW-1:0]           i_axi_addr,
-   output [(1<<AXI_P_DW_BYTES)-1:0]    o_axi_WSTRB,
-   output [(1<<AXI_P_DW_BYTES)*8-1:0]  o_axi_WDATA
+   input [(1<<OUT_P_DW_BYTES)*8-1:0]   i_in_din,
+   input                               i_in_we,
+   input [IN_AW-1:0]                   i_in_addr,
+   output [(1<<IN_P_DW_BYTES)-1:0]     o_out_wmsk,
+   output [(1<<IN_P_DW_BYTES)*8-1:0]   o_out_wdat
 );
-   localparam AXI_BYTES                = (1<<AXI_P_DW_BYTES);
-   localparam PAYLOAD_BYTES            = (1<<PAYLOAD_P_DW_BYTES);
+   localparam IN_BYTES                 = (1<<IN_P_DW_BYTES);
+   localparam OUT_BYTES                = (1<<OUT_P_DW_BYTES);
    genvar i;
    
    generate
-      if (PAYLOAD_P_DW_BYTES == AXI_P_DW_BYTES)
+      if (OUT_P_DW_BYTES == IN_P_DW_BYTES)
          begin
-            assign o_axi_WSTRB = {(1<<AXI_P_DW_BYTES){i_axi_we}};
-            assign o_axi_WDATA = i_axi_din;
+            assign o_out_wmsk = {(1<<IN_P_DW_BYTES){i_in_we}};
+            assign o_out_wdat = i_in_din;
          end
-      else if (PAYLOAD_P_DW_BYTES <= AXI_P_DW_BYTES)
+      else if (OUT_P_DW_BYTES <= IN_P_DW_BYTES)
          begin
-            localparam WIN_NUM = (AXI_BYTES/PAYLOAD_BYTES);
-            localparam WIN_P_NUM = (AXI_P_DW_BYTES - PAYLOAD_P_DW_BYTES);
-            localparam WIN_DW = (PAYLOAD_BYTES*8);
-            localparam WIN_P_DW_BYTES = (PAYLOAD_P_DW_BYTES);
-            wire [(1<<AXI_P_DW_BYTES)-1:0] wstrb_tmp;
+            localparam WIN_NUM = (IN_BYTES/OUT_BYTES);
+            localparam WIN_P_NUM = (IN_P_DW_BYTES - OUT_P_DW_BYTES);
+            localparam WIN_DW = (OUT_BYTES*8);
+            localparam WIN_P_DW_BYTES = (OUT_P_DW_BYTES);
+            wire [(1<<IN_P_DW_BYTES)-1:0] wstrb_tmp;
          
             for(i=0;i<WIN_NUM;i=i+1)
-               assign wstrb_tmp[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_axi_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}};
+               assign wstrb_tmp[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_in_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}};
             
-            assign o_axi_WSTRB = ({(1<<AXI_P_DW_BYTES){i_axi_we}} & wstrb_tmp);
+            assign o_out_wmsk = ({(1<<IN_P_DW_BYTES){i_in_we}} & wstrb_tmp);
             
             for(i=0;i<WIN_NUM;i=i+1)
-               assign o_axi_WDATA[i*WIN_DW +: WIN_DW] = i_axi_din;
+               assign o_out_wdat[i*WIN_DW +: WIN_DW] = i_in_din;
          end
       else
          begin
-            localparam WIN_NUM = (PAYLOAD_BYTES/AXI_BYTES);
-            localparam WIN_P_NUM = (PAYLOAD_P_DW_BYTES - AXI_P_DW_BYTES);
-            localparam WIN_DW = (AXI_BYTES*8);
-            localparam WIN_P_DW_BYTES = (AXI_P_DW_BYTES);
+            localparam WIN_NUM = (OUT_BYTES/IN_BYTES);
+            localparam WIN_P_NUM = (OUT_P_DW_BYTES - IN_P_DW_BYTES);
+            localparam WIN_DW = (IN_BYTES*8);
+            localparam WIN_P_DW_BYTES = (IN_P_DW_BYTES);
             wire [WIN_DW-1:0] i_axi_din_win [WIN_NUM-1:0];
             
             for(i=0;i<WIN_NUM;i=i+1)
-               assign i_axi_din_win[i] = i_axi_din[i*WIN_DW +: WIN_DW];
+               assign i_axi_din_win[i] = i_in_din[i*WIN_DW +: WIN_DW];
                
-            assign o_axi_WDATA = i_axi_din_win[i_axi_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
-            
-            assign o_axi_WSTRB = {(1<<AXI_P_DW_BYTES){i_axi_we}};
+            assign o_out_wmsk = {(1<<IN_P_DW_BYTES){i_in_we}};
+            assign o_out_wdat = i_axi_din_win[i_in_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
          end
    endgenerate
 

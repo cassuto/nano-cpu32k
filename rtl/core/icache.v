@@ -345,17 +345,17 @@ module icache
    // Aligner for payload RAM din
    align_r
       #(
-         .AXI_P_DW_BYTES               (AXI_P_DW_BYTES),
-         .PAYLOAD_P_DW_BYTES           (PAYLOAD_P_DW_BYTES),
-         .RAM_AW                       (CONFIG_IC_P_LINE)
+         .IN_P_DW_BYTES                (AXI_P_DW_BYTES),
+         .OUT_P_DW_BYTES               (PAYLOAD_P_DW_BYTES),
+         .IN_AW                        (CONFIG_IC_P_LINE)
       )
    U_ALIGN_R
       (
-         .i_axi_RDATA                  (ibus_RDATA),
-         .i_axi_rbe                    ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_REFILL}}),
-         .i_ram_addr                   (fsm_refill_cnt),
-         .o_ram_wmsk                   (s1i_payload_tgt_we),
-         .o_ram_din                    (s1i_payload_din)
+         .i_in_rdat                    (ibus_RDATA),
+         .i_in_rbe                     ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_REFILL}}),
+         .i_in_addr                    (fsm_refill_cnt),
+         .o_out_wmsk                   (s1i_payload_tgt_we),
+         .o_out_din                    (s1i_payload_din)
       );
       
    generate
@@ -366,31 +366,31 @@ module icache
    // Aligner for uncached din
    align_r
       #(
-         .AXI_P_DW_BYTES               (AXI_P_DW_BYTES),
-         .PAYLOAD_P_DW_BYTES           (AXI_UNCACHED_P_DW_BYTES),
-         .RAM_AW                       (AXI_ADDR_WIDTH)
+         .IN_P_DW_BYTES                (AXI_P_DW_BYTES),
+         .OUT_P_DW_BYTES               (AXI_UNCACHED_P_DW_BYTES),
+         .IN_AW                        (AXI_ADDR_WIDTH)
       )
    U_ALIGN_R_UNCACHED_A
       (
-         .i_axi_RDATA                  (ibus_RDATA),
-         .i_axi_rbe                    ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_UNCACHED_READ}}),
-         .i_ram_addr                   (ibus_ARADDR),
-         .o_ram_wmsk                   (s1i_uncached_align_we),
-         .o_ram_din                    (s1i_uncached_align_din)
+         .i_in_rdat                    (ibus_RDATA),
+         .i_in_rbe                     ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_UNCACHED_READ}}),
+         .i_in_addr                    (ibus_ARADDR),
+         .o_out_wmsk                   (s1i_uncached_align_we),
+         .o_out_din                    (s1i_uncached_align_din)
       );
    align_r
       #(
-         .AXI_P_DW_BYTES               (AXI_UNCACHED_P_DW_BYTES),
-         .PAYLOAD_P_DW_BYTES           (PAYLOAD_P_DW_BYTES),
-         .RAM_AW                       (AXI_ADDR_WIDTH)
+         .IN_P_DW_BYTES                (AXI_UNCACHED_P_DW_BYTES),
+         .OUT_P_DW_BYTES               (PAYLOAD_P_DW_BYTES),
+         .IN_AW                        (AXI_ADDR_WIDTH)
       )
    U_ALIGN_R_UNCACHED_B
       (
-         .i_axi_RDATA                  (s1i_uncached_align_din),
-         .i_axi_rbe                    (s1i_uncached_align_we),
-         .i_ram_addr                   (ibus_ARADDR),
-         .o_ram_wmsk                   (s1i_uncached_we),
-         .o_ram_din                    (s1i_uncached_din)
+         .i_in_rdat                    (s1i_uncached_align_din),
+         .i_in_rbe                     (s1i_uncached_align_we),
+         .i_in_addr                    (ibus_ARADDR),
+         .o_out_wmsk                   (s1i_uncached_we),
+         .o_out_din                    (s1i_uncached_din)
       );
 
    assign stall_req = (fsm_state_ff != S_IDLE);

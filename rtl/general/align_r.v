@@ -22,62 +22,60 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-`include "ncpu64k_config.vh"
-
 module align_r
 #(
-   parameter                           AXI_P_DW_BYTES = 0,
-   parameter                           PAYLOAD_P_DW_BYTES = 0,
-   parameter                           RAM_AW = 0
+   parameter                           IN_P_DW_BYTES = 0,
+   parameter                           IN_AW = 0,
+   parameter                           OUT_P_DW_BYTES = 0
 )
 (
-   input [(1<<AXI_P_DW_BYTES)*8-1:0]   i_axi_RDATA,
-   input [(1<<AXI_P_DW_BYTES)-1:0]     i_axi_rbe,
-   input [RAM_AW-1:0]                  i_ram_addr,
-   output [(1<<PAYLOAD_P_DW_BYTES)-1:0] o_ram_wmsk,
-   output [(1<<PAYLOAD_P_DW_BYTES)*8-1:0] o_ram_din
+   input [(1<<IN_P_DW_BYTES)*8-1:0]    i_in_rdat,
+   input [(1<<IN_P_DW_BYTES)-1:0]      i_in_rbe,
+   input [IN_AW-1:0]                   i_in_addr,
+   output [(1<<OUT_P_DW_BYTES)-1:0]    o_out_wmsk,
+   output [(1<<OUT_P_DW_BYTES)*8-1:0]  o_out_din
 );
-   localparam AXI_BYTES                = (1<<AXI_P_DW_BYTES);
-   localparam PAYLOAD_BYTES            = (1<<PAYLOAD_P_DW_BYTES);
+   localparam IN_BYTES                 = (1<<IN_P_DW_BYTES);
+   localparam OUT_BYTES                = (1<<OUT_P_DW_BYTES);
    genvar i;
    
    generate
-      if (PAYLOAD_P_DW_BYTES == AXI_P_DW_BYTES)
+      if (OUT_P_DW_BYTES == IN_P_DW_BYTES)
          begin
-            assign o_ram_din = i_axi_RDATA;
-            assign o_ram_wmsk = i_axi_rbe;
+            assign o_out_din = i_in_rdat;
+            assign o_out_wmsk = i_in_rbe;
          end
-      else if (PAYLOAD_P_DW_BYTES < AXI_P_DW_BYTES)
+      else if (OUT_P_DW_BYTES < IN_P_DW_BYTES)
          begin
-            localparam WIN_NUM = (AXI_BYTES/PAYLOAD_BYTES);
-            localparam WIN_P_NUM = (AXI_P_DW_BYTES - PAYLOAD_P_DW_BYTES);
-            localparam WIN_DW = (PAYLOAD_BYTES*8);
-            localparam WIN_P_DW_BYTES = (PAYLOAD_P_DW_BYTES);
+            localparam WIN_NUM = (IN_BYTES/OUT_BYTES);
+            localparam WIN_P_NUM = (IN_P_DW_BYTES - OUT_P_DW_BYTES);
+            localparam WIN_DW = (OUT_BYTES*8);
+            localparam WIN_P_DW_BYTES = (OUT_P_DW_BYTES);
             
-            wire [WIN_DW-1:0] RDATA_win [WIN_NUM-1:0];
-            wire [WIN_DW/8-1:0] RBE_win [WIN_NUM-1:0];
+            wire [WIN_DW-1:0] rdat_win [WIN_NUM-1:0];
+            wire [WIN_DW/8-1:0] rbe_win [WIN_NUM-1:0];
             
             for(i=0;i<WIN_NUM;i=i+1)
                begin
-                  assign RDATA_win[i] = i_axi_RDATA[i*WIN_DW +: WIN_DW];
-                  assign RBE_win[i] = i_axi_rbe[i*(WIN_DW/8) +: WIN_DW/8];
+                  assign rdat_win[i] = i_in_rdat[i*WIN_DW +: WIN_DW];
+                  assign rbe_win[i] = i_in_rbe[i*(WIN_DW/8) +: WIN_DW/8];
                end
             
-            assign o_ram_din = RDATA_win[i_ram_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
-            assign o_ram_wmsk = RBE_win[i_ram_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            assign o_out_din = rdat_win[i_in_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            assign o_out_wmsk = rbe_win[i_in_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
          end
       else
          begin
-            localparam WIN_NUM = (PAYLOAD_BYTES/AXI_BYTES);
-            localparam WIN_P_NUM = (PAYLOAD_P_DW_BYTES - AXI_P_DW_BYTES);
-            localparam WIN_DW = (AXI_BYTES*8);
-            localparam WIN_P_DW_BYTES = (AXI_P_DW_BYTES);
+            localparam WIN_NUM = (OUT_BYTES/IN_BYTES);
+            localparam WIN_P_NUM = (OUT_P_DW_BYTES - IN_P_DW_BYTES);
+            localparam WIN_DW = (IN_BYTES*8);
+            localparam WIN_P_DW_BYTES = (IN_P_DW_BYTES);
 
             for(i=0;i<WIN_NUM;i=i+1)
-               assign o_ram_wmsk[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_ram_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}} & i_axi_rbe;
+               assign o_out_wmsk[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_in_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}} & i_in_rbe;
 
             for(i=0;i<WIN_NUM;i=i+1)
-               assign o_ram_din[i*WIN_DW +: WIN_DW] = i_axi_RDATA;
+               assign o_out_din[i*WIN_DW +: WIN_DW] = i_in_rdat;
          end
    endgenerate
 

@@ -84,6 +84,7 @@ public:
                                 PSR.DMME =
                                     PSR.ICAE =
                                         PSR.DCAE = 0;
+        EVECT = 0;
         TSR = 0;
         IMR = 0;
         IRR = 0;
@@ -92,6 +93,7 @@ public:
     struct psr_s EPSR;
     vm_addr_t EPC;
     vm_addr_t ELSA;
+    vm_addr_t EVECT;
     struct itlbl_s *ITLBL;
     struct itlbh_s *ITLBH;
     struct dtlbl_s *DTLBL;

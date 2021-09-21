@@ -7,11 +7,11 @@ SRC_DIR = rtl
 TESTBENCH_DIR = testbench
 PDK_RTL_DIR = pdk-lib/rtl
 EM_DIR = em
-SRCS = $(foreach x,$(SRC_DIR), $(wildcard $(addprefix ${x}/*,.v) ) )
+SRCS = $(foreach x,$(SRC_DIR)/core, $(wildcard $(addprefix ${x}/*,.v) ) )
 SRCS += $(foreach x,$(SRC_DIR)/lib, $(wildcard $(addprefix ${x}/*,.v) ) )
 SRCS += $(foreach x,$(SRC_DIR)/general, $(wildcard $(addprefix ${x}/*,.v) ) )
 SRCS += $(foreach x,$(SRC_DIR)/fabric, $(wildcard $(addprefix ${x}/*,.v) ) )
-SRCS += $(foreach x,$(SRC_DIR)/port, $(wildcard $(addprefix ${x}/*,.v) ) )
+SRCS += $(foreach x,$(SRC_DIR)/soc/ysyx, $(wildcard $(addprefix ${x}/*,.v) ) )
 
 # Emulator
 EM_CXXFLAGS =
@@ -26,7 +26,7 @@ EM_CXXFLAGS += -DWITH_DRAMSIM3 -DDRAMSIM3_CONFIG=\\\"$(DRAMSIM3_HOME)/configs/Xi
 EM_LDFLAGS  += ../$(LIB_DRAMSIM3)
 
 # Simulation (Difftest)
-SIM_INCS = -I$(SRC_DIR)
+SIM_INCS = -I$(SRC_DIR)/core
 SIM_DEFS =
 SIM_FLAGS = $(SIM_DEFS) $(SIM_INCS) -Wno-UNUSED
 CFLAGS = -Wall -g -I../em/csrc $(EM_CXXFLAGS)

@@ -158,9 +158,11 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     bool insn_uncached;
     insn_t insn;
 
-    if (event) event->excp = false;
+    if (event)
+        event->excp = false;
 
-    if (!difftest) tsc_clk();
+    if (!difftest)
+        tsc_clk();
 
     /* response asynchronous interrupts */
     if (irqc_handle_irqs() == -EM_IRQ)
@@ -187,7 +189,8 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         insn = (insn_t)icache->phy_readm32(insn_pa);
     pc_queue->push(pc, insn);
     pc_nxt = pc + INSN_LEN;
-    if (event) event->insn = insn;
+    if (event)
+        event->insn = insn;
 
     /* decode and execute */
     opcode = insn & INS32_MASK_OPCODE;
@@ -337,7 +340,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
         //if(pc==0xc000438c){
-            //printf("ldw %#x va=%#x pa=%#x v=%#x\n", pc, va,pa,readout);
+        //printf("ldw %#x va=%#x pa=%#x v=%#x\n", pc, va,pa,readout);
         //}
     }
     break;
@@ -578,7 +581,8 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
 
     goto fetch_next;
 handle_exception:
-    if (event) event->excp = true;
+    if (event)
+        event->excp = true;
 fetch_next:
 flush_pc:
     /* The only-one exit point */
@@ -601,12 +605,12 @@ void CPU::run_step()
 vm_addr_t
 CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall)
 {
-    if( (vector == vect_EITM) ||
+    if ((vector == vect_EITM) ||
         (vector == vect_EIPF) ||
         (vector == vect_EINSN) ||
         (vector == vect_EDTM) ||
         (vector == vect_EDPF) ||
-        (vector == vect_EALIGN) )
+        (vector == vect_EALIGN))
     {
         msr.ELSA = lsa;
     }
@@ -618,8 +622,8 @@ CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_sysc
     msr.PSR.IMME = 0;
     msr.PSR.DMME = 0;
     msr.PSR.IRE = 0;
-    /* transfer to exception handler */
-    return vector;
+    /* transfer control flow to exception handler */
+    return (msr.EVECT & 0xffffff00) | (vector & 0xff);
 }
 
 int CPU::check_vma_align(vm_addr_t va, int size)

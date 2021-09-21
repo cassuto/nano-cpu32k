@@ -550,17 +550,17 @@ module dcache
    // Aligner for payload RAM din
    align_r
       #(
-         .AXI_P_DW_BYTES               (AXI_P_DW_BYTES),
-         .PAYLOAD_P_DW_BYTES           (PAYLOAD_P_DW_BYTES),
-         .RAM_AW                       (CONFIG_DC_P_LINE)
+         .IN_P_DW_BYTES                (AXI_P_DW_BYTES),
+         .IN_AW                        (CONFIG_DC_P_LINE),
+         .OUT_P_DW_BYTES               (PAYLOAD_P_DW_BYTES)
       )
    U_ALIGN_R
       (
-         .i_axi_RDATA                  (dbus_RDATA),
-         .i_axi_rbe                    ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_REFILL}}),
-         .i_ram_addr                   (fsm_refill_cnt),
-         .o_ram_wmsk                   (s2i_wb_we),
-         .o_ram_din                    (s2i_wb_din)
+         .i_in_rdat                    (dbus_RDATA),
+         .i_in_rbe                     ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_REFILL}}),
+         .i_in_addr                    (fsm_refill_cnt),
+         .o_out_wmsk                   (s2i_wb_we),
+         .o_out_din                    (s2i_wb_din)
       );
 
    assign stall_req = (fsm_state_ff != S_IDLE);
@@ -617,17 +617,17 @@ module dcache
          begin : gen_uncached_align
             align_r
                #(
-                  .AXI_P_DW_BYTES               (AXI_P_DW_BYTES),
-                  .PAYLOAD_P_DW_BYTES           (PAYLOAD_P_DW_BYTES),
-                  .RAM_AW                       (AXI_ADDR_WIDTH)
+                  .IN_P_DW_BYTES                (AXI_P_DW_BYTES),
+                  .OUT_P_DW_BYTES               (PAYLOAD_P_DW_BYTES),
+                  .IN_AW                        (AXI_ADDR_WIDTH)
                )
             U_ALIGN_UNUCACHED_R
                (
-                  .i_axi_RDATA                  (dbus_RDATA),
-                  .i_axi_rbe                    ({(1<<AXI_P_DW_BYTES){hds_axi_R}}),
-                  .i_ram_addr                   (dbus_ARADDR),
-                  .o_ram_wmsk                   (axi_aligned_rdata_ff_wmsk),
-                  .o_ram_din                    (axi_aligned_rdata_nxt)
+                  .i_in_rdat                    (dbus_RDATA),
+                  .i_in_rbe                     ({(1<<AXI_P_DW_BYTES){hds_axi_R}}),
+                  .i_in_addr                    (dbus_ARADDR),
+                  .o_out_wmsk                   (axi_aligned_rdata_ff_wmsk),
+                  .o_out_din                    (axi_aligned_rdata_nxt)
                );
                
             mDFF_l # (.DW(PAYLOAD_DW)) ff_axi_aligned_rdata (.CLK(clk), .LOAD(|axi_aligned_rdata_ff_wmsk), .D(axi_aligned_rdata_nxt), .Q(axi_aligned_rdata_ff) );
@@ -659,17 +659,17 @@ module dcache
    // Aligner for AXI W
    align_w
       #(
-         .AXI_P_DW_BYTES                     (AXI_P_DW_BYTES),
-         .PAYLOAD_P_DW_BYTES                 (PAYLOAD_P_DW_BYTES),
-         .I_AXI_ADDR_AW                      (CONFIG_DC_P_LINE)
+         .IN_P_DW_BYTES                      (AXI_P_DW_BYTES),
+         .OUT_P_DW_BYTES                     (PAYLOAD_P_DW_BYTES),
+         .IN_AW                              (CONFIG_DC_P_LINE)
       )
    U_ALIGN_W
       (
-         .i_axi_din                          ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_payload : s2o_wdat),
-         .i_axi_we                           ((fsm_state_ff == S_WRITEBACK) | (fsm_state_ff == S_UNCACHED_WRITE)),
-         .i_axi_addr                         ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_addr : dbus_AWADDR[CONFIG_DC_P_LINE-1:0]),
-         .o_axi_WSTRB                        (dbus_WSTRB),
-         .o_axi_WDATA                        (dbus_WDATA)
+         .i_in_din                           ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_payload : s2o_wdat),
+         .i_in_we                            ((fsm_state_ff == S_WRITEBACK) | (fsm_state_ff == S_UNCACHED_WRITE)),
+         .i_in_addr                          ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_addr : dbus_AWADDR[CONFIG_DC_P_LINE-1:0]),
+         .o_out_wmsk                         (dbus_WSTRB),
+         .o_out_wdat                         (dbus_WDATA)
       );
 
    // Look ahead one address, since payload RAM takes 1 cycle to output the result

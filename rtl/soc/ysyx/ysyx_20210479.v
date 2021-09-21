@@ -568,7 +568,7 @@ endmodule
 // Local Variables:
 // verilog-library-directories:(
 //  "."
-//  ".."
-//  "../fabric"
+//  "../../core"
+//  "../../fabric"
 // )
 // End:
