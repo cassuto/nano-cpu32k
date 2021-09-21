@@ -63,7 +63,7 @@ uint64_t Axi4Crossbar::pread(uint64_t address, uint8_t beatsize)
         assert(0);
     }
     uint32_t bytelane = address & (sizeof(uint64_t) - 1);
-    printf("addr=%lx bl=%d\n", address, bytelane);
+    //printf("addr=%lx bl=%d\n", address, bytelane);
     return ((uint64_t)dat << (bytelane<<3));
 }
 
@@ -96,6 +96,7 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
     uint8_t beatlen = ar.len + 1;
     uint64_t transaction_size = beatsize * beatlen;
     assert(beatsize <= 8);
+    assert(transaction_size <= MAX_AXI_DATA_LEN);
     assert(transaction_size % beatsize == 0);
 
     // axi burst FIXED
@@ -107,9 +108,7 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
     // axi burst INCR
     else if (ar.burst == 1)
     {
-        int wordlen = transaction_size / beatsize;
-        assert(wordlen <= MAX_AXI_DATA_LEN);
-        for (int i = 0; i < wordlen; i++)
+        for (int i = 0; i < beatlen; i++)
         {
             req->data[i * beatsize / sizeof(uint64_t)] = pread(address, beatsize);
             address += beatsize;
@@ -121,10 +120,7 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
         uint64_t low = (address / transaction_size) * transaction_size;
         uint64_t high = low + transaction_size;
         // TODO: untested
-        int wordlen = transaction_size / beatsize;
-        assert(wordlen <= MAX_AXI_DATA_LEN);
-
-        for (int i = 0; i < wordlen; i++)
+        for (int i = 0; i < beatlen; i++)
         {
             if (address == high)
             {
