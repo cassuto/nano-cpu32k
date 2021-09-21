@@ -4,7 +4,7 @@
 #include "common.hh"
 #include "axi4.hh"
 
-#define MAX_AXI_DATA_LEN 8
+#define MAX_AXI_DATA_LEN 64 // Max. 256
 
 class CoDRAMsim3;
 class CoDRAMRequest;
