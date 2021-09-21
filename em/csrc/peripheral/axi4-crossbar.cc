@@ -96,7 +96,7 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
     uint8_t beatlen = ar.len + 1;
     uint64_t transaction_size = beatsize * beatlen;
     assert(beatsize <= 8);
-    assert((transaction_size / sizeof(uint64_t)) <= MAX_AXI_DATA_LEN);
+    assert(beatlen <= MAX_AXI_DATA_LEN);
     assert(transaction_size % beatsize == 0);
 
     // axi burst FIXEDs
@@ -110,7 +110,7 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
     {
         for (int i = 0; i < beatlen; i++)
         {
-            req->data[i * beatsize / sizeof(uint64_t)] = pread(address, beatsize);
+            req->data[i] = pread(address, beatsize);
             address += beatsize;
         }
     }
@@ -126,7 +126,7 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
             {
                 address = low;
             }
-            req->data[i * beatsize / sizeof(uint64_t)] = pread(address, beatsize);
+            req->data[i] = pread(address, beatsize);
             address += beatsize;
         }
     }
@@ -305,7 +305,7 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     // if there's some data response, put it onto axi bus
     if (wait_resp_r)
     {
-        const void *data_start = wait_resp_r->req->data + wait_resp_r->req->offset * wait_resp_r->req->size / sizeof(uint64_t);
+        const void *data_start = wait_resp_r->req->data + wait_resp_r->req->offset;
         axi_put_rdata(axi, data_start, wait_resp_r->req->size, wait_resp_r->req->offset == wait_resp_r->req->len - 1, wait_resp_r->req->id);
     }
 
