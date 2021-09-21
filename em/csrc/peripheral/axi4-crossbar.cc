@@ -148,6 +148,7 @@ Axi4CrossbarRequest *Axi4Crossbar::axi_request(const axi_channel &axi, bool is_w
     req->address = (is_write) ? axi.aw.addr : axi.ar.addr;
     req->is_write = is_write;
     req->is_mmio = is_mmio(req->address);
+    req->resp_inflight = false;
     if (is_write)
     {
         req->len = axi.aw.len + 1;
@@ -221,6 +222,7 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
         delete wait_resp_b->dram_resp;
         delete wait_resp_b;
         wait_resp_b = nullptr;
+        wait_req_w = nullptr;
     }
 
     // write address fire: accept a new write request
@@ -256,18 +258,18 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
         // printf("accept a new write data. waddr=%#lx\n", waddr);
     }
     // if this is the last beat
-    if (wait_req_w && (wait_req_w->offset == wait_req_w->len))
+    if (wait_req_w && !wait_req_w->resp_inflight && (wait_req_w->offset == wait_req_w->len))
     {
         if (wait_req_w->is_mmio)
         {
-            wait_req_w = nullptr;
+            wait_req_w->resp_inflight = true;
         }
         else
         {
             if (dramsim->will_accept(wait_req_w->address, true))
             {
                 dramsim->add_request(wait_req_w->dram_req);
-                wait_req_w = nullptr;
+                wait_req_w->resp_inflight = true;
             }
         }
     }

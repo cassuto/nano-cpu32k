@@ -22,6 +22,7 @@ public:
     uint8_t id;
     uint64_t data[MAX_AXI_DATA_LEN];
     CoDRAMRequest *dram_req;
+    bool resp_inflight;
 };
 
 class Axi4CrossbarResponse
