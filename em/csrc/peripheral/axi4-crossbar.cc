@@ -305,7 +305,7 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     // if there's some data response, put it onto axi bus
     if (wait_resp_r)
     {
-        const void *data_start = wait_resp_r->req->data + wait_resp_r->req->offset;
+        const uint64_t *data_start = wait_resp_r->req->data + wait_resp_r->req->offset;
         axi_put_rdata(axi, data_start, wait_resp_r->req->size, wait_resp_r->req->offset == wait_resp_r->req->len - 1, wait_resp_r->req->id);
     }
 
