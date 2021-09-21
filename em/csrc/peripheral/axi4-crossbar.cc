@@ -62,14 +62,14 @@ uint64_t Axi4Crossbar::pread(uint64_t address, uint8_t beatsize)
     default:
         assert(0);
     }
-    uint32_t bytelane = (address / beatsize) & (sizeof(uint64_t) / beatsize - 1);
+    uint32_t bytelane = address & (sizeof(uint64_t) - 1);
     printf("addr=%lx bl=%d\n", address, bytelane);
     return ((uint64_t)dat << bytelane);
 }
 
 void Axi4Crossbar::pwrite(uint64_t address, uint64_t dat, uint8_t beatsize)
 {
-    uint32_t bytelane = (address / beatsize) & (sizeof(uint64_t) / beatsize - 1);
+    uint32_t bytelane = address & (sizeof(uint64_t) - 1);
     switch (beatsize)
     {
     case 8:
