@@ -96,6 +96,8 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
     uint8_t beatlen = ar.len + 1;
     uint64_t transaction_size = beatsize * beatlen;
     assert(beatsize <= 8);
+    if (!(transaction_size <= MAX_AXI_DATA_LEN))
+    printf("%lu\n", transaction_size);
     assert(transaction_size <= MAX_AXI_DATA_LEN);
     assert(transaction_size % beatsize == 0);
 
