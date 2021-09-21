@@ -557,7 +557,7 @@ module dcache
    U_ALIGN_R
       (
          .i_axi_RDATA                  (dbus_RDATA),
-         .i_ram_we                     (fsm_state_ff == S_REFILL),
+         .i_axi_rbe                    ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_REFILL}}),
          .i_ram_addr                   (fsm_refill_cnt),
          .o_ram_wmsk                   (s2i_wb_we),
          .o_ram_din                    (s2i_wb_din)
@@ -624,7 +624,7 @@ module dcache
             U_ALIGN_UNUCACHED_R
                (
                   .i_axi_RDATA                  (dbus_RDATA),
-                  .i_ram_we                     (hds_axi_R),
+                  .i_axi_rbe                    ({(1<<AXI_P_DW_BYTES){hds_axi_R}}),
                   .i_ram_addr                   (dbus_ARADDR),
                   .o_ram_wmsk                   (axi_aligned_rdata_ff_wmsk),
                   .o_ram_din                    (axi_aligned_rdata_nxt)

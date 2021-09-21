@@ -292,6 +292,7 @@ def add_module_prefix(code, prefix, toplevel):
 
 parser = argparse.ArgumentParser(description="Preprocess CPU RTL design")
 parser.add_argument('--project-dir', '-d', required=True, type=str, help='Project root path')
+parser.add_argument('--input-dir', '-c', required=True, type=str, nargs='+', help='Target directory')
 parser.add_argument('--inc', '-I', required=True, type=str, nargs='+', help='Include path')
 parser.add_argument('--toplevel', '-t', required=True, type=str, help='Toplevel module name')
 parser.add_argument('--prefix', '-p', required=True, type=str, help='Module name prefix')
@@ -305,11 +306,9 @@ PREFIX = args.prefix
 TOPLEVEL = args.toplevel
 TARGET = args.output
 
-SRC = scan_files('%s/rtl/' % PRJ_ROOT, '.v')
-SRC.extend(scan_files('%s/rtl/fabric' % PRJ_ROOT, '.v'))
-SRC.extend(scan_files('%s/rtl/general' % PRJ_ROOT, '.v'))
-SRC.extend(scan_files('%s/rtl/lib' % PRJ_ROOT, '.v'))
-SRC.extend(scan_files('%s/rtl/port' % PRJ_ROOT, '.v'))
+SRC = []
+for tgt in args.input_dir:
+    SRC.extend(scan_files(tgt, '.v'))
 
 # Built-in macros
 define_macro('SYNTHESIS', '')
