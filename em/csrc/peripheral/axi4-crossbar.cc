@@ -64,7 +64,7 @@ uint64_t Axi4Crossbar::pread(uint64_t address, uint8_t beatsize)
     }
     uint32_t bytelane = address & (sizeof(uint64_t) - 1);
     //printf("addr=%lx bl=%d\n", address, bytelane);
-    return ((uint64_t)dat << (bytelane<<3));
+    return ((uint64_t)dat << (bytelane << 3));
 }
 
 void Axi4Crossbar::pwrite(uint64_t address, uint64_t dat, uint8_t beatsize)
@@ -73,16 +73,16 @@ void Axi4Crossbar::pwrite(uint64_t address, uint64_t dat, uint8_t beatsize)
     switch (beatsize)
     {
     case 8:
-        mem->phy_writem64(address, dat >> (bytelane<<3));
+        mem->phy_writem64(address, dat >> (bytelane << 3));
         break;
     case 4:
-        mem->phy_writem32(address, dat >> (bytelane<<3));
+        mem->phy_writem32(address, dat >> (bytelane << 3));
         break;
     case 2:
-        mem->phy_writem16(address, dat >> (bytelane<<3));
+        mem->phy_writem16(address, dat >> (bytelane << 3));
         break;
     case 1:
-        mem->phy_writem8(address, dat >> (bytelane<<3));
+        mem->phy_writem8(address, dat >> (bytelane << 3));
         break;
     default:
         assert(0);
@@ -96,12 +96,10 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
     uint8_t beatlen = ar.len + 1;
     uint64_t transaction_size = beatsize * beatlen;
     assert(beatsize <= 8);
-    if (!(transaction_size <= MAX_AXI_DATA_LEN))
-    printf("%lu\n", transaction_size);
-    assert(transaction_size <= MAX_AXI_DATA_LEN);
+    assert((transaction_size / sizeof(uint64_t)) <= MAX_AXI_DATA_LEN);
     assert(transaction_size % beatsize == 0);
 
-    // axi burst FIXED
+    // axi burst FIXEDs
     if (ar.burst == 0x0)
     {
         fprintf(stderr, "axi burst FIXED not supported!");
