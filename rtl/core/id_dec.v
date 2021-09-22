@@ -321,11 +321,11 @@ module id_dec
    // 3 = 32bit
    // 4 = 64bit
    assign lsu_opc_bus[`NCPU_LSU_SIZE] = (op_ldb|op_ldbu|op_stb)
-                                          ? 3'd1
+                                          ? 3'd0
                                           : (op_ldh|op_ldhu|op_sth)
-                                             ? 3'd2
+                                             ? 3'd1
                                              : (op_ldwu|op_stw)
-                                                ? 3'd3
+                                                ? 3'd2
                                                 : 3'd0;
 
    assign lsu_opc_bus[`NCPU_LSU_SIGN_EXT] = (op_ldb | op_ldh);

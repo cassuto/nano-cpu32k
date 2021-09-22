@@ -195,15 +195,15 @@ module ex_lsu
                               : add_sum;
 
    // Address alignment check
-   assign s1i_misalign = (s1i_size==3'd3 & |s1i_dc_vaddr[1:0]) |
-                           (s1i_size==3'd2 & s1i_dc_vaddr[0]);
+   assign s1i_misalign = (s1i_size==3'd2 & |s1i_dc_vaddr[1:0]) |
+                           (s1i_size==3'd1 & s1i_dc_vaddr[0]);
 
    assign s1i_din_8b = {ex_operand2[7:0], ex_operand2[7:0], ex_operand2[7:0], ex_operand2[7:0]};
    assign s1i_din_16b = {ex_operand2[15:0], ex_operand2[15:0]};
 
-   assign s1i_dc_wdat = ({CONFIG_DW{s1i_size==3'd3}} & ex_operand2) |
-                        ({CONFIG_DW{s1i_size==3'd2}} & s1i_din_16b) |
-                        ({CONFIG_DW{s1i_size==3'd1}} & s1i_din_8b);
+   assign s1i_dc_wdat = ({CONFIG_DW{s1i_size==3'd2}} & ex_operand2) |
+                        ({CONFIG_DW{s1i_size==3'd1}} & s1i_din_16b) |
+                        ({CONFIG_DW{s1i_size==3'd0}} & s1i_din_8b);
 
    // B/HW align
    assign s1i_we_msk_8b = (s1i_dc_vaddr[1:0]==2'b00 ? 4'b0001 :
@@ -214,9 +214,9 @@ module ex_lsu
 
    // Write byte mask
    assign s1i_dc_wmsk = {CONFIG_DW/8{s1i_store}} & (
-                        ({CONFIG_DW/8{s1i_size==3'd3}} & 4'b1111) |
-                        ({CONFIG_DW/8{s1i_size==3'd2}} & s1i_we_msk_16b) |
-                        ({CONFIG_DW/8{s1i_size==3'd1}} & s1i_we_msk_8b) );
+                        ({CONFIG_DW/8{s1i_size==3'd2}} & 4'b1111) |
+                        ({CONFIG_DW/8{s1i_size==3'd1}} & s1i_we_msk_16b) |
+                        ({CONFIG_DW/8{s1i_size==3'd0}} & s1i_we_msk_8b) );
 
    assign s1i_dc_vpo = s1i_dc_vaddr[CONFIG_P_PAGE_SIZE-1:0];
 
@@ -384,9 +384,9 @@ module ex_lsu
    assign s2o_dout_16b = s2o_vaddr[1] ? s2o_dout_32b[31:16] : s2o_dout_32b[15:0];
 
    assign lsu_dout =
-      ({CONFIG_DW{s2o_size==3'd3}} & s2o_dout_32b) |
-      ({CONFIG_DW{s2o_size==3'd2}} & {{16{s2o_sign_ext & s2o_dout_16b[15]}}, s2o_dout_16b[15:0]}) |
-      ({CONFIG_DW{s2o_size==3'd1}} & {{24{s2o_sign_ext & s2o_dout_8b[7]}}, s2o_dout_8b[7:0]});
+      ({CONFIG_DW{s2o_size==3'd2}} & s2o_dout_32b) |
+      ({CONFIG_DW{s2o_size==3'd1}} & {{16{s2o_sign_ext & s2o_dout_16b[15]}}, s2o_dout_16b[15:0]}) |
+      ({CONFIG_DW{s2o_size==3'd0}} & {{24{s2o_sign_ext & s2o_dout_8b[7]}}, s2o_dout_8b[7:0]});
 
    assign lsu_EDTM = (s1o_valid & s1o_EDTM);
    assign lsu_EDPF = (s1o_valid & s1o_EDPF);
