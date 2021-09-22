@@ -18,6 +18,8 @@
 #include "cosimulation.h"
 #include "axi4-crossbar.hh"
 
+#include "emu.hh"
+
 Axi4Crossbar::Axi4Crossbar(Memory *mem_)
     : mem(mem_),
       dramsim(nullptr),
@@ -351,7 +353,9 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     // WRESP: if finished, we try the next write response
     if (!wait_resp_b && wait_req_w)
     {
-        printf("w %#x %d\n", wait_req_w->address, wait_req_w->is_mmio);
+        extern Emu *emu;
+        if (emu->get_cycle() >= 25298695)
+            printf("w %#x %d\n", wait_req_w->address, wait_req_w->is_mmio);
         if (wait_req_w->is_mmio)
         {
             wait_resp_b = new Axi4CrossbarResponse();
