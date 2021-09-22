@@ -271,8 +271,8 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
             {
                 dramsim->add_request(wait_req_w->dram_req);
                 extern Emu *emu;
-                if (emu->get_cycle() >= 25298695 && wait_req_w->address == 0x80461f00) {
-                    printf("addr %lu \n", emu->get_cycle());
+                if (wait_req_w->address == 0x80461f00) {
+                    printf("==========addr %lu \n", emu->get_cycle());
                 }
                 wait_req_w->resp_inflight = true;
             }
