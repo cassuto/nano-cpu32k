@@ -120,8 +120,6 @@ public:
     inline uint8_t
     phy_readm8(phy_addr_t addr)
     {
-        if (in_difftest() && addr < 0x80000000)
-            printf("m8 %#x\n", mmio8);
         struct mmio_node *mmio_handler = match_mmio_handler(mmio8, addr, 0);
         if (mmio_handler)
         {

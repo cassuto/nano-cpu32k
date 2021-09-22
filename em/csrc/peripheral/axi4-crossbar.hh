@@ -23,6 +23,8 @@ public:
     uint64_t data[MAX_AXI_DATA_LEN];
     CoDRAMRequest *dram_req;
     bool resp_inflight;
+    uint32_t mmio_delay;
+    uint32_t mmio_pending_cycle;
 };
 
 class Axi4CrossbarResponse

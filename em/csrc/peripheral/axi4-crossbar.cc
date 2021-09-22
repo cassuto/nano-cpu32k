@@ -157,8 +157,6 @@ Axi4CrossbarRequest *Axi4Crossbar::axi_request(const axi_channel &axi, bool is_w
     }
     else
     {
-        if(req->is_mmio)
-        printf("mmio raddr=%#x size=%d\n", req->address, 1 << axi.ar.size);
         axi_read_data(axi.ar, req);
     }
 
@@ -353,6 +351,7 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     // WRESP: if finished, we try the next write response
     if (!wait_resp_b && wait_req_w)
     {
+        printf("w %#x %d\n", wait_req_w->address, wait_req_w->is_mmio);
         if (wait_req_w->is_mmio)
         {
             wait_resp_b = new Axi4CrossbarResponse();
