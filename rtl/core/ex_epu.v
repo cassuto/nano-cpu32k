@@ -148,9 +148,9 @@ module ex_epu
 );
 
 `ifdef NCPU_ENABLE_MSGPORT
-   localparam NCPU_WMSR_WE_W           = (14 + `NCPU_MSR_BANK_OFF_AW);
+   localparam NCPU_WMSR_WE_W           = (15 + `NCPU_MSR_BANK_OFF_AW);
 `else
-   localparam NCPU_WMSR_WE_W           = (12 + `NCPU_MSR_BANK_OFF_AW);
+   localparam NCPU_WMSR_WE_W           = (13 + `NCPU_MSR_BANK_OFF_AW);
 `endif
 
    /*AUTOWIRE*/
@@ -203,6 +203,7 @@ module ex_epu
    wire                                s1i_wmsr_epc_we;
    wire                                s1i_wmsr_epsr_we;
    wire                                s1i_wmsr_elsa_we;
+   wire                                s1i_wmsr_evect_we;
 `ifdef NCPU_ENABLE_MSGPORT
    wire                                s1i_wmsr_numport_we;
    wire                                s1i_wmsr_msgport_we;
@@ -231,6 +232,7 @@ module ex_epu
    wire                                s1o_commit_wmsr_epc_we;
    wire                                s1o_commit_wmsr_epsr_we;
    wire                                s1o_commit_wmsr_elsa_we;
+   wire                                s1o_commit_wmsr_evect_we;
 `ifdef NCPU_ENABLE_MSGPORT
    wire                                s1o_commit_wmsr_numport_we;
    wire                                s1o_commit_wmsr_msgport_we;
@@ -384,6 +386,7 @@ module ex_epu
    assign s1i_wmsr_epc_we      = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPC];
    assign s1i_wmsr_epsr_we     = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPSR];
    assign s1i_wmsr_elsa_we     = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_ELSA];
+   assign s1i_wmsr_evect_we    = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EVECT];
 `ifdef NCPU_ENABLE_MSGPORT
    assign s1i_wmsr_numport_we  = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[0];
    assign s1i_wmsr_msgport_we  = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[1];
@@ -409,6 +412,7 @@ module ex_epu
                         s1i_wmsr_epc_we,
                         s1i_wmsr_epsr_we,
                         s1i_wmsr_elsa_we,
+                        s1i_wmsr_evect_we,
 `ifdef NCPU_ENABLE_MSGPORT
                         s1i_wmsr_numport_we,
                         s1i_wmsr_msgport_we,
@@ -443,6 +447,7 @@ module ex_epu
       s1o_commit_wmsr_epc_we,
       s1o_commit_wmsr_epsr_we,
       s1o_commit_wmsr_elsa_we,
+      s1o_commit_wmsr_evect_we,
 `ifdef NCPU_ENABLE_MSGPORT
       s1o_commit_wmsr_numport_we,
       s1o_commit_wmsr_msgport_we,
@@ -509,7 +514,7 @@ module ex_epu
 
    // Commit EVECT
    assign msr_evect_nxt = s1o_commit_wmsr_dat;
-   assign msr_evect_we = s1o_commit_wmsr_elsa_we;
+   assign msr_evect_we = s1o_commit_wmsr_evect_we;
    
    // Commit IMM
    assign msr_imm_tlbl_idx = s1o_commit_bank_off[CONFIG_ITLB_P_SETS-1:0];

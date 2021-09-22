@@ -201,8 +201,10 @@
 `define NCPU_MSR_EPC	3
 // PS - ELSA
 `define NCPU_MSR_ELSA 4
-// PS.COREID
+// PS - COREID
 `define NCPU_MSR_COREID 5
+// PS - EVECT
+`define NCPU_MSR_EVECT 6
 
 //
 // IMM
