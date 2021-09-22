@@ -270,6 +270,10 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
             if (dramsim->will_accept(wait_req_w->address, true))
             {
                 dramsim->add_request(wait_req_w->dram_req);
+                extern Emu *emu;
+                if (emu->get_cycle() >= 25298695 && wait_req_w->address == 0x80461f00) {
+                    printf("addr %lu \n", emu->get_cycle());
+                }
                 wait_req_w->resp_inflight = true;
             }
         }
@@ -354,8 +358,9 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     if (!wait_resp_b && wait_req_w)
     {
         extern Emu *emu;
-        if (emu->get_cycle() >= 25298695)
+        if (emu->get_cycle() >= 25298695) {
             printf("w %#x %d\n", wait_req_w->address, wait_req_w->is_mmio);
+        }
         if (wait_req_w->is_mmio)
         {
             wait_resp_b = new Axi4CrossbarResponse();
