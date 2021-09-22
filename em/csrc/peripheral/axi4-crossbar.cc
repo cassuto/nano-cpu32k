@@ -264,7 +264,7 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
         extern Emu *emu;
         if (emu->get_cycle() >= 25298695 && wait_req_w->address == 0x80461f00)
         {
-            printf("123 %lu \n", emu->get_cycle());
+            printf("123 %lu %d %d \n", emu->get_cycle(), wait_req_w->offset, wait_req_w->len);
         }
     }
     if (wait_req_w && !wait_req_w->resp_inflight && (wait_req_w->offset == wait_req_w->len))
@@ -272,12 +272,6 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
         if (wait_req_w->is_mmio)
         {
             wait_req_w->resp_inflight = true;
-
-            extern Emu *emu;
-            if (emu->get_cycle() >= 25298695 && wait_req_w->address == 0x80461f00)
-            {
-                printf("wrong=== %lu \n", emu->get_cycle());
-            }
         }
         else
         {
