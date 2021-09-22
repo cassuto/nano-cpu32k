@@ -250,6 +250,7 @@ private:
                           phy_addr_t end_addr,
                           MMIOCallback *callback,
                           void *opaque);
+    void free_domain(mmio_node *domain);
 
 private:
     CPU *cpu;

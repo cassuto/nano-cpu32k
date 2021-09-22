@@ -43,6 +43,10 @@ Memory::Memory(CPU *cpu_, size_t memory_size_, phy_addr_t dram_phy_start_, phy_a
 
 Memory::~Memory()
 {
+    free_domain(mmio8);
+    free_domain(mmio16);
+    free_domain(mmio32);
+    free_domain(mmio64);
     delete memory;
 }
 
@@ -68,7 +72,7 @@ Memory::match_mmio_handler(mmio_node *domain, phy_addr_t addr, bool w)
 {
     if (addr >= mmio_phy_base && addr <= mmio_phy_end_addr)
     {
-        printf("-----%d\n", in_difftest());
+        printf("-----%d %p\n", in_difftest(), domain);
         for (mmio_node *node = domain; node; node = node->next)
         {
             //if(in_difftest())
@@ -110,7 +114,7 @@ void Memory::mmio_append_node(mmio_node **doamin,
         }
     }
 
-    struct mmio_node *node = (struct mmio_node *)malloc(sizeof *node);
+    struct mmio_node *node = new mmio_node();
     node->write = write;
     node->start_addr = start_addr;
     node->end_addr = end_addr;
@@ -120,6 +124,16 @@ void Memory::mmio_append_node(mmio_node **doamin,
     *doamin = node;
     if (!in_difftest())
         fprintf(stderr, "MMIO Device (W=%d) is mapped at %#x ~ %#x\n", write, start_addr, end_addr);
+}
+
+void Memory::free_domain(mmio_node *domain)
+{
+    for (mmio_node *node = domain; node;)
+    {
+        mmio_node *t = node->next;
+        delete node;
+        node = t;
+    }
 }
 
 void Memory::mmio_register_writem8(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
