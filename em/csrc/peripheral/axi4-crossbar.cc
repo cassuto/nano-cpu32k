@@ -157,6 +157,8 @@ Axi4CrossbarRequest *Axi4Crossbar::axi_request(const axi_channel &axi, bool is_w
     }
     else
     {
+        if(req->is_mmio)
+        printf("mmio raddr=%#x size=%d\n", req->address, req->size);
         axi_read_data(axi.ar, req);
     }
 
@@ -252,9 +254,6 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
         uint64_t wdat = pread(waddr, wait_req_w->size);
         axi_get_wdata(axi, &wdat, &wdat, sizeof(uint64_t));
         pwrite(waddr, wdat, wait_req_w->size);
-
-        if(wait_req_w->address < 0x80000000)
-        printf("mmio waddr=%#x size=%d\n", waddr, wait_req_w->size);
 
         wait_req_w->offset++;
         // printf("accept a new write data. waddr=%#lx\n", waddr);
