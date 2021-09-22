@@ -173,12 +173,6 @@ Axi4CrossbarRequest *Axi4Crossbar::axi_request(const axi_channel &axi, bool is_w
         req->dram_req->is_write = is_write;
         req->dram_req->meta = nullptr;
     }
-                    extern Emu *emu;
-                if (req->address < 0x80000000)
-                {
-                    printf("addr %#x %lu \n", req->address, emu->get_cycle());
-                }
-
     return req;
 }
 
