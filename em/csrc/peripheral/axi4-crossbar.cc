@@ -259,11 +259,25 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
         // printf("accept a new write data. waddr=%#lx\n", waddr);
     }
     // if this is the last beat
+    if (wait_req_w && !wait_req_w->resp_inflight)
+    {
+        extern Emu *emu;
+        if (emu->get_cycle() >= 25298695 && wait_req_w->address == 0x80461f00)
+        {
+            printf("123 $lu \n", emu->get_cycle());
+        }
+    }
     if (wait_req_w && !wait_req_w->resp_inflight && (wait_req_w->offset == wait_req_w->len))
     {
         if (wait_req_w->is_mmio)
         {
             wait_req_w->resp_inflight = true;
+
+            extern Emu *emu;
+            if (emu->get_cycle() >= 25298695 && wait_req_w->address == 0x80461f00)
+            {
+                printf("wrong=== %lu \n", emu->get_cycle());
+            }
         }
         else
         {
@@ -271,8 +285,9 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
             {
                 dramsim->add_request(wait_req_w->dram_req);
                 extern Emu *emu;
-                if (wait_req_w->address == 0x80461f00) {
-                    printf("==========addr %lu \n", emu->get_cycle());
+                if (emu->get_cycle() >= 25298695 && wait_req_w->address == 0x80461f00)
+                {
+                    printf("addr %lu \n", emu->get_cycle());
                 }
                 wait_req_w->resp_inflight = true;
             }
@@ -358,7 +373,8 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     if (!wait_resp_b && wait_req_w)
     {
         extern Emu *emu;
-        if (emu->get_cycle() >= 25298695) {
+        if (emu->get_cycle() >= 25298695)
+        {
             //printf("w %#x %d\n", wait_req_w->address, wait_req_w->is_mmio);
         }
         if (wait_req_w->is_mmio)
