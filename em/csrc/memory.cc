@@ -72,13 +72,14 @@ Memory::match_mmio_handler(mmio_node *domain, phy_addr_t addr, bool w)
         for (mmio_node *node = domain; node; node = node->next)
         {
             //if(in_difftest())
-                //printf("addr=%#x  [%#x-%#x] %d\n", addr, node->start_addr, node->end_addr, node->write);
+            //printf("addr=%#x  [%#x-%#x] %d\n", addr, node->start_addr, node->end_addr, node->write);
             if (node->write == w && node->start_addr <= addr && addr <= node->end_addr)
             {
                 return node;
             }
         }
-        if (cpu) {
+        if (cpu)
+        {
             cpu->get_pc_queue()->dump();
             fprintf(stderr, "%s(): accessing invalid mmio address %#x. emu_pc=%#x\n", __func__, addr, cpu->get_pc());
         }
@@ -117,7 +118,8 @@ void Memory::mmio_append_node(mmio_node **doamin,
     node->opaque = opaque;
     node->next = *doamin;
     *doamin = node;
-    fprintf(stderr, "MMIO Device (W=%d) is mapped at %#x ~ %#x\n", write, start_addr, end_addr);
+    if (!in_difftest())
+        fprintf(stderr, "MMIO Device (W=%d) is mapped at %#x ~ %#x\n", write, start_addr, end_addr);
 }
 
 void Memory::mmio_register_writem8(phy_addr_t start_addr, phy_addr_t end_addr, MMIOCallback *callback, void *opaque)
