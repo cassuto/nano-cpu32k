@@ -11,7 +11,7 @@ public:
     DeviceTree(CPU *cpu, Memory *mem_, phy_addr_t mmio_phy_base, const char *virt_uart_file);
     void step();
 
-    inline bool in_difftest() const { return cpu; }
+    inline bool in_difftest() const { return !cpu; }
 
 public:
     CPU *cpu;

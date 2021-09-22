@@ -386,6 +386,7 @@ int main(int argc, char *argv[])
                 retcode = -1;
                 break;
             }
+            rtl_dev->step();
         }
         emu->finish();
         break;
