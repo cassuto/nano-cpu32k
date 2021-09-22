@@ -7,14 +7,15 @@
 
 const phy_addr_t pb_uart_mmio_size = 0x8;
 
-DevicePbUart::DevicePbUart(DeviceTree *tree_, phy_addr_t mmio_base, int irq_)
+DevicePbUart::DevicePbUart(DeviceTree *tree_, phy_addr_t mmio_base, int irq_, const char *virt_uart_file)
 {
     tree = tree_;
     irq = irq_;
 
     reset();
-    /* Startup v_irtual UART */
-    virt_uart_init("COM1:");
+    /* Startup virtual UART */
+    if (!tree->in_difftest())
+        virt_uart_init(virt_uart_file);
 
     /*
      * Register it on MMIO
@@ -55,7 +56,8 @@ void DevicePbUart::writem8(phy_addr_t addr, uint8_t val, void *opaque)
         if ((IIR_sel == 0x1) && ((addr == 0x0) && !LCR_DLAB)) // Write IER
         {
             IIR |= 0x1; // no IRQ pending
-            tree->cpu->irqc_set_interrupt(irq, 0);
+            if (!tree->in_difftest())
+                tree->cpu->irqc_set_interrupt(irq, 0);
         }
     }
 
@@ -67,7 +69,8 @@ void DevicePbUart::writem8(phy_addr_t addr, uint8_t val, void *opaque)
             DLR = (((DLR >> 8) & 0xff) << 8) | val;
         else
         {
-            virt_uart_putch(val);
+            if (!tree->in_difftest())
+                virt_uart_putch(val);
             RBR_written = 1;
             step();
         }
@@ -143,7 +146,8 @@ uint8_t DevicePbUart::readm8(phy_addr_t addr, void *opaque)
         {
             dat_ready = 0; /* fixme RX queue */
             IIR |= 0x1;    // no IRQ pending
-            tree->cpu->irqc_set_interrupt(irq, 0);
+            if (!tree->in_difftest())
+                tree->cpu->irqc_set_interrupt(irq, 0);
         }
     }
 
@@ -156,7 +160,7 @@ void DevicePbUart::step()
     // Updating IRQs if no previous IRQ
     if ((IIR)&0x1)
     {
-        if (virt_uart_poll_read((char *)&RBR, 1))
+        if (!tree->in_difftest() && virt_uart_poll_read((char *)&RBR, 1))
         {
             fprintf(stderr, "input: %c(%d)\n", RBR, RBR);
             dat_ready = 1;
@@ -165,14 +169,16 @@ void DevicePbUart::step()
         {
             // Raise RX buffer full IRQ
             IIR = 0x4; // b100
-            tree->cpu->irqc_set_interrupt(irq, 1);
+            if (!tree->in_difftest())
+                tree->cpu->irqc_set_interrupt(irq, 1);
         }
         else if (!tx_full && RBR_written && (IER & 0x2))
         {
             // Raise TX buffer empty IRQ
             RBR_written = 0;
             IIR = 0x2; // b010
-            tree->cpu->irqc_set_interrupt(irq, 1);
+            if (!tree->in_difftest())
+                tree->cpu->irqc_set_interrupt(irq, 1);
         }
     }
 }

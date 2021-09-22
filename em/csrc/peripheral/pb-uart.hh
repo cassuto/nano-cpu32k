@@ -7,7 +7,7 @@
 class DevicePbUart : public MMIOCallback
 {
 public:
-    DevicePbUart(DeviceTree *tree_, phy_addr_t mmio_base, int irq_);
+    DevicePbUart(DeviceTree *tree_, phy_addr_t mmio_base, int irq_, const char *virt_uart_file);
 
     void reset();
     void step();

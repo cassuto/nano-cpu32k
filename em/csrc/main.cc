@@ -53,6 +53,7 @@ static const struct option long_options[] = {
     {"commit-timeout-max", required_argument, NULL, 0},       /* 18 */
     {"immu-enable-uncached-seg", required_argument, NULL, 0}, /* 19 */
     {"symbol-file", required_argument, NULL, 0},              /* 20 */
+    {"virt-uart-file", required_argument, NULL, 0},           /* 21 */
     {"bin-load-addr", required_argument, NULL, 'a'},
     {"bin-pathname", required_argument, NULL, 'b'},
     {"reset-pc", required_argument, NULL, 'r'},
@@ -110,6 +111,7 @@ public:
         wave_end = 10000;
         commit_timeout_max = 100000;
         symbol_file = "";
+        virt_uart_file = "COM1:";
     }
 
     Mode mode;
@@ -141,6 +143,7 @@ public:
     uint64_t wave_end;
     uint64_t commit_timeout_max;
     std::string symbol_file;
+    std::string virt_uart_file;
 };
 
 static const char *optstirng = "-b:a:r:d:";
@@ -149,6 +152,7 @@ static Args args;
 static DeviceTree *emu_dev;
 /*static*/ Emu *emu;
 static Memory *rtl_memory;
+static DeviceTree *rtl_dev;
 static uint64_t device_clk;
 
 static int
@@ -266,6 +270,9 @@ parse_args(int argc, char **argv)
             case 20:
                 args.symbol_file = optarg;
                 break;
+            case 21:
+                args.virt_uart_file = optarg;
+                break;
             default:
                 return usage(argv[0]);
             }
@@ -335,7 +342,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    emu_dev = new DeviceTree(emu_CPU, emu_CPU->memory(), args.mmio_phy_base);
+    emu_dev = new DeviceTree(emu_CPU, emu_CPU->memory(), args.mmio_phy_base, args.virt_uart_file.c_str());
 
     emu_CPU->reset(args.pc_rst);
 
@@ -368,6 +375,7 @@ int main(int argc, char *argv[])
         {
             return 1;
         }
+        rtl_dev = new DeviceTree(nullptr, rtl_memory, args.mmio_phy_base, args.virt_uart_file.c_str());
 
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU, rtl_memory);
         enable_difftest(emu_CPU, emu, args.commit_timeout_max);

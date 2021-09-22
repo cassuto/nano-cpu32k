@@ -230,6 +230,8 @@ public:
     inline phy_addr_t get_mmio_phy_base() const { return mmio_phy_base; }
     inline phy_addr_t get_mmio_phy_end_addr() const { return mmio_phy_end_addr; }
 
+    inline bool in_difftest() const { return cpu; }
+
 private:
     struct mmio_node
     {
