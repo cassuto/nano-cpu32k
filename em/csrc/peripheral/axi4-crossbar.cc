@@ -158,7 +158,7 @@ Axi4CrossbarRequest *Axi4Crossbar::axi_request(const axi_channel &axi, bool is_w
     else
     {
         if(req->is_mmio)
-        printf("mmio raddr=%#x size=%d\n", req->address, 1 << axi.aw.size);
+        printf("mmio raddr=%#x size=%d\n", req->address, 1 << axi.ar.size);
         axi_read_data(axi.ar, req);
     }
 
