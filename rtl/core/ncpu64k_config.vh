@@ -105,6 +105,8 @@
 `define BPU_UPD_TAKEN 0
 `define BPU_UPD_TGT `PC_W:1
 
+/* Exception vector */
+`define EXCP_VECT_W 8
 
 /* Internal OPC (one-hot encoding) */
 

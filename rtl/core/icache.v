@@ -351,11 +351,11 @@ module icache
       )
    U_ALIGN_R
       (
-         .i_in_rdat                    (ibus_RDATA),
-         .i_in_rbe                     ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_REFILL}}),
-         .i_in_addr                    (fsm_refill_cnt),
-         .o_out_wmsk                   (s1i_payload_tgt_we),
-         .o_out_din                    (s1i_payload_din)
+         .i_dat                        (ibus_RDATA),
+         .i_be                         ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_REFILL}}),
+         .i_addr                       (fsm_refill_cnt),
+         .o_be                         (s1i_payload_tgt_we),
+         .o_dat                        (s1i_payload_din)
       );
       
    generate
@@ -372,11 +372,11 @@ module icache
       )
    U_ALIGN_R_UNCACHED_A
       (
-         .i_in_rdat                    (ibus_RDATA),
-         .i_in_rbe                     ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_UNCACHED_READ}}),
-         .i_in_addr                    (ibus_ARADDR),
-         .o_out_wmsk                   (s1i_uncached_align_we),
-         .o_out_din                    (s1i_uncached_align_din)
+         .i_dat                        (ibus_RDATA),
+         .i_be                         ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_UNCACHED_READ}}),
+         .i_addr                       (ibus_ARADDR),
+         .o_be                         (s1i_uncached_align_we),
+         .o_dat                        (s1i_uncached_align_din)
       );
    align_r
       #(
@@ -386,11 +386,11 @@ module icache
       )
    U_ALIGN_R_UNCACHED_B
       (
-         .i_in_rdat                    (s1i_uncached_align_din),
-         .i_in_rbe                     (s1i_uncached_align_we),
-         .i_in_addr                    (ibus_ARADDR),
-         .o_out_wmsk                   (s1i_uncached_we),
-         .o_out_din                    (s1i_uncached_din)
+         .i_dat                        (s1i_uncached_align_din),
+         .i_be                         (s1i_uncached_align_we),
+         .i_addr                       (ibus_ARADDR),
+         .o_be                         (s1i_uncached_we),
+         .o_dat                        (s1i_uncached_din)
       );
 
    assign stall_req = (fsm_state_ff != S_IDLE);

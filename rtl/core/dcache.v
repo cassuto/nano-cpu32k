@@ -556,11 +556,11 @@ module dcache
       )
    U_ALIGN_R
       (
-         .i_in_rdat                    (dbus_RDATA),
-         .i_in_rbe                     ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_REFILL}}),
-         .i_in_addr                    (fsm_refill_cnt),
-         .o_out_wmsk                   (s2i_wb_we),
-         .o_out_din                    (s2i_wb_din)
+         .i_dat                        (dbus_RDATA),
+         .i_be                         ({(1<<AXI_P_DW_BYTES){fsm_state_ff == S_REFILL}}),
+         .i_addr                       (fsm_refill_cnt),
+         .o_be                         (s2i_wb_we),
+         .o_dat                        (s2i_wb_din)
       );
 
    assign stall_req = (fsm_state_ff != S_IDLE);
@@ -623,11 +623,11 @@ module dcache
                )
             U_ALIGN_UNUCACHED_R
                (
-                  .i_in_rdat                    (dbus_RDATA),
-                  .i_in_rbe                     ({(1<<AXI_P_DW_BYTES){hds_axi_R}}),
-                  .i_in_addr                    (dbus_ARADDR),
-                  .o_out_wmsk                   (axi_aligned_rdata_ff_wmsk),
-                  .o_out_din                    (axi_aligned_rdata_nxt)
+                  .i_dat                        (dbus_RDATA),
+                  .i_be                         ({(1<<AXI_P_DW_BYTES){hds_axi_R}}),
+                  .i_addr                       (dbus_ARADDR),
+                  .o_be                         (axi_aligned_rdata_ff_wmsk),
+                  .o_dat                        (axi_aligned_rdata_nxt)
                );
                
             mDFF_l # (.DW(PAYLOAD_DW)) ff_axi_aligned_rdata (.CLK(clk), .LOAD(|axi_aligned_rdata_ff_wmsk), .D(axi_aligned_rdata_nxt), .Q(axi_aligned_rdata_ff) );
@@ -665,10 +665,10 @@ module dcache
       )
    U_ALIGN_W
       (
-         .i_in_din                           ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_payload : s2o_wdat),
-         .i_in_we                            ((fsm_state_ff == S_WRITEBACK) | (fsm_state_ff == S_UNCACHED_WRITE)),
-         .i_in_addr                          ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_addr : dbus_AWADDR[CONFIG_DC_P_LINE-1:0]),
-         .o_out_wmsk                         (dbus_WSTRB),
+         .i_dat                              ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_payload : s2o_wdat),
+         .i_en                               ((fsm_state_ff == S_WRITEBACK) | (fsm_state_ff == S_UNCACHED_WRITE)),
+         .i_addr                             ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_addr : dbus_AWADDR[CONFIG_DC_P_LINE-1:0]),
+         .o_be                               (dbus_WSTRB),
          .o_out_wdat                         (dbus_WDATA)
       );
 

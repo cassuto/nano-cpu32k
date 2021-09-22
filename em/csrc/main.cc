@@ -55,7 +55,7 @@ static const struct option long_options[] = {
     {"symbol-file", required_argument, NULL, 0},              /* 20 */
     {"bin-load-addr", required_argument, NULL, 'a'},
     {"bin-pathname", required_argument, NULL, 'b'},
-    {"reset-vector", required_argument, NULL, 'r'},
+    {"reset-pc", required_argument, NULL, 'r'},
     {"dump-wave", required_argument, NULL, 'd'},
     {"help", no_argument, NULL, 'h'},
     {0, 0, NULL, 0}};
@@ -75,16 +75,16 @@ public:
         /* Default settings */
         mode = ModeDifftest;
 
-        vect_ERST = 0x80000000;
-        vect_EINSN = 0x80000004;
-        vect_EIRQ = 0x80000008;
-        vect_ESYSCALL = 0x8000000c;
-        vect_EIPF = 0x80000014;
-        vect_EDPF = 0x80000018;
-        vect_EITM = 0x8000001c;
-        vect_EDTM = 0x80000020;
-        vect_EALIGN = 0x80000024;
-        vect_EINT = 0x80000028;
+        pc_rst = 0x80000000;
+        vect_EINSN = 0x04;
+        vect_EIRQ = 0x08;
+        vect_ESYSCALL = 0x0c;
+        vect_EIPF = 0x14;
+        vect_EDPF = 0x18;
+        vect_EITM = 0x1c;
+        vect_EDTM = 0x20;
+        vect_EALIGN = 0x24;
+        vect_EINT = 0x28;
 
         ram_size = 32 * 1024 * 1024;
         dmmu_tlb_count = 128;
@@ -114,7 +114,7 @@ public:
 
     Mode mode;
     std::string bin_pathname;
-    phy_addr_t vect_ERST;
+    phy_addr_t pc_rst;
     phy_addr_t vect_EINSN;
     phy_addr_t vect_EIRQ;
     phy_addr_t vect_ESYSCALL;
@@ -278,7 +278,7 @@ parse_args(int argc, char **argv)
             args.bin_load_addr = atoi(optarg);
             break;
         case 'r':
-            args.vect_ERST = atoll(optarg);
+            args.pc_rst = atoll(optarg);
             break;
         case 'd':
             args.vcdfile = optarg;
@@ -337,7 +337,7 @@ int main(int argc, char *argv[])
 
     emu_dev = new DeviceTree(emu_CPU, emu_CPU->memory(), args.mmio_phy_base);
 
-    emu_CPU->reset(args.vect_ERST);
+    emu_CPU->reset(args.pc_rst);
 
     switch (args.mode)
     {

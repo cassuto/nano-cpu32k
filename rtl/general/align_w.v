@@ -29,10 +29,10 @@ module align_w
    parameter                           IN_AW = 0
 )
 (
-   input [(1<<OUT_P_DW_BYTES)*8-1:0]   i_in_din,
-   input                               i_in_we,
-   input [IN_AW-1:0]                   i_in_addr,
-   output [(1<<IN_P_DW_BYTES)-1:0]     o_out_wmsk,
+   input [(1<<OUT_P_DW_BYTES)*8-1:0]   i_dat,
+   input                               i_en,
+   input [IN_AW-1:0]                   i_addr,
+   output [(1<<IN_P_DW_BYTES)-1:0]     o_be,
    output [(1<<IN_P_DW_BYTES)*8-1:0]   o_out_wdat
 );
    localparam IN_BYTES                 = (1<<IN_P_DW_BYTES);
@@ -42,8 +42,8 @@ module align_w
    generate
       if (OUT_P_DW_BYTES == IN_P_DW_BYTES)
          begin
-            assign o_out_wmsk = {(1<<IN_P_DW_BYTES){i_in_we}};
-            assign o_out_wdat = i_in_din;
+            assign o_be = {(1<<IN_P_DW_BYTES){i_en}};
+            assign o_out_wdat = i_dat;
          end
       else if (OUT_P_DW_BYTES <= IN_P_DW_BYTES)
          begin
@@ -54,12 +54,12 @@ module align_w
             wire [(1<<IN_P_DW_BYTES)-1:0] wstrb_tmp;
          
             for(i=0;i<WIN_NUM;i=i+1)
-               assign wstrb_tmp[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_in_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}};
+               assign wstrb_tmp[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}};
             
-            assign o_out_wmsk = ({(1<<IN_P_DW_BYTES){i_in_we}} & wstrb_tmp);
+            assign o_be = ({(1<<IN_P_DW_BYTES){i_en}} & wstrb_tmp);
             
             for(i=0;i<WIN_NUM;i=i+1)
-               assign o_out_wdat[i*WIN_DW +: WIN_DW] = i_in_din;
+               assign o_out_wdat[i*WIN_DW +: WIN_DW] = i_dat;
          end
       else
          begin
@@ -70,10 +70,10 @@ module align_w
             wire [WIN_DW-1:0] i_axi_din_win [WIN_NUM-1:0];
             
             for(i=0;i<WIN_NUM;i=i+1)
-               assign i_axi_din_win[i] = i_in_din[i*WIN_DW +: WIN_DW];
+               assign i_axi_din_win[i] = i_dat[i*WIN_DW +: WIN_DW];
                
-            assign o_out_wmsk = {(1<<IN_P_DW_BYTES){i_in_we}};
-            assign o_out_wdat = i_axi_din_win[i_in_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            assign o_be = {(1<<IN_P_DW_BYTES){i_en}};
+            assign o_out_wdat = i_axi_din_win[i_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
          end
    endgenerate
 

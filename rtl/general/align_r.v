@@ -29,11 +29,11 @@ module align_r
    parameter                           OUT_P_DW_BYTES = 0
 )
 (
-   input [(1<<IN_P_DW_BYTES)*8-1:0]    i_in_rdat,
-   input [(1<<IN_P_DW_BYTES)-1:0]      i_in_rbe,
-   input [IN_AW-1:0]                   i_in_addr,
-   output [(1<<OUT_P_DW_BYTES)-1:0]    o_out_wmsk,
-   output [(1<<OUT_P_DW_BYTES)*8-1:0]  o_out_din
+   input [(1<<IN_P_DW_BYTES)*8-1:0]    i_dat,
+   input [(1<<IN_P_DW_BYTES)-1:0]      i_be,
+   input [IN_AW-1:0]                   i_addr,
+   output [(1<<OUT_P_DW_BYTES)-1:0]    o_be,
+   output [(1<<OUT_P_DW_BYTES)*8-1:0]  o_dat
 );
    localparam IN_BYTES                 = (1<<IN_P_DW_BYTES);
    localparam OUT_BYTES                = (1<<OUT_P_DW_BYTES);
@@ -42,8 +42,8 @@ module align_r
    generate
       if (OUT_P_DW_BYTES == IN_P_DW_BYTES)
          begin
-            assign o_out_din = i_in_rdat;
-            assign o_out_wmsk = i_in_rbe;
+            assign o_dat = i_dat;
+            assign o_be = i_be;
          end
       else if (OUT_P_DW_BYTES < IN_P_DW_BYTES)
          begin
@@ -57,12 +57,12 @@ module align_r
             
             for(i=0;i<WIN_NUM;i=i+1)
                begin
-                  assign rdat_win[i] = i_in_rdat[i*WIN_DW +: WIN_DW];
-                  assign rbe_win[i] = i_in_rbe[i*(WIN_DW/8) +: WIN_DW/8];
+                  assign rdat_win[i] = i_dat[i*WIN_DW +: WIN_DW];
+                  assign rbe_win[i] = i_be[i*(WIN_DW/8) +: WIN_DW/8];
                end
             
-            assign o_out_din = rdat_win[i_in_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
-            assign o_out_wmsk = rbe_win[i_in_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            assign o_dat = rdat_win[i_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
+            assign o_be = rbe_win[i_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
          end
       else
          begin
@@ -72,10 +72,10 @@ module align_r
             localparam WIN_P_DW_BYTES = (IN_P_DW_BYTES);
 
             for(i=0;i<WIN_NUM;i=i+1)
-               assign o_out_wmsk[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_in_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}} & i_in_rbe;
+               assign o_be[i*(WIN_DW/8) +: (WIN_DW/8)] = {(WIN_DW/8){i_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}} & i_be;
 
             for(i=0;i<WIN_NUM;i=i+1)
-               assign o_out_din[i*WIN_DW +: WIN_DW] = i_in_rdat;
+               assign o_dat[i*WIN_DW +: WIN_DW] = i_dat;
          end
    endgenerate
 

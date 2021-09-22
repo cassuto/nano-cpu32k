@@ -292,7 +292,8 @@ def add_module_prefix(code, prefix, toplevel):
 
 parser = argparse.ArgumentParser(description="Preprocess CPU RTL design")
 parser.add_argument('--project-dir', '-d', required=True, type=str, help='Project root path')
-parser.add_argument('--input-dir', '-c', required=True, type=str, nargs='+', help='Target directory')
+parser.add_argument('--input-dir', '-s', required=False, type=str, nargs='+', help='Target directory (Scan all *.v files)')
+parser.add_argument('--input-file', '-c', required=False, type=str, nargs='+', help='Target files')
 parser.add_argument('--inc', '-I', required=True, type=str, nargs='+', help='Include path')
 parser.add_argument('--toplevel', '-t', required=True, type=str, help='Toplevel module name')
 parser.add_argument('--prefix', '-p', required=True, type=str, help='Module name prefix')
@@ -307,8 +308,15 @@ TOPLEVEL = args.toplevel
 TARGET = args.output
 
 SRC = []
-for tgt in args.input_dir:
-    SRC.extend(scan_files(tgt, '.v'))
+if args.input_dir is not None:
+    for tgt in args.input_dir:
+        SRC.extend(scan_files(tgt, '.v'))
+if args.input_file is not None:
+    SRC.extend(args.input_file)
+
+if len(SRC) == 0:
+    print('Needed at least one input file!')
+    exit(1)
 
 # Built-in macros
 define_macro('SYNTHESIS', '')

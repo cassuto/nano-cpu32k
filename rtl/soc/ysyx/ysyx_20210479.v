@@ -117,15 +117,15 @@ module ysyx_20210479
    localparam                           CONFIG_DTLB_P_SETS = 7;
    localparam                           CONFIG_ITLB_P_SETS = 7;
 
-   localparam [CONFIG_AW-1:0]           CONFIG_ERST_VECTOR = 32'h80000000; //32'h30000000; // FIXME!!!!!
-   localparam [CONFIG_AW-1:0]           CONFIG_EITM_VECTOR = 32'h80000000 + 32'h1c;
-   localparam [CONFIG_AW-1:0]           CONFIG_EIPF_VECTOR = 32'h80000000 + 32'h14;
-   localparam [CONFIG_AW-1:0]           CONFIG_ESYSCALL_VECTOR = 32'h80000000 + 32'hc;
-   localparam [CONFIG_AW-1:0]           CONFIG_EINSN_VECTOR = 32'h80000000 + 32'h4;
-   localparam [CONFIG_AW-1:0]           CONFIG_EIRQ_VECTOR = 32'h80000000 + 32'h8;
-   localparam [CONFIG_AW-1:0]           CONFIG_EDTM_VECTOR = 32'h80000000 + 32'h20;
-   localparam [CONFIG_AW-1:0]           CONFIG_EDPF_VECTOR = 32'h80000000 + 32'h18;
-   localparam [CONFIG_AW-1:0]           CONFIG_EALIGN_VECTOR = 32'h80000000 + 32'h24;
+   localparam [CONFIG_AW-1:0]           CONFIG_PC_RST = 32'h80000000; //32'h30000000; // FIXME!!!!!
+   localparam [`EXCP_VECT_W-1:0]        CONFIG_EITM_VECTOR = 8'h1c;
+   localparam [`EXCP_VECT_W-1:0]        CONFIG_EIPF_VECTOR = 8'h14;
+   localparam [`EXCP_VECT_W-1:0]        CONFIG_ESYSCALL_VECTOR = 8'hc;
+   localparam [`EXCP_VECT_W-1:0]        CONFIG_EINSN_VECTOR = 8'h4;
+   localparam [`EXCP_VECT_W-1:0]        CONFIG_EIRQ_VECTOR = 8'h8;
+   localparam [`EXCP_VECT_W-1:0]        CONFIG_EDTM_VECTOR = 8'h20;
+   localparam [`EXCP_VECT_W-1:0]        CONFIG_EDPF_VECTOR = 8'h18;
+   localparam [`EXCP_VECT_W-1:0]        CONFIG_EALIGN_VECTOR = 8'h24;
    
    localparam                           CONFIG_NUM_IRQ = 32;
 
@@ -282,15 +282,15 @@ module ysyx_20210479
         .CONFIG_DMMU_ENABLE_UNCACHED_SEG(CONFIG_DMMU_ENABLE_UNCACHED_SEG),
         .CONFIG_DTLB_P_SETS             (CONFIG_DTLB_P_SETS),
         .CONFIG_ITLB_P_SETS             (CONFIG_ITLB_P_SETS),
-        .CONFIG_ERST_VECTOR             (CONFIG_ERST_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EITM_VECTOR             (CONFIG_EITM_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EIPF_VECTOR             (CONFIG_EIPF_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_ESYSCALL_VECTOR         (CONFIG_ESYSCALL_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EINSN_VECTOR            (CONFIG_EINSN_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EIRQ_VECTOR             (CONFIG_EIRQ_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EDTM_VECTOR             (CONFIG_EDTM_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EDPF_VECTOR             (CONFIG_EDPF_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EALIGN_VECTOR           (CONFIG_EALIGN_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_PC_RST                  (CONFIG_PC_RST[CONFIG_AW-1:0]),
+        .CONFIG_EITM_VECTOR             (CONFIG_EITM_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EIPF_VECTOR             (CONFIG_EIPF_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_ESYSCALL_VECTOR         (CONFIG_ESYSCALL_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EINSN_VECTOR            (CONFIG_EINSN_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EIRQ_VECTOR             (CONFIG_EIRQ_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EDTM_VECTOR             (CONFIG_EDTM_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EDPF_VECTOR             (CONFIG_EDPF_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EALIGN_VECTOR           (CONFIG_EALIGN_VECTOR[`EXCP_VECT_W-1:0]),
         .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ),
         .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
         .AXI_UNCACHED_P_DW_BYTES        (AXI_UNCACHED_P_DW_BYTES),

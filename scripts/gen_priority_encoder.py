@@ -1,6 +1,6 @@
 import sys
 
-P_DW_MAX = 9
+P_DW_MAX = 6
 
 with open(sys.argv[1],'w') as fp:
     fp.write(

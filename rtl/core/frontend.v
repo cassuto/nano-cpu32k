@@ -38,7 +38,7 @@ module frontend
    parameter                           CONFIG_IC_P_WAYS = 2,
    parameter                           CONFIG_PHT_P_NUM = 9,
    parameter                           CONFIG_BTB_P_NUM = 9,
-   parameter [CONFIG_AW-1:0]           CONFIG_ERST_VECTOR = 0,
+   parameter [CONFIG_AW-1:0]           CONFIG_PC_RST = 0,
    parameter                           CONFIG_IMMU_ENABLE_UNCACHED_SEG = 0,
    parameter                           AXI_P_DW_BYTES = 3,
    parameter                           AXI_UNCACHED_P_DW_BYTES = 2,
@@ -329,7 +329,7 @@ module frontend
          pc_nxt = pc + {{CONFIG_AW-CONFIG_P_FETCH_WIDTH-1-`NCPU_P_INSN_LEN{1'b0}}, s1o_push_cnt, {`NCPU_P_INSN_LEN{1'b0}}};
 
    // PC Register
-   mDFF_r # (.DW(CONFIG_AW), .RST_VECTOR(CONFIG_ERST_VECTOR)) ff_pc (.CLK(clk), .RST(rst), .D(pc_nxt), .Q(pc) );
+   mDFF_r # (.DW(CONFIG_AW), .RST_VECTOR(CONFIG_PC_RST)) ff_pc (.CLK(clk), .RST(rst), .D(pc_nxt), .Q(pc) );
 
    assign p_ce = (~ic_stall_req & iq_ready);
 

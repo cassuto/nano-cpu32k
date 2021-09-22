@@ -28,14 +28,14 @@ module ex_epu
 #(
    parameter                           CONFIG_DW = 0,
    parameter                           CONFIG_AW = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EITM_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EIPF_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_ESYSCALL_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EINSN_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EIRQ_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EDTM_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EDPF_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EALIGN_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EITM_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EIPF_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_ESYSCALL_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EINSN_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EIRQ_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EDTM_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EDPF_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EALIGN_VECTOR = 0,
    parameter                           CONFIG_ITLB_P_SETS = 0,
    parameter                           CONFIG_DTLB_P_SETS = 0,
    parameter                           CONFIG_NUM_IRQ = 0
@@ -102,6 +102,10 @@ module ex_epu
    input [CONFIG_DW-1:0]               msr_elsa,
    output [CONFIG_DW-1:0]              msr_elsa_nxt,
    output                              msr_elsa_we,
+   // EVECT
+   output [CONFIG_AW-1:0]              msr_evect_nxt,
+   input [CONFIG_AW-1:0]               msr_evect,
+   output                              msr_evect_we,
    // COREID
    input [CONFIG_DW-1:0]               msr_coreid,
    // IMMID
@@ -242,6 +246,7 @@ module ex_epu
    wire [`NCPU_MSR_BANK_OFF_AW-1:0]    s1o_commit_bank_off;
    wire  [`PC_W-1:0]                   s1o_commit_epc;
    wire [`PC_W-1:0]                    s1o_commit_nepc;
+   wire [CONFIG_AW-1:0]                s1o_msr_evect;
    wire                                s1o_commit_ERET;
    wire                                s1o_commit_ESYSCALL;
    wire                                s1o_commit_EINSN;
@@ -430,6 +435,7 @@ module ex_epu
    mDFF_l # (.DW(CONFIG_DW)) ff_s1o_commit_wmsr_dat (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_msr_wdat), .Q(s1o_commit_wmsr_dat) );
    mDFF_l # (.DW(`PC_W)) ff_s1o_commit_epc (.CLK(clk), .LOAD(p_ce_s1), .D(ex_pc), .Q(s1o_commit_epc) );
    mDFF_l # (.DW(`PC_W)) ff_s1o_commit_nepc (.CLK(clk), .LOAD(p_ce_s1), .D(ex_npc), .Q(s1o_commit_nepc) );
+   mDFF_l # (.DW(CONFIG_AW)) ff_s1o_msr_evect (.CLK(clk), .LOAD(p_ce_s1), .D(msr_evect), .Q(s1o_msr_evect) );
    
    // Unpack commit wmsr we
    assign {
@@ -501,6 +507,10 @@ module ex_epu
    assign msr_elsa_nxt = s1o_set_elsa ? s1o_lsa_nxt : s1o_commit_wmsr_dat;
    assign msr_elsa_we = s1o_set_elsa | s1o_commit_wmsr_elsa_we;
 
+   // Commit EVECT
+   assign msr_evect_nxt = s1o_commit_wmsr_dat;
+   assign msr_evect_we = s1o_commit_wmsr_elsa_we;
+   
    // Commit IMM
    assign msr_imm_tlbl_idx = s1o_commit_bank_off[CONFIG_ITLB_P_SETS-1:0];
    assign msr_imm_tlbl_nxt = s1o_commit_wmsr_dat;
@@ -547,16 +557,16 @@ module ex_epu
    
    // Exceptions
    // Assert 2105051856
-   assign exc_flush_tgt = ({`PC_W{s2i_EDTM}} & CONFIG_EDTM_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
-                           ({`PC_W{s2i_EDPF}} & CONFIG_EDPF_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
-                           ({`PC_W{s2i_EALIGN}} & CONFIG_EALIGN_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
+   assign exc_flush_tgt = ({`PC_W{s2i_EDTM}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EDTM_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
+                           ({`PC_W{s2i_EDPF}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EDPF_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
+                           ({`PC_W{s2i_EALIGN}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EALIGN_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
                            ({`PC_W{s1o_commit_E_FLUSH_TLB}} & s1o_commit_nepc) |
-                           ({`PC_W{s1o_commit_ESYSCALL}} & CONFIG_ESYSCALL_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
+                           ({`PC_W{s1o_commit_ESYSCALL}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_ESYSCALL_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
                            ({`PC_W{s1o_commit_ERET}} & msr_epc[`NCPU_P_INSN_LEN +: `PC_W]) |
-                           ({`PC_W{s1o_commit_EITM}} & CONFIG_EITM_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
-                           ({`PC_W{s1o_commit_EIPF}} & CONFIG_EIPF_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
-                           ({`PC_W{s1o_commit_EIRQ}} & CONFIG_EIRQ_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]) |
-                           ({`PC_W{s1o_commit_EINSN}} & CONFIG_EINSN_VECTOR[`NCPU_P_INSN_LEN +: `PC_W]);
+                           ({`PC_W{s1o_commit_EITM}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EITM_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
+                           ({`PC_W{s1o_commit_EIPF}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EIPF_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
+                           ({`PC_W{s1o_commit_EIRQ}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EIRQ_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
+                           ({`PC_W{s1o_commit_EINSN}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EINSN_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]});
 
    assign exc_flush = p_ce_s2 & (s2i_EDTM |
                         s2i_EDPF |

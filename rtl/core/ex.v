@@ -46,14 +46,14 @@ module ex
    parameter                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 0,
    parameter                           CONFIG_ITLB_P_SETS = 0,
    parameter                           CONFIG_DTLB_P_SETS = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EITM_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EIPF_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_ESYSCALL_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EINSN_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EIRQ_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EDTM_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EDPF_VECTOR = 0,
-   parameter [CONFIG_AW-1:0]           CONFIG_EALIGN_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EITM_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EIPF_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_ESYSCALL_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EINSN_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EIRQ_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EDTM_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EDPF_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EALIGN_VECTOR = 0,
    parameter                           AXI_P_DW_BYTES    = 0,
    parameter                           AXI_ADDR_WIDTH    = 0,
    parameter                           AXI_ID_WIDTH      = 0,
@@ -217,6 +217,9 @@ module ex
    wire [`NCPU_PSR_DW-1:0] msr_epsr;            // From U_PSR of ex_psr.v
    wire [`NCPU_PSR_DW-1:0] msr_epsr_nxt;        // From U_EPU of ex_epu.v
    wire                 msr_epsr_we;            // From U_EPU of ex_epu.v
+   wire [CONFIG_AW-1:0] msr_evect;              // From U_PSR of ex_psr.v
+   wire [CONFIG_AW-1:0] msr_evect_nxt;          // From U_EPU of ex_epu.v
+   wire                 msr_evect_we;           // From U_EPU of ex_epu.v
    wire [`NCPU_PSR_DW-1:0] msr_psr;             // From U_PSR of ex_psr.v
    wire                 msr_psr_dce;            // From U_PSR of ex_psr.v
    wire                 msr_psr_dce_nxt;        // From U_EPU of ex_epu.v
@@ -382,14 +385,14 @@ module ex
         // Parameters
         .CONFIG_DW                      (CONFIG_DW),
         .CONFIG_AW                      (CONFIG_AW),
-        .CONFIG_EITM_VECTOR             (CONFIG_EITM_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EIPF_VECTOR             (CONFIG_EIPF_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_ESYSCALL_VECTOR         (CONFIG_ESYSCALL_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EINSN_VECTOR            (CONFIG_EINSN_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EIRQ_VECTOR             (CONFIG_EIRQ_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EDTM_VECTOR             (CONFIG_EDTM_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EDPF_VECTOR             (CONFIG_EDPF_VECTOR[CONFIG_AW-1:0]),
-        .CONFIG_EALIGN_VECTOR           (CONFIG_EALIGN_VECTOR[CONFIG_AW-1:0]),
+        .CONFIG_EITM_VECTOR             (CONFIG_EITM_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EIPF_VECTOR             (CONFIG_EIPF_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_ESYSCALL_VECTOR         (CONFIG_ESYSCALL_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EINSN_VECTOR            (CONFIG_EINSN_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EIRQ_VECTOR             (CONFIG_EIRQ_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EDTM_VECTOR             (CONFIG_EDTM_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EDPF_VECTOR             (CONFIG_EDPF_VECTOR[`EXCP_VECT_W-1:0]),
+        .CONFIG_EALIGN_VECTOR           (CONFIG_EALIGN_VECTOR[`EXCP_VECT_W-1:0]),
         .CONFIG_ITLB_P_SETS             (CONFIG_ITLB_P_SETS),
         .CONFIG_DTLB_P_SETS             (CONFIG_DTLB_P_SETS),
         .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ))
@@ -422,6 +425,8 @@ module ex
        .msr_epsr_we                     (msr_epsr_we),
        .msr_elsa_nxt                    (msr_elsa_nxt[CONFIG_DW-1:0]),
        .msr_elsa_we                     (msr_elsa_we),
+       .msr_evect_nxt                   (msr_evect_nxt[CONFIG_AW-1:0]),
+       .msr_evect_we                    (msr_evect_we),
        .msr_imm_tlbl_idx                (msr_imm_tlbl_idx[CONFIG_ITLB_P_SETS-1:0]),
        .msr_imm_tlbl_nxt                (msr_imm_tlbl_nxt[CONFIG_DW-1:0]),
        .msr_imm_tlbl_we                 (msr_imm_tlbl_we),
@@ -467,6 +472,7 @@ module ex
        .msr_epc                         (msr_epc[CONFIG_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
        .msr_elsa                        (msr_elsa[CONFIG_DW-1:0]),
+       .msr_evect                       (msr_evect[CONFIG_AW-1:0]),
        .msr_coreid                      (msr_coreid[CONFIG_DW-1:0]),
        .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
        .msr_dmmid                       (msr_dmmid[CONFIG_DW-1:0]),
@@ -630,6 +636,7 @@ module ex
        .msr_epc                         (msr_epc[CONFIG_DW-1:0]),
        .msr_elsa                        (msr_elsa[CONFIG_DW-1:0]),
        .msr_coreid                      (msr_coreid[CONFIG_DW-1:0]),
+       .msr_evect                       (msr_evect[CONFIG_AW-1:0]),
        .msr_sr                          (msr_sr[CONFIG_DW*`NCPU_SR_NUM-1:0]),
        // Inputs
        .clk                             (clk),
@@ -654,6 +661,8 @@ module ex
        .msr_epc_we                      (msr_epc_we),
        .msr_elsa_nxt                    (msr_elsa_nxt[CONFIG_DW-1:0]),
        .msr_elsa_we                     (msr_elsa_we),
+       .msr_evect_nxt                   (msr_evect_nxt[CONFIG_AW-1:0]),
+       .msr_evect_we                    (msr_evect_we),
        .msr_sr_nxt                      (msr_sr_nxt[CONFIG_DW-1:0]),
        .msr_sr_we                       (msr_sr_we[`NCPU_SR_NUM-1:0]));
 
