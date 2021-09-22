@@ -359,7 +359,7 @@ void Axi4Crossbar::clk_falling(axi_channel &axi)
     {
         extern Emu *emu;
         if (emu->get_cycle() >= 25298695) {
-            printf("w %#x %d\n", wait_req_w->address, wait_req_w->is_mmio);
+            //printf("w %#x %d\n", wait_req_w->address, wait_req_w->is_mmio);
         }
         if (wait_req_w->is_mmio)
         {
