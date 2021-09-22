@@ -72,11 +72,8 @@ Memory::match_mmio_handler(mmio_node *domain, phy_addr_t addr, bool w)
 {
     if (addr >= mmio_phy_base && addr <= mmio_phy_end_addr)
     {
-        printf("-----%d %p\n", in_difftest(), domain);
         for (mmio_node *node = domain; node; node = node->next)
         {
-            //if(in_difftest())
-            //printf("addr=%#x  [%#x-%#x] %d\n", addr, node->start_addr, node->end_addr, node->write);
             if (node->write == w && node->start_addr <= addr && addr <= node->end_addr)
             {
                 return node;

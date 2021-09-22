@@ -253,6 +253,9 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
         axi_get_wdata(axi, &wdat, &wdat, sizeof(uint64_t));
         pwrite(waddr, wdat, wait_req_w->size);
 
+        if(wait_req_w->is_mmio)
+        printf("mmio waddr=%#x size=%d\n", waddr, wait_req_w->size);
+
         wait_req_w->offset++;
         // printf("accept a new write data. waddr=%#lx\n", waddr);
     }
