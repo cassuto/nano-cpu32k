@@ -103,10 +103,6 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
     {
         regfile.r[addr] = val;
     }
-    extern bool flag;
-    if(flag && addr==4){
-        printf("w r4=%#x pc=%#x\n", val, pc);
-    }
 }
 
 cpu_word_t
@@ -342,6 +338,9 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
+        if(pc==0x800001a8){
+            printf("restor EPC %#x\n", readout);
+        }
     }
     break;
 
@@ -368,6 +367,9 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
+        if(pc==0x80008dd4){
+            printf("store EPC=%#x\n", (uint32_t)get_reg(rd));
+        }
     }
     break;
 
@@ -589,8 +591,8 @@ void CPU::run_step()
 {
     vm_addr_t npc = step(pc, false);
     extern bool flag;
-    if(flag)
-    printf("pc = %#x, npc=%#x\n", pc, npc);
+    //if(flag)
+    //printf("pc = %#x, npc=%#x\n", pc, npc);
     pc = npc;
 }
 
