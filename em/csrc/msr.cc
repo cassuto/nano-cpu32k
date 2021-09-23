@@ -272,6 +272,7 @@ CPU::rmsr(msr_index_t index)
             ret |= msr_pack_bit(PSR, DMME);
             ret |= msr_pack_bit(PSR, ICAE);
             ret |= msr_pack_bit(PSR, DCAE);
+            printf("r psr = %#x pc=%#x\n", ret, pc);
             return ret;
 
         case MSR_CPUID:
