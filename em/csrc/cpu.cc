@@ -529,7 +529,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     case INS32_OP_RET:
         /* restore PSR and PC */
         msr.PSR = msr.EPSR;
-        dbg();
+        dbg(2);
         pc_nxt = msr.EPC;
         goto flush_pc;
 
@@ -627,7 +627,7 @@ CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_sysc
     msr.PSR.IMME = 0;
     msr.PSR.DMME = 0;
     msr.PSR.IRE = 0;
-        dbg();
+        dbg(true);
     /* transfer control flow to exception handler */
     return (msr.EVECT & 0xffffff00) | (vector & 0xff);
 }

@@ -81,15 +81,15 @@ bool flag;
 int irq_cnt = 0;
 bool last_ire = 1;
 
-void CPU::dbg()
+void CPU::dbg(int excp)
 {
     if (msr.PSR.IRE != last_ire)
     {
         last_ire = msr.PSR.IRE;
         if (!msr.PSR.IRE)
-            printf("disIRQ pc=%#x cyc=%d\n", pc, irq_cnt);
+            printf("disIRQ %d pc=%#x cyc=%d\n", excp, pc, irq_cnt);
         if (msr.PSR.IRE)
-            printf("enaIRQ pc=%#x cyc=%d\n", pc, irq_cnt);
+            printf("enaIRQ %d pc=%#x cyc=%d\n", excp, pc, irq_cnt);
     }
     if (irq_cnt == 1551){
         ras->dump();
@@ -144,7 +144,7 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr_unpack_bit(PSR, DMME, val);
             msr_unpack_bit(PSR, ICAE, val);
             msr_unpack_bit(PSR, DCAE, val);
-            dbg();
+            dbg(false);
             break;
 
         case MSR_EPSR:
