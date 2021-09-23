@@ -16,7 +16,7 @@ void CPU::tsc_clk()
         {
             msr.TCR.P = 1;
             tsc_update_tcr();
-            printf("%lu %#x\n", msr.TSR, msr.IMR, msr.IRR);
+            printf("%lu %#x %#x IRE=%d\n", msr.TSR, msr.IMR, msr.IRR, msr.PSR.IRE);
         }
         ++msr.TSR;
         if (msr.TSR == 0)
