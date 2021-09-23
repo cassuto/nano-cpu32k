@@ -94,10 +94,10 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             while (*p)
                 fprintf(stdout, "%c", *p++);
             //ras->dump();
-            if(val==0x123)
-            flag=true;
-            if(val==0x456)
-            flag=false;
+            if (val == 0x123)
+                flag = true;
+            if (val == 0x456)
+                flag = false;
         }
         return;
     }
@@ -125,22 +125,22 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr_unpack_bit(PSR, DMME, val);
             msr_unpack_bit(PSR, ICAE, val);
             msr_unpack_bit(PSR, DCAE, val);
-            static int cnt=0;
-            static bool last_ire=1;
+            static int cnt = 0;
+            static bool last_ire = 1;
 
-            if(msr.PSR.IRE != last_ire) {
+            if (msr.PSR.IRE != last_ire)
+            {
                 last_ire = msr.PSR.IRE;
                 if (!msr.PSR.IRE)
                     printf("disIRQ pc=%#x cyc=%d\n", pc, cnt);
-                if(msr.PSR.IRE){
+                if (msr.PSR.IRE)
                     printf("enaIRQ pc=%#x cyc=%d\n", pc, cnt);
             }
-            if (cnt==944) {
+            if (cnt == 942){
                 ras->dump();
             }
 
             ++cnt;
-            }
             break;
 
         case MSR_EPSR:
