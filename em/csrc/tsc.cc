@@ -14,12 +14,9 @@ void CPU::tsc_clk()
     {
         if (msr.TCR.I && (msr.TSR & CNT_MASK) == msr.TCR.CNT)
         {
+            printf("%lu\n", msr.TSR);
             msr.TCR.P = 1;
             tsc_update_tcr();
-        }
-        if (msr.TCR.I )
-        {
-            printf("%lu\n", msr.TSR);
         }
         ++msr.TSR;
         if (msr.TSR == 0)
