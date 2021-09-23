@@ -135,7 +135,7 @@ public:
         phy_addr_t vect_EDTM_,
         phy_addr_t vect_EALIGN_);
     ~CPU();
-
+void dbg();
     void reset(vm_addr_t reset_vect);
     vm_addr_t step(vm_addr_t pc, bool difftest, ArchEvent *event = nullptr);
     void run_step();
