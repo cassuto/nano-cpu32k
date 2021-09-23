@@ -182,7 +182,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     }
 
     /* Access ICache */
-    check_vma_align(insn_pa, 2);
+    check_vma_align(insn_pa, INSN_LEN);
     if (insn_uncached)
         insn = (insn_t)mem->phy_readm32(insn_pa);
     else
@@ -317,7 +317,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     case INS32_OP_LDWU:
     {
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
-        if (check_vma_align(va, 2) < 0)
+        if (check_vma_align(va, 4) < 0)
         {
             pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);
             goto handle_exception;
@@ -348,7 +348,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     case INS32_OP_STW:
     {
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
-        if (check_vma_align(va, 2) < 0)
+        if (check_vma_align(va, 4) < 0)
         {
             pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);
             goto handle_exception;
@@ -377,7 +377,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     case INS32_OP_LDHU:
     {
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
-        if (check_vma_align(va, 1) < 0)
+        if (check_vma_align(va, 2) < 0)
         {
             pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);
             goto handle_exception;
@@ -404,7 +404,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     case INS32_OP_LDH:
     {
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
-        if (check_vma_align(va, 1) < 0)
+        if (check_vma_align(va, 2) < 0)
         {
             pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);
             goto handle_exception;
@@ -431,7 +431,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     case INS32_OP_STH:
     {
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
-        if (check_vma_align(va, 1) < 0)
+        if (check_vma_align(va, 2) < 0)
         {
             pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);
             goto handle_exception;
@@ -634,7 +634,7 @@ CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_sysc
 
 int CPU::check_vma_align(vm_addr_t va, int size)
 {
-    if (va & ((1 << size) - 1))
+    if (va & (size - 1))
     {
         fprintf(stderr, "EALIGN: pc=%x va=%x\n", pc, va);
         panic(1);
