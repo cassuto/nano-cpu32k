@@ -591,8 +591,8 @@ void CPU::run_step()
 {
     vm_addr_t npc = step(pc, false);
     extern bool flag;
-    //if(flag)
-    //printf("pc = %#x, npc=%#x\n", pc, npc);
+    if(flag)
+    printf("pc = %#x, npc=%#x\n", pc, npc);
     pc = npc;
 }
 
