@@ -106,10 +106,10 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
         return;
     }
 
-    if (index == MSR_PSR && !msr.PSR.RM) {
-        printf("psr = %#x pc=%#x\n", val, pc);
-        pc_queue->dump();
-        panic(1);
+    if (index == MSR_PSR) {
+        printf("psr = %#x RM=%d pc=%#x\n", val, msr.PSR.RM, pc);
+        //pc_queue->dump();
+        //panic(1);
     }
 
     if (msr.PSR.RM)
