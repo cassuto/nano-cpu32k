@@ -182,7 +182,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     }
 
     /* Access ICache */
-    check_vma_align(insn_pa, INSN_LEN);
+    check_vma_align(insn_pa, 2);
     if (insn_uncached)
         insn = (insn_t)mem->phy_readm32(insn_pa);
     else
