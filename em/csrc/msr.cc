@@ -73,6 +73,7 @@ static const bool enable_irqc = 1;
 void CPU::warn_illegal_access_reg(const char *reg)
 {
     fprintf(stderr, "warning: illegal access to %s in non-root mode at PC=%#x\n", reg, pc);
+    panic(1);
 }
 
 void CPU::wmsr(msr_index_t index, cpu_word_t v)
