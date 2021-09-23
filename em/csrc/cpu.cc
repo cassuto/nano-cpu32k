@@ -588,7 +588,9 @@ flush_pc:
 void CPU::run_step()
 {
     vm_addr_t npc = step(pc, false);
-    //printf("pc = %#x, npc=%#x\n", pc, npc);
+    extern bool flag;
+    if(flag)
+    printf("pc = %#x, npc=%#x\n", pc, npc);
     pc = npc;
 }
 
