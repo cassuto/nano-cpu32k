@@ -126,14 +126,17 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr_unpack_bit(PSR, ICAE, val);
             msr_unpack_bit(PSR, DCAE, val);
             static int cnt=0;
-            if(!msr.PSR.IRE && cnt<10) {
-                ras->dump();
-                printf("disIRQ pc=%#x\n", pc);
-                ++cnt;
+            static bool last_ire=1;
+
+            if(msr.PSR.IRE != last_ire) {
+                last_ire = msr.PSR.IRE;
+                if (!msr.PSR.IRE)
+                    printf("disIRQ pc=%#x cyc=%d\n", pc, cnt);
+                if(msr.PSR.IRE){
+                    printf("enaIRQ pc=%#x cyc=%d\n", pc, cnt);
             }
-            if(msr.PSR.IRE){
-            printf("enaIRQ pc=%#x\n", pc);
-            cnt=0;
+
+            ++cnt;
             }
             break;
 
