@@ -135,6 +135,9 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
                 if(msr.PSR.IRE){
                     printf("enaIRQ pc=%#x cyc=%d\n", pc, cnt);
             }
+            if (cnt==944) {
+                ras->dump();
+            }
 
             ++cnt;
             }
