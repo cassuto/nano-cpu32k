@@ -339,7 +339,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
         if(pc==0x80002a24){
-            printf("ldw va=%#x d=%#x\n", va, readout);
+            //printf("ldw va=%#x d=%#x\n", va, readout);
         }
     }
     break;
@@ -368,7 +368,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
         if(pc==0x800029b8){
-            printf("store lock va=%#x d=%#x\n", va, (uint32_t)get_reg(rd));
+            //printf("store lock va=%#x d=%#x\n", va, (uint32_t)get_reg(rd));
         }
     }
     break;
