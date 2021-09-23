@@ -65,6 +65,7 @@ SIM_CPPS = $(EM_DIR)/csrc/main.cc \
 # Peripherals
 SIM_CPPS += $(EM_DIR)/csrc/peripheral/device-tree.cc \
 			$(EM_DIR)/csrc/peripheral/pb-uart.cc \
+			$(EM_DIR)/csrc/peripheral/flash.cc \
 			$(EM_DIR)/csrc/peripheral/virt-uart.cc \
 			$(EM_DIR)/csrc/peripheral/axi4.cc \
 			$(EM_DIR)/csrc/peripheral/axi4-crossbar.cc

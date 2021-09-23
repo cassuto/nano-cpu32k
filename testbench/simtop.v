@@ -17,17 +17,6 @@ module simtop
    input                               clock,
    input                               reset,
 
-   input  [63:0]                       io_logCtrl_log_begin,
-   input  [63:0]                       io_logCtrl_log_end,
-   input  [63:0]                       io_logCtrl_log_level,
-   input                               io_perfInfo_clean,
-   input                               io_perfInfo_dump,
-
-   output                              io_uart_out_valid,
-   output [7:0]                        io_uart_out_ch,
-   output                              io_uart_in_valid,
-   input  [7:0]                        io_uart_in_ch,
-
    input                               `AXI_TOP_INTERFACE(aw_ready),
    output                              `AXI_TOP_INTERFACE(aw_valid),
    output [`AXI_ADDR_WIDTH-1:0]        `AXI_TOP_INTERFACE(aw_bits_addr),
@@ -277,10 +266,6 @@ module simtop
        .io_slave_arburst                (io_slave_arburst[1:0]),
        .io_slave_rready                 (io_slave_rready));
    
-   assign io_uart_out_valid = 'b0;
-   assign io_uart_out_ch = 'b0;
-   assign io_uart_in_valid = 'b0;
-    
    assign break_point = /*(U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.fls);*/
                         (U_DUT.U_CORE.U_EX.U_EPU.msr_evect_we);
    /*'b0;*/

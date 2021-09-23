@@ -23,4 +23,4 @@
 **/difftest
 !em/third-party/DRAMsim3
 myinfo.txt
-syn/
+fpga/
