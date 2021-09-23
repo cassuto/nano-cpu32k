@@ -316,6 +316,9 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     case INS32_OP_LDWU:
     {
         vm_addr_t va = get_reg(rs1) + (cpu_word_t)simm15;
+        if(pc==0x80002b08){
+            printf("ldw va=%#x\n", va);
+        }
         if (check_vma_align(va, 2) < 0)
         {
             pc_nxt = raise_exception(pc, vect_EALIGN, va, 0);

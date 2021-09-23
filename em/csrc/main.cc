@@ -87,7 +87,6 @@ public:
         vect_EITM = 0x1c;
         vect_EDTM = 0x20;
         vect_EALIGN = 0x24;
-        vect_EINT = 0x28;
 
         ram_size = 32 * 1024 * 1024;
         dmmu_tlb_count = 128;
@@ -129,7 +128,6 @@ public:
     phy_addr_t vect_EITM;
     phy_addr_t vect_EDTM;
     phy_addr_t vect_EALIGN;
-    phy_addr_t vect_EINT;
     int ram_size;
     int dmmu_tlb_count, immu_tlb_count;
     bool dmmu_enable_uncached_seg;
