@@ -105,7 +105,7 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
     }
     extern bool flag;
     if(flag && addr==4){
-        printf("w r4=%#x\n", val);
+        printf("w r4=%#x pc=%#x\n", val, pc);
     }
 }
 
