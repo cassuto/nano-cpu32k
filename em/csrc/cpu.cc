@@ -591,8 +591,11 @@ void CPU::run_step()
 {
     vm_addr_t npc = step(pc, false);
     extern bool flag;
-    if(flag)
-    printf("pc = %#x, npc=%#x\n", pc, npc);
+    static uint64_t cnt;
+    if(++cnt == 1000000) {
+        ras->dump();
+        cnt=0;
+    }
     pc = npc;
 }
 
