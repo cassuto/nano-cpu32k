@@ -83,9 +83,6 @@ bool last_ire = 1;
 
 void CPU::dbg()
 {
-    int irq_cnt = 0;
-    bool last_ire = 1;
-
     if (msr.PSR.IRE != last_ire)
     {
         last_ire = msr.PSR.IRE;
