@@ -96,6 +96,8 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             //ras->dump();
             if(val==0x123)
             flag=true;
+            if(val==0x456)
+            flag=false;
         }
         return;
     }
