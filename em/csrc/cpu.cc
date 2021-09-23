@@ -338,9 +338,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
-        //if(pc==0xc000438c){
-        //printf("ldw %#x va=%#x pa=%#x v=%#x\n", pc, va,pa,readout);
-        //}
     }
     break;
 
@@ -367,10 +364,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        //if(pa==0x81037dfc){
-        //    extern Emu *emu;
-        //    printf("stw %#x [%lu] va=%#x val=%#x\n", pc, emu->get_cycle(), va, (uint32_t)get_reg(rd));
-        //}
     }
     break;
 
@@ -591,7 +584,7 @@ flush_pc:
 void CPU::run_step()
 {
     vm_addr_t npc = step(pc, false);
-    //printf("pc = %#x, npc=%#x\n", pc, npc);
+    printf("pc = %#x, npc=%#x\n", pc, npc);
     pc = npc;
 }
 
