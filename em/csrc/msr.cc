@@ -91,7 +91,7 @@ void CPU::dbg()
         if (msr.PSR.IRE)
             printf("enaIRQ pc=%#x cyc=%d\n", pc, irq_cnt);
     }
-    if (irq_cnt == 1547){
+    if (irq_cnt == 1551){
         ras->dump();
     }
 
