@@ -19,7 +19,7 @@ Flash::Flash(DeviceTree *tree_, phy_addr_t mmio_base_, size_t size, FILE *image_
     {
         fseek(image_fp, 0, SEEK_SET);
         size_t actual_size = fread(mem, 1, size, image_fp);
-        fprintf(stderr, "Flash image loaded (%d bytes)\n", actual_size);
+        fprintf(stderr, "Flash image loaded (%lu bytes)\n", actual_size);
     }
 }
 
