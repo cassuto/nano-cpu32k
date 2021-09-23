@@ -261,6 +261,12 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
 cpu_word_t
 CPU::rmsr(msr_index_t index)
 {
+    if (index == MSR_PSR) {
+        printf("r psr RM=%d pc=%#x\n", msr.PSR.RM, pc);
+        //pc_queue->dump();
+        //panic(1);
+    }
+
     if (msr.PSR.RM)
     {
         cpu_word_t ret = 0;
