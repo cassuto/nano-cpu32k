@@ -86,13 +86,13 @@ void CPU::dbg(int excp)
     if (msr.PSR.IRE != last_ire || excp==2)
     {
         last_ire = msr.PSR.IRE;
-        if (!msr.PSR.IRE)
+        /*if (!msr.PSR.IRE)
             printf("disIRQ %d pc=%#x cyc=%d\n", excp, pc, irq_cnt);
         if (msr.PSR.IRE)
-            printf("enaIRQ %d pc=%#x cyc=%d\n", excp, pc, irq_cnt);
+            printf("enaIRQ %d pc=%#x cyc=%d\n", excp, pc, irq_cnt);*/
     }
     if (irq_cnt == 1551){
-        ras->dump();
+       // ras->dump();
     }
 
     ++irq_cnt;
