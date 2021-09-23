@@ -609,7 +609,7 @@ void CPU::run_step()
 vm_addr_t
 CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall)
 {
-    //printf("v=%#x\n", vector);
+    printf("v=%#x\n", vector);
     if ((vector == vect_EITM) ||
         (vector == vect_EIPF) ||
         (vector == vect_EINSN) ||
