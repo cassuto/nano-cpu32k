@@ -125,6 +125,8 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr_unpack_bit(PSR, DMME, val);
             msr_unpack_bit(PSR, ICAE, val);
             msr_unpack_bit(PSR, DCAE, val);
+            if(!msr.PSR.IRE)
+            printf("disIRQ pc=%#x\n", pc);
             break;
 
         case MSR_EPSR:
