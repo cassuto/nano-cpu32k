@@ -83,7 +83,7 @@ bool last_ire = 1;
 
 void CPU::dbg(int excp)
 {
-    if (msr.PSR.IRE != last_ire)
+    if (msr.PSR.IRE != last_ire || excp==2)
     {
         last_ire = msr.PSR.IRE;
         if (!msr.PSR.IRE)
