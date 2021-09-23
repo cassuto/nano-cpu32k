@@ -182,6 +182,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     }
 
     /* Access ICache */
+    check_vma_align(insn_pa, INSN_LEN);
     if (insn_uncached)
         insn = (insn_t)mem->phy_readm32(insn_pa);
     else
@@ -636,7 +637,7 @@ int CPU::check_vma_align(vm_addr_t va, int size)
     if (va & ((1 << size) - 1))
     {
         fprintf(stderr, "EALIGN: pc=%x va=%x\n", pc, va);
-        exit(1);
+        panic(1);
         return -EM_ALIGN_FAULT;
     }
     return 0;
