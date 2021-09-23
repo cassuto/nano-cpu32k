@@ -78,12 +78,12 @@ public:
         PSR.CY =
             PSR.OV =
                 PSR.OE =
-                    PSR.RM =
                         PSR.IRE =
                             PSR.IMME =
                                 PSR.DMME =
                                     PSR.ICAE =
                                         PSR.DCAE = 0;
+        PSR.RM = 1;
         EVECT = 0;
         TSR = 0;
         IMR = 0;
