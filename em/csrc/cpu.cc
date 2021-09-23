@@ -338,9 +338,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
-        if(pc==0x800001a8){
-            printf("restor va=%#x EPC %#x\n", va, readout);
-        }
     }
     break;
 
@@ -367,9 +364,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if(pc==0x80008dd4){
-            printf("store va=%#x EPC=%#x\n", va, (uint32_t)get_reg(rd));
-        }
     }
     break;
 
@@ -593,7 +587,7 @@ void CPU::run_step()
     extern bool flag;
     static uint64_t cnt;
     if(++cnt == 1000000) {
-        ras->dump();
+        //ras->dump();
         cnt=0;
     }
     pc = npc;
