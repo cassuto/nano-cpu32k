@@ -77,6 +77,8 @@ void CPU::warn_illegal_access_reg(const char *reg)
     fprintf(stderr, "warning: illegal access to %s in non-root mode at PC=%#x\n", reg, pc);
 }
 
+bool flag;
+
 void CPU::wmsr(msr_index_t index, cpu_word_t v)
 {
     cpu_unsigned_word_t val = v;
@@ -92,6 +94,8 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             while (*p)
                 fprintf(stdout, "%c", *p++);
             //ras->dump();
+            if(val==0x123)
+            flag=true;
         }
         return;
     }
