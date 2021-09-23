@@ -74,9 +74,7 @@ static const bool enable_irqc = 1;
 
 void CPU::warn_illegal_access_reg(const char *reg)
 {
-    pc_queue->dump();
     fprintf(stderr, "warning: illegal access to %s in non-root mode at PC=%#x\n", reg, pc);
-    panic(1);
 }
 
 void CPU::wmsr(msr_index_t index, cpu_word_t v)
@@ -121,7 +119,6 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr_unpack_bit(PSR, DMME, val);
             msr_unpack_bit(PSR, ICAE, val);
             msr_unpack_bit(PSR, DCAE, val);
-        printf("psr = %#x RM=%d pc=%#x\n", val, msr.PSR.RM, pc);
             break;
 
         case MSR_EPSR:
@@ -256,8 +253,6 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
 cpu_word_t
 CPU::rmsr(msr_index_t index)
 {
-    printf("r psr RM=%d pc=%#x\n", msr.PSR.RM, pc);
-
     if (msr.PSR.RM)
     {
         cpu_word_t ret = 0;

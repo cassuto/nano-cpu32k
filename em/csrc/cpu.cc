@@ -123,9 +123,8 @@ void CPU::reset(vm_addr_t reset_vect)
 {
     pc = reset_vect;
     std::memset(&regfile.r, 0, sizeof(regfile.r));
-
     /* Init MSR */
-    msr.PSR.RM = 1;
+    msr.reset();
 }
 
 static inline vm_signed_addr_t

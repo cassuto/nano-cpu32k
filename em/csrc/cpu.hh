@@ -75,14 +75,18 @@ public:
           DTLBL(new dtlbl_s[dmmu_tlb_count]),
           DTLBH(new dtlbh_s[dmmu_tlb_count])
     {
+        reset();
+    }
+    void reset()
+    {
         PSR.CY =
             PSR.OV =
                 PSR.OE =
-                        PSR.IRE =
-                            PSR.IMME =
-                                PSR.DMME =
-                                    PSR.ICAE =
-                                        PSR.DCAE = 0;
+                    PSR.IRE =
+                        PSR.IMME =
+                            PSR.DMME =
+                                PSR.ICAE =
+                                    PSR.DCAE = 0;
         PSR.RM = 1;
         EVECT = 0;
         TSR = 0;
