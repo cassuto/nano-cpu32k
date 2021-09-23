@@ -18,6 +18,7 @@ void CPU::tsc_clk()
             tsc_update_tcr();
         }
         ++msr.TSR;
+        printf("%lu\n", msr.TSR);
         if (msr.TSR == 0)
         {
             fprintf(stderr, "TSR overflow.\n");
