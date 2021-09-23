@@ -106,6 +106,12 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
         return;
     }
 
+    if (index == MSR_PSR && !msr.PSR.RM) {
+        printf("psr = %#x pc=%#x\n", val, pc);
+        pc_queue->dump();
+        panic(1);
+    }
+
     if (msr.PSR.RM)
     {
         switch (index)
@@ -121,7 +127,6 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr_unpack_bit(PSR, DMME, val);
             msr_unpack_bit(PSR, ICAE, val);
             msr_unpack_bit(PSR, DCAE, val);
-            printf("psr = %#x pc=%#x\n", val, pc);
             break;
 
         case MSR_EPSR:
@@ -272,7 +277,6 @@ CPU::rmsr(msr_index_t index)
             ret |= msr_pack_bit(PSR, DMME);
             ret |= msr_pack_bit(PSR, ICAE);
             ret |= msr_pack_bit(PSR, DCAE);
-            printf("r psr = %#x pc=%#x\n", ret, pc);
             return ret;
 
         case MSR_CPUID:
