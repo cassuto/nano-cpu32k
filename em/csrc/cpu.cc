@@ -610,6 +610,9 @@ void CPU::run_step()
     if(pc==0x8000019c){
         printf("rt_hw_context_switch_exit r2+12=%#x\n", get_reg(2)+12);
     }
+    if(pc==0x80008710){
+        printf("%#x r3=%#x\n", pc, get_reg(3));
+    }
     pc = npc;
 }
 
