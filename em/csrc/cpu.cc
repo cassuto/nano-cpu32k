@@ -613,6 +613,9 @@ void CPU::run_step()
     if(pc==0x80008710){
         printf("==%#x r3=%#x r2-4=%#x\n", pc, get_reg(3), get_reg(2)-4);
     }
+    if(pc==0x80008730){
+        printf("**%#x r2-4=%#x\n", pc, get_reg(2)-4);
+    }
     pc = npc;
 }
 
