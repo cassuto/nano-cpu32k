@@ -598,6 +598,9 @@ void CPU::run_step()
         //ras->dump();
         cnt=0;
     }
+    if(npc==0xdeadbee3){
+        printf("pc=%#x\n", pc);
+    }
     pc = npc;
 }
 
