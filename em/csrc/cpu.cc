@@ -613,6 +613,10 @@ void CPU::run_step()
     if(npc==0xdeadbee3){
         printf("pc=%#x\n", pc);
     }
+    if(npc==0x8000019c){
+        printf("call switch exit pc=%#x\n", pc);
+        panic(1);
+    }
     pc = npc;
 }
 
