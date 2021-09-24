@@ -375,9 +375,9 @@ printf("load pc=%#x va=%#x d=%#x\n", pc, va, readout);
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if (va==0x800248c8)//((uint32_t)get_reg(rd) == 0xdeadbeef)
+        if (va==0x80024938)//((uint32_t)get_reg(rd) == 0xdeadbeef)
         {
-            printf("store pc=%#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
+            printf("-----store pc=%#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
     }
     break;
