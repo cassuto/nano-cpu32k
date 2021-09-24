@@ -605,7 +605,10 @@ void CPU::run_step()
         //printf("%#x r3 = %#x\n", pc, get_reg(3));
     }
     if(pc==0x80000120){
-        printf("context store pc=%#x r3=%#x\n", pc, get_reg(3));
+        printf("context_switch store pc=%#x r3=%#x\n", pc, get_reg(3));
+    }
+    if(pc==0x80008dd8){
+        printf("interrupt context store pc=%#x r3=%#x\n", pc, get_reg(3));
     }
     if(npc==0xdeadbee3){
         printf("pc=%#x\n", pc);
