@@ -103,10 +103,6 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
     {
         regfile.r[addr] = val;
     }
-    if (val == 0xdeadbeef)
-    {
-        printf("set reg dead reg=%d pc=%#x\n", addr, pc);
-    }
 }
 
 cpu_word_t
@@ -343,10 +339,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
-        if (pc == 0x80002a24)
-        {
-            //printf("ldw va=%#x d=%#x\n", va, readout);
-        }
     }
     break;
 
@@ -432,6 +424,10 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             readout = (((cpu_word_t)dcache->phy_readm16(pa)) ^ 0x8000) - 0x8000; /* sign ext */
         set_reg(rd, readout);
+        if (readout == 0xdeadbeef)
+        {
+            printf("load bad pc=%#x va=%#x\n", pc, va);
+        }
     }
     break;
     case INS32_OP_STH:
@@ -604,33 +600,6 @@ void CPU::run_step()
     {
         //ras->dump();
         cnt = 0;
-    }
-    if (pc == 0x800001ac)
-    {
-        printf("%#x r4 = %#x\n", pc, get_reg(4));
-    }
-    if (pc == 0x80000120)
-    {
-        printf("context_switch store pc=%#x r2+12=%#x r3=%#x\n", pc, get_reg(2) + 12, get_reg(3));
-        if(get_reg(2)+12 == 0x800248c8){
-            printf("=========================================\n");
-        }
-    }
-    if(pc==0x800001b4){
-        printf("context_switch restore pc=%#x r2+12=%#x r3=%#x\n", pc, get_reg(2) + 12, get_reg(3));
-    }
-    if (pc == 0x80008dd8)
-    {
-        printf("interrupt context store pc=%#x r3=%#x\n", pc, get_reg(3));
-    }
-    if (npc == 0xdeadbee3)
-    {
-        printf("pc=%#x\n", pc);
-    }
-    if (npc == 0x8000019c)
-    {
-        printf("call switch exit pc=%#x\n", pc);
-        //panic(1);
     }
     pc = npc;
 }
