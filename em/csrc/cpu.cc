@@ -601,6 +601,9 @@ void CPU::run_step()
         //ras->dump();
         cnt = 0;
     }
+    if(pc==0x8000019c){
+        printf("rt_hw_context_switch_exit r2+12=%#x\n", get_reg(2)+12);
+    }
     pc = npc;
 }
 
