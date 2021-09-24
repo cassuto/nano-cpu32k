@@ -104,7 +104,7 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
         regfile.r[addr] = val;
     }
     if(addr==3 && val==0xdeadbeef){
-        printf("%#x %#x\n", addr, val);
+        printf("set reg %#d = %#x pc=%#x\n", addr, val, pc);
     }
 }
 
