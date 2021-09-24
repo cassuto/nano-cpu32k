@@ -371,7 +371,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if((uint32_t)get_reg(rd)==0xbadbeef){
+        if((uint32_t)get_reg(rd)==0xbadbeef || pc==0x80008610){
             printf("store bad va=%#x d=%#x\n", va, (uint32_t)get_reg(rd));
         }
     }
