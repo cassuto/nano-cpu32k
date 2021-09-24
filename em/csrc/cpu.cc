@@ -602,7 +602,7 @@ void CPU::run_step()
         cnt=0;
     }
     if(pc==0x80008710 || pc==0x800086d8){
-        printf("%#x r3 = %#x\n", pc, get_reg(3));
+        //printf("%#x r3 = %#x\n", pc, get_reg(3));
     }
     if(npc==0xdeadbee3){
         printf("pc=%#x\n", pc);
