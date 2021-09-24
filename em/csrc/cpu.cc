@@ -612,6 +612,9 @@ void CPU::run_step()
     if (pc == 0x80000120)
     {
         printf("context_switch store pc=%#x r2+12=%#x r3=%#x\n", pc, get_reg(2) + 12, get_reg(3));
+        if(get_reg(2)+12 == 0x800248c8){
+            printf("=========================================\n");
+        }
     }
     if(pc==0x800001b4){
         printf("context_switch restore pc=%#x r2+12=%#x r3=%#x\n", pc, get_reg(2) + 12, get_reg(3));
