@@ -601,8 +601,8 @@ void CPU::run_step()
         //ras->dump();
         cnt=0;
     }
-    if(pc==0x80008710 || pc==0x800086d8){
-        //printf("%#x r3 = %#x\n", pc, get_reg(3));
+    if(pc==0x800001ac){
+        printf("%#x r4 = %#x\n", pc, get_reg(4));
     }
     if(pc==0x80000120){
         printf("context_switch store pc=%#x r3=%#x\n", pc, get_reg(3));
