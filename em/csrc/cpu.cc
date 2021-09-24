@@ -104,7 +104,7 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
         regfile.r[addr] = val;
     }
     if(val==0xdeadbeef){
-        //printf("set reg dead reg=%d pc=%#x\n", addr, pc);
+        printf("set reg dead reg=%d pc=%#x\n", addr, pc);
     }
 }
 
@@ -371,7 +371,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if((uint32_t)get_reg(rd)==0xbadbeef || pc==0x80008610){
+        if((uint32_t)get_reg(rd)==0xdeadbeef){
             printf("store bad va=%#x d=%#x\n", va, (uint32_t)get_reg(rd));
         }
     }
