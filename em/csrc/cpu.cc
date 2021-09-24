@@ -103,6 +103,9 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
     {
         regfile.r[addr] = val;
     }
+    if(val=0xdeadbee3){
+        printf("dead pc=%#x\n", pc);
+    }
 }
 
 cpu_word_t
