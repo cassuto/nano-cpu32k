@@ -347,7 +347,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             printf("load bad pc=%#x va=%#x\n", pc, va);
         }
         if(va==0x800248c8){
-printf("load pc=%#x va=%#x\n", pc, va);
+printf("load pc=%#x va=%#x d=%#x\n", pc, va, readout);
         }
     }
     break;
