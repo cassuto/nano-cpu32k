@@ -601,6 +601,9 @@ void CPU::run_step()
         //ras->dump();
         cnt=0;
     }
+    if(pc==0x80008710){
+        printf("r3 = %#x\n", get_reg(3));
+    }
     if(npc==0xdeadbee3){
         printf("pc=%#x\n", pc);
     }
