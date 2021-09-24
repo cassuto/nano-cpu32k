@@ -103,7 +103,8 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
     {
         regfile.r[addr] = val;
     }
-    if(val==0xdeadbeef){
+    if (val == 0xdeadbeef)
+    {
         printf("set reg dead reg=%d pc=%#x\n", addr, pc);
     }
 }
@@ -342,7 +343,8 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
-        if(pc==0x80002a24){
+        if (pc == 0x80002a24)
+        {
             //printf("ldw va=%#x d=%#x\n", va, readout);
         }
     }
@@ -371,7 +373,8 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if((uint32_t)get_reg(rd)==0xdeadbeef){
+        if ((uint32_t)get_reg(rd) == 0xdeadbeef)
+        {
             printf("store bad pc=%#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
     }
@@ -597,23 +600,29 @@ void CPU::run_step()
     vm_addr_t npc = step(pc, false);
     extern bool flag;
     static uint64_t cnt;
-    if(++cnt == 1000000) {
+    if (++cnt == 1000000)
+    {
         //ras->dump();
-        cnt=0;
+        cnt = 0;
     }
-    if(pc==0x800001ac){
+    if (pc == 0x800001ac)
+    {
         printf("%#x r4 = %#x\n", pc, get_reg(4));
     }
-    if(pc==0x80000120){
-        printf("context_switch store pc=%#x r3=%#x\n", pc, get_reg(3));
+    if (pc == 0x80000120)
+    {
+        printf("context_switch store pc=%#x r2+12=%#x r3=%#x\n", pc, get_reg(2) + 12, get_reg(3));
     }
-    if(pc==0x80008dd8){
+    if (pc == 0x80008dd8)
+    {
         printf("interrupt context store pc=%#x r3=%#x\n", pc, get_reg(3));
     }
-    if(npc==0xdeadbee3){
+    if (npc == 0xdeadbee3)
+    {
         printf("pc=%#x\n", pc);
     }
-    if(npc==0x8000019c){
+    if (npc == 0x8000019c)
+    {
         printf("call switch exit pc=%#x\n", pc);
         //panic(1);
     }
