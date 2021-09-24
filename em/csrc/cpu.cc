@@ -339,6 +339,10 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
+        if (readout == 0xdeadbeef)
+        {
+            printf("load bad pc=%#x va=%#x\n", pc, va);
+        }
     }
     break;
 
@@ -424,10 +428,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             readout = (((cpu_word_t)dcache->phy_readm16(pa)) ^ 0x8000) - 0x8000; /* sign ext */
         set_reg(rd, readout);
-        if (readout == 0xdeadbeef)
-        {
-            printf("load bad pc=%#x va=%#x\n", pc, va);
-        }
     }
     break;
     case INS32_OP_STH:
