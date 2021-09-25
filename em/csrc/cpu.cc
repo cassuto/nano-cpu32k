@@ -618,8 +618,9 @@ void CPU::run_step()
         printf("**%#x r2-4=%#x\n", pc, get_reg(2)-4);
     }
 #endif
-    if (npc==0){
+    if (npc==0xc2000000){
         printf("hit bad pc=%#x\n", pc);
+        panic(1);
     }
     pc = npc;
 }
