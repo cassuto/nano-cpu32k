@@ -90,7 +90,7 @@ public:
         PSR.RM = 1;
         EVECT = 0;
         TSR = 0;
-        IMR = 0;
+        IMR = 0xffffffff;
         IRR = 0;
     }
     struct psr_s PSR;
