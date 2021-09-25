@@ -618,7 +618,7 @@ void CPU::run_step()
         printf("**%#x r2-4=%#x\n", pc, get_reg(2)-4);
     }
 #endif
-    if (npc==0xc2000000){
+    if (npc>0xc047cec0){
         printf("hit bad pc=%#x\n", pc);
         panic(1);
     }
@@ -634,7 +634,7 @@ void CPU::run_step()
 vm_addr_t
 CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall)
 {
-    printf("v=%#x\n", vector);
+    //printf("v=%#x\n", vector);
     if ((vector == vect_EITM) ||
         (vector == vect_EIPF) ||
         (vector == vect_EINSN) ||
