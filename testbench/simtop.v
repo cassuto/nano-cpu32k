@@ -268,7 +268,7 @@ module simtop
    
    assign break_point = /*(U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.fls);*/
                         /*(U_DUT.U_CORE.U_EX.U_EPU.msr_evect_we)*/
-                        U_DUT.U_CORE.U_EX.U_EPU.U_TSC.tsc_irq;
+                        U_DUT.U_CORE.U_ID.irq_async;
    /*'b0;*/
     
 endmodule
