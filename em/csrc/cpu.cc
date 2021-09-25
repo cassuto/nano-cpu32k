@@ -344,10 +344,10 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         set_reg(rd, readout);
         if (readout == 0xdeadbeef)
         {
-            printf("load bad pc=%#x va=%#x\n", pc, va);
+            //printf("load bad pc=%#x va=%#x\n", pc, va);
         }
         if(va==0x800248c8){
-printf("load pc=%#x va=%#x d=%#x\n", pc, va, readout);
+//printf("load pc=%#x va=%#x d=%#x\n", pc, va, readout);
         }
     }
     break;
@@ -377,7 +377,7 @@ printf("load pc=%#x va=%#x d=%#x\n", pc, va, readout);
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
         if (va==0x80024938)//((uint32_t)get_reg(rd) == 0xdeadbeef)
         {
-            printf("-----store pc=%#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
+            //printf("-----store pc=%#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
     }
     break;
@@ -607,6 +607,7 @@ void CPU::run_step()
         //ras->dump();
         cnt = 0;
     }
+#if 0
     if(pc==0x8000019c){
         printf("rt_hw_context_switch_exit r2+12=%#x\n", get_reg(2)+12);
     }
@@ -615,6 +616,10 @@ void CPU::run_step()
     }
     if(pc==0x80008730){
         printf("**%#x r2-4=%#x\n", pc, get_reg(2)-4);
+    }
+#endif
+    if (npc==0){
+        printf("hit bad pc=%#x\n", pc);
     }
     pc = npc;
 }
