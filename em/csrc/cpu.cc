@@ -92,6 +92,7 @@ CPU::~CPU()
     delete pc_queue;
 }
 
+bool ff2;
 void CPU::set_reg(uint16_t addr, cpu_word_t val)
 {
     if (addr >= 32)
@@ -103,7 +104,12 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
     {
         regfile.r[addr] = val;
     }
-    if(addr==3 && val==0xdeadbeef){
+    if (addr == 3 && val == 0xdeadbeef)
+    {
+        printf("set reg %d = %#x pc=%#x\n", addr, val, pc);
+    }
+    if (addr == 2 && ff2)
+    {
         printf("set reg %d = %#x pc=%#x\n", addr, val, pc);
     }
 }
@@ -346,10 +352,12 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         {
             //printf("load bad pc=%#x va=%#x\n", pc, va);
         }
-        if(va==0x800248c8){
-//printf("load pc=%#x va=%#x d=%#x\n", pc, va, readout);
+        if (va == 0x800248c8)
+        {
+            //printf("load pc=%#x va=%#x d=%#x\n", pc, va, readout);
         }
-        if(pc==0xc02c4bf0){
+        if (pc == 0xc02c4bf0)
+        {
             printf("ldw va=%#x d=%#x\n", va, readout);
         }
     }
@@ -378,11 +386,12 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if (va==0x80024938)//((uint32_t)get_reg(rd) == 0xdeadbeef)
+        if (va == 0x80024938) //((uint32_t)get_reg(rd) == 0xdeadbeef)
         {
             //printf("-----store pc=%#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
-        if(pc==0xc02c4b90){
+        if (pc == 0xc02c4b90)
+        {
             printf("stw va=%#x d=%#x\n", va, (uint32_t)get_reg(rd));
         }
     }
@@ -624,12 +633,18 @@ void CPU::run_step()
         printf("**%#x r2-4=%#x\n", pc, get_reg(2)-4);
     }
 #endif
-    if (npc>0xc0466000){
+    if (npc > 0xc0466000)
+    {
         printf("hit bad pc=%#x npc=%#x\n", pc, npc);
         panic(1);
     }
-    if(pc==0xc02c4b98 || pc==0xc02c4bf0){
-        printf("%#x r2=%#x\n", pc, get_reg(2));
+    if (pc == 0xc02c4b98)
+        ff2 = true;
+    if (pc == 0xc02c4bf0)
+        ff2 = false;
+    if (pc == 0xc02c4b98 || pc == 0xc02c4bf0)
+    {
+        printf("---%#x r2=%#x\n", pc, get_reg(2));
     }
     pc = npc;
 }
