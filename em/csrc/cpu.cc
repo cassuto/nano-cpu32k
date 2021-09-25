@@ -92,7 +92,6 @@ CPU::~CPU()
     delete pc_queue;
 }
 
-bool ff2;
 void CPU::set_reg(uint16_t addr, cpu_word_t val)
 {
     if (addr >= 32)
@@ -105,10 +104,6 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
         regfile.r[addr] = val;
     }
     if (addr == 3 && val == 0xdeadbeef)
-    {
-        printf("set reg %d = %#x pc=%#x\n", addr, val, pc);
-    }
-    if ((addr == 2 || addr==3) && ff2)
     {
         printf("set reg %d = %#x pc=%#x\n", addr, val, pc);
     }
@@ -358,7 +353,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         }
         if (pc == 0xc02c4bf0)
         {
-            printf("ldw va=%#x d=%#x\n", va, readout);
+            //printf("ldw va=%#x d=%#x\n", va, readout);
         }
     }
     break;
@@ -392,7 +387,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         }
         if (pc==0xc02c4600)
         {
-            printf("stw %#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
+            //printf("stw %#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
     }
     break;
@@ -633,19 +628,6 @@ void CPU::run_step()
         printf("**%#x r2-4=%#x\n", pc, get_reg(2)-4);
     }
 #endif
-    if (npc > 0xc0466000)
-    {
-        printf("hit bad pc=%#x npc=%#x\n", pc, npc);
-        panic(1);
-    }
-    if (pc == 0xc02c4b98)
-        ff2 = true;
-    if (pc == 0xc02c4bf0)
-        ff2 = false;
-    if (pc == 0xc02c4b98 || pc == 0xc02c4bf0)
-    {
-        printf("---%#x r2=%#x\n", pc, get_reg(2));
-    }
     pc = npc;
 }
 
