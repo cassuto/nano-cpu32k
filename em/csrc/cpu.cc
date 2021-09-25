@@ -619,7 +619,7 @@ void CPU::run_step()
     }
 #endif
     if (npc>0xc02d5764){
-        printf("hit bad pc=%#x\n", pc);
+        printf("hit bad pc=%#x npc=%#x\n", pc, npc);
         panic(1);
     }
     pc = npc;
