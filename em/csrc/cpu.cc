@@ -628,6 +628,9 @@ void CPU::run_step()
         printf("hit bad pc=%#x npc=%#x\n", pc, npc);
         panic(1);
     }
+    if(pc==0xc02c4b98 || pc==0xc02c4bf0){
+        printf("%#x r2=%#x\n", pc, get_reg(2));
+    }
     pc = npc;
 }
 
