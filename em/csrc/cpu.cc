@@ -646,6 +646,8 @@ void CPU::run_step()
     {
         printf("---%#x r2=%#x\n", pc, get_reg(2));
     }
+    if(ff2)
+    printf("pc=%#x\n",pc);
     pc = npc;
 }
 
