@@ -390,9 +390,9 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         {
             //printf("-----store pc=%#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
-        if (pc == 0xc02c4b90)
+        if (pc == 0xc02c4b90 || pc==0xc02c4600)
         {
-            printf("stw va=%#x d=%#x\n", va, (uint32_t)get_reg(rd));
+            printf("stw %#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
     }
     break;
@@ -646,8 +646,6 @@ void CPU::run_step()
     {
         printf("---%#x r2=%#x\n", pc, get_reg(2));
     }
-    if(ff2)
-    printf("pc=%#x\n",pc);
     pc = npc;
 }
 
