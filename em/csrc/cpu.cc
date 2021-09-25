@@ -108,7 +108,7 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
     {
         printf("set reg %d = %#x pc=%#x\n", addr, val, pc);
     }
-    if (addr == 2 && ff2)
+    if ((addr == 2 || addr==3) && ff2)
     {
         printf("set reg %d = %#x pc=%#x\n", addr, val, pc);
     }
@@ -390,7 +390,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         {
             //printf("-----store pc=%#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
-        if (pc == 0xc02c4b90 || pc==0xc02c4600)
+        if (pc==0xc02c4600)
         {
             printf("stw %#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
