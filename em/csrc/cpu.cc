@@ -618,7 +618,7 @@ void CPU::run_step()
         printf("**%#x r2-4=%#x\n", pc, get_reg(2)-4);
     }
 #endif
-    if (npc>0xc02d5764){
+    if (npc>0xc0466000){
         printf("hit bad pc=%#x npc=%#x\n", pc, npc);
         panic(1);
     }
