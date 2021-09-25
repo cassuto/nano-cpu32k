@@ -349,6 +349,9 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         if(va==0x800248c8){
 //printf("load pc=%#x va=%#x d=%#x\n", pc, va, readout);
         }
+        if(pc==0xc02c4bf0){
+            printf("ldw va=%#x d=%#x\n", va, readout);
+        }
     }
     break;
 
