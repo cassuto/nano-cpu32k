@@ -267,7 +267,8 @@ module simtop
        .io_slave_rready                 (io_slave_rready));
    
    assign break_point = /*(U_DUT.U_CORE.U_EX.U_LSU.U_D_CACHE.fls);*/
-                        (U_DUT.U_CORE.U_EX.U_EPU.msr_evect_we);
+                        /*(U_DUT.U_CORE.U_EX.U_EPU.msr_evect_we)*/
+                        U_DUT.U_CORE.U_EX.U_EPU.U_TSC.tsc_irq;
    /*'b0;*/
     
 endmodule
