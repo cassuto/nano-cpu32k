@@ -629,7 +629,7 @@ void CPU::run_step()
     }
 #endif
     //if(npc==0 || npc==0x80000100){
-       // printf("npc=%#x pc=%#x\n", npc, pc);
+        printf("npc=%#x pc=%#x\n", npc, pc);
     //}
     pc = npc;
 }
