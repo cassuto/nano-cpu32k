@@ -1,6 +1,8 @@
 #ifndef ISA_H
 #define ISA_H
 
+#include "common.hh"
+
 /*
  * Opcodes
  */
@@ -58,25 +60,29 @@
 #define INS32_OP_LDWA   0x50
 #define INS32_OP_STWA   0x51
 
-#define INS32_MASK_OPCODE   0x0000007f
-#define INS32_MASK_RD       0x00000f80
+#define INS32_MASK_OPCODE   0x00000fe0
+#define INS32_MASK_RD       0x0000001f
 #define INS32_MASK_RS1      0x0001f000
 #define INS32_MASK_RS2      0x003e0000
 #define INS32_MASK_IMM15    0xfffe0000
-#define INS32_MASK_IMM17    0x1ffff000
+#define INS32_MASK_IMM17    0xffff8000
 #define INS32_MASK_REL15    0xfffe0000
-#define INS32_MASK_REL25    0xffffff80
-#define INS32_MASK_COND     0xffc00000
+#define INS32_MASK_REL25    0xfffff01f
+#define INS32_MASK_FMT1_OPC2     0xffc00000
 
-#define INS32_SHIFTRIGHT_OPCODE   0
-#define INS32_SHIFTRIGHT_RD       7
-#define INS32_SHIFTRIGHT_RS1      (7+5)
-#define INS32_SHIFTRIGHT_RS2      (7+5+5)
-#define INS32_SHIFTRIGHT_IMM15    (7+5+5)
-#define INS32_SHIFTRIGHT_IMM17    (7+5)
-#define INS32_SHIFTRIGHT_REL15    (7+5+5)
-#define INS32_SHIFTRIGHT_REL25    (7)
-#define INS32_SHIFTRIGHT_COND     (7+5+5+5)
+#define INS32_SHIFTRIGHT_OPCODE   5
+#define INS32_SHIFTRIGHT_RD       0
+#define INS32_SHIFTRIGHT_RS1      (5+7)
+#define INS32_SHIFTRIGHT_RS2      (5+7+5)
+#define INS32_SHIFTRIGHT_IMM15    (5+7+5)
+#define INS32_SHIFTRIGHT_IMM17    (5+7+3)
+#define INS32_SHIFTRIGHT_REL15    (5+7+5)
+#define INS32_SHIFTRIGHT_FMT1_OPC2     (5+7+5+5)
+
+static inline uint32_t ins32_parse_rel25(insn_t insn)
+{
+    return (insn&0x1f) | (((insn>>12)&0xfffff)<<5);
+}
 
 #define INS32_GET_BITS(src, opc) ((uint32_t)((src) & INS32_MASK_ ## opc) >> (INS32_SHIFTRIGHT_ ## opc))
 

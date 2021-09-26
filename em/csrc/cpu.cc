@@ -197,7 +197,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         event->insn = insn;
 
     /* decode and execute */
-    opcode = insn & INS32_MASK_OPCODE;
+    opcode = INS32_GET_BITS(insn, OPCODE);
     rs1 = INS32_GET_BITS(insn, RS1);
     rs2 = INS32_GET_BITS(insn, RS2);
     rd = INS32_GET_BITS(insn, RD);
@@ -205,7 +205,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     uimm15 = INS32_GET_BITS(insn, IMM15);
     simm15 = (((int16_t)uimm15) ^ 0x4000) - 0x4000; /* sign extend */
     rel15 = INS32_GET_BITS(insn, REL15);
-    rel25 = INS32_GET_BITS(insn, REL25);
+    rel25 = ins32_parse_rel25(insn);
 
     switch (opcode)
     {

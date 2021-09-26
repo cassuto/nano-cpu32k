@@ -192,14 +192,14 @@ module id_dec
    
    assign msk = ((~|id_exc) & ~irq_async & id_valid);
    
-   assign f_opcode = id_ins[6:0] & {7{msk}}; // 7'b000000 is `add r0,r0,r0`, i.e., NOP.
-   assign f_rd = id_ins[11:7];
+   assign f_opcode = id_ins[11:5] & {7{msk}}; // 7'b000000 is `add r0,r0,r0`, i.e., NOP.
+   assign f_rd = id_ins[4:0];
    assign f_rs1 = id_ins[16:12];
    assign f_rs2 = id_ins[21:17];
    assign f_imm15 = id_ins[31:17];
-   assign f_imm17 = id_ins[28:12];
+   assign f_imm17 = id_ins[31:15];
    assign f_rel15 = id_ins[31:17];
-   assign f_rel25 = id_ins[31:7];
+   assign f_rel25 = {id_ins[31:12], id_ins[4:0]};
 
    assign enable_asr = 1'b1;
    assign enable_asr_i = 1'b1;
