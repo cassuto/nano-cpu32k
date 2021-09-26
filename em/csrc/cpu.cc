@@ -628,8 +628,8 @@ void CPU::run_step()
         printf("**%#x r2-4=%#x\n", pc, get_reg(2)-4);
     }
 #endif
-    if(npc==0){
-        printf("pc=%#x\n", pc);
+    if(npc==0 || npc==0x80000100){
+        printf("npc=%#x pc=%#x\n", npc, pc);
     }
     pc = npc;
 }
