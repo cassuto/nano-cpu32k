@@ -598,7 +598,7 @@ module ex_epu
 `endif
    // synthesis translate_on
 
-   ex_epu_irqc
+   ex_irqc
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_DW                      (CONFIG_DW),
@@ -617,7 +617,7 @@ module ex_epu
        .msr_irqc_imr_nxt                (msr_irqc_imr_nxt[CONFIG_DW-1:0]),
        .msr_irqc_imr_we                 (msr_irqc_imr_we));
 
-   ex_epu_tsc
+   ex_tsc
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_DW                      (CONFIG_DW))

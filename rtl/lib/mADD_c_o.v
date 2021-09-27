@@ -22,27 +22,25 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-`include "ncpu64k_config.vh"
-
-module ex_add
+module mADD_c_o
 #(
-   parameter                           CONFIG_DW = 0
+   parameter                           DW = 0
 )
 (
-   input [CONFIG_DW-1:0]               a,
-   input [CONFIG_DW-1:0]               b,
+   input [DW-1:0]                      a,
+   input [DW-1:0]                      b,
    input                               s,
-   output [CONFIG_DW-1:0]              sum,
+   output [DW-1:0]                     sum,
    output                              carry,
    output                              overflow
 );
    wire                                ci;
-   wire [CONFIG_DW-1:0]                op2;
+   wire [DW-1:0]                       op2;
 
    assign op2 = (s) ? ~b : b;
    assign ci = (s);
-   assign {carry, sum} = a + op2 + {{CONFIG_DW-1{1'b0}}, ci};
-   assign overflow = ((a[CONFIG_DW-1] == op2[CONFIG_DW-1]) &
-                        (a[CONFIG_DW-1] ^ sum[CONFIG_DW-1]));
+   assign {carry, sum} = a + op2 + {{DW-1{1'b0}}, ci};
+   assign overflow = ((a[DW-1] == op2[DW-1]) &
+                        (a[DW-1] ^ sum[DW-1]));
 
 endmodule

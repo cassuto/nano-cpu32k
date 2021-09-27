@@ -538,7 +538,7 @@ module ncpu64k
          .p_ce_s2                         (U_EX.p_ce_s2),
          .p_ce_s3                         (U_EX.p_ce_s3),
          .id_ins                          (id_ins),
-         .id_irqc_irr                     (U_EX.U_EPU.U_IRQC.msr_irqc_irr),
+         .id_irqc_irr                     (U_EX.U_PIPE_U.U_EPU.U_IRQC.msr_irqc_irr),
          .commit_valid                    (U_EX.commit_valid),
          .commit_pc                       (U_EX.commit_pc),
          .commit_rf_wdat                  (commit_rf_wdat),
