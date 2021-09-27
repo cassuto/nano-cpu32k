@@ -14,8 +14,7 @@ DevicePbUart::DevicePbUart(DeviceTree *tree_, phy_addr_t mmio_base, int irq_, co
 
     reset();
     /* Startup virtual UART */
-    if (!tree->in_difftest())
-        virt_uart_init(virt_uart_file);
+    virt_uart_init(virt_uart_file, tree->in_difftest());
 
     /*
      * Register it on MMIO
@@ -160,7 +159,7 @@ void DevicePbUart::step()
     // Updating IRQs if no previous IRQ
     if ((IIR)&0x1)
     {
-        if (!tree->in_difftest() && virt_uart_poll_read((char *)&RBR, 1))
+        if (virt_uart_poll_read((char *)&RBR))
         {
             fprintf(stderr, "input: %c(%d)\n", RBR, RBR);
             dat_ready = 1;

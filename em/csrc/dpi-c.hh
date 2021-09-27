@@ -54,6 +54,6 @@ extern "C" void dpic_regfile(
     int r31
 );
 
-extern void enable_difftest(CPU *cpu_, Emu *emu_, uint64_t commit_timeout_max_);
+extern void startup_difftest(CPU *cpu_, Emu *emu_, uint64_t commit_timeout_max_);
 
 #endif // DPI_C_HH_

@@ -561,9 +561,6 @@ module ex
 `define test_stall 1'b0
 `endif
    
-   // Stall if ICINV is temporarily unavailable during access
-   assign icinv_stall_req = (msr_icinv_we & ~msr_icinv_ready);
-   
    //
    // Pipeline stall scope:
    // +---------------------+--------------------------------------+

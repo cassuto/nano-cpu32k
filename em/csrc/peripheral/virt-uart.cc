@@ -9,8 +9,17 @@ static HANDLE ser;
 #include "common.hh"
 #include "virt-uart.hh"
 
-int virt_uart_init(const char *filename)
+static bool inited, in_difftest;
+static char dat;
+static bool dat_pending_for_difftest;
+
+int virt_uart_init(const char *filename, bool in_difftest_)
 {
+    in_difftest |= in_difftest_;
+    if (inited | in_difftest_)
+        return 0;
+    inited = true;
+    
 #if defined(_WIN32) || defined(__CYGWIN__)
     ser = CreateFileA(filename, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     if (ser == INVALID_HANDLE_VALUE)
@@ -75,8 +84,15 @@ void virt_uart_write(const char *buf)
     }
 }
 
-int virt_uart_poll_read(char *buf, int n)
+int virt_uart_poll_read(char *ch)
 {
+    if (dat_pending_for_difftest)
+    {
+        *ch = dat;
+        dat_pending_for_difftest = false;
+        return 1;
+    }
+
 #if defined(_WIN32) || defined(__CYGWIN__)
     COMSTAT stat;
     DWORD error;
@@ -94,9 +110,7 @@ int virt_uart_poll_read(char *buf, int n)
         OVERLAPPED overlapped;
         memset(&overlapped, 0, sizeof(OVERLAPPED));
 
-        int buf_len = MIN(n, (int)stat.cbInQue);
-
-        if (!ReadFile(ser, buf, buf_len, &len, &overlapped))
+        if (!ReadFile(ser, ch, 1, &len, &overlapped))
         {
             if (GetLastError() == ERROR_IO_PENDING) // End async I/O
             {
@@ -109,6 +123,11 @@ int virt_uart_poll_read(char *buf, int n)
             }
             else
                 return 0;
+        }
+        if (len && in_difftest)
+        {
+            dat = *ch;
+            dat_pending_for_difftest = true;
         }
         return len;
     }

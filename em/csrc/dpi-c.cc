@@ -47,7 +47,7 @@ static svBit rtl_excp[rtl_num_channel];
 static int rtl_excp_vect[rtl_num_channel];
 static int rtl_irqc_irr[rtl_num_channel];
 
-void enable_difftest(CPU *cpu_, Emu *emu_, uint64_t commit_timeout_max_)
+void startup_difftest(CPU *cpu_, Emu *emu_, uint64_t commit_timeout_max_)
 {
     dpic_enable = true;
     dpic_emu_CPU = cpu_;

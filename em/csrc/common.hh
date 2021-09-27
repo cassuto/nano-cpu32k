@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cassert>
 #include <string>
+#include <algorithm>
 
 typedef int32_t cpu_word_t;
 typedef uint32_t cpu_unsigned_word_t;

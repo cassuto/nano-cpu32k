@@ -405,7 +405,7 @@ int main(int argc, char *argv[])
                                  flash_image_fp);
 
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU, rtl_memory);
-        enable_difftest(emu_CPU, emu, args.commit_timeout_max);
+        startup_difftest(emu_CPU, emu, args.commit_timeout_max);
         for (;;)
         {
             if (emu->clk())
@@ -413,6 +413,7 @@ int main(int argc, char *argv[])
                 retcode = -1;
                 break;
             }
+            emu_dev->step();
             rtl_dev->step();
         }
         emu->finish();
@@ -431,6 +432,7 @@ int main(int argc, char *argv[])
                 retcode = -1;
                 break;
             }
+            emu_dev->step();
             cycle = emu->get_cycle();
             if (cycle - last_cycle >= 100000UL)
             {
