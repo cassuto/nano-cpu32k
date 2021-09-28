@@ -22,6 +22,7 @@ private:
     DeviceTree *tree;
     uint8_t *mem;
     phy_addr_t mmio_base;
+    size_t image_size;
 };
 
 #endif

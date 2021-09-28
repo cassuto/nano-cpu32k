@@ -18,8 +18,8 @@ Flash::Flash(DeviceTree *tree_, phy_addr_t mmio_base_, size_t size, FILE *image_
     if (image_fp)
     {
         fseek(image_fp, 0, SEEK_SET);
-        size_t actual_size = fread(mem, 1, size, image_fp);
-        fprintf(stderr, "Flash image loaded (%lu bytes)\n", actual_size);
+        image_size = fread(mem, 1, size, image_fp);
+        fprintf(stderr, "Flash image loaded (%lu bytes)\n", image_size);
     }
 }
 
@@ -30,34 +30,44 @@ Flash::~Flash()
 
 void Flash::writem8(phy_addr_t addr, uint8_t val, void *opaque)
 {
+    if (addr >= image_size)
+        return;
     addr -= mmio_base;
     mem[addr] = val;
 }
 
 void Flash::writem16(phy_addr_t addr, uint16_t val, void *opaque)
 {
+    if (addr + 2 > image_size)
+        return;
     addr -= mmio_base;
     mem[addr++] = uint8_t(val);
-    mem[addr] = uint8_t(val>>8);
+    mem[addr] = uint8_t(val >> 8);
 }
 
 void Flash::writem32(phy_addr_t addr, uint32_t val, void *opaque)
 {
+    if (addr + 4 > image_size)
+        return;
     addr -= mmio_base;
     mem[addr++] = uint8_t(val);
-    mem[addr++] = uint8_t(val>>8);
-    mem[addr++] = uint8_t(val>>16);
-    mem[addr] = uint8_t(val>>24);
+    mem[addr++] = uint8_t(val >> 8);
+    mem[addr++] = uint8_t(val >> 16);
+    mem[addr] = uint8_t(val >> 24);
 }
 
 uint8_t Flash::readm8(phy_addr_t addr, void *opaque)
 {
+    if (addr >= image_size)
+        return 0xFF;
     addr -= mmio_base;
     return mem[addr];
 }
 
 uint16_t Flash::readm16(phy_addr_t addr, void *opaque)
 {
+    if (addr + 2 > image_size)
+        return 0xFFFF;
     addr -= mmio_base;
     uint16_t ret = 0;
     ret |= mem[addr++];
@@ -67,6 +77,8 @@ uint16_t Flash::readm16(phy_addr_t addr, void *opaque)
 
 uint32_t Flash::readm32(phy_addr_t addr, void *opaque)
 {
+    if (addr + 4 > image_size)
+        return 0xFFFFFFFF;
     addr -= mmio_base;
     uint32_t ret = 0;
     ret |= mem[addr++];

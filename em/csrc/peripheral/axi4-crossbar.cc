@@ -43,6 +43,18 @@ bool Axi4Crossbar::is_mmio(uint64_t address)
 {
     return ((address >= mem->get_mmio_phy_base()) && (address <= mem->get_mmio_phy_end_addr()));
 }
+void Axi4Crossbar::get_constraint(uint64_t address, Axi4CrossbarRequest *out)
+{
+    if (address >= address >= mem->get_mmio_phy_base() + 0x30000000 &&
+        address <= address >= mem->get_mmio_phy_base() + 0x3fffffff) /* FLASH XIP */
+    {
+        out->max_burst_len = 1;
+        out->max_size = 4;
+        return;
+    }
+    out->max_burst_len = 256;
+    out->max_size = 8;
+}
 
 uint64_t Axi4Crossbar::pread(uint64_t address, uint8_t beatsize)
 {
@@ -100,6 +112,13 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
     assert(beatlen <= MAX_AXI_DATA_LEN);
     assert(transaction_size % beatsize == 0);
 
+    if (beatlen > req->max_burst_len ||
+        beatsize > req->max_size)
+    {
+        fprintf(stderr, "AXI Read: Broken burst length or size constraint at address %#x\n", req->address);
+        assert(0);
+    }
+
     // axi burst FIXEDs
     if (ar.burst == 0x0)
     {
@@ -149,6 +168,7 @@ Axi4CrossbarRequest *Axi4Crossbar::axi_request(const axi_channel &axi, bool is_w
     req->address = (is_write) ? axi.aw.addr : axi.ar.addr;
     req->is_write = is_write;
     req->is_mmio = is_mmio(req->address);
+    get_constraint(req->address, req);
     req->resp_inflight = false;
     if (is_write)
     {
@@ -156,6 +176,13 @@ Axi4CrossbarRequest *Axi4Crossbar::axi_request(const axi_channel &axi, bool is_w
         req->size = 1 << axi.aw.size;
         req->offset = 0;
         req->id = axi.aw.id;
+
+        if (req->len > req->max_burst_len ||
+            req->size > req->max_size)
+        {
+            fprintf(stderr, "AXI Write: Broken burst length or size constraint at address %#x\n", req->address);
+            assert(0);
+        }
     }
     else
     {

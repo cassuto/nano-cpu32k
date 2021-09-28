@@ -54,8 +54,7 @@ static const struct option long_options[] = {
     {"immu-enable-uncached-seg", required_argument, NULL, 0}, /* 19 */
     {"symbol-file", required_argument, NULL, 0},              /* 20 */
     {"virt-uart-file", required_argument, NULL, 0},           /* 21 */
-    {"flash-size", required_argument, NULL, 0},               /* 22 */
-    {"flash-image-file", required_argument, NULL, 0},         /* 23 */
+    {"flash-image-file", required_argument, NULL, 0},         /* 22 */
     {"bin-load-addr", required_argument, NULL, 'a'},
     {"bin-pathname", required_argument, NULL, 'b'},
     {"reset-pc", required_argument, NULL, 'r'},
@@ -113,7 +112,6 @@ public:
         commit_timeout_max = 100000;
         symbol_file = "";
         virt_uart_file = "COM1:";
-        flash_size = 8 * 1024 * 1024;
         flash_image_file = "";
     }
 
@@ -146,7 +144,6 @@ public:
     uint64_t commit_timeout_max;
     std::string symbol_file;
     std::string virt_uart_file;
-    size_t flash_size;
     std::string flash_image_file;
 };
 
@@ -291,9 +288,6 @@ parse_args(int argc, char **argv)
                 args.virt_uart_file = optarg;
                 break;
             case 22:
-                args.flash_size = atol(optarg);
-                break;
-            case 23:
                 args.flash_image_file = optarg;
                 break;
             default:
@@ -378,7 +372,6 @@ int main(int argc, char *argv[])
 
     emu_dev = new DeviceTree(emu_CPU, emu_CPU->memory(), args.mmio_phy_base,
                              args.virt_uart_file.c_str(),
-                             args.flash_size,
                              flash_image_fp);
 
     emu_CPU->reset(args.pc_rst);
@@ -414,7 +407,6 @@ int main(int argc, char *argv[])
         }
         rtl_dev = new DeviceTree(nullptr, rtl_memory, args.mmio_phy_base,
                                  args.virt_uart_file.c_str(),
-                                 args.flash_size,
                                  flash_image_fp);
 
         emu = new Emu(args.vcdfile.c_str(), args.wave_begin, args.wave_end, emu_CPU, rtl_memory);

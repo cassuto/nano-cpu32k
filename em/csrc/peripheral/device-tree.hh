@@ -11,7 +11,6 @@ class DeviceTree
 public:
     DeviceTree(CPU *cpu, Memory *mem_, phy_addr_t mmio_phy_base,
                const char *virt_uart_file,
-               size_t flash_size,
                FILE *flash_image_fp);
     ~DeviceTree();
     void step();

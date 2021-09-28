@@ -25,6 +25,7 @@ public:
     bool resp_inflight;
     uint32_t mmio_delay;
     uint32_t mmio_pending_cycle;
+    uint32_t max_burst_len, max_size;
 };
 
 class Axi4CrossbarResponse
@@ -45,6 +46,7 @@ public:
 
 private:
     bool is_mmio(uint64_t address);
+    void get_constraint(uint64_t address, Axi4CrossbarRequest *out);
     uint64_t pread(uint64_t address, uint8_t beatsize);
     void pwrite(uint64_t address, uint64_t dat, uint8_t beatsize);
     Axi4CrossbarRequest *axi_request(const axi_channel &axi, bool is_write);
