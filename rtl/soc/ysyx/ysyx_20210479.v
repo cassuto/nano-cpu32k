@@ -117,7 +117,7 @@ module ysyx_20210479
    localparam                           CONFIG_DTLB_P_SETS = 7;
    localparam                           CONFIG_ITLB_P_SETS = 7;
 
-   localparam [CONFIG_AW-1:0]           CONFIG_PC_RST = 32'h80000000; //32'h30000000; // FIXME!!!!!
+   localparam [CONFIG_AW-1:0]           CONFIG_PC_RST = 32'h30000000;
    localparam [`EXCP_VECT_W-1:0]        CONFIG_EITM_VECTOR = 8'h1c;
    localparam [`EXCP_VECT_W-1:0]        CONFIG_EIPF_VECTOR = 8'h14;
    localparam [`EXCP_VECT_W-1:0]        CONFIG_ESYSCALL_VECTOR = 8'hc;
