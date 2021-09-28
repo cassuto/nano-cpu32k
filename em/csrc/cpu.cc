@@ -191,7 +191,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         insn = (insn_t)mem->phy_readm32(insn_pa);
     else
         insn = (insn_t)icache->phy_readm32(insn_pa);
-        printf("pc=%#x insn=%#x\n",pc, insn);
     pc_queue->push(pc, insn);
     pc_nxt = pc + INSN_LEN;
     if (event)
