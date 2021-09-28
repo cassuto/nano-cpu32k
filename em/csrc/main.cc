@@ -199,6 +199,19 @@ parse_mode(const char *optarg)
     }
 }
 
+static long long
+parse_int(const char *optarg, const char *optname)
+{
+    char *last;
+    long long ret = strtoll(optarg, &last, (*optarg == '0' && std::tolower(optarg[1]) == 'x') ? 16 : 10);
+    if (*last != '\0')
+    {
+        fprintf(stderr, "Invalid integer value for %s\n", optname);
+        exit(1);
+    }
+    return ret;
+}
+
 static int
 parse_args(int argc, char **argv)
 {
@@ -292,10 +305,10 @@ parse_args(int argc, char **argv)
             args.bin_pathname = optarg;
             break;
         case 'a':
-            args.bin_load_addr = atoi(optarg);
+            args.bin_load_addr = parse_int(optarg, "-a");
             break;
         case 'r':
-            args.pc_rst = atoll(optarg);
+            args.pc_rst = parse_int(optarg, "-r");
             break;
         case 'd':
             args.vcdfile = optarg;
