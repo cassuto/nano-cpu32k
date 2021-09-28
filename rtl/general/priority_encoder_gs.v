@@ -27,14 +27,14 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-module priority_encoder
+module priority_encoder_gs
 #(
    parameter P_DW = 0
 )
 (
    input [(1<<P_DW)-1:0] din,
    output reg [P_DW-1:0] dout
-   
+   , output gs
 );
 
    generate
@@ -42,11 +42,12 @@ module priority_encoder
             begin : gen_enc_1
                 always @(*)
                     begin
+gs = 1'b1;
 
                         casez(din)
                        2'b?1: dout = 1'd0;
                        2'b10: dout = 1'd1;
-                       default: begin dout = 1'd0; end
+                       default: begin gs = 1'b0; dout = 1'd0; end
                     endcase
                 end
         end
@@ -54,13 +55,14 @@ module priority_encoder
             begin : gen_enc_2
                 always @(*)
                     begin
+gs = 1'b1;
 
                         casez(din)
                        4'b???1: dout = 2'd0;
                        4'b??10: dout = 2'd1;
                        4'b?100: dout = 2'd2;
                        4'b1000: dout = 2'd3;
-                       default: begin dout = 2'd0; end
+                       default: begin gs = 1'b0; dout = 2'd0; end
                     endcase
                 end
         end
@@ -68,6 +70,7 @@ module priority_encoder
             begin : gen_enc_3
                 always @(*)
                     begin
+gs = 1'b1;
 
                         casez(din)
                        8'b???????1: dout = 3'd0;
@@ -78,7 +81,7 @@ module priority_encoder
                        8'b??100000: dout = 3'd5;
                        8'b?1000000: dout = 3'd6;
                        8'b10000000: dout = 3'd7;
-                       default: begin dout = 3'd0; end
+                       default: begin gs = 1'b0; dout = 3'd0; end
                     endcase
                 end
         end
@@ -86,6 +89,7 @@ module priority_encoder
             begin : gen_enc_4
                 always @(*)
                     begin
+gs = 1'b1;
 
                         casez(din)
                        16'b???????????????1: dout = 4'd0;
@@ -104,7 +108,7 @@ module priority_encoder
                        16'b??10000000000000: dout = 4'd13;
                        16'b?100000000000000: dout = 4'd14;
                        16'b1000000000000000: dout = 4'd15;
-                       default: begin dout = 4'd0; end
+                       default: begin gs = 1'b0; dout = 4'd0; end
                     endcase
                 end
         end
@@ -112,6 +116,7 @@ module priority_encoder
             begin : gen_enc_5
                 always @(*)
                     begin
+gs = 1'b1;
 
                         casez(din)
                        32'b???????????????????????????????1: dout = 5'd0;
@@ -146,7 +151,7 @@ module priority_encoder
                        32'b??100000000000000000000000000000: dout = 5'd29;
                        32'b?1000000000000000000000000000000: dout = 5'd30;
                        32'b10000000000000000000000000000000: dout = 5'd31;
-                       default: begin dout = 5'd0; end
+                       default: begin gs = 1'b0; dout = 5'd0; end
                     endcase
                 end
         end

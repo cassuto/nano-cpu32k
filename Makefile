@@ -85,12 +85,12 @@ build: $(YSYX_TARGET)
 $(YSYX_TARGET): $(SRCS) $(YSYX_SRCS)
 	$(PYTHON3) scripts/build.py -d ./ -c $^ -I $(SRC_DIR)/core -t $(YSYX_TOPLEVEL) -p $(YSYX_PREFIX) -o $(YSYX_TARGET)
 
-generate: rtl/general/pmux.v rtl/general/pmux_v.v rtl/general/priority_encoder.v
+generate: rtl/general/pmux.v rtl/general/pmux_v.v rtl/general/priority_encoder.v rtl/general/priority_encoder_gs.v
 
 rtl/general/pmux.v rtl/general/pmux_v.v: scripts/gen_pmux.py
 	$(PYTHON3) scripts/gen_pmux.py rtl/general/pmux
-rtl/general/priority_encoder.v: scripts/gen_priority_encoder.py
-	$(PYTHON3) scripts/gen_priority_encoder.py $@
+rtl/general/priority_encoder.v rtl/general/priority_encoder_gs.v: scripts/gen_priority_encoder.py
+	$(PYTHON3) scripts/gen_priority_encoder.py rtl/general/priority_encoder
 
 build_sim:  # $(LIB_DRAMSIM3)
 	verilator --cc -Wall --top-module $(SIM_TOPLEVEL) $(SIM_FLAGS) --build $(SIM_SRCS) $(SIM_CPPS)

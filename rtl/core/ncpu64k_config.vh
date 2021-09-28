@@ -165,6 +165,9 @@
 /* Regfile index width */
 `define NCPU_REG_AW 5
 
+/* Physical regfile index width */
+`define NCPU_PRF_AW 5
+
 /* PSR register bitwidth */
 `define NCPU_PSR_DW 10
 
