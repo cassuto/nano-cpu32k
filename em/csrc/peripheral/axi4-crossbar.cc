@@ -45,8 +45,8 @@ bool Axi4Crossbar::is_mmio(uint64_t address)
 }
 void Axi4Crossbar::get_constraint(uint64_t address, Axi4CrossbarRequest *out)
 {
-    if (address >= address >= mem->get_mmio_phy_base() + 0x30000000 &&
-        address <= address >= mem->get_mmio_phy_base() + 0x3fffffff) /* FLASH XIP */
+    if (address >= mem->get_mmio_phy_base() + 0x30000000 &&
+        address <= mem->get_mmio_phy_base() + 0x3fffffff) /* FLASH XIP */
     {
         out->max_burst_len = 1;
         out->max_size = 4;
