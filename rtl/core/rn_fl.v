@@ -24,10 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module freelist
+module rn_fl
 #(
-   parameter                           CONFIG_AW = 32,
-   parameter                           CONFIG_PRF_AW = 0,
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0
 )
@@ -40,15 +38,14 @@ module freelist
    output                              fl_stall_req,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] fl_prd,
    // From ROB commit
-   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] commit_fl_push,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] commit_prd,
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] commit_prd_we,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] commit_prd,
    input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] commit_pfree
    
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam CW                       = (1<<CONFIG_P_COMMIT_WIDTH);
-   localparam N_PRF                    = (1<<CONFIG_PRF_AW);
+   localparam N_PRF                    = (1<<`NCPU_PRF_AW);
    localparam [N_PRF-1:0] FL_1         = {{N_PRF-1{1'b0}}, 1'b1};
    wire [N_PRF-1:0]                    fl_ff;
    reg [N_PRF-1:0]                     fl_nxt;
@@ -70,7 +67,7 @@ module freelist
    generate
       for(i=0;i<IW;i=i+1)
          begin : gen_penc
-            priority_encoder #(.P_DW(CONFIG_PRF_AW)) PENC_FL (
+            priority_encoder #(.P_DW(`NCPU_PRF_AW)) PENC_FL (
                .din     (fl[i]),
                .dout    (fl_prd[i* `NCPU_PRF_AW +: `NCPU_PRF_AW]),
                .gs      (gs[i])
@@ -97,7 +94,7 @@ module freelist
                fl_nxt = fl_nxt & ~(FL_1<<fl_prd[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Allocate
                
          for(j=0;j<CW;j=j+1)   
-            if (commit_fl_push[j] & commit_prd_we[j])
+            if (commit_prd_we[j])
                fl_nxt = fl_nxt | (FL_1<<commit_pfree[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Free
       end
 
@@ -108,7 +105,7 @@ module freelist
       begin
          afl_nxt = afl_ff;
          for(j=0;j<CW;j=j+1)
-            if (commit_fl_push[j] & commit_prd_we[j])
+            if (commit_prd_we[j])
                begin
                   afl_nxt = afl_nxt & ~(FL_1<<commit_prd[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Allocate
                   afl_nxt = afl_nxt | (FL_1<<commit_pfree[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Free
