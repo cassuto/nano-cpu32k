@@ -68,10 +68,10 @@ uint16_t Flash::readm16(phy_addr_t addr, void *opaque)
 uint32_t Flash::readm32(phy_addr_t addr, void *opaque)
 {
     addr -= mmio_base;
-    uint16_t ret = 0;
+    uint32_t ret = 0;
     ret |= mem[addr++];
-    ret |= uint16_t(mem[addr++]) << 8;
-    ret |= uint16_t(mem[addr++]) << 16;
-    ret |= uint16_t(mem[addr]) << 24;
+    ret |= uint32_t(mem[addr++]) << 8;
+    ret |= uint32_t(mem[addr++]) << 16;
+    ret |= uint32_t(mem[addr]) << 24;
     return ret;
 }
