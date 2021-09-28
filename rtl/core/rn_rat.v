@@ -70,7 +70,7 @@ module rn_rat
                
          else if (we)
             for(x=0;x<IW;x=x+1) // This generates a priority MUX to resolve WAW hazard
-               if(lrd_we[x])
+               if(we & lrd_we[x])
                   rat_ff[lrd[x * `NCPU_REG_AW +: `NCPU_REG_AW]] <= fl_prd[x * `NCPU_PRF_AW +: `NCPU_PRF_AW];
       end
       
