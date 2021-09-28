@@ -115,7 +115,7 @@ void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *
     if (beatlen > req->max_burst_len ||
         beatsize > req->max_size)
     {
-        fprintf(stderr, "AXI Read: Broken burst length or size constraint at address %#x\n", req->address);
+        fprintf(stderr, "AXI Read: Broken burst length or size constraint at address %#lx\n", req->address);
         assert(0);
     }
 
@@ -180,7 +180,7 @@ Axi4CrossbarRequest *Axi4Crossbar::axi_request(const axi_channel &axi, bool is_w
         if (req->len > req->max_burst_len ||
             req->size > req->max_size)
         {
-            fprintf(stderr, "AXI Write: Broken burst length or size constraint at address %#x\n", req->address);
+            fprintf(stderr, "AXI Write: Broken burst length or size constraint at address %#lx\n", req->address);
             assert(0);
         }
     }

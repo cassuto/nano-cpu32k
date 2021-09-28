@@ -30,26 +30,26 @@ Flash::~Flash()
 
 void Flash::writem8(phy_addr_t addr, uint8_t val, void *opaque)
 {
+    addr -= mmio_base;
     if (addr >= image_size)
         return;
-    addr -= mmio_base;
     mem[addr] = val;
 }
 
 void Flash::writem16(phy_addr_t addr, uint16_t val, void *opaque)
 {
+    addr -= mmio_base;
     if (addr + 2 > image_size)
         return;
-    addr -= mmio_base;
     mem[addr++] = uint8_t(val);
     mem[addr] = uint8_t(val >> 8);
 }
 
 void Flash::writem32(phy_addr_t addr, uint32_t val, void *opaque)
 {
+    addr -= mmio_base;
     if (addr + 4 > image_size)
         return;
-    addr -= mmio_base;
     mem[addr++] = uint8_t(val);
     mem[addr++] = uint8_t(val >> 8);
     mem[addr++] = uint8_t(val >> 16);
@@ -58,17 +58,17 @@ void Flash::writem32(phy_addr_t addr, uint32_t val, void *opaque)
 
 uint8_t Flash::readm8(phy_addr_t addr, void *opaque)
 {
+    addr -= mmio_base;
     if (addr >= image_size)
         return 0xFF;
-    addr -= mmio_base;
     return mem[addr];
 }
 
 uint16_t Flash::readm16(phy_addr_t addr, void *opaque)
 {
+    addr -= mmio_base;
     if (addr + 2 > image_size)
         return 0xFFFF;
-    addr -= mmio_base;
     uint16_t ret = 0;
     ret |= mem[addr++];
     ret |= uint16_t(mem[addr]) << 8;
@@ -77,9 +77,9 @@ uint16_t Flash::readm16(phy_addr_t addr, void *opaque)
 
 uint32_t Flash::readm32(phy_addr_t addr, void *opaque)
 {
+    addr -= mmio_base;
     if (addr + 4 > image_size)
         return 0xFFFFFFFF;
-    addr -= mmio_base;
     uint32_t ret = 0;
     ret |= mem[addr++];
     ret |= uint32_t(mem[addr++]) << 8;
