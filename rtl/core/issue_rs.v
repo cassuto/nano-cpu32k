@@ -90,10 +90,10 @@ module issue_rs
    localparam FL_1[RS_DEPTH-1:0]       = {{RS_DEPTH-1{1'b0}}, 'b1};
 
    wire [OPP_W-1:0]                    opp_wdat, opp_rdat;
-   reg [`NCPU_PRF_AW-1:0]              prs1_rf [RS_DEPTH-1:0];
-   reg [`NCPU_PRF_AW-1:0]              prs2_rf [RS_DEPTH-1:0];
-   reg                                 prs1_re_rf [RS_DEPTH-1:0];
-   reg                                 prs2_re_rf [RS_DEPTH-1:0];
+   wire [RS_DEPTH*`NCPU_PRF_AW-1:0]    prs1_rf;
+   wire [RS_DEPTH*`NCPU_PRF_AW-1:0]    prs2_rf;
+   wire [RS_DEPTH-1:0]                 prs1_re_rf ;
+   wire [RS_DEPTH-1:0]                 prs2_re_rf;
    wire [RS_DEPTH-1:0]                 free_vec_ff;
    reg [RS_DEPTH-1:0]                  free_vec_nxt;
    wire                                has_free;
@@ -127,8 +127,8 @@ module issue_rs
       )
    U_PAYLOAD
       (
-         .CLK  (clk),
-         .RE   (has_rdy),
+         .CLK     (clk),
+         .RE      (has_rdy),
          .RADDR   (rdy_addr),
          .RDATA   (opp_rdat),
          .WE      (issue_push),
@@ -136,15 +136,64 @@ module issue_rs
          .WDATA   (opp_wdat)
       );
    
-   always @(posedge clk)
-      if (issue_push)
-         begin
-            prs1_rf[free_addr] <= issue_prs1;
-            prs2_rf[free_addr] <= issue_prs2;
-            prs1_re_rf[free_addr] <= issue_prs1_re;
-            prs2_re_rf[free_addr] <= issue_prs2_re;
-         end
-   
+   mRF_nw_do
+      #(
+         .DW (`NCPU_PRF_AW),
+         .AW (CONFIG_P_RS_DEPTH),
+         .NUM_WRITE(1)
+      )
+   U_RF_RS1
+      (
+         .CLK     (clk),
+         .WE      (issue_push),
+         .WADDR   (free_addr),
+         .WDATA   (issue_prs1),
+         .DO      (prs1_rf)
+      );
+   mRF_nw_do
+      #(
+         .DW (`NCPU_PRF_AW),
+         .AW (CONFIG_P_RS_DEPTH),
+         .NUM_WRITE(1)
+      )
+   U_RF_RS2
+      (
+         .CLK     (clk),
+         .WE      (issue_push),
+         .WADDR   (free_addr),
+         .WDATA   (issue_prs2),
+         .DO      (prs2_rf)
+      );
+      
+   mRF_nw_do
+      #(
+         .DW (1),
+         .AW (CONFIG_P_RS_DEPTH),
+         .NUM_WRITE(1)
+      )
+   U_RF_RS1_RE
+      (
+         .CLK     (clk),
+         .WE      (issue_push),
+         .WADDR   (free_addr),
+         .WDATA   (issue_prs1_re),
+         .DO      (prs1_re_rf)
+      );
+   mRF_nw_do
+      #(
+         .DW (1),
+         .AW (CONFIG_P_RS_DEPTH),
+         .NUM_WRITE(1)
+      )
+   U_RF_RS2_RE
+      (
+         .CLK     (clk),
+         .WE      (issue_push),
+         .WADDR   (free_addr),
+         .WDATA   (issue_prs2_re),
+         .DO      (prs2_re_rf)
+      );
+
    always @(*)
       begin
          free_vec_nxt = free_vec_ff;
@@ -162,13 +211,18 @@ module issue_rs
    
    generate
       for(i=0;i<RS_DEPTH;i=i+1)
-         assign rdy_vec[i] = (~prs1_re_rf[i] | ~busytable[prs1_rf[i]]) & (~prs2_re_rf[i] | ~busytable[prs2_rf[i]]);
+         assign rdy_vec[i] = (~prs1_re_rf[i] | ~busytable[prs1_rf[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]]) &
+                              (~prs2_re_rf[i] | ~busytable[prs2_rf[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]]);
    endgenerate
    
    priority_encoder_gs #(.P_DW(CONFIG_P_RS_DEPTH)) penc_rdy (.din(rdy_vec), .dout(rdy_addr), .gs(has_rdy) );
 
    mDFF_r #(.DW(1)) ff_has_rdy (.CLK(clk), .RST(rst), .D(has_rdy), .Q(has_rdy_ff) );
    mDFF_l #(.DW(CONFIG_P_RS_DEPTH)) ff_rdy_addr (.CLK(clk), .LOAD(has_rdy), .D(rdy_addr), .Q(rdy_addr_ff) );
+   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs1 (.CLK(clk), .LOAD(has_rdy), .D(prs1_rf), .Q(issue_prs1) );
+   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs2 (.CLK(clk), .LOAD(has_rdy), .D(prs2_rf), .Q(issue_prs2) );
+   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs1_re (.CLK(clk), .LOAD(has_rdy), .D(prs1_re_rf), .Q(issue_prs1_re) );
+   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs2_re (.CLK(clk), .LOAD(has_rdy), .D(prs2_re_rf), .Q(issue_prs2_re) );
    
    assign ex_valid = has_rdy_ff;
 

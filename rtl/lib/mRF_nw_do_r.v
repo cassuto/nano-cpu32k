@@ -22,43 +22,52 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-`include "ncpu64k_config.vh"
-
-module rn_busytable
+module mRF_nw_do_r
 #(
-   parameter                           CONFIG_P_ISSUE_WIDTH = 0,
-   parameter                           WRITEBACK_WIDTH
+   parameter DW = 0,
+   parameter AW = 0,
+   parameter [DW-1:0] RST_VECTOR = 0,
+   parameter NUM_WRITE = 0
 )
 (
-   input                               clk,
-   input                               rst,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] lrd,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] lrd_we,
-   // From writeback
-   input [WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0] wb_lrd,
-   input [WRITEBACK_WIDTH-1:0] wb_lrd_we,
-   // Output
-   output [(1<<`NCPU_PRF_AW)-1:0]      busytable
+   input CLK,
+   input RST,
+   input [NUM_WRITE-1:0] WE,
+   input [AW*NUM_WRITE-1:0] WADDR,
+   input [DW*NUM_WRITE-1:0] WDATA,
+   output [DW*(1<<AW)-1:0] DO
 );
-   localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
-   localparam N_PRF                    = (1<<`NCPU_PRF_AW);
+   reg [DW-1:0] regfile [(1<<AW)-1:0];
    genvar i;
+   integer j;
    
-   mRF_nw_do_r
-      #(
-         .DW         (1),
-         .AW         (`NCPU_PRF_AW),
-         .RST_VECTOR (1'b0),
-         .NUM_WRITE  (WRITEBACK_WIDTH)
-      )
-   U_BUSYTABLE
-      (
-         .CLK     (clk),
-         .RST     (rst),
-         .WE      ({lrd_we, wb_lrd_we}),
-         .WADDR   ({lrd, wb_lrd}),
-         .WDATA   ({1'b1, 1'b0}),
-         .DO      (busytable)
-      );
+`ifdef NCPU_RST_ASYNC
+ `ifdef NCPU_RST_POS_POLARITY
+   always @(posedge CLK or posedge RST) begin
+ `else // neg polarity
+   always @(posedge CLK or negedge RST) begin
+ `endif
+`else // synchronous
+   always @(posedge CLK) begin
+`endif
+`ifdef NCPU_RST_POS_POLARITY
+      if (RST)
+`else // neg polarity
+      if (~RST)
+`endif
+         begin
+            for(j=0;j<(1<<AW);j=j+1)
+               regfile[j] <= RST_VECTOR;
+         end
+      else
+         for(j=0;j<NUM_WRITE;j=j+1) // This generates a priority MUX to resolve WAW hazard, if we have multiple write ports.
+            if (WE[j])
+               regfile[WADDR[j*AW +: AW]] <= WDATA[j*DW +: DW];
+   end
+   
+   generate
+      for(i=0;i<(1<<AW);i=i+1)
+         assign DO[i * DW +: DW] = regfile[i];
+   endgenerate
    
 endmodule
