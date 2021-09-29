@@ -59,6 +59,7 @@ module id
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_epu_opc_bus,
    output [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_bru_opc_bus,
    output [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lsu_opc_bus,
+   output [`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_fe,
    output [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_bpu_upd,
    output [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_pc,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_imm,
@@ -73,13 +74,13 @@ module id
    
    wire                                p_ce;
    wire [IW-1:0]                       valid;
-   wire [IW-1:0]                       single_fu;
-   wire [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_alu_opc_bus;
-   wire [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_lpu_opc_bus;
-   wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_epu_opc_bus;
-   wire [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_bru_opc_bus;
-   wire [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_lsu_opc_bus;
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] s1i_imm;
+   wire [`NCPU_ALU_IOPW*IW-1:0]        s1i_alu_opc_bus;
+   wire [`NCPU_LPU_IOPW*IW-1:0]        s1i_lpu_opc_bus;
+   wire [`NCPU_EPU_IOPW*IW-1:0]        s1i_epu_opc_bus;
+   wire [`NCPU_BRU_IOPW*IW-1:0]        s1i_bru_opc_bus;
+   wire [`NCPU_LSU_IOPW*IW-1:0]        s1i_lsu_opc_bus;
+   wire [CONFIG_DW*IW-1:0]             s1i_imm;
+   wire [`NCPU_FE_W-1:0*IW]            s1i_fe;
    wire [IW-1:0]                       rf_we;
    wire [`NCPU_LRF_AW*IW-1:0]          rf_waddr;
    wire [IW-1:0]                       rf_rs1_re;
@@ -109,13 +110,13 @@ module id
                   .id_ins              (id_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW]),
                   .id_exc              (id_exc[i*`FNT_EXC_W +: `FNT_EXC_W]),
                   .irq_async           (irq_async),
-                  .single_fu           (single_fu[i]),
                   
                   .alu_opc_bus         (s1i_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
                   .lpu_opc_bus         (s1i_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]),
                   .epu_opc_bus         (s1i_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
                   .bru_opc_bus         (s1i_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
                   .lsu_opc_bus         (s1i_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
+                  .fe                  (s1i_fe[i*`NCPU_FE_W +: `NCPU_FE_W])
                   .imm                 (s1i_imm[i*CONFIG_DW +: CONFIG_DW]),
                   .rf_we               (rf_we[i]),
                   .rf_waddr            (rf_waddr[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]),
@@ -144,6 +145,7 @@ module id
    mDFF_l # (.DW(`NCPU_EPU_IOPW*IW)) ff_rn_epu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_epu_opc_bus), .Q(rn_epu_opc_bus) );
    mDFF_l # (.DW(`NCPU_BRU_IOPW*IW)) ff_rn_bru_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_bru_opc_bus), .Q(rn_bru_opc_bus) );
    mDFF_l # (.DW(`NCPU_LSU_IOPW*IW)) ff_rn_lsu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_lsu_opc_bus), .Q(rn_lsu_opc_bus) );
+   mDFF_l # (.DW(`NCPU_FE_W*IW)) ff_rn_fe (.CLK(clk), .LOAD(p_ce), .D(s1i_fe), .Q(rn_fe) );
    mDFF_l # (.DW(`BPU_UPD_W*IW)) ff_rn_bpu_upd (.CLK(clk), .LOAD(p_ce), .D(id_bpu_upd), .Q(rn_bpu_upd) );
    mDFF_l # (.DW(`PC_W*IW)) ff_rn_pc (.CLK(clk), .LOAD(p_ce), .D(id_pc), .Q(rn_pc) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_rn_imm (.CLK(clk), .LOAD(p_ce), .D(s1i_imm), .Q(rn_imm) );

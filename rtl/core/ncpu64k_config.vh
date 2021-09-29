@@ -141,16 +141,19 @@
 `define NCPU_LPU_MOD 3
 `define NCPU_LPU_MODU 4
 
-// EPU (Exception and Extended Processor Unit)
-`define NCPU_EPU_IOPW 8
+// EPU (Extended Processor Unit)
+`define NCPU_EPU_IOPW 2
 `define NCPU_EPU_WMSR 0
 `define NCPU_EPU_RMSR 1
-`define NCPU_EPU_ESYSCALL 2
-`define NCPU_EPU_ERET 3
-`define NCPU_EPU_EITM 4
-`define NCPU_EPU_EIPF 5
-`define NCPU_EPU_EIRQ 6
-`define NCPU_EPU_EINSN (`NCPU_EPU_IOPW-1)
+
+// Frontend Exception
+`define NCPU_FE_W 5
+`define NCPU_FE_ESYSCALL 0
+`define NCPU_FE_ERET 1
+`define NCPU_FE_EITM 2
+`define NCPU_FE_EIPF 3
+`define NCPU_FE_EIRQ 4
+`define NCPU_FE_EINSN (`NCPU_FE_W-1)
 
 // LSU
 `define NCPU_LSU_IOPW 7

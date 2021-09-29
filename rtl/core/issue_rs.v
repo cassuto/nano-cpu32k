@@ -41,6 +41,7 @@ module issue_rs
    input [`NCPU_EPU_IOPW-1:0]          issue_epu_opc_bus,
    input [`NCPU_BRU_IOPW-1:0]          issue_bru_opc_bus,
    input [`NCPU_LSU_IOPW-1:0]          issue_lsu_opc_bus,
+   input [`NCPU_FE_W-1:0]              issue_fe,
    input [`BPU_UPD_W-1:0]              issue_bpu_upd,
    input [`PC_W-1:0]                   issue_pc,
    input [CONFIG_DW-1:0]               issue_imm,
@@ -64,6 +65,7 @@ module issue_rs
    output [`NCPU_EPU_IOPW-1:0]         ex_epu_opc_bus,
    output [`NCPU_BRU_IOPW-1:0]         ex_bru_opc_bus,
    output [`NCPU_LSU_IOPW-1:0]         ex_lsu_opc_bus,
+   output [`NCPU_FE_W-1:0]             ex_fe,
    output [`BPU_UPD_W-1:0]             ex_bpu_upd,
    output [`PC_W-1:0]                  ex_pc,
    output [CONFIG_DW-1:0]              ex_imm,
@@ -84,6 +86,7 @@ module issue_rs
                                           `NCPU_EPU_IOPW +
                                           `NCPU_BRU_IOPW +
                                           `NCPU_LSU_IOPW +
+                                          `NCPU_FE_W +
                                           `BPU_UPD_W +
                                           CONFIG_DW +
                                           `NCPU_PRF_AW +
@@ -115,6 +118,7 @@ module issue_rs
       issue_epu_opc_bus,
       issue_bru_opc_bus,
       issue_lsu_opc_bus,
+      issue_fe,
       issue_bpu_upd,
       issue_pc,
       issue_imm,
@@ -254,6 +258,7 @@ module issue_rs
       ex_epu_opc_bus,
       ex_bru_opc_bus,
       ex_lsu_opc_bus,
+      ex_fe,
       ex_bpu_upd,
       ex_pc,
       ex_imm,

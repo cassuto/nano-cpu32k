@@ -102,12 +102,12 @@ module id_dec
    input [`NCPU_INSN_DW-1:0]           id_ins,
    input [`FNT_EXC_W-1:0]              id_exc,
    input                               irq_async,
-   output                              single_fu,
    output [`NCPU_ALU_IOPW-1:0]         alu_opc_bus,
    output [`NCPU_LPU_IOPW-1:0]         lpu_opc_bus,
    output [`NCPU_EPU_IOPW-1:0]         epu_opc_bus,
    output [`NCPU_BRU_IOPW-1:0]         bru_opc_bus,
    output [`NCPU_LSU_IOPW-1:0]         lsu_opc_bus,
+   output [`NCPU_FE_W-1:0]             fe,
    output [CONFIG_DW-1:0]              imm,
    output                              rf_we,
    output [`NCPU_LRF_AW-1:0]           rf_waddr,
@@ -188,7 +188,6 @@ module id_dec
    wire [CONFIG_DW-1:0]                uimm17;
    wire [CONFIG_DW-1:0]                rel15;
    wire [CONFIG_DW-1:0]                rel25;
-   wire [`NCPU_EPU_IOPW-1:0]           epu_opc_no_EINSN;
    
    assign msk = ((~|id_exc) & ~irq_async & id_valid);
    
@@ -335,17 +334,18 @@ module id_dec
    assign lsu_opc_bus[`NCPU_LSU_BARR] = (f_opcode == `NCPU_OP_MBARR);
 
    // EPU opcodes excluding EINSN 
-   assign epu_opc_no_EINSN[`NCPU_EPU_WMSR] = op_wmsr;
-   assign epu_opc_no_EINSN[`NCPU_EPU_RMSR] = op_rmsr;
-   assign epu_opc_no_EINSN[`NCPU_EPU_ESYSCALL] = op_syscall;
-   assign epu_opc_no_EINSN[`NCPU_EPU_ERET] = op_ret;
-   assign epu_opc_no_EINSN[`NCPU_EPU_EITM] = (id_exc[`FNT_EXC_EITM] & ~irq_async);
-   assign epu_opc_no_EINSN[`NCPU_EPU_EIPF] = (id_exc[`FNT_EXC_EIPF] & ~irq_async);
-   assign epu_opc_no_EINSN[`NCPU_EPU_EIRQ] = irq_async;
-   assign epu_opc_no_EINSN[`NCPU_EPU_EINSN] = 1'b0;
+   assign epu_opc[`NCPU_EPU_WMSR] = op_wmsr;
+   assign epu_opc[`NCPU_EPU_RMSR] = op_rmsr;
+   
+   // Frontend Exceptions
+   assign fe[`NCPU_EPU_ESYSCALL] = op_syscall;
+   assign fe[`NCPU_EPU_ERET] = op_ret;
+   assign fe[`NCPU_EPU_EITM] = (id_exc[`FNT_EXC_EITM] & ~irq_async);
+   assign fe[`NCPU_EPU_EIPF] = (id_exc[`FNT_EXC_EIPF] & ~irq_async);
+   assign fe[`NCPU_EPU_EIRQ] = irq_async;
 
    // Insn is unsupported by hardware or unrecognizable
-   assign epu_opc_bus[`NCPU_EPU_EINSN] =
+   assign fe[`NCPU_EPU_EINSN] =
       ~(
          // ALU opcodes
          (|alu_opc_bus) |
@@ -356,21 +356,7 @@ module id_dec
          // LSU insns
          (lsu_opc_bus[`NCPU_LSU_LOAD] | lsu_opc_bus[`NCPU_LSU_STORE] | lsu_opc_bus[`NCPU_LSU_BARR]) |
          // EPU opcodes
-         (|epu_opc_no_EINSN)
-      );
-   assign epu_opc_bus[`NCPU_EPU_EINSN-1:0] = epu_opc_no_EINSN[`NCPU_EPU_EINSN-1:0];
-
-   // Insn that has only one FU
-   assign single_fu =
-      (
-         // LPU opcodes
-         (|lpu_opc_bus) |
-         // BRU opcodes
-         (|bru_opc_bus) |
-         // LSU insns
-         (lsu_opc_bus[`NCPU_LSU_LOAD] | lsu_opc_bus[`NCPU_LSU_STORE] | lsu_opc_bus[`NCPU_LSU_BARR]) |
-         // EPU opcodes
-         (|epu_opc_bus)
+         (|epu_opc)
       );
    
    // Insn that uses rs1 and imm15 as operands.

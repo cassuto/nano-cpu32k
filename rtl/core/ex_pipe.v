@@ -56,6 +56,7 @@ module ex_pipe
    input [`NCPU_EPU_IOPW-1:0]          ex_epu_opc_bus,
    input [`NCPU_BRU_IOPW-1:0]          ex_bru_opc_bus,
    input [`NCPU_LSU_IOPW-1:0]          ex_lsu_opc_bus,
+   input [`NCPU_FE_W-1:0]              ex_fe,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`BPU_UPD_W-1:0] ex_bpu_upd,
    input [`PC_W-1:0]                   ex_pc,
    input [CONFIG_DW-1:0]               ex_imm,
@@ -68,14 +69,16 @@ module ex_pipe
    input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] ex_rob_bank,
    // To RS
    output                              ex_ready,
-   // To EX
-   output                              se_fail,
-   output [`PC_W-1:0]                  se_tgt,
-   output                              exc_flush,
-   output [`PC_W-1:0]                  exc_flush_tgt,
-   output                              b_taken,
-   output                              b_cc, b_reg, b_rel,
-   output [`PC_W-1:0]                  b_tgt,
+   // To WB
+   output                              prf_WE,
+   output [`NCPU_PRF_AW-1:0]           prf_WADDR,
+   output [CONFIG_DW-1:0]              prf_WDATA,
+   output                              wb_fls,
+   output                              wb_fls_tgt,
+   output [CONFIG_AW-1:0]              wb_lsa,
+   
+   
+   
    // To commit
    output [CONFIG_DW-1:0]              commit_rf_wdat,
    output [`NCPU_LRF_AW-1:0]           commit_rf_waddr,
@@ -85,31 +88,28 @@ module ex_pipe
    /*AUTOINPUT*/
    wire [CONFIG_DW-1:0]                bru_dout;
    wire                                bru_dout_valid;
-   
-   wire                                ex_lsu_load0;
    wire                                add_s;
    wire [CONFIG_DW-1:0]                add_sum;
    wire                                add_carry;
    wire                                add_overflow;
-   
-   
+   wire                                b_taken;
+   wire                                b_cc, b_reg, b_rel;
+   wire [`PC_W-1:0]                    b_tgt;
    
    wire                                agu_en;
    // Stage 1 Input
+   wire                                s1i_se_fail;
+   wire [`PC_W-1:0]                    s1i_se_tgt;
+   wire                                s1i_exc_flush;
+   wire [`PC_W-1:0]                    s1i_exc_flush_tgt;
+   wire                                s1i_wb_fls;
+   wire                                s1i_wb_fls_tgt;
+   wire                                s1i_wb_lsa;
+   
    wire [CONFIG_DW-1:0]                s1i_rf_dout_1, s1i_rf_dout;
    wire                                s1i_rf_we;
    wire                                s1i_rf_dout_valid;
    wire [`PC_W-1:0]                    s1i_npc;
-   // Stage 2 Input / Stage 1 Output
-   wire [CONFIG_DW-1:0]                s1o_rf_dout;
-   wire [`NCPU_LRF_AW-1:0]             s1o_rf_waddr;
-   wire                                s1o_rf_we;
-   // Stage 3 Input / Stage 2 Output
-   wire [CONFIG_DW-1:0]                s2o_lsu_dout0;
-   wire [CONFIG_DW-1:0]                s2o_rf_dout;
-   wire [`NCPU_LRF_AW-1:0]             s2o_rf_waddr;
-   wire                                s2o_rf_we;
-   wire [CONFIG_DW-1:0]                s3i_rf_wdat;
 
    genvar i;
    integer j;
@@ -181,6 +181,24 @@ module ex_pipe
          .bru_dout                     (bru_dout),
          .bru_dout_valid               (bru_dout_valid)
       );
+   
+   ex_eh
+      #(/*AUTOINSTPARAM*/)
+   U_EH
+      (
+         .ex_fe                        (ex_fe),
+         .msr_evect                    (msr_evect),
+         .exc_flush                    (s1i_exc_flush),
+         .exc_flush_tgt                (s1i_exc_flush_tgt),
+      );
+      
+   ex_agu U_AGU
+      (
+         .ex_epu_lsu_bus               (ex_epu_lsu_bus),
+         .agu_en                       (agu_en),
+         .add_sum                      (add_sum),
+         .wb_lsa                       (s1i_wb_lsa)
+      );
 
    // BRU reused the adder of ALU
    assign add_s =
@@ -204,10 +222,19 @@ module ex_pipe
 
    assign s1i_rf_we = (ex_valid & s1i_rf_dout_valid & ex_rf_we);
    
-   assign se_fail = ex_valid & ((b_taken ^ ex_bpu_pred_taken) | (b_tgt != ex_bpu_pred_tgt)); // FAIL
+   // Speculative execution check point
+   assign s1i_se_fail = ex_valid & ((b_taken ^ ex_bpu_pred_taken) | (b_tgt != ex_bpu_pred_tgt)); // FAIL
    //ex_valid[0] & ((b_taken ^ ex_bpu_pred_taken) | (b_taken & (b_tgt != ex_bpu_pred_tgt))); // RIGHT
-   assign se_tgt = (b_taken) ? b_tgt : s1i_npc;
+   assign s1i_se_tgt = (b_taken) ? b_tgt : s1i_npc;
    
+   assign s1i_wb_fls = (s1i_se_fail | s1i_exc_flush);
+   
+   // Maintain the priority of exception or speculative execution failure
+   // Highest - Exception
+   // Lowest - Speculative execution failure
+   assign s1i_wb_fls_tgt = (s1i_exc_flush)
+                        ? s1i_exc_flush_tgt
+                        : s1i_se_tgt; /* (se_flush) */
    
    //
    // Pipeline stages
