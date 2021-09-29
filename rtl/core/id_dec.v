@@ -110,11 +110,11 @@ module id_dec
    output [`NCPU_LSU_IOPW-1:0]         lsu_opc_bus,
    output [CONFIG_DW-1:0]              imm,
    output                              rf_we,
-   output [`NCPU_REG_AW-1:0]           rf_waddr,
+   output [`NCPU_LRF_AW-1:0]           rf_waddr,
    output                              rf_rs1_re,
-   output [`NCPU_REG_AW-1:0]           rf_rs1_addr,
+   output [`NCPU_LRF_AW-1:0]           rf_rs1_addr,
    output                              rf_rs2_re,
-   output [`NCPU_REG_AW-1:0]           rf_rs2_addr
+   output [`NCPU_LRF_AW-1:0]           rf_rs2_addr
 );
    wire                                msk;
    wire [6:0]                          f_opcode;

@@ -162,8 +162,8 @@
 
 `define NCPU_REGNO_LNK 1 // the only one machine-dependent register
 
-/* Regfile index width */
-`define NCPU_REG_AW 5
+/* Logical regfile index width */
+`define NCPU_LRF_AW 5
 
 /* Physical regfile index width */
 `define NCPU_PRF_AW 5

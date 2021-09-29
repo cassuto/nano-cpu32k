@@ -149,7 +149,7 @@ module ncpu64k
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_REG_AW-1:0] arf_RADDR;// From U_ID of id.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_LRF_AW-1:0] arf_RADDR;// From U_ID of id.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0] arf_RDATA;// From U_CMT of cmt.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] arf_RE;// From U_ID of id.v
    wire                 bpu_wb;                 // From U_EX of ex.v
@@ -160,7 +160,7 @@ module ncpu64k
    wire [`PC_W-1:0]     bpu_wb_pc;              // From U_EX of ex.v
    wire                 bpu_wb_taken;           // From U_EX of ex.v
    wire [`BPU_UPD_W-1:0] bpu_wb_upd;            // From U_EX of ex.v
-   wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr;// From U_EX of ex.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr;// From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_we;// From U_EX of ex.v
    wire [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_alu_opc_bus;// From U_ID of id.v
@@ -173,7 +173,7 @@ module ncpu64k
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand1;// From U_ID of id.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand2;// From U_ID of id.v
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_pc;// From U_ID of id.v
-   wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_waddr;// From U_ID of id.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_waddr;// From U_ID of id.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_we;// From U_ID of id.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_valid;// From U_ID of id.v
    wire [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd;// From U_FNT of frontend.v
@@ -197,20 +197,20 @@ module ncpu64k
    wire                 msr_psr_ice;            // From U_EX of ex.v
    wire                 msr_psr_imme;           // From U_EX of ex.v
    wire                 msr_psr_rm;             // From U_EX of ex.v
-   wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_waddr;// From U_EX of ex.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_waddr;// From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_wdat;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_we;// From U_EX of ex.v
    wire                 ro_ex_s1_load0;         // From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_dout;// From U_EX of ex.v
-   wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_waddr;// From U_EX of ex.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_waddr;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_we;// From U_EX of ex.v
    wire                 ro_ex_s2_load0;         // From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_dout;// From U_EX of ex.v
-   wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_waddr;// From U_EX of ex.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_waddr;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_we;// From U_EX of ex.v
    wire                 ro_ex_s3_load0;         // From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_dout;// From U_EX of ex.v
-   wire [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_waddr;// From U_EX of ex.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_waddr;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_we;// From U_EX of ex.v
    // End of automatics
    /*AUTOINPUT*/
@@ -326,10 +326,10 @@ module ncpu64k
        .ex_imm                          (ex_imm[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_operand1                     (ex_operand1[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_operand2                     (ex_operand2[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_rf_waddr                     (ex_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_rf_waddr                     (ex_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_rf_we                        (ex_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .arf_RE                          (arf_RE[(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0]),
-       .arf_RADDR                       (arf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_REG_AW-1:0]),
+       .arf_RADDR                       (arf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_LRF_AW-1:0]),
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
@@ -349,10 +349,10 @@ module ncpu64k
        .ro_ex_s2_rf_we                  (ro_ex_s2_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s3_rf_we                  (ro_ex_s3_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_cmt_rf_we                    (ro_cmt_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s1_load0                  (ro_ex_s1_load0),
        .ro_ex_s2_load0                  (ro_ex_s2_load0),
        .ro_ex_s3_load0                  (ro_ex_s3_load0),
@@ -407,15 +407,15 @@ module ncpu64k
        .ro_ex_s2_rf_we                  (ro_ex_s2_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s3_rf_we                  (ro_ex_s3_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_cmt_rf_we                    (ro_cmt_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_ex_s1_load0                  (ro_ex_s1_load0),
        .ro_ex_s2_load0                  (ro_ex_s2_load0),
        .ro_ex_s3_load0                  (ro_ex_s3_load0),
        .commit_rf_wdat                  (commit_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .commit_rf_waddr                 (commit_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .commit_rf_waddr                 (commit_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .commit_rf_we                    (commit_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .bpu_wb                          (bpu_wb),
        .bpu_wb_is_bcc                   (bpu_wb_is_bcc),
@@ -483,7 +483,7 @@ module ncpu64k
        .ex_imm                          (ex_imm[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_operand1                     (ex_operand1[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_operand2                     (ex_operand2[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_rf_waddr                     (ex_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_rf_waddr                     (ex_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_rf_we                        (ex_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .irqs                            (irqs[CONFIG_NUM_IRQ-1:0]),
        .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
@@ -515,10 +515,10 @@ module ncpu64k
        // Inputs
        .clk                             (clk),
        .commit_rf_wdat                  (commit_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .commit_rf_waddr                 (commit_rf_waddr[`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .commit_rf_waddr                 (commit_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .commit_rf_we                    (commit_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .arf_RE                          (arf_RE[(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0]),
-       .arf_RADDR                       (arf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_REG_AW-1:0]));
+       .arf_RADDR                       (arf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_LRF_AW-1:0]));
 
        
 `ifdef ENABLE_DIFFTEST

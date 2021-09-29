@@ -22,11 +22,11 @@ module difftest
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_valid,
    input [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_pc,
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat,
-   input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr,
+   input [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_we,
    input                               commit_excp,
    input [31:0]                        commit_excp_vect,
-   input [CONFIG_DW-1:0]               regfile [(1<<`NCPU_REG_AW)-1:0]
+   input [CONFIG_DW-1:0]               regfile [(1<<`NCPU_LRF_AW)-1:0]
 );
    localparam IW = (1<<CONFIG_P_ISSUE_WIDTH);
    
@@ -40,7 +40,7 @@ module difftest
    wire [CONFIG_NUM_IRQ-1:0] commit_irqc_irr;
    wire [IW-1:0] commit_valid_ff;
    wire [`PC_W*IW-1:0] commit_pc_ff;
-   wire [`NCPU_REG_AW*IW-1:0] commit_rf_waddr_ff;
+   wire [`NCPU_LRF_AW*IW-1:0] commit_rf_waddr_ff;
    wire [CONFIG_DW*IW-1:0] commit_rf_wdat_ff;
    wire [IW-1:0] commit_rf_we_ff;
    wire commit_excp_ff;
@@ -63,7 +63,7 @@ module difftest
    // Extra pipeline in CMT
    mDFF_r #(.DW(IW)) ff_commit_valid (.CLK(clk), .RST(rst), .D(commit_valid & {IW{p_ce_s3}}), .Q(commit_valid_ff));
    mDFF #(.DW(`PC_W*IW)) ff_commit_pc (.CLK(clk), .D(commit_pc), .Q(commit_pc_ff));
-   mDFF #(.DW(`NCPU_REG_AW*IW)) ff_commit_rf_waddr (.CLK(clk), .D(commit_rf_waddr), .Q(commit_rf_waddr_ff));
+   mDFF #(.DW(`NCPU_LRF_AW*IW)) ff_commit_rf_waddr (.CLK(clk), .D(commit_rf_waddr), .Q(commit_rf_waddr_ff));
    mDFF #(.DW(CONFIG_DW*IW)) ff_commit_rf_wdat (.CLK(clk), .D(commit_rf_wdat), .Q(commit_rf_wdat_ff));
    mDFF_r #(.DW(IW)) ff_commit_rf_we (.CLK(clk), .RST(rst), .D(commit_rf_we), .Q(commit_rf_we_ff));
    mDFF #(.DW(`NCPU_INSN_DW*IW)) ff_commit_ins (.CLK(clk), .D(ex_s3o_ins), .Q(commit_ins_ff) );

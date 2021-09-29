@@ -32,11 +32,11 @@ module cmt
 (
    input                               clk,
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat,
-   input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr,
+   input [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_we,
    // ARF
    input [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] arf_RE,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_REG_AW-1:0] arf_RADDR,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_LRF_AW-1:0] arf_RADDR,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0] arf_RDATA
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
@@ -44,7 +44,7 @@ module cmt
    mRF_nwnr
       #(
          .DW                           (CONFIG_DW),
-         .AW                           (`NCPU_REG_AW),
+         .AW                           (`NCPU_LRF_AW),
          .NUM_READ                     (2*IW), // Each instruction has a maximum of 2 register operands
          .NUM_WRITE                    (IW)
       )

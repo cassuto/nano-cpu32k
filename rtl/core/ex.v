@@ -76,7 +76,7 @@ module ex
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_imm,
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand1,
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand2,
-   input [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_waddr,
+   input [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_waddr,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_we,
    // To bypass
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_dout,
@@ -87,16 +87,16 @@ module ex
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_we,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_we,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_we,
-   output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_waddr,
-   output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_waddr,
-   output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_waddr,
-   output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_waddr,
+   output [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_waddr,
+   output [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_waddr,
+   output [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_waddr,
+   output [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_waddr,
    output                              ro_ex_s1_load0,
    output                              ro_ex_s2_load0,
    output                              ro_ex_s3_load0,
    // To commit
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat,
-   output [`NCPU_REG_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr,
+   output [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_we,
    // To BPU
    output                              bpu_wb,
@@ -240,12 +240,12 @@ module ex
          .ro_ex_s2_rf_we               (ro_ex_s2_rf_we[0]),
          .ro_ex_s3_rf_we               (ro_ex_s3_rf_we[0]),
          .ro_cmt_rf_we                 (ro_cmt_rf_we[0]),
-         .ro_ex_s1_rf_waddr            (ro_ex_s1_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]),
-         .ro_ex_s2_rf_waddr            (ro_ex_s2_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]),
-         .ro_ex_s3_rf_waddr            (ro_ex_s3_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]),
-         .ro_cmt_rf_waddr              (ro_cmt_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]),
+         .ro_ex_s1_rf_waddr            (ro_ex_s1_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
+         .ro_ex_s2_rf_waddr            (ro_ex_s2_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
+         .ro_ex_s3_rf_waddr            (ro_ex_s3_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
+         .ro_cmt_rf_waddr              (ro_cmt_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
          .commit_rf_wdat               (commit_rf_wdat[0 * CONFIG_DW +: CONFIG_DW]),
-         .commit_rf_waddr              (commit_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]),
+         .commit_rf_waddr              (commit_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
          .commit_rf_we                 (commit_rf_we[0]),
          
          .ex_cmt_valid                 (s1i_cmt_valid[0]),
@@ -262,7 +262,7 @@ module ex
          .ex_imm                       (ex_imm[0 * CONFIG_DW +: CONFIG_DW]),
          .ex_operand1                  (ex_operand1[0 * CONFIG_DW +: CONFIG_DW]),
          .ex_operand2                  (ex_operand2[0 * CONFIG_DW +: CONFIG_DW]),
-         .ex_rf_waddr                  (ex_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]),
+         .ex_rf_waddr                  (ex_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
          .ex_rf_we                     (ex_rf_we[0]),
       )
     */
@@ -321,15 +321,15 @@ module ex
        .ro_ex_s2_rf_we                  (ro_ex_s2_rf_we[0]),     // Templated
        .ro_ex_s3_rf_we                  (ro_ex_s3_rf_we[0]),     // Templated
        .ro_cmt_rf_we                    (ro_cmt_rf_we[0]),       // Templated
-       .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
-       .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
-       .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
-       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
+       .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
+       .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
+       .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
+       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
        .ro_ex_s1_load0                  (ro_ex_s1_load0),
        .ro_ex_s2_load0                  (ro_ex_s2_load0),
        .ro_ex_s3_load0                  (ro_ex_s3_load0),
        .commit_rf_wdat                  (commit_rf_wdat[0 * CONFIG_DW +: CONFIG_DW]), // Templated
-       .commit_rf_waddr                 (commit_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
+       .commit_rf_waddr                 (commit_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
        .commit_rf_we                    (commit_rf_we[0]),       // Templated
        .irq_async                       (irq_async),
        .tsc_irq                         (tsc_irq),
@@ -398,7 +398,7 @@ module ex
        .ex_imm                          (ex_imm[0 * CONFIG_DW +: CONFIG_DW]), // Templated
        .ex_operand1                     (ex_operand1[0 * CONFIG_DW +: CONFIG_DW]), // Templated
        .ex_operand2                     (ex_operand2[0 * CONFIG_DW +: CONFIG_DW]), // Templated
-       .ex_rf_waddr                     (ex_rf_waddr[0 * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
+       .ex_rf_waddr                     (ex_rf_waddr[0 * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
        .ex_rf_we                        (ex_rf_we[0]),           // Templated
        .irqs                            (irqs[CONFIG_NUM_IRQ-1:0]),
        .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
@@ -432,12 +432,12 @@ module ex
                   .ro_ex_s2_rf_we      (ro_ex_s2_rf_we[i]),
                   .ro_ex_s3_rf_we      (ro_ex_s3_rf_we[i]),
                   .ro_cmt_rf_we        (ro_cmt_rf_we[i]),
-                  .ro_ex_s1_rf_waddr   (ro_ex_s1_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]),
-                  .ro_ex_s2_rf_waddr   (ro_ex_s2_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]),
-                  .ro_ex_s3_rf_waddr   (ro_ex_s3_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]),
-                  .ro_cmt_rf_waddr     (ro_cmt_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]),
+                  .ro_ex_s1_rf_waddr   (ro_ex_s1_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
+                  .ro_ex_s2_rf_waddr   (ro_ex_s2_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
+                  .ro_ex_s3_rf_waddr   (ro_ex_s3_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
+                  .ro_cmt_rf_waddr     (ro_cmt_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
                   .commit_rf_wdat      (commit_rf_wdat[i * CONFIG_DW +: CONFIG_DW]),
-                  .commit_rf_waddr     (commit_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]),
+                  .commit_rf_waddr     (commit_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
                   .commit_rf_we        (commit_rf_we[i]),
                   .ex_cmt_valid        (s1i_cmt_valid[i]),
                   .ex_npc              (ex_npc[i * `PC_W +: `PC_W]),
@@ -446,7 +446,7 @@ module ex
                   .ex_bpu_pred_taken   (ex_bpu_upd[i * `BPU_UPD_W + `BPU_UPD_TAKEN]),
                   .ex_operand1         (ex_operand1[i * CONFIG_DW +: CONFIG_DW]),
                   .ex_operand2         (ex_operand2[i * CONFIG_DW +: CONFIG_DW]),
-                  .ex_rf_waddr         (ex_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]),
+                  .ex_rf_waddr         (ex_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
                   .ex_rf_we            (ex_rf_we[i]),
                )
              */
@@ -474,12 +474,12 @@ module ex
                 .ro_ex_s2_rf_we         (ro_ex_s2_rf_we[i]),     // Templated
                 .ro_ex_s3_rf_we         (ro_ex_s3_rf_we[i]),     // Templated
                 .ro_cmt_rf_we           (ro_cmt_rf_we[i]),       // Templated
-                .ro_ex_s1_rf_waddr      (ro_ex_s1_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
-                .ro_ex_s2_rf_waddr      (ro_ex_s2_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
-                .ro_ex_s3_rf_waddr      (ro_ex_s3_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
-                .ro_cmt_rf_waddr        (ro_cmt_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
+                .ro_ex_s1_rf_waddr      (ro_ex_s1_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
+                .ro_ex_s2_rf_waddr      (ro_ex_s2_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
+                .ro_ex_s3_rf_waddr      (ro_ex_s3_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
+                .ro_cmt_rf_waddr        (ro_cmt_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
                 .commit_rf_wdat         (commit_rf_wdat[i * CONFIG_DW +: CONFIG_DW]), // Templated
-                .commit_rf_waddr        (commit_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
+                .commit_rf_waddr        (commit_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
                 .commit_rf_we           (commit_rf_we[i]),       // Templated
                 // Inputs
                 .clk                    (clk),
@@ -496,7 +496,7 @@ module ex
                 .ex_bpu_pred_taken      (ex_bpu_upd[i * `BPU_UPD_W + `BPU_UPD_TAKEN]), // Templated
                 .ex_operand1            (ex_operand1[i * CONFIG_DW +: CONFIG_DW]), // Templated
                 .ex_operand2            (ex_operand2[i * CONFIG_DW +: CONFIG_DW]), // Templated
-                .ex_rf_waddr            (ex_rf_waddr[i * `NCPU_REG_AW +: `NCPU_REG_AW]), // Templated
+                .ex_rf_waddr            (ex_rf_waddr[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
                 .ex_rf_we               (ex_rf_we[i]));           // Templated
          end
    endgenerate

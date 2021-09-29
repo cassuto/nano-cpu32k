@@ -32,11 +32,11 @@ module rn_rat
 (
    input                               clk,
    input                               rst,
-   input                               we,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] we,
    input                               rollback,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_REG_AW-1:0] lrs1,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_REG_AW-1:0] lrs2,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_REG_AW-1:0] lrd,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LRF_AW-1:0] lrs1,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LRF_AW-1:0] lrs2,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LRF_AW-1:0] lrd,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] lrd_we,
    // From FL
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] fl_prd,
@@ -45,15 +45,16 @@ module rn_rat
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] rat_prs2,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] rat_pfree,
    // From ROB commit
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_REG_AW-1:0] commit_lrd,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] commit_lrd,
    input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] commit_prd,
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] commit_prd_we
 );
-   localparam N_LRF                    = (1<<`NCPU_REG_AW);
+   localparam N_LRF                    = (1<<`NCPU_LRF_AW);
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam CW                       = (1<<CONFIG_P_COMMIT_WIDTH);
-   reg [`NCPU_PRF_AW-1:0]              rat_ff [N_LRF-1:0];
-   reg [`NCPU_PRF_AW-1:0]              arat_ff [N_LRF-1:0];
+   wire [N_LRF*`NCPU_PRF_AW-1:0]       rat_ff;
+   wire [N_LRF*`NCPU_PRF_AW-1:0]       arat_ff;
+   wire [`NCPU_PRF_AW-1:0]             rat_mux [N_LRF-1:0]
    wire [`NCPU_PRF_AW-1:0]             prs1_nobyp [CW-1:0];
    wire [`NCPU_PRF_AW-1:0]             prs2_nobyp [CW-1:0];
    wire [`NCPU_PRF_AW-1:0]             pfree_nobpy [CW-1:0];
@@ -61,32 +62,53 @@ module rn_rat
    genvar i;
    integer x;
    
-   // Maintain RAT (Register Alias Table)
-   always @(posedge clk)
-      begin
-         if (rollback)
-            for(x=0;x<N_LRF;x=x+1)
-               rat_ff[x] <= arat_ff[x];
-               
-         else if (we)
-            for(x=0;x<IW;x=x+1) // This generates a priority MUX to resolve WAW hazard
-               if(we & lrd_we[x])
-                  rat_ff[lrd[x * `NCPU_REG_AW +: `NCPU_REG_AW]] <= fl_prd[x * `NCPU_PRF_AW +: `NCPU_PRF_AW];
-      end
+   mRF_nw_dio_r
+      #(
+         .DW (`NCPU_PRF_AW),
+         .AW (`NCPU_LRF_AW),
+         .RST_VECTOR ('b0),
+         .NUM_WRITE (IW)
+      )
+   U_RAT
+      (
+         .CLK (clk),
+         .RST (rst),
+         .WE  (lrd_we & we),
+         .WADDR (lrd),
+         .WDATA (fl_prd),
+         .REP (rollback),
+         .DI  (arat_ff),
+         .DO  (rat_ff)
+      );
+   
+   mRF_nw_do_r
+      #(
+         .DW (`NCPU_PRF_AW),
+         .AW (`NCPU_LRF_AW),
+         .RST_VECTOR ('b0),
+         .NUM_WRITE (IW)
+      )
+   U_aRAT
+      (
+         .CLK (clk),
+         .RST (rst),
+         .WE  (commit_prd_we),
+         .WADDR (commit_lrd),
+         .WDATA (commit_prd),
+         .DO  (arat_ff)
+      );
       
-
-   // Maintain ARAT (Architectural Register Alias Table)
-   always @(posedge clk)
-      for(x=0;x<CW;x=x+1)
-         if (commit_prd_we[x]) // This generates a priority MUX to resolve WAW hazard
-            arat_ff[commit_lrd[x * `NCPU_REG_AW +: `NCPU_REG_AW]] <= commit_prd[x * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+   generate
+      for(i=0;i<N_LRF;i=i+1)
+         rat_mux[i] = rat_ff[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+   endgenerate
 
    generate
       for(i=0;i<IW;i=i+1)
          begin : gen_readout
-            assign prs1_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_ff[lrs1[x * `NCPU_REG_AW +: `NCPU_REG_AW]];
-            assign prs2_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_ff[lrs2[x * `NCPU_REG_AW +: `NCPU_REG_AW]];
-            assign pfree_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_ff[lrd[x * `NCPU_REG_AW +: `NCPU_REG_AW]];
+            assign prs1_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs1[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+            assign prs2_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs2[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+            assign pfree_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrd[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
          end
    endgenerate
 
@@ -109,8 +131,8 @@ module rn_rat
                   for(x=0;x<i;x=x+1)
                      raw_rev[i-x-1] = raw_rev[i-x-1] |
                                           (lrd_we[x] &
-                                             ((lrs1[i]==lrd[x*`NCPU_REG_AW +:`NCPU_REG_AW ]) |
-                                                (lrs2[i]==lrd[x*`NCPU_REG_AW +:`NCPU_REG_AW ])));
+                                             ((lrs1[i]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]) |
+                                                (lrs2[i]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ])));
                end
             
             // Detect WAW hazard in the issue window
@@ -119,7 +141,7 @@ module rn_rat
                   waw_rev[i-1] = 'b0;
                   for(x=0;x<i;x=x+1)
                      waw_rev[i-x-1] = waw_rev[i-x-1] | (lrd_we[x] &
-                                                ((lrd_we[i] & (lrd[i]==lrd[x*`NCPU_REG_AW +:`NCPU_REG_AW ]))));
+                                                ((lrd_we[i] & (lrd[i]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]))));
                end
             
             pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs1 (

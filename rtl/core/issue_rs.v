@@ -27,6 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module issue_rs
 #(
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
+   parameter                           CONFIG_P_COMMIT_WIDTH = 0,
    parameter                           CONFIG_P_ROB_DEPTH = 0,
    parameter                           CONFIG_P_RS_DEPTH = 0
 )
@@ -51,6 +52,7 @@ module issue_rs
    input                               issue_prd_we,
    input [`NCPU_PRF_AW-1:0]            issue_pfree,
    input [CONFIG_P_ROB_DEPTH-1:0]      issue_rob_id,
+   input [CONFIG_P_COMMIT_WIDTH-1:0]   issue_rob_bank,
    input                               issue_push,
    // From busytable
    input [(1<<`NCPU_PRF_AW)-1:0]       busytable,
@@ -72,7 +74,8 @@ module issue_rs
    output [`NCPU_PRF_AW-1:0]           ex_prd,
    output                              ex_prd_we,
    output [`NCPU_PRF_AW-1:0]           ex_pfree,
-   output [CONFIG_P_ROB_DEPTH-1:0]     ex_rob_id
+   output [CONFIG_P_ROB_DEPTH-1:0]     ex_rob_id,
+   output [CONFIG_P_COMMIT_WIDTH-1:0]  ex_rob_bank
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam RS_DEPTH                 = (1<<CONFIG_P_RS_DEPTH);
@@ -86,16 +89,19 @@ module issue_rs
                                           `NCPU_PRF_AW +
                                           1 +
                                           `NCPU_PRF_AW +
-                                          CONFIG_P_ROB_DEPTH);
+                                          CONFIG_P_ROB_DEPTH +
+                                          CONFIG_P_COMMIT_WIDTH);
    localparam FL_1[RS_DEPTH-1:0]       = {{RS_DEPTH-1{1'b0}}, 'b1};
 
    wire [OPP_W-1:0]                    opp_wdat, opp_rdat;
    wire [RS_DEPTH*`NCPU_PRF_AW-1:0]    prs1_rf;
    wire [RS_DEPTH*`NCPU_PRF_AW-1:0]    prs2_rf;
-   wire [RS_DEPTH-1:0]                 prs1_re_rf ;
+   wire [RS_DEPTH-1:0]                 prs1_re_rf;
    wire [RS_DEPTH-1:0]                 prs2_re_rf;
+   wire [`NCPU_PRF_AW-1:0]             prs1_rf_mux [RS_DEPTH-1:0];
+   wire [`NCPU_PRF_AW-1:0]             prs2_rf_mux [RS_DEPTH-1:0];
    wire [RS_DEPTH-1:0]                 free_vec_ff;
-   reg [RS_DEPTH-1:0]                  free_vec_nxt;
+   reg [RS_DEPTH-1:0]                  free_vec_nxt, free_vec_ff_byp;
    wire                                has_free;
    wire [CONFIG_P_RS_DEPTH-1:0]        free_addr;
    wire [RS_DEPTH-1:0]                 rdy_vec;
@@ -115,7 +121,8 @@ module issue_rs
       issue_prd,
       issue_prd_we,
       issue_pfree,
-      issue_rob_id
+      issue_rob_id,
+      issue_rob_bank
    };
    
    mRF_nwnr
@@ -200,7 +207,13 @@ module issue_rs
          if (issue_push)
             free_vec_nxt = free_vec_nxt & ~(FL_1<<free_addr);
          if (ex_rs_pop)
-            free_vec_nxt = free_vec_nxt | (FL_1<<rdy_addr_ff);
+               free_vec_nxt = free_vec_nxt | (FL_1<<rdy_addr_ff);
+      end
+   always @(*)
+      begin
+         free_vec_ff_byp = free_vec_ff;
+         if (ex_rs_pop)
+               free_vec_ff_byp = free_vec_ff_byp | (FL_1<<rdy_addr_ff);
       end
 
    mDFF_r #(.DW(RS_DEPTH), .RST_VECTOR({RS_DEPTH{1'b1}})) ff_free_vec (.CLK(clk), .RST(rst), .D(free_vec_nxt), .Q(free_vec_ff) );
@@ -211,18 +224,27 @@ module issue_rs
    
    generate
       for(i=0;i<RS_DEPTH;i=i+1)
-         assign rdy_vec[i] = (~prs1_re_rf[i] | ~busytable[prs1_rf[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]]) &
-                              (~prs2_re_rf[i] | ~busytable[prs2_rf[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]]);
+         begin : gen_mux
+            assign prs1_rf_mux[i] = prs1_rf[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+            assign prs2_rf_mux[i] = prs2_rf[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+         end
+   endgenerate
+   
+   generate
+      for(i=0;i<RS_DEPTH;i=i+1)
+         assign rdy_vec[i] = ~free_vec_ff_byp[i] &
+                              (~prs1_re_rf[i] | ~busytable[prs1_rf_mux[i]]) &
+                              (~prs2_re_rf[i] | ~busytable[prs2_rf_mux[i]]);
    endgenerate
    
    priority_encoder_gs #(.P_DW(CONFIG_P_RS_DEPTH)) penc_rdy (.din(rdy_vec), .dout(rdy_addr), .gs(has_rdy) );
-
+   
    mDFF_r #(.DW(1)) ff_has_rdy (.CLK(clk), .RST(rst), .D(has_rdy), .Q(has_rdy_ff) );
    mDFF_l #(.DW(CONFIG_P_RS_DEPTH)) ff_rdy_addr (.CLK(clk), .LOAD(has_rdy), .D(rdy_addr), .Q(rdy_addr_ff) );
-   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs1 (.CLK(clk), .LOAD(has_rdy), .D(prs1_rf), .Q(issue_prs1) );
-   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs2 (.CLK(clk), .LOAD(has_rdy), .D(prs2_rf), .Q(issue_prs2) );
-   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs1_re (.CLK(clk), .LOAD(has_rdy), .D(prs1_re_rf), .Q(issue_prs1_re) );
-   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs2_re (.CLK(clk), .LOAD(has_rdy), .D(prs2_re_rf), .Q(issue_prs2_re) );
+   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs1 (.CLK(clk), .LOAD(has_rdy), .D(prs1_rf_mux[rdy_addr]), .Q(ex_prs1) );
+   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs2 (.CLK(clk), .LOAD(has_rdy), .D(prs2_rf_mux[rdy_addr]), .Q(ex_prs2) );
+   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs1_re (.CLK(clk), .LOAD(has_rdy), .D(prs1_re_rf[rdy_addr]), .Q(ex_prs1_re) );
+   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs2_re (.CLK(clk), .LOAD(has_rdy), .D(prs2_re_rf[rdy_addr]), .Q(ex_prs2_re) );
    
    assign ex_valid = has_rdy_ff;
 
@@ -238,7 +260,8 @@ module issue_rs
       ex_prd,
       ex_prd_we,
       ex_pfree,
-      ex_rob_id
+      ex_rob_id,
+      ex_rob_bank
    } = opp_rdat;
    
 endmodule

@@ -32,7 +32,7 @@ module rn_fl
 (
    input                               clk,
    input                               rst,
-   input                               pop,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] pop,
    input                               rollback,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] lrd_we,
    output                              fl_stall_req,
@@ -47,9 +47,9 @@ module rn_fl
    localparam CW                       = (1<<CONFIG_P_COMMIT_WIDTH);
    localparam N_PRF                    = (1<<`NCPU_PRF_AW);
    localparam [N_PRF-1:0] FL_1         = {{N_PRF-1{1'b0}}, 1'b1};
-   wire [N_PRF-1:0]                    fl_ff;
+   wire [N_PRF-2:0]                    fl_ff;
    reg [N_PRF-1:0]                     fl_nxt;
-   wire [N_PRF-1:0]                    afl_ff;
+   wire [N_PRF-2:0]                    afl_ff;
    reg [N_PRF-1:0]                     afl_nxt;
    wire [N_PRF-1:0]                    fl                            [IW-1:0];
    wire                                gs                            [IW-1:0];
@@ -60,7 +60,7 @@ module rn_fl
    // Select free PR
    always @(*)
       begin
-         fl[0] = fl_ff;
+         fl[0] = {fl_ff, 1'b0};
          for(j=1;j<IW;j=j+1)
             fl[j] = fl[j-1] & ~(FL_1 << fl_prd[(j-1) * `NCPU_PRF_AW +: `NCPU_PRF_AW]);
       end
@@ -88,9 +88,9 @@ module rn_fl
    // Maintain the free list (FL)
    always @(*)
       begin
-         fl_nxt = fl_ff;
+         fl_nxt = {fl_ff, 1'b0};
          for(j=0;j<IW;j=j+1)
-            if (pop & lrd_we[j])
+            if (pop[j] & lrd_we[j])
                fl_nxt = fl_nxt & ~(FL_1<<fl_prd[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Allocate
                
          for(j=0;j<CW;j=j+1)   
@@ -98,12 +98,12 @@ module rn_fl
                fl_nxt = fl_nxt | (FL_1<<commit_pfree[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Free
       end
 
-   mDFF_r #(.DW(N_PRF)) ff_fl (.CLK(clk), .RST(rst), .D(rollback ? afl_ff : fl_nxt), .Q(fl_ff) );
+   mDFF_r #(.DW(N_PRF-1)) ff_fl (.CLK(clk), .RST(rst), .D(rollback ? afl_ff : fl_nxt[N_PRF-1:1]), .Q(fl_ff) );
 
    // Maintain architectural free list (aFL)
    always @(*)
       begin
-         afl_nxt = afl_ff;
+         afl_nxt = {afl_ff, 1'b0};
          for(j=0;j<CW;j=j+1)
             if (commit_prd_we[j])
                begin
@@ -112,6 +112,6 @@ module rn_fl
                end
       end
    
-   mDFF_r #(.DW(N_PRF)) ff_afl (.CLK(clk), .RST(rst), .D(afl_nxt), .Q(afl_ff) );
+   mDFF_r #(.DW(N_PRF-1)) ff_afl (.CLK(clk), .RST(rst), .D(afl_nxt[N_PRF-1:1]), .Q(afl_ff) );
 
 endmodule

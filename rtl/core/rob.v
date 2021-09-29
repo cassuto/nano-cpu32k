@@ -26,14 +26,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module rob
 #(
+   parameter                           CONFIG_DW = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0,
    parameter                           CONFIG_P_ROB_DEPTH = 0
 )
 (
    input                               clk,
    input                               rst,
-   input                               push,
-   output                              ready,
+   input                               flush,
+   input [CONFIG_P_COMMIT_WIDTH:0]     push_size,
    input [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_epu_opc_bus,
    input [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_bru_opc_bus,
    input [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_lsu_opc_bus,
@@ -43,8 +44,14 @@ module rob
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_prd_we,
    input [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_pfree,
    input [CONFIG_P_COMMIT_WIDTH:0]     cmt_pop_size,
-   // To RN
-   output [(1<<CONFIG_P_COMMIT_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] rob_free_id,
+   // From WB
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] wb_rob_id,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] wb_rob_bank,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] wb_rob_comp,
+   // To issue
+   output                              rob_ready,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] rob_free_id,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] rob_free_bank, 
    // To CMT
    output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_valid,
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_epu_opc_bus,
@@ -70,10 +77,13 @@ module rob
    localparam P_BANKS                  = (CONFIG_P_COMMIT_WIDTH);
    localparam BANKS                    = (1<<P_BANKS);
 
-   wire [P_BANKS-1:0]                  head_ff;
-   wire [P_BANKS-1:0]                  head_nxt;
+   wire [P_BANKS-1:0]                  head_ff, tail_ff;
+   wire [P_BANKS-1:0]                  head_nxt, tail_nxt;
    wire [P_BANKS-1:0]                  head_l                        [FW-1:0];
    wire [P_BANKS-1:0]                  head_r                        [FW-1:0];
+   wire [P_BANKS-1:0]                  tail_l                        [FW-1:0];
+   wire [P_BANKS-1:0]                  tail_r                        [FW-1:0];
+   wire [FIFO_DW-1:0]                  que_din_mux                   [BANKS-1:0];
    wire [FIFO_DW-1:0]                  que_din                       [BANKS-1:0];
    wire [FIFO_DW-1:0]                  que_dout                      [BANKS-1:0];
    wire                                que_valid                     [BANKS-1:0];
@@ -81,6 +91,7 @@ module rob
    wire                                que_push                      [BANKS-1:0];
    wire                                que_pop                       [BANKS-1:0];
    wire [P_BANKS:0]                    pop_cnt_adapt;
+   wire [DEPTH_WIDTH-1:0]              payload_waddr                 [BANKS-1:0];
    genvar i;
 
    generate
@@ -88,9 +99,10 @@ module rob
          begin : gen_ptr
             assign head_l[i]  = i + head_ff;
             assign head_r[i]  = i - head_ff;
+            assign tail_l[i] = i + tail_ff;
+            assign tail_r[i] = i - tail_ff;
          end
    endgenerate
-   
    
    // Width adapter
    generate
@@ -104,32 +116,34 @@ module rob
    generate
       for(i=0;i<BANKS;i=i+1)
          begin : gen_bank_ctrl
-            assign que_din[i] = {push_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW],
-                                 push_bru_opc_bus[i * `NCPU_BRU_IOPW +: `NCPU_BRU_IOPW],
-                                 push_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
-                                 push_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
-                                 push_pc[i * `PC_W +: `PC_W],
-                                 push_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
-                                 push_prd_we[i],
-                                 push_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]};
+            assign que_din_mux[i] = {push_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW],
+                                       push_bru_opc_bus[i * `NCPU_BRU_IOPW +: `NCPU_BRU_IOPW],
+                                       push_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
+                                       push_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
+                                       push_pc[i * `PC_W +: `PC_W],
+                                       push_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
+                                       push_prd_we[i],
+                                       push_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]};
+            assign que_din[i] = que_din_mux[tail_r[i]];
             assign que_pop[i]  = ({1'b0, head_r[i]} < pop_cnt_adapt);
-            assign que_push[i] = push;
+            assign que_push[i] = ({1'b0, tail_r[i]} < push_size);
          end
    endgenerate
    
    assign head_nxt = (head_ff + pop_cnt_adapt[P_BANKS-1:0]) & {P_BANKS{~flush}};
+   assign tail_nxt = (tail_ff + push_size[P_BANKS-1:0]) & {P_BANKS{~flush}};
    
    mDFF_r #(.DW(P_BANKS)) ff_head (.CLK(clk), .RST(rst), .D(head_nxt), .Q(head_ff) );
+   mDFF_r #(.DW(P_BANKS)) ff_tail (.CLK(clk), .RST(rst), .D(tail_nxt), .Q(tail_ff) );
    
    generate
       for(i=0;i<BANKS;i=i+1)
-         begin
+         begin : gen_BANKS
             wire                       payload_re;
             wire [DEPTH_WIDTH-1:0]     payload_raddr;
-            wire [DW-1:0]              payload_rdata;
+            wire [FIFO_DW-1:0]         payload_rdata;
             wire                       payload_we;
-            wire [DEPTH_WIDTH-1:0]     payload_waddr;
-            wire [DW-1:0]              payload_wdata;
+            wire [FIFO_DW-1:0]         payload_wdata;
             
             fifo_fwft_ctrl
                #(
@@ -155,7 +169,15 @@ module rob
                   .payload_wdata (payload_wdata)
                );
             
-            assign rob_free_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH] = payload_waddr;
+            
+         end
+   endgenerate
+   
+   generate
+      for(i=0;i<BANKS;i=i+1)
+         begin : gen_rob_free
+            assign rob_free_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH] = payload_waddr[tail_l[i]];
+            assign rob_free_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH] = tail_l[i];
          end
    endgenerate
    
@@ -176,6 +198,5 @@ module rob
    endgenerate
    
    assign ready = &que_ready;
-   
 
 endmodule
