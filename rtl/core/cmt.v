@@ -115,10 +115,29 @@ module cmt
    input [AXI_ID_WIDTH-1:0]            dbus_BID,
    input [AXI_USER_WIDTH-1:0]          dbus_BUSER,
    
-   // From frontend
+   // IRQS
    input [CONFIG_NUM_IRQ-1:0]          irqs,
+   output                              irq_async,
+   // PSR
+   output                              msr_psr_imme,
+   output                              msr_psr_rm,
+   output                              msr_psr_ice,
+   // IMMID
+   input [CONFIG_DW-1:0]               msr_immid,
+   // ITLBL
+   output [CONFIG_ITLB_P_SETS-1:0]     msr_imm_tlbl_idx,
+   output [CONFIG_DW-1:0]              msr_imm_tlbl_nxt,
+   output                              msr_imm_tlbl_we,
+   // ITLBH
+   output [CONFIG_ITLB_P_SETS-1:0]     msr_imm_tlbh_idx,
+   output [CONFIG_DW-1:0]              msr_imm_tlbh_nxt,
+   output                              msr_imm_tlbh_we,
+   // ICID
    input [CONFIG_DW-1:0]               msr_icid,
-   input [CONFIG_DW-1:0]               msr_immid
+   // ICINV
+   output [CONFIG_DW-1:0]              msr_icinv_nxt,
+   output                              msr_icinv_we,
+   input                               msr_icinv_ready
 );
    localparam CW                       = (1<<CONFIG_P_COMMIT_WIDTH);
    /*AUTOWIRE*/
@@ -128,7 +147,6 @@ module cmt
    wire                 epu_wb_valid;           // From U_EPU of cmt_epu.v
    wire                 exc_flush;              // From U_EPU of cmt_epu.v
    wire [`PC_W-1:0]     exc_flush_tgt;          // From U_EPU of cmt_epu.v
-   wire                 irq_async;              // From U_EPU of cmt_epu.v
    wire                 lsu_EALIGN;             // From U_LSU of cmt_lsu.v
    wire                 lsu_EDPF;               // From U_LSU of cmt_lsu.v
    wire                 lsu_EDTM;               // From U_LSU of cmt_lsu.v
@@ -162,14 +180,6 @@ module cmt
    wire [CONFIG_DW-1:0] msr_evect;              // From U_PSR of cmt_psr.v
    wire [CONFIG_AW-1:0] msr_evect_nxt;          // From U_EPU of cmt_epu.v
    wire                 msr_evect_we;           // From U_EPU of cmt_epu.v
-   wire [CONFIG_DW-1:0] msr_icinv_nxt;          // From U_EPU of cmt_epu.v
-   wire                 msr_icinv_we;           // From U_EPU of cmt_epu.v
-   wire [CONFIG_ITLB_P_SETS-1:0] msr_imm_tlbh_idx;// From U_EPU of cmt_epu.v
-   wire [CONFIG_DW-1:0] msr_imm_tlbh_nxt;       // From U_EPU of cmt_epu.v
-   wire                 msr_imm_tlbh_we;        // From U_EPU of cmt_epu.v
-   wire [CONFIG_ITLB_P_SETS-1:0] msr_imm_tlbl_idx;// From U_EPU of cmt_epu.v
-   wire [CONFIG_DW-1:0] msr_imm_tlbl_nxt;       // From U_EPU of cmt_epu.v
-   wire                 msr_imm_tlbl_we;        // From U_EPU of cmt_epu.v
    wire [`NCPU_PSR_DW-1:0] msr_psr;             // From U_PSR of cmt_psr.v
    wire                 msr_psr_dce;            // From U_PSR of cmt_psr.v
    wire                 msr_psr_dce_nxt;        // From U_EPU of cmt_epu.v
@@ -177,17 +187,14 @@ module cmt
    wire                 msr_psr_dmme;           // From U_PSR of cmt_psr.v
    wire                 msr_psr_dmme_nxt;       // From U_EPU of cmt_epu.v
    wire                 msr_psr_dmme_we;        // From U_EPU of cmt_epu.v
-   wire                 msr_psr_ice;            // From U_PSR of cmt_psr.v
    wire                 msr_psr_ice_nxt;        // From U_EPU of cmt_epu.v
    wire                 msr_psr_ice_we;         // From U_EPU of cmt_epu.v
-   wire                 msr_psr_imme;           // From U_PSR of cmt_psr.v
    wire                 msr_psr_imme_nxt;       // From U_EPU of cmt_epu.v
    wire                 msr_psr_imme_we;        // From U_EPU of cmt_epu.v
    wire                 msr_psr_ire;            // From U_PSR of cmt_psr.v
    wire                 msr_psr_ire_nxt;        // From U_EPU of cmt_epu.v
    wire                 msr_psr_ire_we;         // From U_EPU of cmt_epu.v
    wire                 msr_psr_restore;        // From U_EPU of cmt_epu.v
-   wire                 msr_psr_rm;             // From U_PSR of cmt_psr.v
    wire                 msr_psr_rm_nxt;         // From U_EPU of cmt_epu.v
    wire                 msr_psr_rm_we;          // From U_EPU of cmt_epu.v
    wire                 msr_psr_save;           // From U_EPU of cmt_epu.v

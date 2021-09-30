@@ -168,5 +168,4 @@ module rn_rat
    assign rat_prs2[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = prs2_nobpy[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
    assign rat_pfree[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = pfree_nobpy[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
 
-
 endmodule

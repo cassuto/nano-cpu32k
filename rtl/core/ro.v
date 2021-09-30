@@ -39,13 +39,12 @@ module ro
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_bpu_pred_taken,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ro_bpu_pred_tgt,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0] ro_bru_opc_bus,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_EPU_IOPW-1:0] ro_epu_opc_bus,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_epu_op,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ro_imm,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ro_lpu_opc_bus,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LSU_IOPW-1:0] ro_lsu_opc_bus,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_lsu_op,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0] ro_fe,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ro_pc,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ro_pfree,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ro_prd,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_prd_we,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ro_prs1,
@@ -66,10 +65,10 @@ module ro
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_bpu_pred_taken,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ex_bpu_pred_tgt,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0] ex_bru_opc_bus,
-   output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_EPU_IOPW-1:0] ex_epu_opc_bus,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_epu_op,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ex_imm,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ex_lpu_opc_bus,
-   output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LSU_IOPW-1:0] ex_lsu_opc_bus,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lsu_op,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0] ex_fe,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ex_pc,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ex_pfree,
@@ -106,9 +105,9 @@ module ro
    //
    mDFF_l # (.DW(`NCPU_ALU_IOPW*IW)) ff_ex_alu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(ro_alu_opc_bus), .Q(ex_alu_opc_bus) );
    mDFF_l # (.DW(`NCPU_LPU_IOPW*IW)) ff_ex_lpu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(ro_lpu_opc_bus), .Q(ex_lpu_opc_bus) );
-   mDFF_l # (.DW(`NCPU_EPU_IOPW*IW)) ff_ex_epu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(ro_epu_opc_bus), .Q(ex_epu_opc_bus) );
+   mDFF_l # (.DW(IW)) ff_ex_epu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(ro_epu_op), .Q(ex_epu_op) );
    mDFF_l # (.DW(`NCPU_BRU_IOPW*IW)) ff_ex_bru_opc_bus (.CLK(clk), .LOAD(p_ce), .D(ro_bru_opc_bus), .Q(ex_bru_opc_bus) );
-   mDFF_l # (.DW(`NCPU_LSU_IOPW*IW)) ff_ex_lsu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(ro_lsu_opc_bus), .Q(ex_lsu_opc_bus) );
+   mDFF_l # (.DW(IW)) ff_ex_lsu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(ro_lsu_op), .Q(ex_lsu_op) );
    mDFF_l # (.DW(`NCPU_FE_W*IW)) ff_ex_fe (.CLK(clk), .LOAD(p_ce), .D(ro_fe), .Q(ex_fe) );
    mDFF_l # (.DW(IW)) ff_ex_bpu_pred_taken (.CLK(clk), .LOAD(p_ce), .D(ro_bpu_pred_taken), .Q(ex_bpu_pred_taken) );
    mDFF_l # (.DW(`PC_W*IW)) ff_ex_bpu_pred_tgt (.CLK(clk), .LOAD(p_ce), .D(ro_bpu_pred_tgt), .Q(ex_bpu_pred_tgt) );

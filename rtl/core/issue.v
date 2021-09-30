@@ -48,6 +48,7 @@ module issue
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prs1_re,
    input [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prs2,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prs2_re,
+   input [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lrd,
    input [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prd,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prd_we,
    input [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_pfree,
@@ -61,11 +62,12 @@ module issue
    input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] rob_free_id,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] rob_free_bank, 
    // To ROB
-   output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_epu_opc_bus,
-   output [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_lsu_opc_bus,
-   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_bpu_pred_taken,
-   output [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ex_bpu_pred_tgt,
-   output [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_pc,
+   output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_epu_opc_bus,
+   output [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_lsu_opc_bus,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)*`BPU_UPD_W-1:0] rob_push_bpu_upd,
+   output [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_pc,
+   output [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] rob_push_lrd,
+   output [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] rob_push_prd,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_prd_we,
    output [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_pfree,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_is_bcc,
@@ -83,6 +85,7 @@ module issue
    output [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ro_imm,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ro_lpu_opc_bus,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_lsu_op,
+   output [`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_fe,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ro_pc,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ro_prd,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_prd_we,
@@ -96,10 +99,6 @@ module issue
 );
    localparam  IW                      = (1<<CONFIG_P_ISSUE_WIDTH)
    /*AUTOWIRE*/
-   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [`BPU_UPD_W-1:0] ro_bpu_upd;            // From U_RS of issue_rs.v
-   wire [`NCPU_FE_W-1:0] ro_fe;                 // From U_RS of issue_rs.v
-   // End of automatics
    /*AUTOINPUT*/
    wire [IW-1:0]                       issue_rs_full;          // From U_RS of issue_rs.v
    wire [IW-1:0]                       ro_rs_pop;
@@ -126,6 +125,7 @@ module issue
                   .ro_lsu_op              (ro_lsu_op[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
                   .ro_bpu_pred_taken      (ro_bpu_pred_taken[i]),
                   .ro_bpu_pred_tgt        (ro_bpu_pred_tgt[i * `PC_W +: `PC_W]),
+                  .ro_fe                  (ro_fe[i * `NCPU_FE_W +: `NCPU_FE_W]),
                   .ro_pc                  (ro_pc[i*`PC_W +: `PC_W]),
                   .ro_imm                 (ro_imm[i*CONFIG_DW +: CONFIG_DW]),
                   .ro_prs1                (ro_prs1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]),
@@ -171,8 +171,7 @@ module issue
                 .ro_bpu_pred_taken      (ro_bpu_pred_taken[i]),  // Templated
                 .ro_bpu_pred_tgt        (ro_bpu_pred_tgt[i * `PC_W +: `PC_W]), // Templated
                 .ro_lsu_op              (ro_lsu_op[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]), // Templated
-                .ro_fe                  (ro_fe[`NCPU_FE_W-1:0]),
-                .ro_bpu_upd             (ro_bpu_upd[`BPU_UPD_W-1:0]),
+                .ro_fe                  (ro_fe[i * `NCPU_FE_W +: `NCPU_FE_W]), // Templated
                 .ro_pc                  (ro_pc[i*`PC_W +: `PC_W]), // Templated
                 .ro_imm                 (ro_imm[i*CONFIG_DW +: CONFIG_DW]), // Templated
                 .ro_prs1                (ro_prs1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]), // Templated
@@ -213,10 +212,12 @@ module issue
    assign issue_ready = (~issue_rs_full & {IW{rob_ready}});
    assign rs_push = (issue_push & issue_p_ce);
    
-   assign rob_epu_opc_bus = issue_epu_opc_bus;
-   assign rob_lsu_opc_bus = issue_lsu_opc_bus;
-   assign rob_bpu_upd = issue_bpu_upd;
-   assign rob_pc = issue_pc;
+   assign rob_push_epu_opc_bus = issue_epu_opc_bus;
+   assign rob_push_lsu_opc_bus = issue_lsu_opc_bus;
+   assign rob_push_bpu_upd = issue_bpu_upd;
+   assign rob_push_pc = issue_pc;
+   assign rob_push_lrd = issue_lrd;
+   assign rob_push_prd = issue_prd;
    assign rob_push_prd_we = issue_push_prd_we;
    assign rob_push_pfree = issue_push_pfree;
    assign rob_push_size = (issue_push_size & {(CONFIG_P_ISSUE_WIDTH+1)*IW{issue_p_ce}});

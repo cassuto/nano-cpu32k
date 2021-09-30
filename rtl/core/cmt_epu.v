@@ -155,10 +155,10 @@ module cmt_epu
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [CONFIG_DW-1:0] msr_irqc_imr;           // From U_IRQC of cmt_epu_irqc.v
-   wire [CONFIG_DW-1:0] msr_irqc_irr;           // From U_IRQC of cmt_epu_irqc.v
-   wire [CONFIG_DW-1:0] msr_tsc_tcr;            // From U_TSC of cmt_epu_tsc.v
-   wire [CONFIG_DW-1:0] msr_tsc_tsr;            // From U_TSC of cmt_epu_tsc.v
+   wire [CONFIG_DW-1:0] msr_irqc_imr;           // From U_IRQC of cmt_irqc.v
+   wire [CONFIG_DW-1:0] msr_irqc_irr;           // From U_IRQC of cmt_irqc.v
+   wire [CONFIG_DW-1:0] msr_tsc_tcr;            // From U_TSC of cmt_tsc.v
+   wire [CONFIG_DW-1:0] msr_tsc_tsr;            // From U_TSC of cmt_tsc.v
    // End of automatics
    wire [CONFIG_DW-1:0]                msr_irqc_imr_nxt;
    wire                                msr_irqc_imr_we;

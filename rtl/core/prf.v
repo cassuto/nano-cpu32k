@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module ncpu64k
+module prf
 #(
    parameter                           CONFIG_DW = 0,
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,

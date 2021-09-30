@@ -149,69 +149,164 @@ module ncpu64k
 );
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_LRF_AW-1:0] arf_RADDR;// From U_ID of id.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0] arf_RDATA;// From U_CMT of cmt.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] arf_RE;// From U_ID of id.v
-   wire                 bpu_wb;                 // From U_EX of ex.v
-   wire                 bpu_wb_is_bcc;          // From U_EX of ex.v
-   wire                 bpu_wb_is_breg;         // From U_EX of ex.v
-   wire                 bpu_wb_is_brel;         // From U_EX of ex.v
-   wire [`PC_W-1:0]     bpu_wb_npc_act;         // From U_EX of ex.v
-   wire [`PC_W-1:0]     bpu_wb_pc;              // From U_EX of ex.v
-   wire                 bpu_wb_taken;           // From U_EX of ex.v
-   wire [`BPU_UPD_W-1:0] bpu_wb_upd;            // From U_EX of ex.v
-   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_waddr;// From U_EX of ex.v
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_wdat;// From U_EX of ex.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] commit_rf_we;// From U_EX of ex.v
-   wire [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_alu_opc_bus;// From U_ID of id.v
-   wire [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_bpu_upd;// From U_ID of id.v
-   wire [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_bru_opc_bus;// From U_ID of id.v
-   wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_epu_opc_bus;// From U_ID of id.v
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_imm;// From U_ID of id.v
-   wire [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lpu_opc_bus;// From U_ID of id.v
-   wire [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lsu_opc_bus;// From U_ID of id.v
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand1;// From U_ID of id.v
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_operand2;// From U_ID of id.v
-   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_pc;// From U_ID of id.v
-   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_waddr;// From U_ID of id.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_rf_we;// From U_ID of id.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_valid;// From U_ID of id.v
+   wire                 bpu_wb;                 // From U_CMT of cmt.v
+   wire                 bpu_wb_is_bcc;          // From U_CMT of cmt.v
+   wire                 bpu_wb_is_breg;         // From U_CMT of cmt.v
+   wire                 bpu_wb_is_brel;         // From U_CMT of cmt.v
+   wire [`PC_W-1:0]     bpu_wb_npc_act;         // From U_CMT of cmt.v
+   wire [`PC_W-1:0]     bpu_wb_pc;              // From U_CMT of cmt.v
+   wire                 bpu_wb_taken;           // From U_CMT of cmt.v
+   wire [`BPU_UPD_W-1:0] bpu_wb_upd;            // From U_CMT of cmt.v
+   wire [(1<<`NCPU_PRF_AW)-1:0] busytable;      // From U_RN of rn.v
+   wire [`BPU_UPD_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_bpu_upd;// From U_ROB of rob.v
+   wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_epu_opc_bus;// From U_ROB of rob.v
+   wire [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_exc;// From U_ROB of rob.v
+   wire [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire;// From U_CMT of cmt.v
+   wire [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fls;// From U_ROB of rob.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_is_bcc;// From U_ROB of rob.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_is_breg;// From U_ROB of rob.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_is_brel;// From U_ROB of rob.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lrd;// From U_ROB of rob.v
+   wire [`NCPU_LSU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lsu_opc_bus;// From U_ROB of rob.v
+   wire [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_opera;// From U_ROB of rob.v
+   wire [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_operb;// From U_ROB of rob.v
+   wire [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pc;// From U_ROB of rob.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pfree;// From U_ROB of rob.v
+   wire [CONFIG_P_COMMIT_WIDTH:0] cmt_pop_size; // From U_CMT of cmt.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_prd;// From U_ROB of rob.v
+   wire [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_prd_we;// From U_ROB of rob.v
+   wire [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_valid;// From U_ROB of rob.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_ALU_IOPW-1:0] ex_alu_opc_bus;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_bpu_pred_taken;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ex_bpu_pred_tgt;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0] ex_bru_opc_bus;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_epu_op;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0] ex_fe;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ex_imm;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ex_lpu_opc_bus;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lsu_op;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ex_operand1;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ex_operand2;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ex_pc;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ex_pfree;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ex_prd;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_prd_we;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_ready;// From U_EX of ex.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] ex_rob_bank;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] ex_rob_id;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_valid;// From U_RO of ro.v
    wire [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd;// From U_FNT of frontend.v
    wire [`FNT_EXC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_exc;// From U_FNT of frontend.v
    wire [`NCPU_INSN_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins;// From U_FNT of frontend.v
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_pc;// From U_FNT of frontend.v
    wire [CONFIG_P_ISSUE_WIDTH:0] id_pop_cnt;    // From U_ID of id.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid;// From U_FNT of frontend.v
-   wire                 irq_async;              // From U_EX of ex.v
+   wire                 irq_async;              // From U_CMT of cmt.v
+   wire [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_alu_opc_bus;// From U_RN of rn.v
+   wire [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_bpu_upd;// From U_RN of rn.v
+   wire [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_bru_opc_bus;// From U_RN of rn.v
+   wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_epu_opc_bus;// From U_RN of rn.v
+   wire [`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_fe;// From U_RN of rn.v
+   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_imm;// From U_RN of rn.v
+   wire [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lpu_opc_bus;// From U_RN of rn.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lrd;// From U_RN of rn.v
+   wire [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lsu_opc_bus;// From U_RN of rn.v
+   wire                 issue_p_ce;             // From U_RN of rn.v
+   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_pc;// From U_RN of rn.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_pfree;// From U_RN of rn.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prd;// From U_RN of rn.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prd_we;// From U_RN of rn.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prs1;// From U_RN of rn.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prs1_re;// From U_RN of rn.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prs2;// From U_RN of rn.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prs2_re;// From U_RN of rn.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_push;// From U_RN of rn.v
+   wire [(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_push_size;// From U_RN of rn.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_ready;// From U_ISSUE of issue.v
    wire [CONFIG_DW-1:0] msr_icid;               // From U_FNT of frontend.v
-   wire [CONFIG_DW-1:0] msr_icinv_nxt;          // From U_EX of ex.v
+   wire [CONFIG_DW-1:0] msr_icinv_nxt;          // From U_CMT of cmt.v
    wire                 msr_icinv_ready;        // From U_FNT of frontend.v
-   wire                 msr_icinv_we;           // From U_EX of ex.v
-   wire [CONFIG_ITLB_P_SETS-1:0] msr_imm_tlbh_idx;// From U_EX of ex.v
-   wire [CONFIG_DW-1:0] msr_imm_tlbh_nxt;       // From U_EX of ex.v
-   wire                 msr_imm_tlbh_we;        // From U_EX of ex.v
-   wire [CONFIG_ITLB_P_SETS-1:0] msr_imm_tlbl_idx;// From U_EX of ex.v
-   wire [CONFIG_DW-1:0] msr_imm_tlbl_nxt;       // From U_EX of ex.v
-   wire                 msr_imm_tlbl_we;        // From U_EX of ex.v
+   wire                 msr_icinv_we;           // From U_CMT of cmt.v
+   wire [CONFIG_ITLB_P_SETS-1:0] msr_imm_tlbh_idx;// From U_CMT of cmt.v
+   wire [CONFIG_DW-1:0] msr_imm_tlbh_nxt;       // From U_CMT of cmt.v
+   wire                 msr_imm_tlbh_we;        // From U_CMT of cmt.v
+   wire [CONFIG_ITLB_P_SETS-1:0] msr_imm_tlbl_idx;// From U_CMT of cmt.v
+   wire [CONFIG_DW-1:0] msr_imm_tlbl_nxt;       // From U_CMT of cmt.v
+   wire                 msr_imm_tlbl_we;        // From U_CMT of cmt.v
    wire [CONFIG_DW-1:0] msr_immid;              // From U_FNT of frontend.v
-   wire                 msr_psr_ice;            // From U_EX of ex.v
-   wire                 msr_psr_imme;           // From U_EX of ex.v
-   wire                 msr_psr_rm;             // From U_EX of ex.v
-   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_waddr;// From U_EX of ex.v
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_wdat;// From U_EX of ex.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_cmt_rf_we;// From U_EX of ex.v
-   wire                 ro_ex_s1_load0;         // From U_EX of ex.v
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_dout;// From U_EX of ex.v
-   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_waddr;// From U_EX of ex.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s1_rf_we;// From U_EX of ex.v
-   wire                 ro_ex_s2_load0;         // From U_EX of ex.v
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_dout;// From U_EX of ex.v
-   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_waddr;// From U_EX of ex.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s2_rf_we;// From U_EX of ex.v
-   wire                 ro_ex_s3_load0;         // From U_EX of ex.v
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_dout;// From U_EX of ex.v
-   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_waddr;// From U_EX of ex.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ex_s3_rf_we;// From U_EX of ex.v
+   wire                 msr_psr_ice;            // From U_CMT of cmt.v
+   wire                 msr_psr_imme;           // From U_CMT of cmt.v
+   wire                 msr_psr_rm;             // From U_CMT of cmt.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_PRF_AW-1:0] prf_RADDR;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0] prf_RDATA;// From U_PRF of prf.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] prf_RE;// From U_RO of ro.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WADDR;// From U_EX of ex.v
+   wire [`NCPU_PRF_AW-1:0] prf_WADDR_lsu_epu;   // From U_CMT of cmt.v
+   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WDATA;// From U_EX of ex.v
+   wire [CONFIG_DW-1:0] prf_WDATA_lsu_epu;      // From U_CMT of cmt.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WE; // From U_EX of ex.v
+   wire                 prf_WE_lsu_epu;         // From U_CMT of cmt.v
+   wire [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_alu_opc_bus;// From U_ID of id.v
+   wire [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_bpu_upd;// From U_ID of id.v
+   wire [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_bru_opc_bus;// From U_ID of id.v
+   wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_epu_opc_bus;// From U_ID of id.v
+   wire [`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_fe;// From U_ID of id.v
+   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_imm;// From U_ID of id.v
+   wire [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lpu_opc_bus;// From U_ID of id.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd;// From U_ID of id.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd_we;// From U_ID of id.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrs1;// From U_ID of id.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrs1_re;// From U_ID of id.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrs2;// From U_ID of id.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrs2_re;// From U_ID of id.v
+   wire [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lsu_opc_bus;// From U_ID of id.v
+   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_pc;// From U_ID of id.v
+   wire [(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_push_size;// From U_ID of id.v
+   wire                 rn_stall_req;           // From U_RN of rn.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_valid;// From U_ID of id.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_ALU_IOPW-1:0] ro_alu_opc_bus;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_bpu_pred_taken;// From U_ISSUE of issue.v
+   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_bpu_pred_tgt;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0] ro_bru_opc_bus;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_epu_op;// From U_ISSUE of issue.v
+   wire [`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_fe;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ro_imm;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ro_lpu_opc_bus;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_lsu_op;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ro_pc;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ro_prd;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_prd_we;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ro_prs1;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_prs1_re;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ro_prs2;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_prs2_re;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_ready;// From U_RO of ro.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] ro_rob_bank;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] ro_rob_id;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_valid;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] rob_free_bank;// From U_ROB of rob.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] rob_free_id;// From U_ROB of rob.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`BPU_UPD_W-1:0] rob_push_bpu_upd;// From U_ISSUE of issue.v
+   wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_epu_opc_bus;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_is_bcc;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_is_breg;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_is_brel;// From U_ISSUE of issue.v
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] rob_push_lrd;// From U_ISSUE of issue.v
+   wire [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_lsu_opc_bus;// From U_ISSUE of issue.v
+   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_pc;// From U_ISSUE of issue.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_pfree;// From U_ISSUE of issue.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] rob_push_prd;// From U_ISSUE of issue.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_prd_we;// From U_ISSUE of issue.v
+   wire [CONFIG_P_COMMIT_WIDTH:0] rob_push_size;// From U_ISSUE of issue.v
+   wire                 rob_ready;              // From U_ROB of rob.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_exc; // From U_EX of ex.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_fls; // From U_EX of ex.v
+   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_opera;// From U_EX of ex.v
+   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_operb;// From U_EX of ex.v
+   wire [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] wb_ready;// From U_ROB of rob.v, ..., Couldn't Merge
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] wb_rob_bank;// From U_EX of ex.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] wb_rob_id;// From U_EX of ex.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_valid;// From U_EX of ex.v
    // End of automatics
    /*AUTOINPUT*/
    wire                                flush;                  // To U_IFU of frontend.v, ...
@@ -315,48 +410,222 @@ module ncpu64k
       (/*AUTOINST*/
        // Outputs
        .id_pop_cnt                      (id_pop_cnt[CONFIG_P_ISSUE_WIDTH:0]),
-       .ex_valid                        (ex_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_alu_opc_bus                  (ex_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_lpu_opc_bus                  (ex_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_epu_opc_bus                  (ex_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_bru_opc_bus                  (ex_bru_opc_bus[`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_lsu_opc_bus                  (ex_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_bpu_upd                      (ex_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_pc                           (ex_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_imm                          (ex_imm[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_operand1                     (ex_operand1[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_operand2                     (ex_operand2[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_rf_waddr                     (ex_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_rf_we                        (ex_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .arf_RE                          (arf_RE[(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0]),
-       .arf_RADDR                       (arf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_LRF_AW-1:0]),
+       .rn_valid                        (rn_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_alu_opc_bus                  (rn_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lpu_opc_bus                  (rn_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_epu_opc_bus                  (rn_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_bru_opc_bus                  (rn_bru_opc_bus[`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lsu_opc_bus                  (rn_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_fe                           (rn_fe[`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_bpu_upd                      (rn_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_pc                           (rn_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_imm                          (rn_imm[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lrs1                         (rn_lrs1[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lrs2                         (rn_lrs2[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lrs1_re                      (rn_lrs1_re[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lrs2_re                      (rn_lrs2_re[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lrd                          (rn_lrd[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lrd_we                       (rn_lrd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_push_size                    (rn_push_size[(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
        .flush                           (flush),
-       .stall                           (stall),
+       .rn_stall_req                    (rn_stall_req),
        .id_valid                        (id_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .id_ins                          (id_ins[`NCPU_INSN_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .id_pc                           (id_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .id_exc                          (id_exc[`FNT_EXC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .id_bpu_upd                      (id_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .irq_async                       (irq_async),
-       .ro_ex_s1_rf_dout                (ro_ex_s1_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s2_rf_dout                (ro_ex_s2_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s3_rf_dout                (ro_ex_s3_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_cmt_rf_wdat                  (ro_cmt_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s1_rf_we                  (ro_ex_s1_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s2_rf_we                  (ro_ex_s2_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s3_rf_we                  (ro_ex_s3_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_cmt_rf_we                    (ro_cmt_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s1_load0                  (ro_ex_s1_load0),
-       .ro_ex_s2_load0                  (ro_ex_s2_load0),
-       .ro_ex_s3_load0                  (ro_ex_s3_load0),
-       .arf_RDATA                       (arf_RDATA[(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0]));
+       .irq_async                       (irq_async));
+      
+   rn
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
+        .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH),
+        .WRITEBACK_WIDTH                (WRITEBACK_WIDTH))
+   U_RN
+      (/*AUTOINST*/
+       // Outputs
+       .rn_stall_req                    (rn_stall_req),
+       .issue_p_ce                      (issue_p_ce),
+       .issue_alu_opc_bus               (issue_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_lpu_opc_bus               (issue_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_epu_opc_bus               (issue_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_bru_opc_bus               (issue_bru_opc_bus[`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_lsu_opc_bus               (issue_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_fe                        (issue_fe[`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_bpu_upd                   (issue_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_pc                        (issue_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_imm                       (issue_imm[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prs1                      (issue_prs1[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prs1_re                   (issue_prs1_re[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prs2                      (issue_prs2[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prs2_re                   (issue_prs2_re[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_lrd                       (issue_lrd[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prd                       (issue_prd[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prd_we                    (issue_prd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_pfree                     (issue_pfree[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_push                      (issue_push[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_push_size                 (issue_push_size[(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .busytable                       (busytable[(1<<`NCPU_PRF_AW)-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .rst                             (rst),
+       .flush                           (flush),
+       .rn_valid                        (rn_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_alu_opc_bus                  (rn_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lpu_opc_bus                  (rn_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_epu_opc_bus                  (rn_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_bru_opc_bus                  (rn_bru_opc_bus[`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lsu_opc_bus                  (rn_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_fe                           (rn_fe[`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_bpu_upd                      (rn_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_pc                           (rn_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_imm                          (rn_imm[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lrs1                         (rn_lrs1[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0]),
+       .rn_lrs1_re                      (rn_lrs1_re[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0]),
+       .rn_lrs2                         (rn_lrs2[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0]),
+       .rn_lrs2_re                      (rn_lrs2_re[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0]),
+       .rn_lrd                          (rn_lrd[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_lrd_we                       (rn_lrd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rn_push_size                    (rn_push_size[(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .cmt_fire                        (cmt_fire[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_lrd                         (cmt_lrd[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0]),
+       .cmt_pfree                       (cmt_pfree[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .cmt_prd                         (cmt_prd[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .cmt_prd_we                      (cmt_prd_we[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .prf_WADDR                       (prf_WADDR[WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0]),
+       .prf_WE                          (prf_WE[WRITEBACK_WIDTH-1:0]),
+       .issue_ready                     (issue_ready[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]));
+   
+   issue
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
+        .CONFIG_P_ROB_DEPTH             (CONFIG_P_ROB_DEPTH),
+        .CONFIG_P_RS_DEPTH              (CONFIG_P_RS_DEPTH))
+   U_ISSUE
+      (/*AUTOINST*/
+       // Outputs
+       .issue_ready                     (issue_ready[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_epu_opc_bus            (rob_push_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_lsu_opc_bus            (rob_push_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_bpu_upd                (rob_push_bpu_upd[(1<<CONFIG_P_ISSUE_WIDTH)*`BPU_UPD_W-1:0]),
+       .rob_push_pc                     (rob_push_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_lrd                    (rob_push_lrd[`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .rob_push_prd                    (rob_push_prd[`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .rob_push_prd_we                 (rob_push_prd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_pfree                  (rob_push_pfree[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_is_bcc                 (rob_push_is_bcc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_is_brel                (rob_push_is_brel[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_is_breg                (rob_push_is_breg[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_size                   (rob_push_size[CONFIG_P_COMMIT_WIDTH:0]),
+       .ro_alu_opc_bus                  (ro_alu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_ALU_IOPW-1:0]),
+       .ro_bpu_pred_taken               (ro_bpu_pred_taken[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_bpu_pred_tgt                 (ro_bpu_pred_tgt[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_bru_opc_bus                  (ro_bru_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0]),
+       .ro_epu_op                       (ro_epu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_imm                          (ro_imm[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
+       .ro_lpu_opc_bus                  (ro_lpu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0]),
+       .ro_lsu_op                       (ro_lsu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_fe                           (ro_fe[`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_pc                           (ro_pc[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
+       .ro_prd                          (ro_prd[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .ro_prd_we                       (ro_prd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_prs1                         (ro_prs1[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .ro_prs1_re                      (ro_prs1_re[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_prs2                         (ro_prs2[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .ro_prs2_re                      (ro_prs2_re[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_rob_id                       (ro_rob_id[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0]),
+       .ro_rob_bank                     (ro_rob_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
+       .ro_valid                        (ro_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .rst                             (rst),
+       .issue_p_ce                      (issue_p_ce),
+       .issue_alu_opc_bus               (issue_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_lpu_opc_bus               (issue_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_epu_opc_bus               (issue_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_bru_opc_bus               (issue_bru_opc_bus[`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_lsu_opc_bus               (issue_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_fe                        (issue_fe[`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_bpu_upd                   (issue_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_pc                        (issue_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_imm                       (issue_imm[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prs1                      (issue_prs1[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prs1_re                   (issue_prs1_re[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prs2                      (issue_prs2[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prs2_re                   (issue_prs2_re[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_lrd                       (issue_lrd[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prd                       (issue_prd[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_prd_we                    (issue_prd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_pfree                     (issue_pfree[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_push                      (issue_push[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .issue_push_size                 (issue_push_size[(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .busytable                       (busytable[(1<<`NCPU_PRF_AW)-1:0]),
+       .rob_ready                       (rob_ready),
+       .rob_free_id                     (rob_free_id[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0]),
+       .rob_free_bank                   (rob_free_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
+       .ro_ready                        (ro_ready[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]));
+   
+   ro
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
+        .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH),
+        .CONFIG_P_ROB_DEPTH             (CONFIG_P_ROB_DEPTH),
+        .CONFIG_P_RS_DEPTH              (CONFIG_P_RS_DEPTH))
+   U_RO
+      (/*AUTOINST*/
+       // Outputs
+       .ro_ready                        (ro_ready[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .prf_RE                          (prf_RE[(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0]),
+       .prf_RADDR                       (prf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_PRF_AW-1:0]),
+       .ex_alu_opc_bus                  (ex_alu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_ALU_IOPW-1:0]),
+       .ex_bpu_pred_taken               (ex_bpu_pred_taken[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_bpu_pred_tgt                 (ex_bpu_pred_tgt[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
+       .ex_bru_opc_bus                  (ex_bru_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0]),
+       .ex_epu_op                       (ex_epu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_imm                          (ex_imm[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
+       .ex_lpu_opc_bus                  (ex_lpu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0]),
+       .ex_lsu_op                       (ex_lsu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_fe                           (ex_fe[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0]),
+       .ex_pc                           (ex_pc[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
+       .ex_pfree                        (ex_pfree[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .ex_prd                          (ex_prd[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .ex_prd_we                       (ex_prd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_operand1                     (ex_operand1[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
+       .ex_operand2                     (ex_operand2[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
+       .ex_rob_id                       (ex_rob_id[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0]),
+       .ex_rob_bank                     (ex_rob_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
+       .ex_valid                        (ex_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .rst                             (rst),
+       .flush                           (flush),
+       .ro_alu_opc_bus                  (ro_alu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_ALU_IOPW-1:0]),
+       .ro_bpu_pred_taken               (ro_bpu_pred_taken[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_bpu_pred_tgt                 (ro_bpu_pred_tgt[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
+       .ro_bru_opc_bus                  (ro_bru_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0]),
+       .ro_epu_op                       (ro_epu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_imm                          (ro_imm[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
+       .ro_lpu_opc_bus                  (ro_lpu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0]),
+       .ro_lsu_op                       (ro_lsu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_fe                           (ro_fe[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0]),
+       .ro_pc                           (ro_pc[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
+       .ro_prd                          (ro_prd[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .ro_prd_we                       (ro_prd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_prs1                         (ro_prs1[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .ro_prs1_re                      (ro_prs1_re[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_prs2                         (ro_prs2[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .ro_prs2_re                      (ro_prs2_re[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ro_rob_id                       (ro_rob_id[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0]),
+       .ro_rob_bank                     (ro_rob_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
+       .ro_valid                        (ro_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .prf_RDATA                       (prf_RDATA[(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0]),
+       .ex_ready                        (ex_ready[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]));
       
    ex
       #(/*AUTOINSTPARAM*/
@@ -399,24 +668,55 @@ module ncpu64k
        .stall                           (stall),
        .flush                           (flush),
        .flush_tgt                       (flush_tgt[`PC_W-1:0]),
-       .ro_ex_s1_rf_dout                (ro_ex_s1_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s2_rf_dout                (ro_ex_s2_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s3_rf_dout                (ro_ex_s3_rf_dout[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_cmt_rf_wdat                  (ro_cmt_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s1_rf_we                  (ro_ex_s1_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s2_rf_we                  (ro_ex_s2_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s3_rf_we                  (ro_ex_s3_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_cmt_rf_we                    (ro_cmt_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s1_rf_waddr               (ro_ex_s1_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s2_rf_waddr               (ro_ex_s2_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s3_rf_waddr               (ro_ex_s3_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_cmt_rf_waddr                 (ro_cmt_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ro_ex_s1_load0                  (ro_ex_s1_load0),
-       .ro_ex_s2_load0                  (ro_ex_s2_load0),
-       .ro_ex_s3_load0                  (ro_ex_s3_load0),
-       .commit_rf_wdat                  (commit_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .commit_rf_waddr                 (commit_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .commit_rf_we                    (commit_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_ready                        (ex_ready[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_valid                        (wb_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_rob_id                       (wb_rob_id[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0]),
+       .wb_rob_bank                     (wb_rob_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
+       .wb_fls                          (wb_fls[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_exc                          (wb_exc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_opera                        (wb_opera[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_operb                        (wb_operb[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .prf_WADDR                       (prf_WADDR[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .prf_WDATA                       (prf_WDATA[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .prf_WE                          (prf_WE[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .rst                             (rst),
+       .ex_alu_opc_bus                  (ex_alu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_ALU_IOPW-1:0]),
+       .ex_bpu_pred_taken               (ex_bpu_pred_taken[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_bpu_pred_tgt                 (ex_bpu_pred_tgt[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
+       .ex_bru_opc_bus                  (ex_bru_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0]),
+       .ex_epu_op                       (ex_epu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_imm                          (ex_imm[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
+       .ex_lpu_opc_bus                  (ex_lpu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0]),
+       .ex_lsu_op                       (ex_lsu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_fe                           (ex_fe[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0]),
+       .ex_pc                           (ex_pc[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
+       .ex_pfree                        (ex_pfree[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .ex_prd                          (ex_prd[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .ex_prd_we                       (ex_prd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .ex_operand1                     (ex_operand1[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
+       .ex_operand2                     (ex_operand2[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
+       .ex_rob_id                       (ex_rob_id[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0]),
+       .ex_rob_bank                     (ex_rob_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
+       .ex_valid                        (ex_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_ready                        (wb_ready[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]));
+   
+   cmt
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH))
+   U_CMT
+      (/*AUTOINST*/
+       // Outputs
+       .flush                           (flush),
+       .flush_tgt                       (flush_tgt[`PC_W-1:0]),
+       .cmt_pop_size                    (cmt_pop_size[CONFIG_P_COMMIT_WIDTH:0]),
+       .cmt_fire                        (cmt_fire[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .prf_WE_lsu_epu                  (prf_WE_lsu_epu),
+       .prf_WADDR_lsu_epu               (prf_WADDR_lsu_epu[`NCPU_PRF_AW-1:0]),
+       .prf_WDATA_lsu_epu               (prf_WDATA_lsu_epu[CONFIG_DW-1:0]),
        .bpu_wb                          (bpu_wb),
        .bpu_wb_is_bcc                   (bpu_wb_is_bcc),
        .bpu_wb_is_breg                  (bpu_wb_is_breg),
@@ -425,19 +725,6 @@ module ncpu64k
        .bpu_wb_pc                       (bpu_wb_pc[`PC_W-1:0]),
        .bpu_wb_npc_act                  (bpu_wb_npc_act[`PC_W-1:0]),
        .bpu_wb_upd                      (bpu_wb_upd[`BPU_UPD_W-1:0]),
-       .irq_async                       (irq_async),
-       .tsc_irq                         (tsc_irq),
-       .msr_psr_imme                    (msr_psr_imme),
-       .msr_psr_rm                      (msr_psr_rm),
-       .msr_psr_ice                     (msr_psr_ice),
-       .msr_imm_tlbl_idx                (msr_imm_tlbl_idx[CONFIG_ITLB_P_SETS-1:0]),
-       .msr_imm_tlbl_nxt                (msr_imm_tlbl_nxt[CONFIG_DW-1:0]),
-       .msr_imm_tlbl_we                 (msr_imm_tlbl_we),
-       .msr_imm_tlbh_idx                (msr_imm_tlbh_idx[CONFIG_ITLB_P_SETS-1:0]),
-       .msr_imm_tlbh_nxt                (msr_imm_tlbh_nxt[CONFIG_DW-1:0]),
-       .msr_imm_tlbh_we                 (msr_imm_tlbh_we),
-       .msr_icinv_nxt                   (msr_icinv_nxt[CONFIG_DW-1:0]),
-       .msr_icinv_we                    (msr_icinv_we),
        .dbus_ARVALID                    (dbus_ARVALID),
        .dbus_ARADDR                     (dbus_ARADDR[AXI_ADDR_WIDTH-1:0]),
        .dbus_ARPROT                     (dbus_ARPROT[2:0]),
@@ -469,26 +756,36 @@ module ncpu64k
        .dbus_WLAST                      (dbus_WLAST),
        .dbus_WUSER                      (dbus_WUSER[AXI_USER_WIDTH-1:0]),
        .dbus_BREADY                     (dbus_BREADY),
+       .irq_async                       (irq_async),
+       .msr_psr_imme                    (msr_psr_imme),
+       .msr_psr_rm                      (msr_psr_rm),
+       .msr_psr_ice                     (msr_psr_ice),
+       .msr_imm_tlbl_idx                (msr_imm_tlbl_idx[CONFIG_ITLB_P_SETS-1:0]),
+       .msr_imm_tlbl_nxt                (msr_imm_tlbl_nxt[CONFIG_DW-1:0]),
+       .msr_imm_tlbl_we                 (msr_imm_tlbl_we),
+       .msr_imm_tlbh_idx                (msr_imm_tlbh_idx[CONFIG_ITLB_P_SETS-1:0]),
+       .msr_imm_tlbh_nxt                (msr_imm_tlbh_nxt[CONFIG_DW-1:0]),
+       .msr_imm_tlbh_we                 (msr_imm_tlbh_we),
+       .msr_icinv_nxt                   (msr_icinv_nxt[CONFIG_DW-1:0]),
+       .msr_icinv_we                    (msr_icinv_we),
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
-       .ex_valid                        (ex_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_alu_opc_bus                  (ex_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_lpu_opc_bus                  (ex_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_epu_opc_bus                  (ex_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_bru_opc_bus                  (ex_bru_opc_bus[`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_lsu_opc_bus                  (ex_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_bpu_upd                      (ex_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_pc                           (ex_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_imm                          (ex_imm[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_operand1                     (ex_operand1[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_operand2                     (ex_operand2[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_rf_waddr                     (ex_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .ex_rf_we                        (ex_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .irqs                            (irqs[CONFIG_NUM_IRQ-1:0]),
-       .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
-       .msr_icid                        (msr_icid[CONFIG_DW-1:0]),
-       .msr_icinv_ready                 (msr_icinv_ready),
+       .cmt_valid                       (cmt_valid[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_epu_opc_bus                 (cmt_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_lsu_opc_bus                 (cmt_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_bpu_upd                     (cmt_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_pc                          (cmt_pc[`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_prd                         (cmt_prd[`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_prd_we                      (cmt_prd_we[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_pfree                       (cmt_pfree[`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_is_bcc                      (cmt_is_bcc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .cmt_is_brel                     (cmt_is_brel[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .cmt_is_breg                     (cmt_is_breg[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .cmt_fls                         (cmt_fls[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_exc                         (cmt_exc[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_opera                       (cmt_opera[CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_operb                       (cmt_operb[CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        .dbus_ARREADY                    (dbus_ARREADY),
        .dbus_RVALID                     (dbus_RVALID),
        .dbus_RDATA                      (dbus_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
@@ -501,24 +798,87 @@ module ncpu64k
        .dbus_BVALID                     (dbus_BVALID),
        .dbus_BRESP                      (dbus_BRESP[1:0]),
        .dbus_BID                        (dbus_BID[AXI_ID_WIDTH-1:0]),
-       .dbus_BUSER                      (dbus_BUSER[AXI_USER_WIDTH-1:0]));
-   
-   cmt
+       .dbus_BUSER                      (dbus_BUSER[AXI_USER_WIDTH-1:0]),
+       .irqs                            (irqs[CONFIG_NUM_IRQ-1:0]),
+       .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
+       .msr_icid                        (msr_icid[CONFIG_DW-1:0]),
+       .msr_icinv_ready                 (msr_icinv_ready));
+       
+   rob
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_DW                      (CONFIG_DW),
-        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH))
-   U_CMT
+        .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH),
+        .CONFIG_P_ROB_DEPTH             (CONFIG_P_ROB_DEPTH))
+   U_ROB
       (/*AUTOINST*/
        // Outputs
-       .arf_RDATA                       (arf_RDATA[(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0]),
+       .rob_ready                       (rob_ready),
+       .rob_free_id                     (rob_free_id[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0]),
+       .rob_free_bank                   (rob_free_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
+       .wb_ready                        (wb_ready[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .cmt_valid                       (cmt_valid[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_epu_opc_bus                 (cmt_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_lsu_opc_bus                 (cmt_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_bpu_upd                     (cmt_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_pc                          (cmt_pc[`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_lrd                         (cmt_lrd[`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_prd                         (cmt_prd[`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_prd_we                      (cmt_prd_we[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_pfree                       (cmt_pfree[`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_is_bcc                      (cmt_is_bcc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .cmt_is_brel                     (cmt_is_brel[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .cmt_is_breg                     (cmt_is_breg[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .cmt_fls                         (cmt_fls[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_exc                         (cmt_exc[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_opera                       (cmt_opera[CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_operb                       (cmt_operb[CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        // Inputs
        .clk                             (clk),
-       .commit_rf_wdat                  (commit_rf_wdat[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .commit_rf_waddr                 (commit_rf_waddr[`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .commit_rf_we                    (commit_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .arf_RE                          (arf_RE[(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0]),
-       .arf_RADDR                       (arf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_LRF_AW-1:0]));
+       .rst                             (rst),
+       .flush                           (flush),
+       .rob_push_size                   (rob_push_size[CONFIG_P_COMMIT_WIDTH:0]),
+       .rob_push_epu_opc_bus            (rob_push_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_lsu_opc_bus            (rob_push_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_bpu_upd                (rob_push_bpu_upd[`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_pc                     (rob_push_pc[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_lrd                    (rob_push_lrd[`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .rob_push_prd                    (rob_push_prd[`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .rob_push_prd_we                 (rob_push_prd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_pfree                  (rob_push_pfree[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_is_bcc                 (rob_push_is_bcc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_is_brel                (rob_push_is_brel[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .rob_push_is_breg                (rob_push_is_breg[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_valid                        (wb_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_rob_id                       (wb_rob_id[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0]),
+       .wb_rob_bank                     (wb_rob_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
+       .wb_fls                          (wb_fls[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_exc                          (wb_exc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_opera                        (wb_opera[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_operb                        (wb_operb[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .cmt_pop_size                    (cmt_pop_size[CONFIG_P_COMMIT_WIDTH:0]));
+       
+   prf
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
+        .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH))
+   U_PRF
+      (/*AUTOINST*/
+       // Outputs
+       .prf_RDATA                       (prf_RDATA[(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0]),
+       .wb_ready                        (wb_ready[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       // Inputs
+       .clk                             (clk),
+       .prf_RE                          (prf_RE[(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0]),
+       .prf_RADDR                       (prf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_PRF_AW-1:0]),
+       .prf_WE                          (prf_WE[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .prf_WADDR                       (prf_WADDR[`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .prf_WDATA                       (prf_WDATA[CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .prf_WE_lsu_epu                  (prf_WE_lsu_epu),
+       .prf_WADDR_lsu_epu               (prf_WADDR_lsu_epu[`NCPU_PRF_AW-1:0]),
+       .prf_WDATA_lsu_epu               (prf_WDATA_lsu_epu[CONFIG_DW-1:0]));
        
 `ifdef ENABLE_DIFFTEST
    difftest

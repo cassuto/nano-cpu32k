@@ -35,17 +35,18 @@ module rob
    input                               rst,
    input                               flush,
    // From issue
-   input [CONFIG_P_COMMIT_WIDTH:0]     push_size,
-   input [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_epu_opc_bus,
-   input [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_lsu_opc_bus,
-   input [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_bpu_upd,
-   input [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_pc,
-   input [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] push_prd,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_prd_we,
-   input [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_pfree,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_is_bcc,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_is_brel,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_is_breg,
+   input [CONFIG_P_COMMIT_WIDTH:0]     rob_push_size,
+   input [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_epu_opc_bus,
+   input [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_lsu_opc_bus,
+   input [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_bpu_upd,
+   input [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_pc,
+   input [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] rob_push_lrd,
+   input [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] rob_push_prd,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_prd_we,
+   input [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_pfree,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_is_bcc,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_is_brel,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_is_breg,
    // To issue
    output                              rob_ready,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] rob_free_id,
@@ -66,6 +67,7 @@ module rob
    output [`NCPU_LSU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lsu_opc_bus,
    output [`BPU_UPD_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_bpu_upd,
    output [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pc,
+   output [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lrd,
    output [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_prd,
    output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_prd_we,
    output [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pfree,
@@ -87,7 +89,8 @@ module rob
                                           `NCPU_LSU_IOPW +
                                           `BPU_UPD_W +
                                           `PC_W +
-                                          `NCPU_PRF_AW
+                                          `NCPU_LRF_AW +
+                                          `NCPU_PRF_AW +
                                           1 +
                                           `NCPU_PRF_AW +
                                           1 +
@@ -147,24 +150,25 @@ module rob
    generate
       for(i=0;i<BANKS;i=i+1)
          begin : gen_bank_ctrl
-            assign que_din_mux[i] = {push_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW],
-                                       push_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
-                                       push_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
-                                       push_pc[i * `PC_W +: `PC_W],
-                                       push_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
-                                       push_prd_we[i],
-                                       push_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
-                                       push_is_bcc[i],
-                                       push_is_brel[i],
-                                       push_is_breg[i]};
+            assign que_din_mux[i] = {rob_push_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW],
+                                       rob_push_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
+                                       rob_push_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
+                                       rob_push_pc[i * `PC_W +: `PC_W],
+                                       rob_push_lrd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW],
+                                       rob_push_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
+                                       rob_push_prd_we[i],
+                                       rob_push_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
+                                       rob_push_is_bcc[i],
+                                       rob_push_is_brel[i],
+                                       rob_push_is_breg[i]};
             assign que_din[i] = que_din_mux[tail_r[i]];
             assign que_pop[i]  = ({1'b0, head_r[i]} < pop_cnt_adapt);
-            assign que_push[i] = ({1'b0, tail_r[i]} < push_size);
+            assign que_push[i] = ({1'b0, tail_r[i]} < rob_push_size);
          end
    endgenerate
    
    assign head_nxt = (head_ff + pop_cnt_adapt[P_BANKS-1:0]) & {P_BANKS{~flush}};
-   assign tail_nxt = (tail_ff + push_size[P_BANKS-1:0]) & {P_BANKS{~flush}};
+   assign tail_nxt = (tail_ff + rob_push_size[P_BANKS-1:0]) & {P_BANKS{~flush}};
    
    mDFF_r #(.DW(P_BANKS)) ff_head (.CLK(clk), .RST(rst), .D(head_nxt), .Q(head_ff) );
    mDFF_r #(.DW(P_BANKS)) ff_tail (.CLK(clk), .RST(rst), .D(tail_nxt), .Q(tail_ff) );
@@ -343,6 +347,7 @@ module rob
                      cmt_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
                      cmt_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
                      cmt_pc[i * `PC_W +: `PC_W],
+                     cmt_lrd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW],
                      cmt_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
                      cmt_prd_we[i],
                      cmt_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],

@@ -78,6 +78,7 @@ module rn
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prs1_re,
    output [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prs2,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prs2_re,
+   output [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lrd,
    output [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prd,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prd_we,
    output [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_pfree,
@@ -209,11 +210,12 @@ module rn
    mDFF_l # (.DW(`BPU_UPD_W*IW)) ff_issue_bpu_upd (.CLK(clk), .LOAD(p_ce_s1), .D(rn_bpu_upd), .Q(issue_bpu_upd) );
    mDFF_l # (.DW(`PC_W*IW)) ff_issue_pc (.CLK(clk), .LOAD(p_ce_s1), .D(rn_pc), .Q(issue_pc) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_issue_imm (.CLK(clk), .LOAD(p_ce_s1), .D(rn_imm), .Q(issue_imm) );
-   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_lrs1 (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs1), .Q(issue_lrs1) );
-   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_lrs2 (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs2), .Q(issue_lrs2) );
-   mDFF_l # (.DW(IW)) ff_issue_lrs1_re (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs1_re), .Q(issue_lrs1_re) );
-   mDFF_l # (.DW(IW)) ff_issue_lrs2_re (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs2_re), .Q(issue_lrs2_re) );
-   mDFF_l # (.DW(IW)) ff_issue_lrd_we (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd_we), .Q(issue_lrd_we) );
+   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_prs1 (.CLK(clk), .LOAD(p_ce_s1), .D(rat_prs1), .Q(issue_prs1) );
+   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_prs2 (.CLK(clk), .LOAD(p_ce_s1), .D(rat_prs2), .Q(issue_prs2) );
+   mDFF_l # (.DW(IW)) ff_issue_prs1_re (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs1_re), .Q(issue_prs1_re) );
+   mDFF_l # (.DW(IW)) ff_issue_prs2_re (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs2_re), .Q(issue_prs2_re) );
+   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_prd (.CLK(clk), .LOAD(p_ce_s1), .D(fl_prd), .Q(issue_prd) );
+   mDFF_l # (.DW(IW)) ff_issue_prd_we (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd_we), .Q(issue_prd_we) );
    mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_lrd (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd), .Q(issue_lrd) );
    mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_push_size (.CLK(clk), .LOAD(p_ce_s1), .D(rn_push_size), .Q(issue_push_size) );
    

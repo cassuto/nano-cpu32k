@@ -67,7 +67,6 @@ module issue_rs
    output [`PC_W-1:0]                  ro_bpu_pred_tgt,
    output                              ro_lsu_op,
    output [`NCPU_FE_W-1:0]             ro_fe,
-   output [`BPU_UPD_W-1:0]             ro_bpu_upd,
    output [`PC_W-1:0]                  ro_pc,
    output [CONFIG_DW-1:0]              ro_imm,
    output [`NCPU_PRF_AW-1:0]           ro_prs1,
