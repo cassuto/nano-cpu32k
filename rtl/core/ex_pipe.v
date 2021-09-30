@@ -31,20 +31,14 @@ module ex_pipe
    parameter                           CONFIG_P_DW = 0,
    parameter                           CONFIG_PHT_P_NUM = 0,
    parameter                           CONFIG_BTB_P_NUM = 0,
+   parameter                           CONFIG_P_ROB_DEPTH = 0,
+   parameter                           CONFIG_P_COMMIT_WIDTH = 0,
    parameter                           CONFIG_ENABLE_MUL = 0,
    parameter                           CONFIG_ENABLE_DIV = 0,
    parameter                           CONFIG_ENABLE_DIVU = 0,
    parameter                           CONFIG_ENABLE_MOD = 0,
    parameter                           CONFIG_ENABLE_MODU = 0,
-   parameter                           CONFIG_ENABLE_ASR = 0,
-   parameter [`EXCP_VECT_W-1:0]        CONFIG_EITM_VECTOR = 0,
-   parameter [`EXCP_VECT_W-1:0]        CONFIG_EIPF_VECTOR = 0,
-   parameter [`EXCP_VECT_W-1:0]        CONFIG_ESYSCALL_VECTOR = 0,
-   parameter [`EXCP_VECT_W-1:0]        CONFIG_EINSN_VECTOR = 0,
-   parameter [`EXCP_VECT_W-1:0]        CONFIG_EIRQ_VECTOR = 0,
-   parameter [`EXCP_VECT_W-1:0]        CONFIG_EDTM_VECTOR = 0,
-   parameter [`EXCP_VECT_W-1:0]        CONFIG_EDPF_VECTOR = 0,
-   parameter [`EXCP_VECT_W-1:0]        CONFIG_EALIGN_VECTOR = 0
+   parameter                           CONFIG_ENABLE_ASR = 0
 )
 (
    input                               clk,
@@ -65,8 +59,8 @@ module ex_pipe
    input [CONFIG_DW-1:0]               ex_operand2,
    input [`NCPU_LRF_AW-1:0]            ex_prd,
    input                               ex_prd_we,
-   input [CONFIG_P_ROB_DEPTH-1:0] ex_rob_id,
-   input [CONFIG_P_COMMIT_WIDTH-1:0] ex_rob_bank,
+   input [CONFIG_P_ROB_DEPTH-1:0]      ex_rob_id,
+   input [CONFIG_P_COMMIT_WIDTH-1:0]   ex_rob_bank,
    // To RS
    output                              ex_ready,
    // From WB
@@ -85,6 +79,7 @@ module ex_pipe
 );
    /*AUTOWIRE*/
    /*AUTOINPUT*/
+   wire                                p_ce;
    wire [CONFIG_DW-1:0]                bru_dout;
    wire                                bru_dout_valid;
    wire                                add_s;
@@ -94,7 +89,6 @@ module ex_pipe
    wire                                b_taken;
    wire                                b_cc, b_reg, b_rel;
    wire [`PC_W-1:0]                    b_tgt;
-   
    wire                                agu_en;
    // Stage 1 Input
    wire                                s1i_se_fail;
@@ -103,13 +97,11 @@ module ex_pipe
    wire                                s1i_wb_exc;
    wire [CONFIG_AW-1:0]                s1i_wb_lsa;
    wire [CONFIG_DW-1:0]                s1i_wb_opera, s1i_wb_operb;
-   
    wire [CONFIG_DW-1:0]                alu_dout;
    wire [CONFIG_DW-1:0]                s1i_rf_dout;
-   wire                                s1i_rf_we;
-   wire                                s1i_rf_dout_valid;
+   wire                                s1i_prf_we;
+   wire                                s1i_prf_wdat_valid;
    wire [`PC_W-1:0]                    s1i_npc;
-
    genvar i;
    integer j;
 
@@ -167,7 +159,7 @@ module ex_pipe
          .ex_imm                       (ex_imm),
          .ex_operand1                  (ex_operand1),
          .ex_operand2                  (ex_operand2),
-         .ex_rf_we                     (ex_rf_we),
+         .ex_rf_we                     (ex_prd_we),
          .npc                          (s1i_npc),
          .add_sum                      (add_sum),
          .add_carry                    (add_carry),
@@ -181,9 +173,13 @@ module ex_pipe
          .bru_dout_valid               (bru_dout_valid)
       );
       
-   ex_agu U_AGU
+   ex_agu
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_AW                      (CONFIG_AW))
+   U_AGU
       (
-         .ex_epu_lsu_bus               (ex_epu_lsu_bus),
+         .ex_lsu_op                    (ex_lsu_op),
          .agu_en                       (agu_en),
          .add_sum                      (add_sum),
          .wb_lsa                       (s1i_wb_lsa)
@@ -198,9 +194,9 @@ module ex_pipe
    // |(SF) | fls_tgt      |
    // +-----+--------------+
    assign s1i_wb_opera = (s1i_wb_fls)
-                           ? s1i_se_tgt
+                           ? {{CONFIG_DW-`PC_W{1'b0}}, s1i_se_tgt}
                            : (s1i_wb_exc)
-                              ? {{CONFIG_DW-`NCPU_FE_W{1'b}}, ex_fe}
+                              ? {{CONFIG_DW-`NCPU_FE_W{1'b0}}, ex_fe}
                               : s1i_wb_lsa;
    
       
@@ -233,9 +229,9 @@ module ex_pipe
        
    // The execution of LSU and EPU is delayed to ROB committing, thus
    // the result is invalid.
-   assign s1i_rf_dout_valid = ex_valid & ~(ex_epu_op | ex_lsu_op);
+   assign s1i_prf_wdat_valid = ex_valid & ~(ex_epu_op | ex_lsu_op);
 
-   assign s1i_rf_we = (s1i_rf_dout_valid & ex_rf_we);
+   assign s1i_prf_we = (s1i_prf_wdat_valid & ex_prd_we);
    
    // Speculative execution check point
    assign s1i_se_fail = ((b_taken ^ ex_bpu_pred_taken) | (b_tgt != ex_bpu_pred_tgt)); // FAIL
@@ -265,9 +261,9 @@ module ex_pipe
    // Pipeline stages
    //
    mDFF_l # (.DW(CONFIG_P_ROB_DEPTH)) ff_wb_rob_id (.CLK(clk), .LOAD(p_ce), .D(ex_rob_id), .Q(wb_rob_id) );
-   mDFF_l # (.DW(CONFIG_P_ROB_DEPTH)) ff_wb_rob_bank (.CLK(clk), .LOAD(p_ce), .D(ex_rob_bank), .Q(wb_rob_bank) );
+   mDFF_l # (.DW(CONFIG_P_COMMIT_WIDTH)) ff_wb_rob_bank (.CLK(clk), .LOAD(p_ce), .D(ex_rob_bank), .Q(wb_rob_bank) );
    mDFF_l # (.DW(`NCPU_PRF_AW)) ff_prf_WADDR (.CLK(clk), .LOAD(p_ce), .D(ex_prd), .Q(prf_WADDR) );
-   mDFF_lr # (.DW(1)) ff_prf_WE (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_rf_we & ~flush), .Q(prf_WE) );
+   mDFF_lr # (.DW(1)) ff_prf_WE (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_prf_we & ~flush), .Q(prf_WE) );
    mDFF_l # (.DW(CONFIG_DW)) ff_prf_WDATA (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(prf_WDATA) );
    mDFF_lr # (.DW(1)) ff_wb_fls (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_wb_fls & ~flush), .Q(wb_fls) );
    mDFF_lr # (.DW(1)) ff_wb_exc (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_wb_exc & ~flush), .Q(wb_exc) );

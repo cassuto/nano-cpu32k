@@ -369,12 +369,12 @@ module cmt_epu
    
    assign s1i_wb_dout_sel = (cmt_epu_opc_bus[`NCPU_EPU_RMSR]);
 
-   assign s1i_ERET = (cmt_valid & cmt_fe[`NCPU_EPU_ERET]);
-   assign s1i_ESYSCALL = (cmt_valid & cmt_fe[`NCPU_EPU_ESYSCALL]);
-   assign s1i_EINSN = (cmt_valid & cmt_fe[`NCPU_EPU_EINSN]);
-   assign s1i_EIPF = (cmt_valid & cmt_fe[`NCPU_EPU_EIPF]);
-   assign s1i_EITM = (cmt_valid & cmt_fe[`NCPU_EPU_EITM]);
-   assign s1i_EIRQ = (cmt_valid & cmt_fe[`NCPU_EPU_EIRQ]);
+   assign s1i_ERET = (cmt_valid & cmt_fe[`NCPU_FE_ERET]);
+   assign s1i_ESYSCALL = (cmt_valid & cmt_fe[`NCPU_FE_ESYSCALL]);
+   assign s1i_EINSN = (cmt_valid & cmt_fe[`NCPU_FE_EINSN]);
+   assign s1i_EIPF = (cmt_valid & cmt_fe[`NCPU_FE_EIPF]);
+   assign s1i_EITM = (cmt_valid & cmt_fe[`NCPU_FE_EITM]);
+   assign s1i_EIRQ = (cmt_valid & cmt_fe[`NCPU_FE_EIRQ]);
    assign s1i_E_FLUSH_TLB = (cmt_valid & (s1i_wmsr_psr_we |
                               s1i_msr_imm_tlbl_we |
                               s1i_msr_imm_tlbh_we |

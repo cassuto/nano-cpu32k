@@ -27,7 +27,32 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module cmt
 #(
    parameter                           CONFIG_DW = 0,
-   parameter                           CONFIG_P_ISSUE_WIDTH = 0
+   parameter                           CONFIG_AW = 0,
+   parameter                           CONFIG_P_DW = 0,
+   parameter                           CONFIG_P_ISSUE_WIDTH = 0,
+   parameter                           CONFIG_P_COMMIT_WIDTH = 0,
+   parameter                           CONFIG_PHT_P_NUM = 0,
+   parameter                           CONFIG_BTB_P_NUM = 0,
+   parameter                           CONFIG_NUM_IRQ = 0,
+   parameter                           CONFIG_DC_P_WAYS = 0,
+   parameter                           CONFIG_DC_P_SETS = 0,
+   parameter                           CONFIG_DC_P_LINE = 0,
+   parameter                           CONFIG_P_PAGE_SIZE = 0,
+   parameter                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 0,
+   parameter                           CONFIG_ITLB_P_SETS = 0,
+   parameter                           CONFIG_DTLB_P_SETS = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EITM_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EIPF_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_ESYSCALL_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EINSN_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EIRQ_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EDTM_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EDPF_VECTOR = 0,
+   parameter [`EXCP_VECT_W-1:0]        CONFIG_EALIGN_VECTOR = 0,
+   parameter                           AXI_P_DW_BYTES    = 0,
+   parameter                           AXI_ADDR_WIDTH    = 0,
+   parameter                           AXI_ID_WIDTH      = 0,
+   parameter                           AXI_USER_WIDTH    = 0
 )
 (
    input                               clk,
@@ -118,6 +143,7 @@ module cmt
    // IRQS
    input [CONFIG_NUM_IRQ-1:0]          irqs,
    output                              irq_async,
+   output                              tsc_irq,
    // PSR
    output                              msr_psr_imme,
    output                              msr_psr_rm,
@@ -140,6 +166,8 @@ module cmt
    input                               msr_icinv_ready
 );
    localparam CW                       = (1<<CONFIG_P_COMMIT_WIDTH);
+   localparam [1:0]                    S_IDLE = 2'b01;
+   localparam [1:0]                    S_PENDING = 2'b10;
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire [CONFIG_DW-1:0] epu_wb_dout;            // From U_EPU of cmt_epu.v
@@ -150,9 +178,9 @@ module cmt
    wire                 lsu_EALIGN;             // From U_LSU of cmt_lsu.v
    wire                 lsu_EDPF;               // From U_LSU of cmt_lsu.v
    wire                 lsu_EDTM;               // From U_LSU of cmt_lsu.v
-   wire [CONFIG_DW-1:0] lsu_dout;               // From U_LSU of cmt_lsu.v
    wire                 lsu_stall_req;          // From U_LSU of cmt_lsu.v
    wire [CONFIG_AW-1:0] lsu_vaddr;              // From U_LSU of cmt_lsu.v
+   wire [CONFIG_DW-1:0] lsu_wb_dout;            // From U_LSU of cmt_lsu.v
    wire                 lsu_wb_valid;           // From U_LSU of cmt_lsu.v
    wire [CONFIG_DW-1:0] msr_coreid;             // From U_PSR of cmt_psr.v
    wire [CONFIG_DW-1:0] msr_cpuid;              // From U_PSR of cmt_psr.v
@@ -201,7 +229,6 @@ module cmt
    wire [CONFIG_DW*`NCPU_SR_NUM-1:0] msr_sr;    // From U_PSR of cmt_psr.v
    wire [CONFIG_DW-1:0] msr_sr_nxt;             // From U_EPU of cmt_epu.v
    wire [`NCPU_SR_NUM-1:0] msr_sr_we;           // From U_EPU of cmt_epu.v
-   wire                 tsc_irq;                // From U_EPU of cmt_epu.v
    // End of automatics
    /*AUTOINPUT*/
    wire                                p_ce_s1;
@@ -211,7 +238,7 @@ module cmt
    wire                                cmt_ce;
    wire [CW-1:0]                       lsu_req;
    wire                                lsu_req_valid;
-   wire                                epu_req;
+   wire [CW-1:0]                       epu_req;
    wire                                epu_req_valid;
    wire                                pipe_req;
    wire                                pipe_finish;
@@ -255,8 +282,7 @@ module cmt
    
    assign flush_tgt = (s1o_se_fls)
                         ? s1o_se_tgt
-                        : (exc_flush)
-                           ? exc_flush_tgt;
+                        : exc_flush_tgt /* (exc_flush) */ ;
 
    // FSM for requesting LSU or EPU
    always @(*)
@@ -269,9 +295,12 @@ module cmt
             S_PENDING:
                if (pipe_finish)
                   fsm_state_nxt = S_IDLE;
+            default:
+               ;
          endcase
       end
    
+   mDFF_r #(.DW(2), .RST_VECTOR(S_IDLE)) ff_fsm_state_ff (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
    mDFF_lr #(.DW(1)) ff_s1o_se_fls (.CLK(clk), .RST(rst), .LOAD(cmt_fire[0]), .D(cmt_fls[0]), .Q(s1o_se_fls) );
    mDFF_l #(.DW(`PC_W)) ff_s1o_se_tgt (.CLK(clk), .LOAD(cmt_fire[0]), .D(cmt_opera[`PC_W-1:0]), .Q(s1o_se_tgt) );
    
@@ -283,7 +312,7 @@ module cmt
    always @(*)
       begin
          cmt_mask[0] = cmt_ce & ~flush;
-         for(j=1;j<IW;j=j+1)
+         for(j=1;j<CW;j=j+1)
             cmt_mask[j] = cmt_mask[j-1] & ~single_fu[j];
       end
 
@@ -352,7 +381,7 @@ module cmt
        .lsu_EDPF                        (lsu_EDPF),
        .lsu_EALIGN                      (lsu_EALIGN),
        .lsu_vaddr                       (lsu_vaddr[CONFIG_AW-1:0]),
-       .lsu_dout                        (lsu_dout[CONFIG_DW-1:0]),
+       .lsu_wb_dout                     (lsu_wb_dout[CONFIG_DW-1:0]),
        .lsu_wb_valid                    (lsu_wb_valid),
        .msr_dmmid                       (msr_dmmid[CONFIG_DW-1:0]),
        .msr_dcid                        (msr_dcid[CONFIG_DW-1:0]),
@@ -504,19 +533,19 @@ module cmt
        .msr_sr                          (msr_sr[CONFIG_DW*`NCPU_SR_NUM-1:0]));
    
    cmt_psr
-      #(/*AUTOINSTPARAM*/
-        // Parameters
+      #(
         .CONFIG_DW                      (CONFIG_DW),
-        .CPUID_VER                      (CPUID_VER[7:0]),
-        .CPUID_REV                      (CPUID_REV[9:0]),
-        .CPUID_FIMM                     (CPUID_FIMM[0:0]),
-        .CPUID_FDMM                     (CPUID_FDMM[0:0]),
-        .CPUID_FICA                     (CPUID_FICA[0:0]),
-        .CPUID_FDCA                     (CPUID_FDCA[0:0]),
-        .CPUID_FDBG                     (CPUID_FDBG[0:0]),
-        .CPUID_FFPU                     (CPUID_FFPU[0:0]),
-        .CPUID_FIRQC                    (CPUID_FIRQC[0:0]),
-        .CPUID_FTSC                     (CPUID_FTSC[0:0]))
+        .CPUID_VER                      (1),
+        .CPUID_REV                      (0),
+        .CPUID_FIMM                     (1),
+        .CPUID_FDMM                     (1),
+        .CPUID_FICA                     (1),
+        .CPUID_FDCA                     (1),
+        .CPUID_FDBG                     (0),
+        .CPUID_FFPU                     (0),
+        .CPUID_FIRQC                    (1),
+        .CPUID_FTSC                     (1)
+     )
    U_PSR
       (/*AUTOINST*/
        // Outputs
@@ -573,7 +602,7 @@ module cmt
    assign bpu_wb_taken = (cmt_bpu_upd[`BPU_UPD_TAKEN] ^ cmt_fls[0]); // Extract the first channel
    assign bpu_wb_pc = cmt_pc[0 +: `PC_W];
    assign bpu_wb_npc_act = (cmt_fls[0])
-                              ? cmt_fls_tgt
+                              ? cmt_opera[`PC_W-1:0]
                               : cmt_bpu_upd[`BPU_UPD_TGT]; // Extract the first channel
    assign bpu_wb_upd = cmt_bpu_upd[0*`BPU_UPD_W +: `BPU_UPD_W];
    

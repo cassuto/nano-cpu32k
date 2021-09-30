@@ -26,6 +26,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module rn
 #(
+   parameter                           CONFIG_DW = 0,
+   parameter                           CONFIG_AW = 0,
+   parameter                           CONFIG_PHT_P_NUM = 0,
+   parameter                           CONFIG_BTB_P_NUM = 0,
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0,
    parameter                           CONFIG_P_WRITEBACK_WIDTH = 0
@@ -46,12 +50,12 @@ module rn
    input [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_pc,
    input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_imm,
    input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] rn_lrs1,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] rn_lrs1_re,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] rn_lrs1_re,
    input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] rn_lrs2,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] rn_lrs2_re,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] rn_lrs2_re,
    input [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd_we,
-   input [(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_push_size,
+   input [CONFIG_P_ISSUE_WIDTH:0] rn_push_size,
    // From CMT
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire,
    input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] cmt_lrd,
@@ -83,30 +87,30 @@ module rn
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prd_we,
    output [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_pfree,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_push,
-   output [(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_push_size
+   output [CONFIG_P_ISSUE_WIDTH:0] issue_push_size,
    // Busytable
    output [(1<<`NCPU_PRF_AW)-1:0]       busytable
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] fl_prd;// From U_RN_FL of rn_fl.v
-   wire                 fl_stall_req;           // From U_RN_FL of rn_fl.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] rat_pfree;// From U_RN_RAT of rn_rat.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] rat_prs1;// From U_RN_RAT of rn_rat.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] rat_prs2;// From U_RN_RAT of rn_rat.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] fl_prd;// From U_FL of rn_fl.v
+   wire                 fl_stall_req;           // From U_FL of rn_fl.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] rat_pfree;// From U_RAT of rn_rat.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] rat_prs1;// From U_RAT of rn_rat.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] rat_prs2;// From U_RAT of rn_rat.v
    // End of automatics
    /*AUTOINPUT*/
    wire                                p_ce_s1;
    wire                                p_ce_s2;
-   wire                                fl_pop;                    // To U_RN_FL of rn_fl.v
+   wire [IW-1:0]                       fl_pop;                    // To U_RN_FL of rn_fl.v
    wire                                rollback;               // To U_RN_FL of rn_fl.v, ...
-   wire                                rat_we;                     // To U_RN_RAT of rn_rat.v
+   wire [IW-1:0]                       rat_we;                     // To U_RN_RAT of rn_rat.v
    wire [IW-1:0]                       s1o_valid;
    
    /* rn_fl AUTO_TEMPLATE (
       .lrd_we                          (rn_lrd_we),
-      .pop                             (fl_pop),
+      .pop                             (fl_pop[]),
       )
     */
    rn_fl
@@ -122,7 +126,7 @@ module rn
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
-       .pop                             (fl_pop),                // Templated
+       .pop                             (fl_pop[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]), // Templated
        .rollback                        (rollback),
        .lrd_we                          (rn_lrd_we),             // Templated
        .cmt_fire                        (cmt_fire[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
@@ -187,7 +191,7 @@ module rn
        .prf_WE                          (prf_WE[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]));
 
    // Request stall if there is no free PR or reservation station is full
-   assign rn_stall_req = (fl_stall_req | ~issue_ready);
+   assign rn_stall_req = (fl_stall_req | ~(&issue_ready));
    
    assign p_ce_s1 = ~(rn_stall_req);
    assign p_ce_s2 = ~(rn_stall_req);
@@ -200,7 +204,7 @@ module rn
    //
    // Pipeline stage
    //
-   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush), .D(issue_valid & {IW{~flush}}), .Q(s1o_valid) );
+   mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush), .D(rn_valid & {IW{~flush}}), .Q(s1o_valid) );
    mDFF_l # (.DW(`NCPU_ALU_IOPW*IW)) ff_issue_alu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_alu_opc_bus), .Q(issue_alu_opc_bus) );
    mDFF_l # (.DW(`NCPU_LPU_IOPW*IW)) ff_issue_lpu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lpu_opc_bus), .Q(issue_lpu_opc_bus) );
    mDFF_l # (.DW(`NCPU_EPU_IOPW*IW)) ff_issue_epu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_epu_opc_bus), .Q(issue_epu_opc_bus) );
@@ -210,14 +214,15 @@ module rn
    mDFF_l # (.DW(`BPU_UPD_W*IW)) ff_issue_bpu_upd (.CLK(clk), .LOAD(p_ce_s1), .D(rn_bpu_upd), .Q(issue_bpu_upd) );
    mDFF_l # (.DW(`PC_W*IW)) ff_issue_pc (.CLK(clk), .LOAD(p_ce_s1), .D(rn_pc), .Q(issue_pc) );
    mDFF_l # (.DW(CONFIG_DW*IW)) ff_issue_imm (.CLK(clk), .LOAD(p_ce_s1), .D(rn_imm), .Q(issue_imm) );
-   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_prs1 (.CLK(clk), .LOAD(p_ce_s1), .D(rat_prs1), .Q(issue_prs1) );
-   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_prs2 (.CLK(clk), .LOAD(p_ce_s1), .D(rat_prs2), .Q(issue_prs2) );
+   mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_prs1 (.CLK(clk), .LOAD(p_ce_s1), .D(rat_prs1), .Q(issue_prs1) );
+   mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_prs2 (.CLK(clk), .LOAD(p_ce_s1), .D(rat_prs2), .Q(issue_prs2) );
    mDFF_l # (.DW(IW)) ff_issue_prs1_re (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs1_re), .Q(issue_prs1_re) );
    mDFF_l # (.DW(IW)) ff_issue_prs2_re (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs2_re), .Q(issue_prs2_re) );
-   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_prd (.CLK(clk), .LOAD(p_ce_s1), .D(fl_prd), .Q(issue_prd) );
+   mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_prd (.CLK(clk), .LOAD(p_ce_s1), .D(fl_prd), .Q(issue_prd) );
+   mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_pfree (.CLK(clk), .LOAD(p_ce_s1), .D(rat_pfree), .Q(issue_pfree) );
    mDFF_l # (.DW(IW)) ff_issue_prd_we (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd_we), .Q(issue_prd_we) );
    mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_lrd (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd), .Q(issue_lrd) );
-   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_push_size (.CLK(clk), .LOAD(p_ce_s1), .D(rn_push_size), .Q(issue_push_size) );
+   mDFF_l # (.DW(CONFIG_P_ISSUE_WIDTH+1)) ff_issue_push_size (.CLK(clk), .LOAD(p_ce_s1), .D(rn_push_size), .Q(issue_push_size) );
    
    assign issue_push = s1o_valid;
    

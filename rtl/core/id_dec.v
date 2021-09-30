@@ -334,18 +334,18 @@ module id_dec
    assign lsu_opc_bus[`NCPU_LSU_BARR] = (f_opcode == `NCPU_OP_MBARR);
 
    // EPU opcodes excluding EINSN 
-   assign epu_opc[`NCPU_EPU_WMSR] = op_wmsr;
-   assign epu_opc[`NCPU_EPU_RMSR] = op_rmsr;
+   assign epu_opc_bus[`NCPU_EPU_WMSR] = op_wmsr;
+   assign epu_opc_bus[`NCPU_EPU_RMSR] = op_rmsr;
    
    // Frontend Exceptions
-   assign fe[`NCPU_EPU_ESYSCALL] = op_syscall;
-   assign fe[`NCPU_EPU_ERET] = op_ret;
-   assign fe[`NCPU_EPU_EITM] = (id_exc[`FNT_EXC_EITM] & ~irq_async);
-   assign fe[`NCPU_EPU_EIPF] = (id_exc[`FNT_EXC_EIPF] & ~irq_async);
-   assign fe[`NCPU_EPU_EIRQ] = irq_async;
+   assign fe[`NCPU_FE_ESYSCALL] = op_syscall;
+   assign fe[`NCPU_FE_ERET] = op_ret;
+   assign fe[`NCPU_FE_EITM] = (id_exc[`FNT_EXC_EITM] & ~irq_async);
+   assign fe[`NCPU_FE_EIPF] = (id_exc[`FNT_EXC_EIPF] & ~irq_async);
+   assign fe[`NCPU_FE_EIRQ] = irq_async;
 
    // Insn is unsupported by hardware or unrecognizable
-   assign fe[`NCPU_EPU_EINSN] =
+   assign fe[`NCPU_FE_EINSN] =
       ~(
          // ALU opcodes
          (|alu_opc_bus) |
@@ -356,7 +356,7 @@ module id_dec
          // LSU insns
          (lsu_opc_bus[`NCPU_LSU_LOAD] | lsu_opc_bus[`NCPU_LSU_STORE] | lsu_opc_bus[`NCPU_LSU_BARR]) |
          // EPU opcodes
-         (|epu_opc)
+         (|epu_opc_bus)
       );
    
    // Insn that uses rs1 and imm15 as operands.
@@ -388,10 +388,7 @@ module id_dec
       (
          op_jmp_i | is_bcc | 
          lsu_opc_bus[`NCPU_LSU_STORE] | lsu_opc_bus[`NCPU_LSU_BARR] |
-         op_wmsr | epu_opc_bus[`NCPU_EPU_ESYSCALL] | epu_opc_bus[`NCPU_EPU_ERET] |
-         epu_opc_bus[`NCPU_EPU_EITM] | epu_opc_bus[`NCPU_EPU_EIPF] |
-         epu_opc_bus[`NCPU_EPU_EINSN] |
-         epu_opc_bus[`NCPU_EPU_EIRQ]
+         op_wmsr | (|fe)
       );
 
    // Do not write r0 (nil)

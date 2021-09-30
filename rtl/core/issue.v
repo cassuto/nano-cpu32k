@@ -26,9 +26,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module issue
 #(
+   parameter                           CONFIG_DW = 0,
+   parameter                           CONFIG_AW = 0,
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
+   parameter                           CONFIG_P_COMMIT_WIDTH = 0,
    parameter                           CONFIG_P_ROB_DEPTH = 0,
-   parameter                           CONFIG_P_RS_DEPTH = 0
+   parameter                           CONFIG_P_RS_DEPTH = 0,
+   parameter                           CONFIG_PHT_P_NUM = 0,
+   parameter                           CONFIG_BTB_P_NUM = 0
 )
 (
    input                               clk,
@@ -53,7 +58,7 @@ module issue
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prd_we,
    input [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_pfree,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_push,
-   input [(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_push_size,
+   input [CONFIG_P_ISSUE_WIDTH:0]      issue_push_size,
    input [(1<<`NCPU_PRF_AW)-1:0]       busytable,
    // To RN
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_ready,
@@ -97,7 +102,7 @@ module issue
    output [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] ro_rob_bank,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_valid
 );
-   localparam  IW                      = (1<<CONFIG_P_ISSUE_WIDTH)
+   localparam  IW                      = (1<<CONFIG_P_ISSUE_WIDTH);
    /*AUTOWIRE*/
    /*AUTOINPUT*/
    wire [IW-1:0]                       issue_rs_full;          // From U_RS of issue_rs.v
@@ -105,7 +110,6 @@ module issue
    wire [IW-1:0]                       rs_push;
    wire [CONFIG_P_ROB_DEPTH*IW-1:0]    issue_rob_id;           // To U_RS of issue_rs.v
    wire [CONFIG_P_COMMIT_WIDTH*IW-1:0] issue_rob_bank;         // To U_RS of issue_rs.v
-                  [IW-1:0];
    genvar i;
    
    generate
@@ -120,12 +124,12 @@ module issue
                   .ro_valid               (ro_valid[i]),
                   .ro_alu_opc_bus         (ro_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
                   .ro_lpu_opc_bus         (ro_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]),
-                  .ro_epu_op              (ro_epu_op[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
+                  .ro_epu_op              (ro_epu_op[i]),
                   .ro_bru_opc_bus         (ro_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
-                  .ro_lsu_op              (ro_lsu_op[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
+                  .ro_lsu_op              (ro_lsu_op[i]),
                   .ro_bpu_pred_taken      (ro_bpu_pred_taken[i]),
                   .ro_bpu_pred_tgt        (ro_bpu_pred_tgt[i * `PC_W +: `PC_W]),
-                  .ro_fe                  (ro_fe[i * `NCPU_FE_W +: `NCPU_FE_W]),
+                  .ro_fe                  (ro_fe[i*`NCPU_FE_W +: `NCPU_FE_W]),
                   .ro_pc                  (ro_pc[i*`PC_W +: `PC_W]),
                   .ro_imm                 (ro_imm[i*CONFIG_DW +: CONFIG_DW]),
                   .ro_prs1                (ro_prs1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]),
@@ -136,6 +140,7 @@ module issue
                   .ro_prd_we              (ro_prd_we[i]),
                   .ro_pfree               (ro_pfree[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]),
                   .ro_rob_id              (ro_rob_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]),
+                  .ro_rob_bank            (ro_rob_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]),
                   .issue_alu_opc_bus      (issue_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
                   .issue_lpu_opc_bus      (issue_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]),
                   .issue_epu_op           (|issue_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
@@ -159,7 +164,14 @@ module issue
                )
              */
             issue_rs
-               #(/*AUTOPARAM*/)
+               #(/*AUTOINSTPARAM*/
+                 // Parameters
+                 .CONFIG_DW             (CONFIG_DW),
+                 .CONFIG_AW             (CONFIG_AW),
+                 .CONFIG_P_ISSUE_WIDTH  (CONFIG_P_ISSUE_WIDTH),
+                 .CONFIG_P_COMMIT_WIDTH (CONFIG_P_COMMIT_WIDTH),
+                 .CONFIG_P_ROB_DEPTH    (CONFIG_P_ROB_DEPTH),
+                 .CONFIG_P_RS_DEPTH     (CONFIG_P_RS_DEPTH))
             U_RS
                (/*AUTOINST*/
                 // Outputs
@@ -167,11 +179,12 @@ module issue
                 .ro_valid               (ro_valid[i]),           // Templated
                 .ro_alu_opc_bus         (ro_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]), // Templated
                 .ro_lpu_opc_bus         (ro_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]), // Templated
-                .ro_epu_op              (ro_epu_op[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]), // Templated
+                .ro_epu_op              (ro_epu_op[i]),          // Templated
+                .ro_bru_opc_bus         (ro_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]), // Templated
                 .ro_bpu_pred_taken      (ro_bpu_pred_taken[i]),  // Templated
                 .ro_bpu_pred_tgt        (ro_bpu_pred_tgt[i * `PC_W +: `PC_W]), // Templated
-                .ro_lsu_op              (ro_lsu_op[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]), // Templated
-                .ro_fe                  (ro_fe[i * `NCPU_FE_W +: `NCPU_FE_W]), // Templated
+                .ro_lsu_op              (ro_lsu_op[i]),          // Templated
+                .ro_fe                  (ro_fe[i*`NCPU_FE_W +: `NCPU_FE_W]), // Templated
                 .ro_pc                  (ro_pc[i*`PC_W +: `PC_W]), // Templated
                 .ro_imm                 (ro_imm[i*CONFIG_DW +: CONFIG_DW]), // Templated
                 .ro_prs1                (ro_prs1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]), // Templated
@@ -181,7 +194,7 @@ module issue
                 .ro_prd                 (ro_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]), // Templated
                 .ro_prd_we              (ro_prd_we[i]),          // Templated
                 .ro_rob_id              (ro_rob_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]), // Templated
-                .ro_rob_bank            (ro_rob_bank[CONFIG_P_COMMIT_WIDTH-1:0]),
+                .ro_rob_bank            (ro_rob_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]), // Templated
                 // Inputs
                 .clk                    (clk),
                 .rst                    (rst),
@@ -210,7 +223,7 @@ module issue
    endgenerate
 
    assign issue_ready = (~issue_rs_full & {IW{rob_ready}});
-   assign rs_push = (issue_push & issue_p_ce);
+   assign rs_push = (issue_push & {IW{issue_p_ce}});
    
    assign rob_push_epu_opc_bus = issue_epu_opc_bus;
    assign rob_push_lsu_opc_bus = issue_lsu_opc_bus;
@@ -218,22 +231,23 @@ module issue
    assign rob_push_pc = issue_pc;
    assign rob_push_lrd = issue_lrd;
    assign rob_push_prd = issue_prd;
-   assign rob_push_prd_we = issue_push_prd_we;
-   assign rob_push_pfree = issue_push_pfree;
-   assign rob_push_size = (issue_push_size & {(CONFIG_P_ISSUE_WIDTH+1)*IW{issue_p_ce}});
+   assign rob_push_prd_we = issue_prd_we;
+   assign rob_push_pfree = issue_pfree;
+   assign rob_push_size = (issue_push_size & {CONFIG_P_ISSUE_WIDTH+1{issue_p_ce}});
    
    generate
       for(i=0;i<IW;i=i+1)
          begin : gen_dec_br
-               assign rob_push_is_bcc[i] = (issue_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_BEQ] |
-                                             issue_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_BNE] |
-                                             issue_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_BGT] |
-                                             issue_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_BGTU] |
-                                             issue_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_BLE] |
-                                             issue_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_BLEU]);
-               assign rob_push_is_brel[i] = issue_bru_opc_bus[i*`NCPU_BRU_IOPW + `NCPU_BRU_JMPREL]
-               assign rob_push_is_breg[i] = issue_bru_opc_bus[i*`NCPU_BRU_IOPW + `NCPU_BRU_JMPREG]
+               assign rob_push_is_bcc[i] = (issue_bru_opc_bus[i*`NCPU_BRU_IOPW + `NCPU_BRU_BEQ] |
+                                             issue_bru_opc_bus[i*`NCPU_BRU_IOPW + `NCPU_BRU_BNE] |
+                                             issue_bru_opc_bus[i*`NCPU_BRU_IOPW + `NCPU_BRU_BGT] |
+                                             issue_bru_opc_bus[i*`NCPU_BRU_IOPW + `NCPU_BRU_BGTU] |
+                                             issue_bru_opc_bus[i*`NCPU_BRU_IOPW + `NCPU_BRU_BLE] |
+                                             issue_bru_opc_bus[i*`NCPU_BRU_IOPW + `NCPU_BRU_BLEU]);
+               assign rob_push_is_brel[i] = issue_bru_opc_bus[i*`NCPU_BRU_IOPW + `NCPU_BRU_JMPREL];
+               assign rob_push_is_breg[i] = issue_bru_opc_bus[i*`NCPU_BRU_IOPW + `NCPU_BRU_JMPREG];
          end
+   endgenerate
    
    assign ro_rs_pop = (ro_valid & ro_ready);
    

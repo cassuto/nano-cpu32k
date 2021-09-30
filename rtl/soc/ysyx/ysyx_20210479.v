@@ -128,6 +128,9 @@ module ysyx_20210479
    localparam [`EXCP_VECT_W-1:0]        CONFIG_EALIGN_VECTOR = 8'h24;
    
    localparam                           CONFIG_NUM_IRQ = 32;
+   
+   localparam                           CONFIG_P_RS_DEPTH = 2;
+   localparam                           CONFIG_P_ROB_DEPTH = 3;
 
    localparam AXI_P_DW_BYTES   = 3; // 8 Bytes
    localparam AXI_UNCACHED_P_DW_BYTES = 2; // 4 Bytes max. for uncached devices

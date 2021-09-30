@@ -27,7 +27,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module rob
 #(
    parameter                           CONFIG_DW = 0,
+   parameter                           CONFIG_AW = 0,
+   parameter                           CONFIG_PHT_P_NUM = 0,
+   parameter                           CONFIG_BTB_P_NUM = 0,
+   parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0,
+   parameter                           CONFIG_P_WRITEBACK_WIDTH = 0,
    parameter                           CONFIG_P_ROB_DEPTH = 0
 )
 (
@@ -35,7 +40,7 @@ module rob
    input                               rst,
    input                               flush,
    // From issue
-   input [CONFIG_P_COMMIT_WIDTH:0]     rob_push_size,
+   input [CONFIG_P_ISSUE_WIDTH:0]     rob_push_size,
    input [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_epu_opc_bus,
    input [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_lsu_opc_bus,
    input [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_push_bpu_upd,
@@ -52,15 +57,15 @@ module rob
    output [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] rob_free_id,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] rob_free_bank, 
    // From WB
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_valid,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] wb_rob_id,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] wb_rob_bank,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_fls,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_exc,
-   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_opera,
-   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_operb,
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_valid,
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] wb_rob_id,
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] wb_rob_bank,
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_fls,
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_exc,
+   input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_opera,
+   input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_operb,
    // To WB
-   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_ready,
+   output [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready,
    // To CMT
    output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_valid,
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_epu_opc_bus,
@@ -81,9 +86,8 @@ module rob
    // From CMT
    input [CONFIG_P_COMMIT_WIDTH:0]     cmt_pop_size
 );
-
-   localparam FW                       = (1<<CONFIG_P_FETCH_WIDTH);
-   localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
+   localparam CW                       = (1<<CONFIG_P_COMMIT_WIDTH);
+   localparam WW                       = (1<<CONFIG_P_WRITEBACK_WIDTH);
    localparam ROB_DEPTH                = (1<<CONFIG_P_ROB_DEPTH);
    localparam uBANK_DW                 = (`NCPU_EPU_IOPW +
                                           `NCPU_LSU_IOPW +
@@ -98,15 +102,15 @@ module rob
                                           1);
    localparam P_BANKS                  = (CONFIG_P_COMMIT_WIDTH);
    localparam BANKS                    = (1<<P_BANKS);
-   localparam R_1[CONFIG_P_ROB_DEPTH-1:0] = {{CONFIG_P_ROB_DEPTH-1{1'b0}}, 1'b1};
+   localparam [CONFIG_P_ROB_DEPTH-1:0] R_1 = {{CONFIG_P_ROB_DEPTH-1{1'b0}}, 1'b1};
    localparam vBANK_DW                 = (CONFIG_DW +
                                           CONFIG_DW);
    wire [P_BANKS-1:0]                  head_ff, tail_ff;
    wire [P_BANKS-1:0]                  head_nxt, tail_nxt;
-   wire [P_BANKS-1:0]                  head_l                        [FW-1:0];
-   wire [P_BANKS-1:0]                  head_r                        [FW-1:0];
-   wire [P_BANKS-1:0]                  tail_l                        [FW-1:0];
-   wire [P_BANKS-1:0]                  tail_r                        [FW-1:0];
+   wire [P_BANKS-1:0]                  head_l                        [CW-1:0];
+   wire [P_BANKS-1:0]                  head_r                        [CW-1:0];
+   wire [P_BANKS-1:0]                  tail_l                        [CW-1:0];
+   wire [P_BANKS-1:0]                  tail_r                        [CW-1:0];
    wire [uBANK_DW-1:0]                 que_din_mux                   [BANKS-1:0];
    wire [uBANK_DW-1:0]                 que_din                       [BANKS-1:0];
    wire [uBANK_DW-1:0]                 que_dout                      [BANKS-1:0];
@@ -114,18 +118,19 @@ module rob
    wire [BANKS-1:0]                    que_ready;
    wire                                que_push                      [BANKS-1:0];
    wire                                que_pop                       [BANKS-1:0];
-   wire                                que_wb                        [BANKS-1:0];
-   wire [CONFIG_P_ROB_DEPTH-1:0]       que_wb_id                     [BANKS-1:0];
-   wire                                que_wb_fls                    [BANKS-1:0];
-   wire                                que_wb_exc                    [BANKS-1:0];
-   wire [vBANK_DW-1:0]                 que_wb_vbank                  [BANKS-1:0];
+   reg                                 que_wb                        [BANKS-1:0];
+   reg [CONFIG_P_ROB_DEPTH-1:0]        que_wb_id                     [BANKS-1:0];
+   reg                                 que_wb_fls                    [BANKS-1:0];
+   reg                                 que_wb_exc                    [BANKS-1:0];
+   reg [vBANK_DW-1:0]                  que_wb_vbank                  [BANKS-1:0];
    wire [P_BANKS:0]                    pop_cnt_adapt;
-   wire [DEPTH_WIDTH-1:0]              payload_waddr                 [BANKS-1:0];
-   wire [ROB_DEPTH-1:0]                que_rdy                       [BANKS-1:0];
+   wire [CONFIG_P_ROB_DEPTH-1:0]       que_rptr                      [BANKS-1:0];
+   wire [CONFIG_P_ROB_DEPTH-1:0]       que_wptr                      [BANKS-1:0];
+   wire                                que_rdy                       [BANKS-1:0];
    wire                                que_fls                       [BANKS-1:0];
    wire                                que_exc                       [BANKS-1:0];
    wire [vBANK_DW-1:0]                 que_vbank                     [BANKS-1:0];
-   genvar i;
+   genvar i, k;
    integer j;
 
    generate
@@ -178,11 +183,18 @@ module rob
          begin : gen_BANKS
             wire                       payload_re;
             wire [CONFIG_P_ROB_DEPTH-1:0] payload_raddr;
+            wire [CONFIG_P_ROB_DEPTH-1:0] payload_waddr;
             wire [uBANK_DW-1:0]        payload_rdata;
             wire                       payload_we;
             wire [uBANK_DW-1:0]        payload_wdata;
             
-            fifo_fwft_ctrl
+            wire [ROB_DEPTH-1:0]       tag_rdy;
+            wire [ROB_DEPTH-1:0]       tag_fls;
+            wire [ROB_DEPTH-1:0]       tag_exc;
+            wire [vBANK_DW*ROB_DEPTH-1:0] tag_vbank;
+            wire [vBANK_DW-1:0]        tag_vbank_mux [ROB_DEPTH-1:0];
+            
+            fifo_fwft_ctrl_rp_wp
                #(
                   .DW            (uBANK_DW),
                   .DEPTH_WIDTH   (CONFIG_P_ROB_DEPTH)
@@ -198,11 +210,13 @@ module rob
                   .pop           (que_pop[i]),
                   .dout          (que_dout[i]),
                   .valid         (que_valid[i]),
+                  .rptr          (que_rptr[i]),
+                  .wptr          (que_wptr[i]),
                   .payload_re    (payload_re),
                   .payload_raddr (payload_raddr),
                   .payload_rdata (payload_rdata),
                   .payload_we    (payload_we),
-                  .payload_waddr (payload_waddr[i]),
+                  .payload_waddr (payload_waddr),
                   .payload_wdata (payload_wdata)
                );
                
@@ -220,7 +234,7 @@ module rob
                   .RADDR   (payload_raddr),
                   .RDATA   (payload_rdata),
                   .WE      (payload_we),
-                  .WADDR   (payload_waddr[i]),
+                  .WADDR   (payload_waddr),
                   .WDATA   (payload_wdata)
                );
                
@@ -238,9 +252,9 @@ module rob
                   .WE   ({que_wb[i], que_push[i]}),
                   .WADDR ({que_wb_id[i], payload_waddr}),
                   .WDATA ({1'b1, 1'b0}),
-                  .DO   (que_rdy[i])
+                  .DO   (tag_rdy)
                );
-            
+               
             mRF_nw_do_r
                #(
                   .DW (1),
@@ -255,9 +269,9 @@ module rob
                   .WE   ({que_wb[i], que_push[i]}),
                   .WADDR ({que_wb_id[i], payload_waddr}),
                   .WDATA ({que_wb_fls[i], 1'b0}),
-                  .DO   (que_fls[i])
+                  .DO   (tag_fls)
                );
-            
+      
             mRF_nw_do_r
                #(
                   .DW (1),
@@ -272,9 +286,9 @@ module rob
                   .WE   ({que_wb[i], que_push[i]}),
                   .WADDR ({que_wb_id[i], payload_waddr}),
                   .WDATA ({que_wb_exc[i], 1'b0}),
-                  .DO   (que_exc[i])
+                  .DO   (tag_exc)
                );
-               
+            
             mRF_nw_do
                #(
                   .DW (vBANK_DW),
@@ -287,8 +301,18 @@ module rob
                   .WE   (que_wb[i]),
                   .WADDR (que_wb_id[i]),
                   .WDATA (que_wb_vbank[i]),
-                  .DO   (que_vbank[i])
+                  .DO   (tag_vbank)
                );
+              
+            // Address decoder
+            assign que_rdy[i] = tag_rdy[que_rptr[i]];
+            assign que_fls[i] = tag_fls[que_rptr[i]];
+            assign que_exc[i] = tag_exc[que_rptr[i]];
+            
+            for(k=0;k<ROB_DEPTH;k=k+1)
+               assign tag_vbank_mux[k] = tag_vbank[k * vBANK_DW +: vBANK_DW];
+            
+            assign que_vbank[i] = tag_vbank_mux[que_rptr[i]];
          end
    endgenerate
    
@@ -298,7 +322,7 @@ module rob
          always @(*)
             begin
                que_wb[i] = 'b0;
-               for(j=0;j<IW;j=j+1)
+               for(j=0;j<CW;j=j+1)
                   que_wb[i] = que_wb[i] | (wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]));
             end
    endgenerate
@@ -312,19 +336,19 @@ module rob
                que_wb_fls[i] = 'b0;
                que_wb_exc[i] = 'b0;
                que_wb_vbank[i] = 'b0;
-               for(j=0;j<IW;j=j+1)
+               for(j=0;j<WW;j=j+1)
                   begin
                      que_wb_id[i] = que_wb_id[i] |
                                        ({CONFIG_P_ROB_DEPTH{i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]}} &
                                        wb_rob_id[j*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]);
                      que_wb_fls[i] = que_wb_fls[i] |
-                                       ({CONFIG_P_ROB_DEPTH{i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]}} &
+                                       ((i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) &
                                        wb_fls[j]);
                      que_wb_exc[i] = que_wb_exc[i] |
-                                       ({CONFIG_P_ROB_DEPTH{i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]}} &
+                                       ((i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) &
                                        wb_exc[j]);
                      que_wb_vbank[i] = que_wb_vbank[i] |
-                                       ({CONFIG_P_ROB_DEPTH{i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]}} &
+                                       ({vBANK_DW{i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]}} &
                                        {wb_operb[j*CONFIG_DW +: CONFIG_DW], wb_opera[j*CONFIG_DW +: CONFIG_DW]});
                   end
             end
@@ -334,14 +358,14 @@ module rob
    generate
       for(i=0;i<BANKS;i=i+1)
          begin : gen_rob_free
-            assign rob_free_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH] = payload_waddr[tail_l[i]];
+            assign rob_free_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH] = que_wptr[tail_l[i]];
             assign rob_free_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH] = tail_l[i];
          end
    endgenerate
    
    // MUX for data output
    generate
-      for(i=0;i<(1<<CONFIG_P_COMMIT_WIDTH);i=i+1)
+      for(i=0;i<CW;i=i+1)
          begin : gen_pop
             assign {cmt_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW],
                      cmt_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
@@ -362,8 +386,8 @@ module rob
          end
    endgenerate
    
-   assign ready = &que_ready;
+   assign rob_ready = &que_ready;
    
-   assign wb_ready = {IW{1'b1}};
+   assign wb_ready = {WW{1'b1}};
 
 endmodule

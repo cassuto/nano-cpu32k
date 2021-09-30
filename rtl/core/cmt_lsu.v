@@ -105,7 +105,7 @@ module cmt_lsu
    output                              lsu_EDPF,
    output                              lsu_EALIGN,
    output [CONFIG_AW-1:0]              lsu_vaddr,
-   output [CONFIG_DW-1:0]              lsu_dout,
+   output [CONFIG_DW-1:0]              lsu_wb_dout,
    output                              lsu_wb_valid,
    // PSR
    input                               msr_psr_dmme,
@@ -382,7 +382,7 @@ module cmt_lsu
                           ({8{s2o_vaddr[1:0]==2'b11}} & s2o_dout_32b[31:24]);
    assign s2o_dout_16b = s2o_vaddr[1] ? s2o_dout_32b[31:16] : s2o_dout_32b[15:0];
 
-   assign lsu_dout =
+   assign lsu_wb_dout =
       ({CONFIG_DW{s2o_size==3'd2}} & s2o_dout_32b) |
       ({CONFIG_DW{s2o_size==3'd1}} & {{16{s2o_sign_ext & s2o_dout_16b[15]}}, s2o_dout_16b[15:0]}) |
       ({CONFIG_DW{s2o_size==3'd0}} & {{24{s2o_sign_ext & s2o_dout_8b[7]}}, s2o_dout_8b[7:0]});

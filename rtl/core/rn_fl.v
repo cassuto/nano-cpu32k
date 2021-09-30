@@ -52,28 +52,55 @@ module rn_fl
    reg [N_PRF-1:0]                     fl_nxt;
    wire [N_PRF-2:0]                    afl_ff;
    reg [N_PRF-1:0]                     afl_nxt;
-   wire [N_PRF-1:0]                    fl                            [IW-1:0];
    wire                                gs                            [IW-1:0];
    reg                                 no_free;
    genvar i;
    integer j;
 
    // Select free PR
-   always @(*)
-      begin
-         fl[0] = {fl_ff, 1'b0};
-         for(j=1;j<IW;j=j+1)
-            fl[j] = fl[j-1] & ~(FL_1 << fl_prd[(j-1) * `NCPU_PRF_AW +: `NCPU_PRF_AW]);
-      end
    generate
-      for(i=0;i<IW;i=i+1)
-         begin : gen_penc
-            priority_encoder #(.P_DW(`NCPU_PRF_AW)) PENC_FL (
-               .din     (fl[i]),
-               .dout    (fl_prd[i* `NCPU_PRF_AW +: `NCPU_PRF_AW]),
-               .gs      (gs[i])
+      //
+      // The algorithm is:
+      //
+      // fl[0] = {fl_ff, 1'b0};
+      // for(j=1;j<IW;j=j+1)
+      //    fl[j] = fl[j-1] & ~(FL_1 << fl_prd[j-1]);
+      //
+      // for(i=1;i<IW;i=i+1)
+      //    priority_encoder_gs #(.P_DW(`NCPU_PRF_AW)) PENC_FL (
+      //       .din     (fl[i]),
+      //       .dout    (fl_prd[i* `NCPU_PRF_AW +: `NCPU_PRF_AW]),
+      //       .gs      (gs[i])
+      //    );
+      //
+      // The above HDL generates an "unoptimizable feedback" in verilator
+      // but there is not actually one, which may be a bug of the verilator.
+      //
+      if (IW==2)
+         begin : gen_sel_2
+            wire [`NCPU_PRF_AW-1:0] fl_prd_0, fl_prd_1;
+            wire [N_PRF-1:0] fl_0, fl_1;
+            
+            assign fl_0 = {fl_ff, 1'b0};
+            
+            priority_encoder_gs #(.P_DW(`NCPU_PRF_AW)) PENC_FL_0 (
+               .din     (fl_0),
+               .dout    (fl_prd_0),
+               .gs      (gs[0])
             );
+            
+            assign fl_1 = fl_0 & ~(FL_1 << fl_prd_0);
+            
+            priority_encoder_gs #(.P_DW(`NCPU_PRF_AW)) PENC_FL_1 (
+               .din     (fl_1),
+               .dout    (fl_prd_1),
+               .gs      (gs[1])
+            );
+            
+            assign fl_prd = {fl_prd_1, fl_prd_0};
          end
+      else
+         $fatal(1, "Unimplemented");
    endgenerate
    
    // Check if there is no free physical register
@@ -81,7 +108,7 @@ module rn_fl
       begin
          no_free = 'b0;
          for(j=0;j<IW;j=j+1)
-            no_free = fl_stall_req | (lrd_we[j] & ~gs[j]);
+            no_free = no_free | (lrd_we[j] & ~gs[j]);
       end
    assign fl_stall_req = no_free;
       

@@ -51,9 +51,10 @@ module prf
    // To WB
    output [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready
 );
+   localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam WW                       = (1<<CONFIG_P_WRITEBACK_WIDTH);
    
-   wire [WW-1:0]                       prf_WE,
+   wire [WW-1:0]                       prf_WE_1;
    wire [`NCPU_PRF_AW*WW-1:0]          prf_WADDR_1;
    wire [CONFIG_DW*WW-1:0]             prf_WDATA_1;
    genvar i;
@@ -71,7 +72,7 @@ module prf
          .RE                           (prf_RE),
          .RADDR                        (prf_RADDR),
          .RDATA                        (prf_RDATA),
-         .WE                           (prf_WE),
+         .WE                           (prf_WE_1),
          .WADDR                        (prf_WADDR_1),
          .WDATA                        (prf_WDATA_1)
       );
@@ -90,7 +91,7 @@ module prf
    
    generate
       for(i=1;i<WW;i=i+1)
-         begin : gen bundle
+         begin : gen_bundle
             assign wb_ready[i] = 'b1;
             assign prf_WE_1[i] = prf_WE[i];
             assign prf_WADDR_1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW] = prf_WADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];

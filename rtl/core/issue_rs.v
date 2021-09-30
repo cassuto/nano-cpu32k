@@ -26,6 +26,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module issue_rs
 #(
+   parameter                           CONFIG_DW = 0,
+   parameter                           CONFIG_AW = 0,
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0,
    parameter                           CONFIG_P_ROB_DEPTH = 0,
@@ -63,6 +65,7 @@ module issue_rs
    output [`NCPU_ALU_IOPW-1:0]         ro_alu_opc_bus,
    output [`NCPU_LPU_IOPW-1:0]         ro_lpu_opc_bus,
    output                              ro_epu_op,
+   output [`NCPU_BRU_IOPW-1:0]         ro_bru_opc_bus,
    output                              ro_bpu_pred_taken,
    output [`PC_W-1:0]                  ro_bpu_pred_tgt,
    output                              ro_lsu_op,
@@ -88,12 +91,13 @@ module issue_rs
                                           `NCPU_FE_W +
                                           1 +
                                           `PC_W +
+                                          `PC_W +
                                           CONFIG_DW +
                                           `NCPU_PRF_AW +
                                           1 +
                                           CONFIG_P_ROB_DEPTH +
                                           CONFIG_P_COMMIT_WIDTH);
-   localparam FL_1[RS_DEPTH-1:0]       = {{RS_DEPTH-1{1'b0}}, 'b1};
+   localparam [RS_DEPTH-1:0] FL_1      = {{RS_DEPTH-1{1'b0}}, 1'b1};
 
    wire [OPP_W-1:0]                    opp_wdat, opp_rdat;
    wire [RS_DEPTH*`NCPU_PRF_AW-1:0]    prs1_rf;
@@ -244,10 +248,10 @@ module issue_rs
    
    mDFF_r #(.DW(1)) ff_has_rdy (.CLK(clk), .RST(rst), .D(has_rdy), .Q(has_rdy_ff) );
    mDFF_l #(.DW(CONFIG_P_RS_DEPTH)) ff_rdy_addr (.CLK(clk), .LOAD(has_rdy), .D(rdy_addr), .Q(rdy_addr_ff) );
-   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs1 (.CLK(clk), .LOAD(has_rdy), .D(prs1_rf_mux[rdy_addr]), .Q(ro_prs1) );
-   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs2 (.CLK(clk), .LOAD(has_rdy), .D(prs2_rf_mux[rdy_addr]), .Q(ro_prs2) );
-   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs1_re (.CLK(clk), .LOAD(has_rdy), .D(prs1_re_rf[rdy_addr]), .Q(ro_prs1_re) );
-   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs2_re (.CLK(clk), .LOAD(has_rdy), .D(prs2_re_rf[rdy_addr]), .Q(ro_prs2_re) );
+   mDFF_l #(.DW(`NCPU_PRF_AW)) ff_issue_prs1 (.CLK(clk), .LOAD(has_rdy), .D(prs1_rf_mux[rdy_addr]), .Q(ro_prs1) );
+   mDFF_l #(.DW(`NCPU_PRF_AW)) ff_issue_prs2 (.CLK(clk), .LOAD(has_rdy), .D(prs2_rf_mux[rdy_addr]), .Q(ro_prs2) );
+   mDFF_l #(.DW(1)) ff_issue_prs1_re (.CLK(clk), .LOAD(has_rdy), .D(prs1_re_rf[rdy_addr]), .Q(ro_prs1_re) );
+   mDFF_l #(.DW(1)) ff_issue_prs2_re (.CLK(clk), .LOAD(has_rdy), .D(prs2_re_rf[rdy_addr]), .Q(ro_prs2_re) );
    
    assign ro_valid = has_rdy_ff;
 

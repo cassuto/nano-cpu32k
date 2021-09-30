@@ -69,7 +69,7 @@ module id
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrs2_re,
    output [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd_we,
-   output [(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_push_size
+   output [CONFIG_P_ISSUE_WIDTH:0] rn_push_size
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    
@@ -81,7 +81,7 @@ module id
    wire [`NCPU_BRU_IOPW*IW-1:0]        s1i_bru_opc_bus;
    wire [`NCPU_LSU_IOPW*IW-1:0]        s1i_lsu_opc_bus;
    wire [CONFIG_DW*IW-1:0]             s1i_imm;
-   wire [`NCPU_FE_W-1:0*IW]            s1i_fe;
+   wire [`NCPU_FE_W*IW-1:0]            s1i_fe;
    wire [IW-1:0]                       rf_we;
    wire [`NCPU_LRF_AW*IW-1:0]          rf_waddr;
    wire [IW-1:0]                       rf_rs1_re;
@@ -117,7 +117,7 @@ module id
                   .epu_opc_bus         (s1i_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
                   .bru_opc_bus         (s1i_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
                   .lsu_opc_bus         (s1i_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
-                  .fe                  (s1i_fe[i*`NCPU_FE_W +: `NCPU_FE_W])
+                  .fe                  (s1i_fe[i*`NCPU_FE_W +: `NCPU_FE_W]),
                   .imm                 (s1i_imm[i*CONFIG_DW +: CONFIG_DW]),
                   .rf_we               (rf_we[i]),
                   .rf_waddr            (rf_waddr[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]),
@@ -156,7 +156,7 @@ module id
    mDFF_l # (.DW(IW)) ff_rn_lrs2_re (.CLK(clk), .LOAD(p_ce), .D(rf_rs2_re), .Q(rn_lrs2_re) );
    mDFF_l # (.DW(IW)) ff_rn_lrd_we (.CLK(clk), .LOAD(p_ce), .D(rf_we), .Q(rn_lrd_we) );
    mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_rn_lrd (.CLK(clk), .LOAD(p_ce), .D(rf_waddr), .Q(rn_lrd) );
-   mDFF_l # (.DW((CONFIG_P_ISSUE_WIDTH+1)*IW)) ff_rn_push_size (.CLK(clk), .LOAD(p_ce), .D(id_pop_cnt), .Q(rn_push_size) );
+   mDFF_l # (.DW(CONFIG_P_ISSUE_WIDTH+1)) ff_rn_push_size (.CLK(clk), .LOAD(p_ce), .D(id_pop_cnt), .Q(rn_push_size) );
    
    
 endmodule

@@ -70,6 +70,7 @@ module mRF_nw_dio_r
          for(j=0;j<NUM_WRITE;j=j+1) // This generates a priority MUX to resolve WAW hazard, if we have multiple write ports.
             if (WE[j])
                regfile[WADDR[j*AW +: AW]] <= WDATA[j*DW +: DW];
+   end
    
    generate
       for(i=0;i<(1<<AW);i=i+1)

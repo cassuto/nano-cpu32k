@@ -13,17 +13,17 @@ module difftest
 (
    input                               clk,
    input                               rst,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_fire,
-   input [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_pc,
-   input [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_lrd,
-   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_lrd_dat,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_lrd_we,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire,
+   input [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pc,
+   input [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lrd,
+   input [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lrd_dat,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lrd_we,
    input                               cmt_exc,
    input [CONFIG_DW-1:0]               cmt_exc_vect,
    input                               cmt_p_ce_s1,
    input [CONFIG_NUM_IRQ-1:0]          msr_irqc_irr
 );
-   localparam CW = (1<<CONFIG_P_ISSUE_WIDTH);
+   localparam CW = (1<<CONFIG_P_COMMIT_WIDTH);
    
    //
    // Difftest access point
@@ -54,7 +54,7 @@ module difftest
    difftest_commit_inst
       #(/*AUTOINSTPARAM*/
         // Parameters
-        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
+        .CONFIG_P_COMMIT_WIDTH           (CONFIG_P_COMMIT_WIDTH),
         .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ))
    U_DIFFTEST_COMMIT_INST
       (
@@ -74,7 +74,7 @@ module difftest
    generate
       for(genvar i=0;i<CW;i=i+1)  
          begin
-            assign dbg_commit_pc[i] = {commit_pc[i*`PC_W +: `PC_W], 2'b00};
+            assign dbg_commit_pc[i] = {cmt_pc[i*`PC_W +: `PC_W], 2'b00};
          end
    endgenerate
       

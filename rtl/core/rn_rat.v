@@ -55,11 +55,11 @@ module rn_rat
    localparam CW                       = (1<<CONFIG_P_COMMIT_WIDTH);
    wire [N_LRF*`NCPU_PRF_AW-1:0]       rat_ff;
    wire [N_LRF*`NCPU_PRF_AW-1:0]       arat_ff;
-   wire [`NCPU_PRF_AW-1:0]             rat_mux [N_LRF-1:0]
-   wire [`NCPU_PRF_AW-1:0]             prs1_nobyp [CW-1:0];
-   wire [`NCPU_PRF_AW-1:0]             prs2_nobyp [CW-1:0];
-   wire [`NCPU_PRF_AW-1:0]             pfree_nobpy [CW-1:0];
-   wire [IW*`NCPU_PRF_AW-1:0]          fl_prd_rev;
+   wire [`NCPU_PRF_AW-1:0]             rat_mux [N_LRF-1:0];
+   wire [`NCPU_PRF_AW*CW-1:0]          prs1_nobyp;
+   wire [`NCPU_PRF_AW*CW-1:0]          prs2_nobyp;
+   wire [`NCPU_PRF_AW*CW-1:0]          pfree_nobyp;
+   wire [`NCPU_PRF_AW*IW-1:0]          fl_prd_rev;
    genvar i;
    integer x;
    
@@ -101,15 +101,15 @@ module rn_rat
       
    generate
       for(i=0;i<N_LRF;i=i+1)
-         rat_mux[i] = rat_ff[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+         assign rat_mux[i] = rat_ff[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
    endgenerate
 
    generate
       for(i=0;i<IW;i=i+1)
          begin : gen_readout
-            assign prs1_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs1[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
-            assign prs2_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs2[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
-            assign pfree_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrd[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+            assign prs1_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs1[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+            assign prs2_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs2[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+            assign pfree_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrd[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
          end
    endgenerate
 
@@ -132,8 +132,8 @@ module rn_rat
                   for(x=0;x<i;x=x+1)
                      raw_rev[i-x-1] = raw_rev[i-x-1] |
                                           (lrd_we[x] &
-                                             ((lrs1[i]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]) |
-                                                (lrs2[i]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ])));
+                                             ((lrs1[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]) |
+                                                (lrs2[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ])));
                end
             
             // Detect WAW hazard in the issue window
@@ -142,31 +142,31 @@ module rn_rat
                   waw_rev[i-1] = 'b0;
                   for(x=0;x<i;x=x+1)
                      waw_rev[i-x-1] = waw_rev[i-x-1] | (lrd_we[x] &
-                                                ((lrd_we[i] & (lrd[i]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]))));
+                                                ((lrd_we[i] & (lrd[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW]))));
                end
             
             pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs1 (
                .sel({1'b1, raw_rev}),
-               .din({prs1_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
+               .din({prs1_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
                .dout(rat_prs1[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
             );
             pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs2 (
                .sel({1'b1, raw_rev}),
-               .din({prs2_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
+               .din({prs2_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
                .dout(rat_prs2[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
             );
             pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_pfree (
                .sel({1'b1, waw_rev}),
-               .din({pfree_nobpy[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
+               .din({pfree_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
                .dout(rat_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
             );
             
          end
    endgenerate
    
-   assign rat_prs1[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = prs1_nobpy[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
-   assign rat_prs2[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = prs2_nobpy[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
-   assign rat_pfree[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = pfree_nobpy[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+   assign rat_prs1[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = prs1_nobyp[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+   assign rat_prs2[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = prs2_nobyp[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+   assign rat_pfree[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = pfree_nobyp[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
 
 `ifdef ENABLE_DIFFTEST
    // Maintain an inverse mapping table
