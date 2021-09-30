@@ -168,4 +168,33 @@ module rn_rat
    assign rat_prs2[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = prs2_nobpy[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
    assign rat_pfree[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = pfree_nobpy[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
 
+`ifdef ENABLE_DIFFTEST
+   // Maintain an inverse mapping table
+   
+   wire [`NCPU_LRF_AW*(1<<`NCPU_PRF_AW)-1:0] arat_inv_vec;
+   wire [`NCPU_LRF_AW-1:0] arat_inv [(1<<`NCPU_PRF_AW)-1:0];
+   
+   mRF_nw_do_r
+      #(
+         .DW (`NCPU_LRF_AW),
+         .AW (`NCPU_PRF_AW),
+         .RST_VECTOR ('b0),
+         .NUM_WRITE (IW)
+      )
+   dft_aRAT_inv
+      (
+         .CLK (clk),
+         .RST (rst),
+         .WE  (cmt_prd_we & cmt_fire),
+         .WADDR (cmt_prd),
+         .WDATA (cmt_lrd),
+         .DO  (arat_inv_vec)
+      );
+   
+   generate
+      for(i=0;i<(1<<`NCPU_PRF_AW);i=i+1)
+         assign arat_inv[i] = arat_inv_vec[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
+   endgenerate
+   
+`endif
 endmodule

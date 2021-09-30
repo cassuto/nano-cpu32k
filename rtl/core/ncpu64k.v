@@ -147,6 +147,8 @@ module ncpu64k
    input [CONFIG_NUM_IRQ-1:0]          irqs,
    output                              tsc_irq
 );
+   localparam                          CONFIG_P_WRITEBACK_WIDTH = CONFIG_P_ISSUE_WIDTH;
+   localparam                          CONFIG_P_COMMIT_WIDTH = CONFIG_P_ISSUE_WIDTH;
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 bpu_wb;                 // From U_CMT of cmt.v
@@ -303,7 +305,7 @@ module ncpu64k
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_fls; // From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_opera;// From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_operb;// From U_EX of ex.v
-   wire [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] wb_ready;// From U_ROB of rob.v, ..., Couldn't Merge
+   wire [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready;// From U_ROB of rob.v, ..., Couldn't Merge
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] wb_rob_bank;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] wb_rob_id;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_valid;// From U_EX of ex.v
@@ -444,7 +446,7 @@ module ncpu64k
         // Parameters
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
         .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH),
-        .WRITEBACK_WIDTH                (WRITEBACK_WIDTH))
+        .CONFIG_P_WRITEBACK_WIDTH       (CONFIG_P_WRITEBACK_WIDTH))
    U_RN
       (/*AUTOINST*/
        // Outputs
@@ -496,8 +498,8 @@ module ncpu64k
        .cmt_pfree                       (cmt_pfree[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0]),
        .cmt_prd                         (cmt_prd[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0]),
        .cmt_prd_we                      (cmt_prd_we[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
-       .prf_WADDR                       (prf_WADDR[WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0]),
-       .prf_WE                          (prf_WE[WRITEBACK_WIDTH-1:0]),
+       .prf_WADDR                       (prf_WADDR[(1<<CONFIG_P_WRITEBACK_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .prf_WE                          (prf_WE[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        .issue_ready                     (issue_ready[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]));
    
    issue
@@ -863,49 +865,55 @@ module ncpu64k
         // Parameters
         .CONFIG_DW                      (CONFIG_DW),
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
-        .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH))
+        .CONFIG_P_WRITEBACK_WIDTH       (CONFIG_P_WRITEBACK_WIDTH))
    U_PRF
       (/*AUTOINST*/
        // Outputs
        .prf_RDATA                       (prf_RDATA[(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0]),
-       .wb_ready                        (wb_ready[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .wb_ready                        (wb_ready[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        // Inputs
        .clk                             (clk),
        .prf_RE                          (prf_RE[(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0]),
        .prf_RADDR                       (prf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_PRF_AW-1:0]),
-       .prf_WE                          (prf_WE[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
-       .prf_WADDR                       (prf_WADDR[`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
-       .prf_WDATA                       (prf_WDATA[CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .prf_WE                          (prf_WE[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
+       .prf_WADDR                       (prf_WADDR[`NCPU_PRF_AW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
+       .prf_WDATA                       (prf_WDATA[CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        .prf_WE_lsu_epu                  (prf_WE_lsu_epu),
        .prf_WADDR_lsu_epu               (prf_WADDR_lsu_epu[`NCPU_PRF_AW-1:0]),
        .prf_WDATA_lsu_epu               (prf_WDATA_lsu_epu[CONFIG_DW-1:0]));
        
 `ifdef ENABLE_DIFFTEST
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmt_lrd;
+   wire [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmt_lrd_dat;
+   
+   generate
+      for(genvar i=0;i<(1<<CONFIG_P_COMMIT_WIDTH);i=i+1)
+         begin
+            assign dft_cmt_lrd[i*`NCPU_LRF_AW +: `NCPU_LRF_AW] = U_RN.U_RAT.arat_inv[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
+            assign dft_cmt_lrd_dat[i*CONFIG_DW +: CONFIG_DW] = U_PRF.U_PRF.regfile[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
+         end
+   endgenerate
+   
    difftest
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_DW                      (CONFIG_DW),
         .CONFIG_AW                      (CONFIG_AW),
-        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
+        .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH),
         .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ))
    U_DIFFTEST
       (
          .clk                             (clk),
          .rst                             (rst),
-         .stall                           (stall),
-         .p_ce_s1                         (U_EX.p_ce_s1),
-         .p_ce_s2                         (U_EX.p_ce_s2),
-         .p_ce_s3                         (U_EX.p_ce_s3),
-         .id_ins                          (id_ins),
-         .id_irqc_irr                     (U_EX.U_PIPE_U.U_EPU.U_IRQC.msr_irqc_irr),
-         .commit_valid                    (U_EX.commit_valid),
-         .commit_pc                       (U_EX.commit_pc),
-         .commit_rf_wdat                  (commit_rf_wdat),
-         .commit_rf_waddr                 (commit_rf_waddr),
-         .commit_rf_we                    (commit_rf_we),
-         .commit_excp                     (U_EX.commit_excp),
-         .commit_excp_vect                ({U_EX.commit_excp_vect, 2'b0}),
-         .regfile                         (U_CMT.U_ARF.regfile)
+         .cmt_fire                        (U_CMT.cmt_fire),
+         .cmt_pc                          (U_CMT.cmt_pc),
+         .cmt_lrd                         (dft_cmt_lrd),
+         .cmt_lrd_dat                     (dft_cmt_lrd_dat),
+         .cmt_lrd_we                      (U_CMT.cmt_prd_we),
+         .cmt_exc                         (U_CMT.exc_flush),
+         .cmt_exc_vect                    (U_CMT.exc_flush_tgt),
+         .cmt_p_ce_s1                     (U_CMT.p_ce_s1),
+         .msr_irqc_irr                    (U_CMT.U_EPU.msr_irqc_irr)
       );
 `endif
 

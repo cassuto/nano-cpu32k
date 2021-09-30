@@ -28,7 +28,7 @@ module prf
 #(
    parameter                           CONFIG_DW = 0,
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
-   parameter                           CONFIG_P_COMMIT_WIDTH = 0
+   parameter                           CONFIG_P_WRITEBACK_WIDTH = 0
 )
 (
    input                               clk,
@@ -40,22 +40,22 @@ module prf
    output [(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0] prf_RDATA,
    
    // From WB
-   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] prf_WE,
-   input [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] prf_WADDR,
-   input [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] prf_WDATA,
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WE,
+   input [`NCPU_PRF_AW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WADDR,
+   input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WDATA,
    
    input                               prf_WE_lsu_epu,
    input [`NCPU_PRF_AW-1:0]            prf_WADDR_lsu_epu,
    input [CONFIG_DW-1:0]               prf_WDATA_lsu_epu,
    
    // To WB
-   output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] wb_ready
+   output [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready
 );
-   localparam CW                       = (1<<CONFIG_P_COMMIT_WIDTH);
+   localparam WW                       = (1<<CONFIG_P_WRITEBACK_WIDTH);
    
-   wire [CW-1:0]                       prf_WE,
-   wire [`NCPU_PRF_AW*CW-1:0]          prf_WADDR_1;
-   wire [CONFIG_DW*CW-1:0]             prf_WDATA_1;
+   wire [WW-1:0]                       prf_WE,
+   wire [`NCPU_PRF_AW*WW-1:0]          prf_WADDR_1;
+   wire [CONFIG_DW*WW-1:0]             prf_WDATA_1;
    genvar i;
    
    mRF_nwnr
@@ -89,7 +89,7 @@ module prf
                                                       : prf_WDATA[0*CONFIG_DW +: CONFIG_DW];
    
    generate
-      for(i=1;i<CW;i=i+1)
+      for(i=1;i<WW;i=i+1)
          begin : gen bundle
             assign wb_ready[i] = 'b1;
             assign prf_WE_1[i] = prf_WE[i];

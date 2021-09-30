@@ -27,7 +27,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module rn_busytable
 #(
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
-   parameter                           WRITEBACK_WIDTH
+   parameter                           CONFIG_P_WRITEBACK_WIDTH = 0
 )
 (
    input                               clk,
@@ -36,12 +36,13 @@ module rn_busytable
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] prd,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prd_we,
    // From writeback
-   input [WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0] prf_WADDR,
-   input [WRITEBACK_WIDTH-1:0]         prf_WE,
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)*`NCPU_PRF_AW-1:0] prf_WADDR,
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WE,
    // Output
    output [(1<<`NCPU_PRF_AW)-1:0]      busytable
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
+   localparam WW                       = (1<<CONFIG_P_WRITEBACK_WIDTH);
    localparam N_PRF                    = (1<<`NCPU_PRF_AW);
    genvar i;
    
@@ -50,7 +51,7 @@ module rn_busytable
          .DW         (1),
          .AW         (`NCPU_PRF_AW),
          .RST_VECTOR (1'b0),
-         .NUM_WRITE  (WRITEBACK_WIDTH)
+         .NUM_WRITE  (WW)
       )
    U_BUSYTABLE
       (

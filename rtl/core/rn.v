@@ -28,7 +28,7 @@ module rn
 #(
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0,
-   parameter                           WRITEBACK_WIDTH = 0
+   parameter                           CONFIG_P_WRITEBACK_WIDTH = 0
 )
 (
    input                               clk,
@@ -59,8 +59,8 @@ module rn
    input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] cmt_prd,
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_prd_we,
    // From WB
-   input [WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0] prf_WADDR,
-   input [WRITEBACK_WIDTH-1:0]         prf_WE,
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)*`NCPU_PRF_AW-1:0] prf_WADDR,
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WE,
    // From issue
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_ready,
    // To issue
@@ -114,7 +114,7 @@ module rn
         // Parameters
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
         .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH))
-   U_RN_FL
+   U_FL
       (/*AUTOINST*/
        // Outputs
        .fl_stall_req                    (fl_stall_req),
@@ -143,7 +143,7 @@ module rn
         // Parameters
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
         .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH))
-   U_RN_RAT
+   U_RAT
       (/*AUTOINST*/
        // Outputs
        .rat_prs1                        (rat_prs1[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
@@ -172,7 +172,7 @@ module rn
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
-        .WRITEBACK_WIDTH                (WRITEBACK_WIDTH))
+        .CONFIG_P_WRITEBACK_WIDTH       (CONFIG_P_WRITEBACK_WIDTH))
    U_BUSYTABLE
       (/*AUTOINST*/
        // Outputs
@@ -183,8 +183,8 @@ module rn
        .flush                           (flush),
        .prd                             (fl_prd[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]), // Templated
        .prd_we                          (rn_lrd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]), // Templated
-       .prf_WADDR                       (prf_WADDR[WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0]),
-       .prf_WE                          (prf_WE[WRITEBACK_WIDTH-1:0]));
+       .prf_WADDR                       (prf_WADDR[(1<<CONFIG_P_WRITEBACK_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .prf_WE                          (prf_WE[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]));
 
    // Request stall if there is no free PR or reservation station is full
    assign rn_stall_req = (fl_stall_req | ~issue_ready);
