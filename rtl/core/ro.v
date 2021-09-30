@@ -81,19 +81,23 @@ module ro
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_ready
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
-   wire                                push, pop;
    wire                                p_ce;
-
-   //
-   // Equivalent to 1-slot FIFO
-   //
-   assign push = (a_ex_valid & a_ex_ready);
-   assign pop = (ex_valid & ex_ready);
-
-   mDFF_lr #(.DW(1)) ff_pending (.CLK(clk), .RST(rst), .LOAD(push | pop | flush), .D((push | ~pop) & ~flush), .Q(ex_valid) );
-
-   assign a_ex_ready = (~ex_valid | pop);
-   assign p_ce = push;
+   
+   hds_buf
+      #(.BYPASS(1))
+   U_BUF
+      (
+         .clk  (clk),
+         .rst  (rst),
+         .flush (flush),
+         .A_en (1'b1),    // enable AREADY output
+         .AVALID (a_ex_valid),
+         .AREADY (a_ex_ready),
+         .B_en (1'b1),    // enable BVALID output
+         .BVALID (ex_valid),
+         .BREADY (ex_ready),
+         .p_ce (p_ce)
+      );
    
    //
    // Pipeline stage

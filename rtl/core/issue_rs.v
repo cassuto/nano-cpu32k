@@ -51,7 +51,6 @@ module issue_rs
    input                               issue_prs2_re,
    input [`NCPU_PRF_AW-1:0]            issue_prd,
    input                               issue_prd_we,
-   input [`NCPU_PRF_AW-1:0]            issue_pfree,
    input [CONFIG_P_ROB_DEPTH-1:0]      issue_rob_id,
    input [CONFIG_P_COMMIT_WIDTH-1:0]   issue_rob_bank,
    input                               issue_push,
@@ -75,7 +74,6 @@ module issue_rs
    output                              ex_prs2_re,
    output [`NCPU_PRF_AW-1:0]           ex_prd,
    output                              ex_prd_we,
-   output [`NCPU_PRF_AW-1:0]           ex_pfree,
    output [CONFIG_P_ROB_DEPTH-1:0]     ex_rob_id,
    output [CONFIG_P_COMMIT_WIDTH-1:0]  ex_rob_bank
 );
@@ -91,7 +89,6 @@ module issue_rs
                                           CONFIG_DW +
                                           `NCPU_PRF_AW +
                                           1 +
-                                          `NCPU_PRF_AW +
                                           CONFIG_P_ROB_DEPTH +
                                           CONFIG_P_COMMIT_WIDTH);
    localparam FL_1[RS_DEPTH-1:0]       = {{RS_DEPTH-1{1'b0}}, 'b1};
@@ -264,7 +261,6 @@ module issue_rs
       ex_imm,
       ex_prd,
       ex_prd_we,
-      ex_pfree,
       ex_rob_id,
       ex_rob_bank
    } = opp_rdat;

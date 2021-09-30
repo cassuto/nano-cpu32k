@@ -34,6 +34,7 @@ module issue
    input                               clk,
    input                               rst,
    // From RN
+   input                               issue_p_ce,
    input [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_alu_opc_bus,
    input [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lpu_opc_bus,
    input [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_epu_opc_bus,
@@ -50,6 +51,7 @@ module issue
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prd_we,
    input [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_pfree,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_push,
+   input [(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_push_size,
    input [(1<<`NCPU_PRF_AW)-1:0]       busytable,
    // To RN
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_ready,
@@ -58,10 +60,7 @@ module issue
    input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] rob_free_id,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] rob_free_bank, 
    // To ROB
-   output [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_alu_opc_bus,
-   output [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_lpu_opc_bus,
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_epu_opc_bus,
-   output [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_bru_opc_bus,
    output [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_lsu_opc_bus,
    output [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_bpu_upd,
    output [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rob_pc,
@@ -79,7 +78,6 @@ module issue
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ex_lpu_opc_bus,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LSU_IOPW-1:0] ex_lsu_opc_bus,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ex_pc,
-   output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ex_pfree,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ex_prd,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_prd_we,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ex_prs1,
@@ -95,6 +93,7 @@ module issue
    /*AUTOINPUT*/
    wire [IW-1:0]                       issue_rs_full;          // From U_RS of issue_rs.v
    wire [IW-1:0]                       ex_rs_pop;
+   wire [IW-1:0]                       rs_push;
    wire [CONFIG_P_ROB_DEPTH*IW-1:0]    issue_rob_id;           // To U_RS of issue_rs.v
    wire [CONFIG_P_COMMIT_WIDTH*IW-1:0] issue_rob_bank;         // To U_RS of issue_rs.v
    genvar i;
@@ -136,9 +135,9 @@ module issue
                   .issue_prd              (issue_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]),
                   .issue_prd_we           (issue_prd_we[i]),
                   .issue_pfree            (issue_pfree[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]),
-                  .issue_rob_id           (issue_rob_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]),
-                  .issue_rob_bank         (issue_rob_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]),
-                  .issue_push             (issue_push[i]),
+                  .issue_rob_id           (rob_free_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]),
+                  .issue_rob_bank         (rob_free_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]),
+                  .issue_push             (rs_push[i]),
                   .ex_rs_pop              (ex_rs_pop[i]),
                )
              */
@@ -186,18 +185,23 @@ module issue
                 .issue_pfree            (issue_pfree[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]), // Templated
                 .issue_rob_id           (issue_rob_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]), // Templated
                 .issue_rob_bank         (issue_rob_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]), // Templated
-                .issue_push             (issue_push[i]),         // Templated
+                .issue_push             (rs_push[i]),         // Templated
                 .busytable              (busytable[(1<<`NCPU_PRF_AW)-1:0]),
                 .ex_rs_pop              (ex_rs_pop[i]));          // Templated
          end
    endgenerate
 
-   generate
-      for(i=0;i<IW;i=i+1)
-         begin : gen_ready
-            assign ex_rs_pop[i] = (ex_valid[i] & ex_ready[i]);
-            assign issue_ready[i] = (~issue_rs_full[i]);
-         end
-   endgenerate
+   assign issue_ready = (~issue_rs_full & {IW{rob_ready}});
+   assign rs_push = (issue_push & issue_p_ce);
+   
+   assign rob_epu_opc_bus = issue_epu_opc_bus;
+   assign rob_lsu_opc_bus = issue_lsu_opc_bus;
+   assign rob_bpu_upd = issue_bpu_upd;
+   assign rob_pc = issue_pc;
+   assign rob_push_prd_we = issue_push_prd_we;
+   assign rob_push_pfree = issue_push_pfree;
+   assign rob_push_size = (issue_push_size & {(CONFIG_P_ISSUE_WIDTH+1)*IW{issue_p_ce}});
+   
+   assign ex_rs_pop = (ex_valid & ex_ready);
    
 endmodule

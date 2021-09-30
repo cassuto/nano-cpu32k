@@ -57,27 +57,31 @@ module ex_pipe
    input [`NCPU_BRU_IOPW-1:0]          ex_bru_opc_bus,
    input [`NCPU_LSU_IOPW-1:0]          ex_lsu_opc_bus,
    input [`NCPU_FE_W-1:0]              ex_fe,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*`BPU_UPD_W-1:0] ex_bpu_upd,
+   input                               ex_bpu_pred_taken,
+   input [`PC_W-1:0]                   ex_bpu_pred_tgt,
    input [`PC_W-1:0]                   ex_pc,
    input [CONFIG_DW-1:0]               ex_imm,
    input [CONFIG_DW-1:0]               ex_operand1,
    input [CONFIG_DW-1:0]               ex_operand2,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ex_pfree,
    input [`NCPU_LRF_AW-1:0]            ex_prd,
    input                               ex_prd_we,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] ex_rob_id,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] ex_rob_bank,
+   input [CONFIG_P_ROB_DEPTH-1:0] ex_rob_id,
+   input [CONFIG_P_COMMIT_WIDTH-1:0] ex_rob_bank,
    // To RS
    output                              ex_ready,
+   // From WB
+   input                               wb_ready,
    // To WB
+   output                              wb_valid,
+   output [CONFIG_P_ROB_DEPTH-1:0]     wb_rob_id,
+   output [CONFIG_P_COMMIT_WIDTH-1:0]  wb_rob_bank,
    output                              prf_WE,
    output [`NCPU_PRF_AW-1:0]           prf_WADDR,
    output [CONFIG_DW-1:0]              prf_WDATA,
    output                              wb_fls,
-   output                              wb_fls_tgt,
-   output [CONFIG_AW-1:0]              wb_lsa,
-   
-   
+   output [`PC_W-1:0]                  wb_fls_tgt,
+   output [CONFIG_AW-1:0]              wb_opera,
+   output [CONFIG_DW-1:0]              wb_operb,
    
    // To commit
    output [CONFIG_DW-1:0]              commit_rf_wdat,
@@ -103,10 +107,12 @@ module ex_pipe
    wire                                s1i_exc_flush;
    wire [`PC_W-1:0]                    s1i_exc_flush_tgt;
    wire                                s1i_wb_fls;
-   wire                                s1i_wb_fls_tgt;
-   wire                                s1i_wb_lsa;
+   wire [`PC_W-1:0]                    s1i_wb_fls_tgt;
+   wire [CONFIG_AW-1:0]                s1i_wb_lsa;
+   wire [CONFIG_DW-1:0]                s1i_wb_opera, s1i_wb_operb;
    
-   wire [CONFIG_DW-1:0]                s1i_rf_dout_1, s1i_rf_dout;
+   wire [CONFIG_DW-1:0]                alu_dout;
+   wire [CONFIG_DW-1:0]                s1i_rf_dout;
    wire                                s1i_rf_we;
    wire                                s1i_rf_dout_valid;
    wire [`PC_W-1:0]                    s1i_npc;
@@ -152,7 +158,7 @@ module ex_pipe
          .ex_operand1                  (ex_operand1),
          .ex_operand2                  (ex_operand2),
          .add_sum                      (add_sum),
-         .alu_result                   (s1i_rf_dout_1)
+         .alu_result                   (alu_dout)
       );
    
    ex_bru
@@ -200,6 +206,27 @@ module ex_pipe
          .wb_lsa                       (s1i_wb_lsa)
       );
 
+   // +-----+--------------+
+   // | FU  | opera        |
+   // +-----+--------------+
+   // | EPU | operand1+imm |
+   // | LSU | operand1+imm |
+   // |(EH) | fls_tgt      |
+   // +-----+--------------+
+   assign s1i_wb_opera = (s1i_wb_fls)
+                           ? s1i_wb_fls_tgt
+                           : s1i_wb_lsa;
+   
+      
+   // +-----+-------------+
+   // | FU  | operb       |
+   // +-----+-------------+
+   // | EPU | operand2    |
+   // | LSU | operand2    |
+   // +-----+-------------+
+   assign s1i_wb_operb = ex_operand2;
+   
+      
    // BRU reused the adder of ALU
    assign add_s =
       (
@@ -212,22 +239,24 @@ module ex_pipe
          ex_bru_opc_bus[`NCPU_BRU_BLE]
       );
 
-   // MUX: switch the result of BRU/ALU (without LSU)
+   // MUX for ALU/BRU (without LSU and EPU)
    assign s1i_rf_dout =
          (bru_dout_valid)
             ? bru_dout
-            : s1i_rf_dout_1;
-            
-   assign s1i_rf_dout_valid = ~((|ex_epu_opc_bus) | (|ex_lsu_opc_bus));
+            : alu_dout;
+       
+   // The execution of LSU and EPU is delayed to ROB committing, thus
+   // the result is invalid.
+   assign s1i_rf_dout_valid = ex_valid & ~((|ex_epu_opc_bus) | (|ex_lsu_opc_bus));
 
-   assign s1i_rf_we = (ex_valid & s1i_rf_dout_valid & ex_rf_we);
+   assign s1i_rf_we = (s1i_rf_dout_valid & ex_rf_we);
    
    // Speculative execution check point
-   assign s1i_se_fail = ex_valid & ((b_taken ^ ex_bpu_pred_taken) | (b_tgt != ex_bpu_pred_tgt)); // FAIL
-   //ex_valid[0] & ((b_taken ^ ex_bpu_pred_taken) | (b_taken & (b_tgt != ex_bpu_pred_tgt))); // RIGHT
+   assign s1i_se_fail = ((b_taken ^ ex_bpu_pred_taken) | (b_tgt != ex_bpu_pred_tgt)); // FAIL
+   //((b_taken ^ ex_bpu_pred_taken) | (b_taken & (b_tgt != ex_bpu_pred_tgt))); // RIGHT
    assign s1i_se_tgt = (b_taken) ? b_tgt : s1i_npc;
    
-   assign s1i_wb_fls = (s1i_se_fail | s1i_exc_flush);
+   assign s1i_wb_fls = ex_valid & (s1i_se_fail | s1i_exc_flush);
    
    // Maintain the priority of exception or speculative execution failure
    // Highest - Exception
@@ -236,13 +265,35 @@ module ex_pipe
                         ? s1i_exc_flush_tgt
                         : s1i_se_tgt; /* (se_flush) */
    
+   hds_buf
+      #(.BYPASS(1))
+   U_BUF
+      (
+         .clk  (clk),
+         .rst  (rst),
+         .flush (flush),
+         .A_en (1'b1),    // enable AREADY output
+         .AVALID (ex_valid),
+         .AREADY (ex_ready),
+         .B_en (1'b1),    // enable BVALID output
+         .BVALID (wb_valid),
+         .BREADY (wb_ready),
+         .p_ce (p_ce)
+      );
+   
    //
    // Pipeline stages
    //
-   mDFF_l # (.DW(`NCPU_LRF_AW)) ff_s1o_rf_waddr (.CLK(clk), .LOAD(p_ce_s1), .D(ex_rf_waddr), .Q(s1o_rf_waddr) );
-   mDFF_lr # (.DW(1)) ff_s1o_rf_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_rf_we & ~flush_s1), .Q(s1o_rf_we) );
-   mDFF_l # (.DW(CONFIG_DW)) ff_s1o_rf_dout (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_rf_dout), .Q(s1o_rf_dout) );
-
+   mDFF_l # (.DW(CONFIG_P_ROB_DEPTH)) ff_wb_rob_id (.CLK(clk), .LOAD(p_ce), .D(ex_rob_id), .Q(wb_rob_id) );
+   mDFF_l # (.DW(CONFIG_P_ROB_DEPTH)) ff_wb_rob_bank (.CLK(clk), .LOAD(p_ce), .D(ex_rob_bank), .Q(wb_rob_bank) );
+   mDFF_l # (.DW(`NCPU_PRF_AW)) ff_prf_WADDR (.CLK(clk), .LOAD(p_ce), .D(ex_prd), .Q(prf_WADDR) );
+   mDFF_lr # (.DW(1)) ff_prf_WE (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_rf_we & ~flush), .Q(prf_WE) );
+   mDFF_l # (.DW(CONFIG_DW)) ff_prf_WDATA (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(prf_WDATA) );
+   mDFF_lr # (.DW(1)) ff_wb_fls (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_wb_fls & ~flush), .Q(wb_fls) );
+   mDFF_l # (.DW(`PC_W)) ff_wb_fls_tgt (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_fls_tgt), .Q(wb_fls_tgt) );
+   mDFF_l # (.DW(CONFIG_AW)) ff_wb_opera (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_opera), .Q(wb_opera) );
+   mDFF_l # (.DW(CONFIG_DW)) ff_wb_operb (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_operb), .Q(wb_operb) );
+   
 endmodule
 
 // Local Variables:

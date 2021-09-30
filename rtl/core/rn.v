@@ -50,6 +50,7 @@ module rn
    input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] rn_lrs2_re,
    input [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd_we,
+   input [(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_push_size,
    // From CMT
    input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] commit_lrd,
    input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] commit_pfree,
@@ -61,6 +62,7 @@ module rn
    // From issue
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_ready,
    // To issue
+   output                              issue_p_ce,
    output [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_alu_opc_bus,
    output [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lpu_opc_bus,
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_epu_opc_bus,
@@ -78,6 +80,7 @@ module rn
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_prd_we,
    output [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_pfree,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_push,
+   output [(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_push_size
    // Busytable
    output [(1<<`NCPU_PRF_AW)-1:0]       busytable
 );
@@ -207,7 +210,10 @@ module rn
    mDFF_l # (.DW(IW)) ff_issue_lrs2_re (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs2_re), .Q(issue_lrs2_re) );
    mDFF_l # (.DW(IW)) ff_issue_lrd_we (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd_we), .Q(issue_lrd_we) );
    mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_lrd (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd), .Q(issue_lrd) );
+   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_push_size (.CLK(clk), .LOAD(p_ce_s1), .D(rn_push_size), .Q(issue_push_size) );
    
-   assign issue_push = (s1o_valid & {IW{p_ce_s2}});
+   assign issue_push = s1o_valid;
+   
+   assign issue_p_ce = p_ce_s2;
    
 endmodule
