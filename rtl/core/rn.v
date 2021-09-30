@@ -33,6 +33,7 @@ module rn
 (
    input                               clk,
    input                               rst,
+   input                               flush,
    output                              rn_stall_req,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0]                rn_valid,
    input [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_alu_opc_bus,
@@ -52,13 +53,14 @@ module rn
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd_we,
    input [(CONFIG_P_ISSUE_WIDTH+1)*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_push_size,
    // From CMT
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] commit_lrd,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] commit_pfree,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] commit_prd,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] commit_prd_we,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] cmt_lrd,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] cmt_pfree,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] cmt_prd,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_prd_we,
    // From WB
-   input [WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0] wb_lrd,
-   input [WRITEBACK_WIDTH-1:0]         wb_lrd_we,
+   input [WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0] prf_WADDR,
+   input [WRITEBACK_WIDTH-1:0]         prf_WE,
    // From issue
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_ready,
    // To issue
@@ -122,9 +124,10 @@ module rn
        .pop                             (fl_pop),                // Templated
        .rollback                        (rollback),
        .lrd_we                          (rn_lrd_we),             // Templated
-       .commit_prd_we                   (commit_prd_we[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
-       .commit_prd                      (commit_prd[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0]),
-       .commit_pfree                    (commit_pfree[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0]));
+       .cmt_fire                        (cmt_fire[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_prd_we                      (cmt_prd_we[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_prd                         (cmt_prd[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .cmt_pfree                       (cmt_pfree[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0]));
       
    /* rn_rat AUTO_TEMPLATE (
       .lrs1                            (rn_lrs1[]),
@@ -155,13 +158,14 @@ module rn
        .lrd                             (rn_lrd[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LRF_AW-1:0]), // Templated
        .lrd_we                          (rn_lrd_we),             // Templated
        .fl_prd                          (fl_prd[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]),
-       .commit_lrd                      (commit_lrd[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0]),
-       .commit_prd                      (commit_prd[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0]),
-       .commit_prd_we                   (commit_prd_we[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]));
+       .cmt_fire                        (cmt_fire[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_lrd                         (cmt_lrd[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0]),
+       .cmt_prd                         (cmt_prd[(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0]),
+       .cmt_prd_we                      (cmt_prd_we[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]));
 
    /* rn_busytable AUTO_TEMPLATE (
-      .lrd                             (rn_lrd[]),
-      .lrd_we                          (rn_lrd_we[]),
+      .prd                             (fl_prd[]),
+      .prd_we                          (rn_lrd_we[]),
    ) */
    rn_busytable
       #(/*AUTOINSTPARAM*/
@@ -175,10 +179,11 @@ module rn
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
-       .lrd                             (rn_lrd[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]), // Templated
-       .lrd_we                          (rn_lrd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]), // Templated
-       .wb_lrd                          (wb_lrd[WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0]),
-       .wb_lrd_we                       (wb_lrd_we[WRITEBACK_WIDTH-1:0]));
+       .flush                           (flush),
+       .prd                             (fl_prd[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0]), // Templated
+       .prd_we                          (rn_lrd_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]), // Templated
+       .prf_WADDR                       (prf_WADDR[WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0]),
+       .prf_WE                          (prf_WE[WRITEBACK_WIDTH-1:0]));
 
    // Request stall if there is no free PR or reservation station is full
    assign rn_stall_req = (fl_stall_req | ~issue_ready);

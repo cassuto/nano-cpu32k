@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module ex_lsu
+module cmt_lsu
 #(
    parameter                           CONFIG_AW = 0,
    parameter                           CONFIG_DW = 0,
@@ -44,13 +44,12 @@ module ex_lsu
    input                               clk,
    input                               rst,
    input                               p_ce_s1,
-   input                               flush_s1,
+   input                               p_ce_s2,
    output                              lsu_stall_req,
-   input                               ex_valid,
-   input [`NCPU_LSU_IOPW-1:0]          ex_lsu_opc_bus,
-   output                              agu_en,
-   input [CONFIG_DW-1:0]               add_sum,
-   input [CONFIG_DW-1:0]               ex_operand2,
+   input                               cmt_valid,
+   input [`NCPU_LSU_IOPW-1:0]          cmt_lsu_opc_bus,
+   input [CONFIG_DW-1:0]               cmt_lsa,
+   input [CONFIG_DW-1:0]               cmt_wdat,
    // AXI Master (Cached access)
    input                               dbus_ARREADY,
    output                              dbus_ARVALID,
@@ -107,6 +106,7 @@ module ex_lsu
    output                              lsu_EALIGN,
    output [CONFIG_AW-1:0]              lsu_vaddr,
    output [CONFIG_DW-1:0]              lsu_dout,
+   output                              lsu_wb_valid,
    // PSR
    input                               msr_psr_dmme,
    input                               msr_psr_rm,
@@ -171,6 +171,7 @@ module ex_lsu
    wire                                s1o_dcop;
    wire                                s1o_msr_psr_dce;
    // Stage 3 Input / Stage 2 Output
+   wire                                s2o_valid;
    wire [CONFIG_DW-1:0]                s2o_dout_32b;
    wire [7:0]                          s2o_dout_8b;
    wire [15:0]                         s2o_dout_16b;
@@ -178,30 +179,29 @@ module ex_lsu
    wire [2:0]                          s2o_size;
    wire                                s2o_sign_ext;
 
-   assign s1i_valid = ex_valid & ~flush_s1 & (s1i_load|s1i_store|s1i_dcop);
-   assign s1i_load = ex_lsu_opc_bus[`NCPU_LSU_LOAD];
-   assign s1i_store = ex_lsu_opc_bus[`NCPU_LSU_STORE];
-   assign s1i_sign_ext = ex_lsu_opc_bus[`NCPU_LSU_SIGN_EXT];
-   assign s1i_barr = ex_lsu_opc_bus[`NCPU_LSU_BARR];
-   assign s1i_size = ex_lsu_opc_bus[`NCPU_LSU_SIZE];
+   assign s1i_valid = cmt_valid & (s1i_load|s1i_store|s1i_dcop);
+   assign s1i_load = cmt_lsu_opc_bus[`NCPU_LSU_LOAD];
+   assign s1i_store = cmt_lsu_opc_bus[`NCPU_LSU_STORE];
+   assign s1i_sign_ext = cmt_lsu_opc_bus[`NCPU_LSU_SIGN_EXT];
+   assign s1i_barr = cmt_lsu_opc_bus[`NCPU_LSU_BARR];
+   assign s1i_size = cmt_lsu_opc_bus[`NCPU_LSU_SIZE];
 
    assign s1i_dcop = (msr_dcinv_we | msr_dcfls_we);
 
-   assign agu_en = (s1i_load|s1i_store);
    assign s1i_dc_vaddr = (msr_dcinv_we)
                            ? msr_dcinv_nxt
                            : (msr_dcfls_we)
                               ? msr_dcfls_nxt
-                              : add_sum;
+                              : cmt_lsa;
 
    // Address alignment check
    assign s1i_misalign = (s1i_size==3'd2 & |s1i_dc_vaddr[1:0]) |
                            (s1i_size==3'd1 & s1i_dc_vaddr[0]);
 
-   assign s1i_din_8b = {ex_operand2[7:0], ex_operand2[7:0], ex_operand2[7:0], ex_operand2[7:0]};
-   assign s1i_din_16b = {ex_operand2[15:0], ex_operand2[15:0]};
+   assign s1i_din_8b = {cmt_wdat[7:0], cmt_wdat[7:0], cmt_wdat[7:0], cmt_wdat[7:0]};
+   assign s1i_din_16b = {cmt_wdat[15:0], cmt_wdat[15:0]};
 
-   assign s1i_dc_wdat = ({CONFIG_DW{s1i_size==3'd2}} & ex_operand2) |
+   assign s1i_dc_wdat = ({CONFIG_DW{s1i_size==3'd2}} & cmt_wdat) |
                         ({CONFIG_DW{s1i_size==3'd1}} & s1i_din_16b) |
                         ({CONFIG_DW{s1i_size==3'd0}} & s1i_din_8b);
 
@@ -369,12 +369,11 @@ module ex_lsu
    mDFF_l #(.DW(1)) ff_s2o_sign_ext (.CLK(clk), .LOAD(p_ce_s1), .D(s1o_sign_ext), .Q(s2o_sign_ext) );
 
    // Control path
-   mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_valid), .Q(s1o_valid) );
+   mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_valid), .Q(s1o_valid) );
    mDFF_lr #(.DW(1)) ff_s1o_misalign (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_misalign), .Q(s1o_EALIGN) );
    mDFF_lr #(.DW(1)) ff_s1o_msr_psr_dce (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(msr_psr_dce), .Q(s1o_msr_psr_dce) );
+   mDFF_lr #(.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|s2i_kill_req), .D(s1o_valid & ~s2i_kill_req), .Q(s2o_valid) );
    
-
-   assign lsu_stall_req = (dc_stall_req);
 
    // B/HW align
    assign s2o_dout_8b = ({8{s2o_vaddr[1:0]==2'b00}} & s2o_dout_32b[7:0]) |
@@ -391,7 +390,11 @@ module ex_lsu
    assign lsu_EDTM = (s1o_valid & s1o_EDTM);
    assign lsu_EDPF = (s1o_valid & s1o_EDPF);
    assign lsu_EALIGN = (s1o_valid & s1o_EALIGN);
-   
+
    assign lsu_vaddr = s1o_vaddr;
 
+   assign lsu_wb_valid = ((s2o_valid | (s1o_valid & s2i_kill_req)) & p_ce_s2);
+
+   assign lsu_stall_req = (dc_stall_req);
+   
 endmodule

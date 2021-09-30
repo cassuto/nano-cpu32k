@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module ex_epu
+module cmt_epu
 #(
    parameter                           CONFIG_DW = 0,
    parameter                           CONFIG_AW = 0,
@@ -43,24 +43,24 @@ module ex_epu
 (
    input                               clk,
    input                               rst,
-   input                               flush_s1,
    input                               p_ce_s1,
    input                               p_ce_s1_no_icinv_stall,
    input                               p_ce_s2,
-   input [`PC_W-1:0]                   ex_pc,
-   input [`PC_W-1:0]                   ex_npc,
-   input                               ex_valid,
-   input [`NCPU_EPU_IOPW-1:0]          ex_epu_opc_bus,
-   input [CONFIG_DW-1:0]               ex_operand1,
-   input [CONFIG_DW-1:0]               ex_operand2,
-   input [CONFIG_DW-1:0]               ex_imm,
+   input [`PC_W-1:0]                   cmt_pc,
+   input [`PC_W-1:0]                   cmt_npc,
+   input                               cmt_valid,
+   input [`NCPU_EPU_IOPW-1:0]          cmt_epu_opc_bus,
+   input [`NCPU_FE_W-1:0]              cmt_fe,
+   input [CONFIG_DW-1:0]               cmt_waddr,
+   input [CONFIG_DW-1:0]               cmt_wdat,
    input                               s2i_EDTM,
    input                               s2i_EDPF,
    input                               s2i_EALIGN,
    input [CONFIG_AW-1:0]               s2i_vaddr,
    // To WRITEBACK
-   output [CONFIG_DW-1:0]              epu_dout,
-   output                              epu_dout_valid,
+   output [CONFIG_DW-1:0]              epu_wb_dout,
+   output                              epu_wb_dout_sel,
+   output                              epu_wb_valid,
 
    // Flush
    output                              exc_flush,
@@ -155,10 +155,10 @@ module ex_epu
 
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
-   wire [CONFIG_DW-1:0] msr_irqc_imr;           // From U_IRQC of ex_epu_irqc.v
-   wire [CONFIG_DW-1:0] msr_irqc_irr;           // From U_IRQC of ex_epu_irqc.v
-   wire [CONFIG_DW-1:0] msr_tsc_tcr;            // From U_TSC of ex_epu_tsc.v
-   wire [CONFIG_DW-1:0] msr_tsc_tsr;            // From U_TSC of ex_epu_tsc.v
+   wire [CONFIG_DW-1:0] msr_irqc_imr;           // From U_IRQC of cmt_epu_irqc.v
+   wire [CONFIG_DW-1:0] msr_irqc_irr;           // From U_IRQC of cmt_epu_irqc.v
+   wire [CONFIG_DW-1:0] msr_tsc_tcr;            // From U_TSC of cmt_epu_tsc.v
+   wire [CONFIG_DW-1:0] msr_tsc_tsr;            // From U_TSC of cmt_epu_tsc.v
    // End of automatics
    wire [CONFIG_DW-1:0]                msr_irqc_imr_nxt;
    wire                                msr_irqc_imr_we;
@@ -228,6 +228,9 @@ module ex_epu
    wire                                s1i_EITM;
    wire                                s1i_EIRQ;
    wire                                s1i_E_FLUSH_TLB;
+   wire [CONFIG_DW-1:0]                s1i_wb_dout;
+   wire                                s1i_wb_dout_sel;
+   wire                                s1o_valid;
    wire                                s1o_commit_wmsr_psr_we;
    wire                                s1o_commit_wmsr_epc_we;
    wire                                s1o_commit_wmsr_epsr_we;
@@ -269,9 +272,9 @@ module ex_epu
    wire [CONFIG_DW-1:0]                s1o_lsa_nxt;
    genvar i;
 
-   assign s1i_msr_wdat = ex_operand2;
+   assign s1i_msr_wdat = cmt_wdat;
    
-   assign s1i_msr_addr = ex_operand1 | {{CONFIG_DW-15{1'b0}}, ex_imm[14:0]};
+   assign s1i_msr_addr = cmt_waddr;
    assign s1i_bank_addr = s1i_msr_addr[`NCPU_MSR_BANK_AW+`NCPU_MSR_BANK_OFF_AW-1:`NCPU_MSR_BANK_OFF_AW];
    assign s1i_bank_off = s1i_msr_addr[`NCPU_MSR_BANK_OFF_AW-1:0];
 
@@ -352,7 +355,7 @@ module ex_epu
    assign s1i_bank_sr = (s1i_bank_addr == `NCPU_MSR_BANK_SR);
 
    // Result MUX
-   assign epu_dout =
+   assign s1i_wb_dout =
       (
          ({CONFIG_DW{s1i_bank_ps}} & dout_ps) |
          ({CONFIG_DW{s1i_bank_imm}} & dout_imm) |
@@ -364,15 +367,15 @@ module ex_epu
          ({CONFIG_DW{s1i_bank_sr}} & dout_sr)
       );
    
-   assign epu_dout_valid = (ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_RMSR]);
+   assign s1i_wb_dout_sel = (cmt_epu_opc_bus[`NCPU_EPU_RMSR]);
 
-   assign s1i_ERET = (ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_ERET]);
-   assign s1i_ESYSCALL = (ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_ESYSCALL]);
-   assign s1i_EINSN = (ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_EINSN]);
-   assign s1i_EIPF = (ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_EIPF]);
-   assign s1i_EITM = (ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_EITM]);
-   assign s1i_EIRQ = (ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_EIRQ]);
-   assign s1i_E_FLUSH_TLB = (ex_valid & ~flush_s1 & (s1i_wmsr_psr_we |
+   assign s1i_ERET = (cmt_valid & cmt_fe[`NCPU_EPU_ERET]);
+   assign s1i_ESYSCALL = (cmt_valid & cmt_fe[`NCPU_EPU_ESYSCALL]);
+   assign s1i_EINSN = (cmt_valid & cmt_fe[`NCPU_EPU_EINSN]);
+   assign s1i_EIPF = (cmt_valid & cmt_fe[`NCPU_EPU_EIPF]);
+   assign s1i_EITM = (cmt_valid & cmt_fe[`NCPU_EPU_EITM]);
+   assign s1i_EIRQ = (cmt_valid & cmt_fe[`NCPU_EPU_EIRQ]);
+   assign s1i_E_FLUSH_TLB = (cmt_valid & (s1i_wmsr_psr_we |
                               s1i_msr_imm_tlbl_we |
                               s1i_msr_imm_tlbh_we |
                               s1i_msr_dmm_tlbl_we |
@@ -382,28 +385,28 @@ module ex_epu
 
    // Decode MSR address
    
-   assign s1i_wmsr_psr_we      = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_PSR];
-   assign s1i_wmsr_epc_we      = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPC];
-   assign s1i_wmsr_epsr_we     = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPSR];
-   assign s1i_wmsr_elsa_we     = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_ELSA];
-   assign s1i_wmsr_evect_we    = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EVECT];
+   assign s1i_wmsr_psr_we      = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_PSR];
+   assign s1i_wmsr_epc_we      = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPC];
+   assign s1i_wmsr_epsr_we     = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPSR];
+   assign s1i_wmsr_elsa_we     = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_ELSA];
+   assign s1i_wmsr_evect_we    = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EVECT];
 `ifdef NCPU_ENABLE_MSGPORT
-   assign s1i_wmsr_numport_we  = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[0];
-   assign s1i_wmsr_msgport_we  = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[1];
+   assign s1i_wmsr_numport_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[0];
+   assign s1i_wmsr_msgport_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[1];
 `endif
-   assign s1i_msr_imm_tlbl_we  = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbl_sel;
-   assign s1i_msr_imm_tlbh_we  = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbh_sel;
-   assign s1i_msr_dmm_tlbl_we  = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbl_sel;
-   assign s1i_msr_dmm_tlbh_we  = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbh_sel;
-   assign s1i_msr_ic_inv_we    = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ic & msr_ic_inv_sel;
-   assign s1i_msr_dc_inv_we    = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_inv_sel;
-   assign s1i_msr_dc_fls_we    = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_fls_sel;
+   assign s1i_msr_imm_tlbl_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbl_sel;
+   assign s1i_msr_imm_tlbh_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbh_sel;
+   assign s1i_msr_dmm_tlbl_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbl_sel;
+   assign s1i_msr_dmm_tlbh_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbh_sel;
+   assign s1i_msr_ic_inv_we    = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ic & msr_ic_inv_sel;
+   assign s1i_msr_dc_inv_we    = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_inv_sel;
+   assign s1i_msr_dc_fls_we    = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_fls_sel;
 
-   assign s1i_msr_irqc_imr_we  = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_irqc & msr_irqc_imr_sel;
-   assign s1i_msr_tsc_tsr_we   = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tsr_sel;
-   assign s1i_msr_tsc_tcr_we   = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tcr_sel;
+   assign s1i_msr_irqc_imr_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_irqc & msr_irqc_imr_sel;
+   assign s1i_msr_tsc_tsr_we   = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tsr_sel;
+   assign s1i_msr_tsc_tcr_we   = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tcr_sel;
    
-   assign s1i_msr_sr_we        = ex_valid & ~flush_s1 & ex_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_sr;
+   assign s1i_msr_sr_we        = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_sr;
    
    ////////////////////////////////////////////////////////////////////////////////
 
@@ -428,17 +431,20 @@ module ex_epu
                         s1i_bank_off};
 
    // Pipeline stage
-   mDFF_lr # (.DW(1)) ff_s1o_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_ERET), .Q(s1o_commit_ERET) );
-   mDFF_lr # (.DW(1)) ff_s1o_commit_ESYSCALL (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_ESYSCALL), .Q(s1o_commit_ESYSCALL) );
-   mDFF_lr # (.DW(1)) ff_s1o_commit_EINSN (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_EINSN), .Q(s1o_commit_EINSN) );
-   mDFF_lr # (.DW(1)) ff_s1o_commit_EIPF (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_EIPF), .Q(s1o_commit_EIPF) );
-   mDFF_lr # (.DW(1)) ff_s1o_commit_EITM (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_EITM), .Q(s1o_commit_EITM) );
-   mDFF_lr # (.DW(1)) ff_s1o_commit_EIRQ (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_EIRQ), .Q(s1o_commit_EIRQ) );
-   mDFF_lr # (.DW(1)) ff_s1o_commit_E_FLUSH_TLB (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_E_FLUSH_TLB), .Q(s1o_commit_E_FLUSH_TLB) );
-   mDFF_lr # (.DW(NCPU_WMSR_WE_W)) ff_s1o_commit_wmsr_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush_s1), .D(s1i_wmsr_we), .Q(s1o_commit_wmsr_we) );
+   mDFF_lr # (.DW(1)) ff_epu_wb_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(cmt_valid), .Q(s1o_valid) );
+   mDFF_l # (.DW(CONFIG_DW)) ff_epu_wb_dout (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_wb_dout), .Q(epu_wb_dout) );
+   mDFF_l # (.DW(1)) ff_epu_wb_dout_sel (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_wb_dout_sel), .Q(epu_wb_dout_sel) );
+   mDFF_lr # (.DW(1)) ff_s1o_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_ERET), .Q(s1o_commit_ERET) );
+   mDFF_lr # (.DW(1)) ff_s1o_commit_ESYSCALL (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_ESYSCALL), .Q(s1o_commit_ESYSCALL) );
+   mDFF_lr # (.DW(1)) ff_s1o_commit_EINSN (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_EINSN), .Q(s1o_commit_EINSN) );
+   mDFF_lr # (.DW(1)) ff_s1o_commit_EIPF (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_EIPF), .Q(s1o_commit_EIPF) );
+   mDFF_lr # (.DW(1)) ff_s1o_commit_EITM (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_EITM), .Q(s1o_commit_EITM) );
+   mDFF_lr # (.DW(1)) ff_s1o_commit_EIRQ (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_EIRQ), .Q(s1o_commit_EIRQ) );
+   mDFF_lr # (.DW(1)) ff_s1o_commit_E_FLUSH_TLB (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_E_FLUSH_TLB), .Q(s1o_commit_E_FLUSH_TLB) );
+   mDFF_lr # (.DW(NCPU_WMSR_WE_W)) ff_s1o_commit_wmsr_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_wmsr_we), .Q(s1o_commit_wmsr_we) );
    mDFF_l # (.DW(CONFIG_DW)) ff_s1o_commit_wmsr_dat (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_msr_wdat), .Q(s1o_commit_wmsr_dat) );
-   mDFF_l # (.DW(`PC_W)) ff_s1o_commit_epc (.CLK(clk), .LOAD(p_ce_s1), .D(ex_pc), .Q(s1o_commit_epc) );
-   mDFF_l # (.DW(`PC_W)) ff_s1o_commit_nepc (.CLK(clk), .LOAD(p_ce_s1), .D(ex_npc), .Q(s1o_commit_nepc) );
+   mDFF_l # (.DW(`PC_W)) ff_s1o_commit_epc (.CLK(clk), .LOAD(p_ce_s1), .D(cmt_pc), .Q(s1o_commit_epc) );
+   mDFF_l # (.DW(`PC_W)) ff_s1o_commit_nepc (.CLK(clk), .LOAD(p_ce_s1), .D(cmt_npc), .Q(s1o_commit_nepc) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s1o_msr_evect (.CLK(clk), .LOAD(p_ce_s1), .D(msr_evect), .Q(s1o_msr_evect) );
    
    // Unpack commit wmsr we
@@ -584,6 +590,8 @@ module ex_epu
                         s1o_commit_EIRQ |
                         s1o_commit_EINSN);
 
+   assign epu_wb_valid = (s1o_valid & p_ce_s2);
+                        
 	// synthesis translate_off
 `ifndef SYNTHESIS
 `ifdef NCPU_ENABLE_MSGPORT
@@ -598,7 +606,7 @@ module ex_epu
 `endif
    // synthesis translate_on
 
-   ex_irqc
+   cmt_irqc
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_DW                      (CONFIG_DW),
@@ -617,7 +625,7 @@ module ex_epu
        .msr_irqc_imr_nxt                (msr_irqc_imr_nxt[CONFIG_DW-1:0]),
        .msr_irqc_imr_we                 (msr_irqc_imr_we));
 
-   ex_tsc
+   cmt_tsc
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_DW                      (CONFIG_DW))

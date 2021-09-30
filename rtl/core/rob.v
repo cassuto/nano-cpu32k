@@ -40,8 +40,12 @@ module rob
    input [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_lsu_opc_bus,
    input [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_bpu_upd,
    input [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_pc,
+   input [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] push_prd,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_prd_we,
    input [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_pfree,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_is_bcc,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_is_brel,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] push_is_breg,
    // To issue
    output                              rob_ready,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] rob_free_id,
@@ -50,9 +54,10 @@ module rob
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_valid,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] wb_rob_id,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] wb_rob_bank,
-   input                               wb_fls,
-   input [CONFIG_AW-1:0]               wb_opera,
-   input [CONFIG_DW-1:0]               wb_operb,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_fls,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_exc,
+   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_opera,
+   input [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_operb,
    // To WB
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_ready,
    // To CMT
@@ -61,9 +66,14 @@ module rob
    output [`NCPU_LSU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lsu_opc_bus,
    output [`BPU_UPD_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_bpu_upd,
    output [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pc,
+   output [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_prd,
    output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_prd_we,
    output [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pfree,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_is_bcc,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_is_brel,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_is_breg,
    output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fls,
+   output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_exc,
    output [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_opera,
    output [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_operb,
    // From CMT
@@ -77,8 +87,12 @@ module rob
                                           `NCPU_LSU_IOPW +
                                           `BPU_UPD_W +
                                           `PC_W +
+                                          `NCPU_PRF_AW
                                           1 +
-                                          `NCPU_PRF_AW);
+                                          `NCPU_PRF_AW +
+                                          1 +
+                                          1 +
+                                          1);
    localparam P_BANKS                  = (CONFIG_P_COMMIT_WIDTH);
    localparam BANKS                    = (1<<P_BANKS);
    localparam R_1[CONFIG_P_ROB_DEPTH-1:0] = {{CONFIG_P_ROB_DEPTH-1{1'b0}}, 1'b1};
@@ -100,11 +114,13 @@ module rob
    wire                                que_wb                        [BANKS-1:0];
    wire [CONFIG_P_ROB_DEPTH-1:0]       que_wb_id                     [BANKS-1:0];
    wire                                que_wb_fls                    [BANKS-1:0];
+   wire                                que_wb_exc                    [BANKS-1:0];
    wire [vBANK_DW-1:0]                 que_wb_vbank                  [BANKS-1:0];
    wire [P_BANKS:0]                    pop_cnt_adapt;
    wire [DEPTH_WIDTH-1:0]              payload_waddr                 [BANKS-1:0];
    wire [ROB_DEPTH-1:0]                que_rdy                       [BANKS-1:0];
    wire                                que_fls                       [BANKS-1:0];
+   wire                                que_exc                       [BANKS-1:0];
    wire [vBANK_DW-1:0]                 que_vbank                     [BANKS-1:0];
    genvar i;
    integer j;
@@ -135,8 +151,12 @@ module rob
                                        push_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
                                        push_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
                                        push_pc[i * `PC_W +: `PC_W],
+                                       push_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
                                        push_prd_we[i],
-                                       push_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]};
+                                       push_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
+                                       push_is_bcc[i],
+                                       push_is_brel[i],
+                                       push_is_breg[i]};
             assign que_din[i] = que_din_mux[tail_r[i]];
             assign que_pop[i]  = ({1'b0, head_r[i]} < pop_cnt_adapt);
             assign que_push[i] = ({1'b0, tail_r[i]} < push_size);
@@ -233,6 +253,23 @@ module rob
                   .WDATA ({que_wb_fls[i], 1'b0}),
                   .DO   (que_fls[i])
                );
+            
+            mRF_nw_do_r
+               #(
+                  .DW (1),
+                  .AW (CONFIG_P_ROB_DEPTH),
+                  .RST_VECTOR (1'b0),
+                  .NUM_WRITE (2)
+               )
+            U_TAG_EXC
+               (
+                  .CLK  (clk),
+                  .RST  (rst),
+                  .WE   ({que_wb[i], que_push[i]}),
+                  .WADDR ({que_wb_id[i], payload_waddr}),
+                  .WDATA ({que_wb_exc[i], 1'b0}),
+                  .DO   (que_exc[i])
+               );
                
             mRF_nw_do
                #(
@@ -269,6 +306,7 @@ module rob
             begin : gen_wb_id_mux
                que_wb_id[i] = 'b0;
                que_wb_fls[i] = 'b0;
+               que_wb_exc[i] = 'b0;
                que_wb_vbank[i] = 'b0;
                for(j=0;j<IW;j=j+1)
                   begin
@@ -278,9 +316,12 @@ module rob
                      que_wb_fls[i] = que_wb_fls[i] |
                                        ({CONFIG_P_ROB_DEPTH{i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]}} &
                                        wb_fls[j]);
+                     que_wb_exc[i] = que_wb_exc[i] |
+                                       ({CONFIG_P_ROB_DEPTH{i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]}} &
+                                       wb_exc[j]);
                      que_wb_vbank[i] = que_wb_vbank[i] |
                                        ({CONFIG_P_ROB_DEPTH{i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]}} &
-                                       {wb_operb[j], wb_opera[j]});
+                                       {wb_operb[j*CONFIG_DW +: CONFIG_DW], wb_opera[j*CONFIG_DW +: CONFIG_DW]});
                   end
             end
    endgenerate
@@ -302,9 +343,14 @@ module rob
                      cmt_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
                      cmt_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
                      cmt_pc[i * `PC_W +: `PC_W],
+                     cmt_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
                      cmt_prd_we[i],
-                     cmt_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] } = que_dout[head_l[i]];
+                     cmt_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
+                     cmt_is_bcc[i],
+                     cmt_is_brel[i],
+                     cmt_is_breg[i] } = que_dout[head_l[i]];
             assign cmt_fls[i] = que_fls[head_l[i]];
+            assign cmt_exc[i] = que_exc[head_l[i]];
             assign {cmt_operb[i*CONFIG_DW +: CONFIG_DW],
                      cmt_opera[i*CONFIG_DW +: CONFIG_DW]} = que_vbank[head_l[i]];
             assign cmt_valid[i] = (que_valid[head_l[i]] & que_rdy[head_l[i]]);

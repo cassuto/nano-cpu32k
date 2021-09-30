@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module ex_tsc
+module cmt_tsc
 #(
    parameter                           CONFIG_DW = 0
 )

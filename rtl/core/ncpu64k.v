@@ -519,7 +519,6 @@ module ncpu64k
        .commit_rf_we                    (commit_rf_we[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .arf_RE                          (arf_RE[(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0]),
        .arf_RADDR                       (arf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_LRF_AW-1:0]));
-
        
 `ifdef ENABLE_DIFFTEST
    difftest

@@ -38,11 +38,12 @@ module issue_rs
    // From RN
    input [`NCPU_ALU_IOPW-1:0]          issue_alu_opc_bus,
    input [`NCPU_LPU_IOPW-1:0]          issue_lpu_opc_bus,
-   input [`NCPU_EPU_IOPW-1:0]          issue_epu_opc_bus,
+   input                               issue_epu_op,
    input [`NCPU_BRU_IOPW-1:0]          issue_bru_opc_bus,
-   input [`NCPU_LSU_IOPW-1:0]          issue_lsu_opc_bus,
+   input                               issue_lsu_op,
    input [`NCPU_FE_W-1:0]              issue_fe,
-   input [`BPU_UPD_W-1:0]              issue_bpu_upd,
+   input                               issue_bpu_pred_taken,
+   input [`PC_W-1:0]                   issue_bpu_pred_tgt,
    input [`PC_W-1:0]                   issue_pc,
    input [CONFIG_DW-1:0]               issue_imm,
    input [`NCPU_PRF_AW-1:0]            issue_prs1,
@@ -57,35 +58,37 @@ module issue_rs
    // From busytable
    input [(1<<`NCPU_PRF_AW)-1:0]       busytable,
    // To EX
-   output                              ex_valid,
-   input                               ex_rs_pop,
-   output [`NCPU_ALU_IOPW-1:0]         ex_alu_opc_bus,
-   output [`NCPU_LPU_IOPW-1:0]         ex_lpu_opc_bus,
-   output [`NCPU_EPU_IOPW-1:0]         ex_epu_opc_bus,
-   output [`NCPU_BRU_IOPW-1:0]         ex_bru_opc_bus,
-   output [`NCPU_LSU_IOPW-1:0]         ex_lsu_opc_bus,
-   output [`NCPU_FE_W-1:0]             ex_fe,
-   output [`BPU_UPD_W-1:0]             ex_bpu_upd,
-   output [`PC_W-1:0]                  ex_pc,
-   output [CONFIG_DW-1:0]              ex_imm,
-   output [`NCPU_PRF_AW-1:0]           ex_prs1,
-   output                              ex_prs1_re,
-   output [`NCPU_PRF_AW-1:0]           ex_prs2,
-   output                              ex_prs2_re,
-   output [`NCPU_PRF_AW-1:0]           ex_prd,
-   output                              ex_prd_we,
-   output [CONFIG_P_ROB_DEPTH-1:0]     ex_rob_id,
-   output [CONFIG_P_COMMIT_WIDTH-1:0]  ex_rob_bank
+   output                              ro_valid,
+   input                               ro_rs_pop,
+   output [`NCPU_ALU_IOPW-1:0]         ro_alu_opc_bus,
+   output [`NCPU_LPU_IOPW-1:0]         ro_lpu_opc_bus,
+   output                              ro_epu_op,
+   output                              ro_bpu_pred_taken,
+   output [`PC_W-1:0]                  ro_bpu_pred_tgt,
+   output                              ro_lsu_op,
+   output [`NCPU_FE_W-1:0]             ro_fe,
+   output [`BPU_UPD_W-1:0]             ro_bpu_upd,
+   output [`PC_W-1:0]                  ro_pc,
+   output [CONFIG_DW-1:0]              ro_imm,
+   output [`NCPU_PRF_AW-1:0]           ro_prs1,
+   output                              ro_prs1_re,
+   output [`NCPU_PRF_AW-1:0]           ro_prs2,
+   output                              ro_prs2_re,
+   output [`NCPU_PRF_AW-1:0]           ro_prd,
+   output                              ro_prd_we,
+   output [CONFIG_P_ROB_DEPTH-1:0]     ro_rob_id,
+   output [CONFIG_P_COMMIT_WIDTH-1:0]  ro_rob_bank
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam RS_DEPTH                 = (1<<CONFIG_P_RS_DEPTH);
    localparam OPP_W                    = (`NCPU_ALU_IOPW +
                                           `NCPU_LPU_IOPW +
-                                          `NCPU_EPU_IOPW +
+                                          1 +
                                           `NCPU_BRU_IOPW +
-                                          `NCPU_LSU_IOPW +
+                                          1 +
                                           `NCPU_FE_W +
-                                          `BPU_UPD_W +
+                                          1 +
+                                          `PC_W +
                                           CONFIG_DW +
                                           `NCPU_PRF_AW +
                                           1 +
@@ -112,16 +115,16 @@ module issue_rs
    assign opp_wdat = {
       issue_alu_opc_bus,
       issue_lpu_opc_bus,
-      issue_epu_opc_bus,
+      issue_epu_op,
       issue_bru_opc_bus,
-      issue_lsu_opc_bus,
+      issue_lsu_op,
       issue_fe,
-      issue_bpu_upd,
+      issue_bpu_pred_taken,
+      issue_bpu_pred_tgt,
       issue_pc,
       issue_imm,
       issue_prd,
       issue_prd_we,
-      issue_pfree,
       issue_rob_id,
       issue_rob_bank
    };
@@ -207,13 +210,13 @@ module issue_rs
          free_vec_nxt = free_vec_ff;
          if (issue_push)
             free_vec_nxt = free_vec_nxt & ~(FL_1<<free_addr);
-         if (ex_rs_pop)
+         if (ro_rs_pop)
                free_vec_nxt = free_vec_nxt | (FL_1<<rdy_addr_ff);
       end
    always @(*)
       begin
          free_vec_ff_byp = free_vec_ff;
-         if (ex_rs_pop)
+         if (ro_rs_pop)
                free_vec_ff_byp = free_vec_ff_byp | (FL_1<<rdy_addr_ff);
       end
 
@@ -242,27 +245,28 @@ module issue_rs
    
    mDFF_r #(.DW(1)) ff_has_rdy (.CLK(clk), .RST(rst), .D(has_rdy), .Q(has_rdy_ff) );
    mDFF_l #(.DW(CONFIG_P_RS_DEPTH)) ff_rdy_addr (.CLK(clk), .LOAD(has_rdy), .D(rdy_addr), .Q(rdy_addr_ff) );
-   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs1 (.CLK(clk), .LOAD(has_rdy), .D(prs1_rf_mux[rdy_addr]), .Q(ex_prs1) );
-   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs2 (.CLK(clk), .LOAD(has_rdy), .D(prs2_rf_mux[rdy_addr]), .Q(ex_prs2) );
-   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs1_re (.CLK(clk), .LOAD(has_rdy), .D(prs1_re_rf[rdy_addr]), .Q(ex_prs1_re) );
-   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs2_re (.CLK(clk), .LOAD(has_rdy), .D(prs2_re_rf[rdy_addr]), .Q(ex_prs2_re) );
+   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs1 (.CLK(clk), .LOAD(has_rdy), .D(prs1_rf_mux[rdy_addr]), .Q(ro_prs1) );
+   mDFF_l #(.DW(RS_DEPTH*`NCPU_PRF_AW)) ff_issue_prs2 (.CLK(clk), .LOAD(has_rdy), .D(prs2_rf_mux[rdy_addr]), .Q(ro_prs2) );
+   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs1_re (.CLK(clk), .LOAD(has_rdy), .D(prs1_re_rf[rdy_addr]), .Q(ro_prs1_re) );
+   mDFF_l #(.DW(RS_DEPTH)) ff_issue_prs2_re (.CLK(clk), .LOAD(has_rdy), .D(prs2_re_rf[rdy_addr]), .Q(ro_prs2_re) );
    
-   assign ex_valid = has_rdy_ff;
+   assign ro_valid = has_rdy_ff;
 
    assign {
-      ex_alu_opc_bus,
-      ex_lpu_opc_bus,
-      ex_epu_opc_bus,
-      ex_bru_opc_bus,
-      ex_lsu_opc_bus,
-      ex_fe,
-      ex_bpu_upd,
-      ex_pc,
-      ex_imm,
-      ex_prd,
-      ex_prd_we,
-      ex_rob_id,
-      ex_rob_bank
+      ro_alu_opc_bus,
+      ro_lpu_opc_bus,
+      ro_epu_op,
+      ro_bru_opc_bus,
+      ro_lsu_op,
+      ro_fe,
+      ro_bpu_pred_taken,
+      ro_bpu_pred_tgt,
+      ro_pc,
+      ro_imm,
+      ro_prd,
+      ro_prd_we,
+      ro_rob_id,
+      ro_rob_bank
    } = opp_rdat;
    
 endmodule

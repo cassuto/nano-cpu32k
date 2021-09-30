@@ -45,9 +45,10 @@ module rn_rat
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] rat_prs2,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] rat_pfree,
    // From ROB commit
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] commit_lrd,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] commit_prd,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] commit_prd_we
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_LRF_AW-1:0] cmt_lrd,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] cmt_prd,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_prd_we
 );
    localparam N_LRF                    = (1<<`NCPU_LRF_AW);
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
@@ -92,9 +93,9 @@ module rn_rat
       (
          .CLK (clk),
          .RST (rst),
-         .WE  (commit_prd_we),
-         .WADDR (commit_lrd),
-         .WDATA (commit_prd),
+         .WE  (cmt_prd_we & cmt_fire),
+         .WADDR (cmt_lrd),
+         .WDATA (cmt_prd),
          .DO  (arat_ff)
       );
       

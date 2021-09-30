@@ -38,9 +38,10 @@ module rn_fl
    output                              fl_stall_req,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] fl_prd,
    // From ROB commit
-   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] commit_prd_we,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] commit_prd,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] commit_pfree
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_prd_we,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] cmt_prd,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)*`NCPU_PRF_AW-1:0] cmt_pfree
    
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
@@ -94,8 +95,8 @@ module rn_fl
                fl_nxt = fl_nxt & ~(FL_1<<fl_prd[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Allocate
                
          for(j=0;j<CW;j=j+1)   
-            if (commit_prd_we[j])
-               fl_nxt = fl_nxt | (FL_1<<commit_pfree[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Free
+            if (cmt_prd_we[j] & cmt_fire[j])
+               fl_nxt = fl_nxt | (FL_1<<cmt_pfree[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Free
       end
 
    mDFF_r #(.DW(N_PRF-1)) ff_fl (.CLK(clk), .RST(rst), .D(rollback ? afl_ff : fl_nxt[N_PRF-1:1]), .Q(fl_ff) );
@@ -105,10 +106,10 @@ module rn_fl
       begin
          afl_nxt = {afl_ff, 1'b0};
          for(j=0;j<CW;j=j+1)
-            if (commit_prd_we[j])
+            if (cmt_prd_we[j] & cmt_fire[j])
                begin
-                  afl_nxt = afl_nxt & ~(FL_1<<commit_prd[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Allocate
-                  afl_nxt = afl_nxt | (FL_1<<commit_pfree[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Free
+                  afl_nxt = afl_nxt & ~(FL_1<<cmt_prd[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Allocate
+                  afl_nxt = afl_nxt | (FL_1<<cmt_pfree[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Free
                end
       end
    

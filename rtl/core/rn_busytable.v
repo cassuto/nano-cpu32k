@@ -32,11 +32,12 @@ module rn_busytable
 (
    input                               clk,
    input                               rst,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] lrd,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] lrd_we,
+   input                               flush,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] prd,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prd_we,
    // From writeback
-   input [WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0] wb_lrd,
-   input [WRITEBACK_WIDTH-1:0] wb_lrd_we,
+   input [WRITEBACK_WIDTH*`NCPU_PRF_AW-1:0] prf_WADDR,
+   input [WRITEBACK_WIDTH-1:0]         prf_WE,
    // Output
    output [(1<<`NCPU_PRF_AW)-1:0]      busytable
 );
@@ -44,7 +45,7 @@ module rn_busytable
    localparam N_PRF                    = (1<<`NCPU_PRF_AW);
    genvar i;
    
-   mRF_nw_do_r
+   mRF_nw_dio_r
       #(
          .DW         (1),
          .AW         (`NCPU_PRF_AW),
@@ -55,10 +56,12 @@ module rn_busytable
       (
          .CLK     (clk),
          .RST     (rst),
-         .WE      ({lrd_we, wb_lrd_we}),
-         .WADDR   ({lrd, wb_lrd}),
+         .WE      ({prd_we, prf_WE}),
+         .WADDR   ({prd, prf_WADDR}),
          .WDATA   ({1'b1, 1'b0}),
-         .DO      (busytable)
+         .REP     (flush),
+         .DO      (busytable),
+         .DI      ('b0)
       );
    
 endmodule

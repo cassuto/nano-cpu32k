@@ -53,9 +53,9 @@ module ex_pipe
    input                               ex_valid,
    input [`NCPU_ALU_IOPW-1:0]          ex_alu_opc_bus,
    input [`NCPU_LPU_IOPW-1:0]          ex_lpu_opc_bus,
-   input [`NCPU_EPU_IOPW-1:0]          ex_epu_opc_bus,
+   input                               ex_epu_op,
+   input                               ex_lsu_op,
    input [`NCPU_BRU_IOPW-1:0]          ex_bru_opc_bus,
-   input [`NCPU_LSU_IOPW-1:0]          ex_lsu_opc_bus,
    input [`NCPU_FE_W-1:0]              ex_fe,
    input                               ex_bpu_pred_taken,
    input [`PC_W-1:0]                   ex_bpu_pred_tgt,
@@ -79,14 +79,9 @@ module ex_pipe
    output [`NCPU_PRF_AW-1:0]           prf_WADDR,
    output [CONFIG_DW-1:0]              prf_WDATA,
    output                              wb_fls,
-   output [`PC_W-1:0]                  wb_fls_tgt,
+   output                              wb_exc,
    output [CONFIG_AW-1:0]              wb_opera,
-   output [CONFIG_DW-1:0]              wb_operb,
-   
-   // To commit
-   output [CONFIG_DW-1:0]              commit_rf_wdat,
-   output [`NCPU_LRF_AW-1:0]           commit_rf_waddr,
-   output                              commit_rf_we
+   output [CONFIG_DW-1:0]              wb_operb
 );
    /*AUTOWIRE*/
    /*AUTOINPUT*/
@@ -104,10 +99,8 @@ module ex_pipe
    // Stage 1 Input
    wire                                s1i_se_fail;
    wire [`PC_W-1:0]                    s1i_se_tgt;
-   wire                                s1i_exc_flush;
-   wire [`PC_W-1:0]                    s1i_exc_flush_tgt;
    wire                                s1i_wb_fls;
-   wire [`PC_W-1:0]                    s1i_wb_fls_tgt;
+   wire                                s1i_wb_exc;
    wire [CONFIG_AW-1:0]                s1i_wb_lsa;
    wire [CONFIG_DW-1:0]                s1i_wb_opera, s1i_wb_operb;
    
@@ -187,16 +180,6 @@ module ex_pipe
          .bru_dout                     (bru_dout),
          .bru_dout_valid               (bru_dout_valid)
       );
-   
-   ex_eh
-      #(/*AUTOINSTPARAM*/)
-   U_EH
-      (
-         .ex_fe                        (ex_fe),
-         .msr_evect                    (msr_evect),
-         .exc_flush                    (s1i_exc_flush),
-         .exc_flush_tgt                (s1i_exc_flush_tgt),
-      );
       
    ex_agu U_AGU
       (
@@ -211,11 +194,14 @@ module ex_pipe
    // +-----+--------------+
    // | EPU | operand1+imm |
    // | LSU | operand1+imm |
-   // |(EH) | fls_tgt      |
+   // |(EH) | FE           |
+   // |(SF) | fls_tgt      |
    // +-----+--------------+
    assign s1i_wb_opera = (s1i_wb_fls)
-                           ? s1i_wb_fls_tgt
-                           : s1i_wb_lsa;
+                           ? s1i_se_tgt
+                           : (s1i_wb_exc)
+                              ? {{CONFIG_DW-`NCPU_FE_W{1'b}}, ex_fe}
+                              : s1i_wb_lsa;
    
       
    // +-----+-------------+
@@ -247,7 +233,7 @@ module ex_pipe
        
    // The execution of LSU and EPU is delayed to ROB committing, thus
    // the result is invalid.
-   assign s1i_rf_dout_valid = ex_valid & ~((|ex_epu_opc_bus) | (|ex_lsu_opc_bus));
+   assign s1i_rf_dout_valid = ex_valid & ~(ex_epu_op | ex_lsu_op);
 
    assign s1i_rf_we = (s1i_rf_dout_valid & ex_rf_we);
    
@@ -256,14 +242,8 @@ module ex_pipe
    //((b_taken ^ ex_bpu_pred_taken) | (b_taken & (b_tgt != ex_bpu_pred_tgt))); // RIGHT
    assign s1i_se_tgt = (b_taken) ? b_tgt : s1i_npc;
    
-   assign s1i_wb_fls = ex_valid & (s1i_se_fail | s1i_exc_flush);
-   
-   // Maintain the priority of exception or speculative execution failure
-   // Highest - Exception
-   // Lowest - Speculative execution failure
-   assign s1i_wb_fls_tgt = (s1i_exc_flush)
-                        ? s1i_exc_flush_tgt
-                        : s1i_se_tgt; /* (se_flush) */
+   assign s1i_wb_fls = (ex_valid & s1i_se_fail);
+   assign s1i_wb_exc = (ex_valid & (|ex_fe));
    
    hds_buf
       #(.BYPASS(1))
@@ -280,7 +260,7 @@ module ex_pipe
          .BREADY (wb_ready),
          .p_ce (p_ce)
       );
-   
+
    //
    // Pipeline stages
    //
@@ -290,7 +270,7 @@ module ex_pipe
    mDFF_lr # (.DW(1)) ff_prf_WE (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_rf_we & ~flush), .Q(prf_WE) );
    mDFF_l # (.DW(CONFIG_DW)) ff_prf_WDATA (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(prf_WDATA) );
    mDFF_lr # (.DW(1)) ff_wb_fls (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_wb_fls & ~flush), .Q(wb_fls) );
-   mDFF_l # (.DW(`PC_W)) ff_wb_fls_tgt (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_fls_tgt), .Q(wb_fls_tgt) );
+   mDFF_lr # (.DW(1)) ff_wb_exc (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_wb_exc & ~flush), .Q(wb_exc) );
    mDFF_l # (.DW(CONFIG_AW)) ff_wb_opera (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_opera), .Q(wb_opera) );
    mDFF_l # (.DW(CONFIG_DW)) ff_wb_operb (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_operb), .Q(wb_operb) );
    

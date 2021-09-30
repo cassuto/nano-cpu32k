@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-module ex_psr
+module cmt_psr
 #(
    parameter                           CONFIG_DW = 0,
    parameter [7:0]                     CPUID_VER = 1,
