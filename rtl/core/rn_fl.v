@@ -75,6 +75,7 @@ module rn_fl
       //
       // The above HDL generates an "unoptimizable feedback" in verilator
       // but there is not actually one, which may be a bug of the verilator.
+      // Thus we expand the code manually...
       //
       if (IW==2)
          begin : gen_sel_2

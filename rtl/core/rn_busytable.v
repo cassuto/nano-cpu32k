@@ -50,7 +50,7 @@ module rn_busytable
       #(
          .DW         (1),
          .AW         (`NCPU_PRF_AW),
-         .RST_VECTOR (1'b0),
+         .RST_VECTOR ('b0),
          .NUM_WRITE  (IW+WW)
       )
    U_BUSYTABLE

@@ -26,7 +26,7 @@ module mRF_nw_do_r
 #(
    parameter DW = 0,
    parameter AW = 0,
-   parameter [DW-1:0] RST_VECTOR = 0,
+   parameter [DW*(1<<AW)-1:0] RST_VECTOR = 0,
    parameter NUM_WRITE = 0
 )
 (
@@ -57,7 +57,7 @@ module mRF_nw_do_r
 `endif
          begin
             for(j=0;j<(1<<AW);j=j+1)
-               regfile[j] <= RST_VECTOR;
+               regfile[j] <= RST_VECTOR[j*DW +: DW];
          end
       else
          for(j=0;j<NUM_WRITE;j=j+1) // This generates a priority MUX to resolve WAW hazard, if we have multiple write ports.
