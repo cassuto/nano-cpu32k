@@ -228,4 +228,14 @@ module rn
    
    assign issue_p_ce = p_ce_s2;
    
+`ifdef ENABLE_DIFFTEST
+   wire [31:0] dbg_rn_pc [IW-1:0];
+   generate
+      for(genvar i=0;i<IW;i=i+1)  
+         begin
+            assign dbg_rn_pc[i] = {rn_pc[i*`PC_W +: `PC_W], 2'b00};
+         end
+   endgenerate
+`endif
+
 endmodule
