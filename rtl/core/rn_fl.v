@@ -126,7 +126,7 @@ module rn_fl
                fl_nxt = fl_nxt | (FL_1<<cmt_pfree[j * `NCPU_PRF_AW +: `NCPU_PRF_AW]); // Free
       end
 
-   mDFF_r #(.DW(N_PRF-1)) ff_fl (.CLK(clk), .RST(rst), .D(rollback ? afl_ff : fl_nxt[N_PRF-1:1]), .Q(fl_ff) );
+   mDFF_r #(.DW(N_PRF-1), .RST_VECTOR({N_PRF-1{1'b1}})) ff_fl (.CLK(clk), .RST(rst), .D(rollback ? afl_ff : fl_nxt[N_PRF-1:1]), .Q(fl_ff) );
 
    // Maintain architectural free list (aFL)
    always @(*)
