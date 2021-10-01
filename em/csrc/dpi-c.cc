@@ -84,6 +84,14 @@ static void difftest_report_item(const char *item, cpu_unsigned_word_t right, cp
 
 static bool difftest_compare_reg(bool verbose)
 {
+    fprintf(stderr, "Right Registers:\n");
+    for (int i = 0; i < 32; i++)
+    {
+        cpu_word_t right = dpic_emu_CPU->get_reg(i);
+        fprintf(stderr, "r%d=%#8x%c", right, ((i+1)%8==0 ? '\n' : ' '));
+    }
+    fprintf(stderr, "\n");
+
     for (int i = 0; i < 32; i++)
     {
         cpu_word_t right = dpic_emu_CPU->get_reg(i);
