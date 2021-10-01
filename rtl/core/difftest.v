@@ -49,6 +49,7 @@ module difftest
    wire [CONFIG_NUM_IRQ-1:0] s1o_msr_irqc_irr;
    wire [CW-1:0] commit_valid_ff;
    wire [`PC_W*CW-1:0] commit_pc_ff;
+   wire [`NCPU_INSN_DW*CW-1:0] commit_ins_ff; 
    wire [`NCPU_LRF_AW*CW-1:0] commit_rf_waddr_ff;
    wire [CONFIG_DW*CW-1:0] commit_rf_wdat_ff;
    wire [CW-1:0] commit_rf_we_ff;
@@ -86,6 +87,7 @@ module difftest
    
    mDFF_r #(.DW(CW)) ff_commit_valid (.CLK(clk), .RST(rst), .D(cmt_fire), .Q(commit_valid_ff));
    mDFF #(.DW(`PC_W*CW)) ff_commit_pc (.CLK(clk), .D(cmt_pc), .Q(commit_pc_ff));
+   mDFF #(.DW(`NCPU_INSN_DW*CW)) ff_commit_ins (.CLK(clk), .D(cmt_ins), .Q(commit_ins_ff));
    mDFF #(.DW(`NCPU_LRF_AW*CW)) ff_commit_rf_waddr (.CLK(clk), .D(cmt_lrd), .Q(commit_rf_waddr_ff));
    mDFF #(.DW(CONFIG_DW*CW)) ff_commit_rf_wdat (.CLK(clk), .D(cmt_lrd_dat), .Q(commit_rf_wdat_ff));
    mDFF_r #(.DW(CW)) ff_commit_rf_we (.CLK(clk), .RST(rst), .D(cmt_lrd_we), .Q(commit_rf_we_ff));
@@ -104,7 +106,7 @@ module difftest
          .clk                             (clk),
          .valid                           (commit_valid_ff),
          .pc                              (commit_pc_ff),
-         .insn                            (cmt_ins),
+         .insn                            (commit_ins_ff),
          .wen                             (commit_rf_we_ff),
          .wnum                            (commit_rf_waddr_ff),
          .wdata                           (commit_rf_wdat_ff),
