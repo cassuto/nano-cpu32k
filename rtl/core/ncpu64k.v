@@ -905,21 +905,15 @@ module ncpu64k
        .prf_WDATA_lsu_epu               (prf_WDATA_lsu_epu[CONFIG_DW-1:0]));
        
 `ifdef ENABLE_DIFFTEST
-   wire [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmt_lrd;
-   wire [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmt_lrd_dat;
+   wire [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmtf_lrd;
+   wire [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmtf_lrd_dat;
    
    generate
       for(genvar i=0;i<(1<<CONFIG_P_COMMIT_WIDTH);i=i+1)
          begin
-            assign dft_cmt_lrd[i*`NCPU_LRF_AW +: `NCPU_LRF_AW] = U_RN.U_RAT.arat_inv[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
-         end
-      
-      // Bypass logic for commit channel 1
-      assign dft_cmt_lrd_dat[0*CONFIG_DW +: CONFIG_DW] = (U_PRF.prf_WE_lsu_epu && (U_CMT.cmt_prd[0*`NCPU_PRF_AW +: `NCPU_PRF_AW]==U_PRF.prf_WADDR_lsu_epu) )
-                                                            ? (U_PRF.prf_WDATA_lsu_epu)
-                                                            : U_PRF.U_PRF.regfile[U_CMT.cmt_prd[0*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
-      for(genvar i=1;i<(1<<CONFIG_P_COMMIT_WIDTH);i=i+1)
-         assign dft_cmt_lrd_dat[i*CONFIG_DW +: CONFIG_DW] = U_PRF.U_PRF.regfile[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
+            assign dft_cmtf_lrd[i*`NCPU_LRF_AW +: `NCPU_LRF_AW] = U_RN.U_RAT.arat_inv[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
+            assign dft_cmtf_lrd_dat[i*CONFIG_DW +: CONFIG_DW] = U_PRF.U_PRF.regfile[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
+         end 
    endgenerate
    
    difftest
@@ -945,8 +939,8 @@ module ncpu64k
          .rob_que_rptr                    (U_ROB.que_rptr),
          .cmt_fire                        (U_CMT.cmt_fire),
          .cmt_pc                          (U_CMT.cmt_pc),
-         .cmt_lrd                         (dft_cmt_lrd),
-         .cmt_lrd_dat                     (dft_cmt_lrd_dat),
+         .cmtf_lrd                        (dft_cmtf_lrd),
+         .cmtf_lrd_dat                    (dft_cmtf_lrd_dat),
          .cmt_lrd_we                      (U_CMT.cmt_prd_we),
          .cmt_exc                         (U_CMT.exc_flush),
          .cmt_exc_vect                    ({U_CMT.exc_flush_tgt, 2'b00}),

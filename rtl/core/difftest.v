@@ -30,8 +30,8 @@ module difftest
    // From CMT
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire,
    input [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pc,
-   input [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lrd,
-   input [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lrd_dat,
+   input [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmtf_lrd,
+   input [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmtf_lrd_dat,
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lrd_we,
    input                               cmt_exc,
    input [CONFIG_DW-1:0]               cmt_exc_vect,
@@ -88,8 +88,8 @@ module difftest
    mDFF_r #(.DW(CW)) ff_commit_valid (.CLK(clk), .RST(rst), .D(cmt_fire), .Q(commit_valid_ff));
    mDFF #(.DW(`PC_W*CW)) ff_commit_pc (.CLK(clk), .D(cmt_pc), .Q(commit_pc_ff));
    mDFF #(.DW(`NCPU_INSN_DW*CW)) ff_commit_ins (.CLK(clk), .D(cmt_ins), .Q(commit_ins_ff));
-   mDFF #(.DW(`NCPU_LRF_AW*CW)) ff_commit_rf_waddr (.CLK(clk), .D(cmt_lrd), .Q(commit_rf_waddr_ff));
-   mDFF #(.DW(CONFIG_DW*CW)) ff_commit_rf_wdat (.CLK(clk), .D(cmt_lrd_dat), .Q(commit_rf_wdat_ff));
+   assign commit_rf_waddr_ff = cmtf_lrd;
+   assign commit_rf_wdat_ff = cmtf_lrd_dat;
    mDFF_r #(.DW(CW)) ff_commit_rf_we (.CLK(clk), .RST(rst), .D(cmt_lrd_we), .Q(commit_rf_we_ff));
    mDFF #(.DW(1)) ff_commit_excp (.CLK(clk), .D(cmt_exc), .Q(commit_excp_ff) );
    mDFF #(.DW(32)) ff_commit_excp_vect (.CLK(clk), .D(cmt_exc_vect), .Q(commit_excp_vect_ff) );

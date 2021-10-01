@@ -178,7 +178,14 @@ void dpic_step()
             rtl_pc = rtl_cmt_pc[i];
             rtl_pc_queue->push(rtl_cmt_pc[i], rtl_insn[i]);
             if (rtl_wen[i])
+            {
+                if (rtl_wnum[i] == 0)
+                {
+                    fprintf(stderr, "BUG ON: Invalid writing to r0 reg!");
+                    assert(0);
+                }
                 rtl_regfile[(unsigned)rtl_wnum[i]] = rtl_wdata[i];
+            }
 
             /* Handle RMSR carefully */
             if (!rtl_excp[i] && INS32_GET_BITS(rtl_insn[i], OPCODE) == INS32_OP_RMSR)
@@ -189,10 +196,10 @@ void dpic_step()
                 cpu_unsigned_word_t val = rtl_regfile[rd];
                 switch (rtl_regfile[rs1] | uimm15)
                 {
-                    case MSR_TSR:
-                        /* Synchronize the value of TSR before reading */
-                        dpic_emu_CPU->msr_set_tsr(val);
-                        break;
+                case MSR_TSR:
+                    /* Synchronize the value of TSR before reading */
+                    dpic_emu_CPU->msr_set_tsr(val);
+                    break;
                 }
             }
 
