@@ -69,9 +69,9 @@ module ex_pipe
    output                              wb_valid,
    output [CONFIG_P_ROB_DEPTH-1:0]     wb_rob_id,
    output [CONFIG_P_COMMIT_WIDTH-1:0]  wb_rob_bank,
-   output                              prf_WE,
-   output [`NCPU_PRF_AW-1:0]           prf_WADDR,
-   output [CONFIG_DW-1:0]              prf_WDATA,
+   output                              prf_WE_ex,
+   output [`NCPU_PRF_AW-1:0]           prf_WADDR_ex,
+   output [CONFIG_DW-1:0]              prf_WDATA_ex,
    output                              wb_fls,
    output                              wb_exc,
    output [CONFIG_AW-1:0]              wb_opera,
@@ -264,9 +264,9 @@ module ex_pipe
    //
    mDFF_l # (.DW(CONFIG_P_ROB_DEPTH)) ff_wb_rob_id (.CLK(clk), .LOAD(p_ce), .D(ex_rob_id), .Q(wb_rob_id) );
    mDFF_l # (.DW(CONFIG_P_COMMIT_WIDTH)) ff_wb_rob_bank (.CLK(clk), .LOAD(p_ce), .D(ex_rob_bank), .Q(wb_rob_bank) );
-   mDFF_l # (.DW(`NCPU_PRF_AW)) ff_prf_WADDR (.CLK(clk), .LOAD(p_ce), .D(ex_prd), .Q(prf_WADDR) );
-   mDFF_lr # (.DW(1)) ff_prf_WE (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_prf_we & ~flush), .Q(prf_WE) );
-   mDFF_l # (.DW(CONFIG_DW)) ff_prf_WDATA (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(prf_WDATA) );
+   mDFF_l # (.DW(`NCPU_PRF_AW)) ff_prf_WADDR_ex (.CLK(clk), .LOAD(p_ce), .D(ex_prd), .Q(prf_WADDR_ex) );
+   mDFF_lr # (.DW(1)) ff_prf_WE_ex (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_prf_we & ~flush), .Q(prf_WE_ex) );
+   mDFF_l # (.DW(CONFIG_DW)) ff_prf_WDATA_ex (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(prf_WDATA_ex) );
    mDFF_lr # (.DW(1)) ff_wb_fls (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_wb_fls & ~flush), .Q(wb_fls) );
    mDFF_lr # (.DW(1)) ff_wb_exc (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_wb_exc & ~flush), .Q(wb_exc) );
    mDFF_l # (.DW(CONFIG_AW)) ff_wb_opera (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_opera), .Q(wb_opera) );

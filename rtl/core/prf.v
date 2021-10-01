@@ -42,22 +42,12 @@ module prf
    // From WB
    input [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WE,
    input [`NCPU_PRF_AW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WADDR,
-   input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WDATA,
-   
-   input                               prf_WE_lsu_epu,
-   input [`NCPU_PRF_AW-1:0]            prf_WADDR_lsu_epu,
-   input [CONFIG_DW-1:0]               prf_WDATA_lsu_epu,
-   
-   // To WB
-   output [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready
+   input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WDATA
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam WW                       = (1<<CONFIG_P_WRITEBACK_WIDTH);
    
    wire [IW*2*CONFIG_DW-1:0]           prf_RDATA_1;
-   wire [WW-1:0]                       prf_WE_1;
-   wire [`NCPU_PRF_AW*WW-1:0]          prf_WADDR_1;
-   wire [CONFIG_DW*WW-1:0]             prf_WDATA_1;
    genvar i;
    
    mRF_nwnr
@@ -73,32 +63,10 @@ module prf
          .RE                           (prf_RE),
          .RADDR                        (prf_RADDR),
          .RDATA                        (prf_RDATA_1),
-         .WE                           (prf_WE_1),
-         .WADDR                        (prf_WADDR_1),
-         .WDATA                        (prf_WDATA_1)
+         .WE                           (prf_WE),
+         .WADDR                        (prf_WADDR),
+         .WDATA                        (prf_WDATA)
       );
-   
-   
-   // Arbiter between `ex_pipe[0]` and `lsu_epu`
-   // `lsu_epu` has the highest priority
-   assign wb_ready[0] = (~prf_WE_lsu_epu);
-   assign prf_WE_1[0] = (prf_WE_lsu_epu) ? 1'b1 : prf_WE[0];
-   assign prf_WADDR_1[0*`NCPU_PRF_AW +: `NCPU_PRF_AW] = (prf_WE_lsu_epu)
-                                                            ? prf_WADDR_lsu_epu
-                                                            : prf_WADDR[0*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-   assign prf_WDATA_1[0*CONFIG_DW +: CONFIG_DW] = (prf_WE_lsu_epu)
-                                                      ? prf_WDATA_lsu_epu
-                                                      : prf_WDATA[0*CONFIG_DW +: CONFIG_DW];
-   
-   generate
-      for(i=1;i<WW;i=i+1)
-         begin : gen_bundle
-            assign wb_ready[i] = 'b1;
-            assign prf_WE_1[i] = prf_WE[i];
-            assign prf_WADDR_1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW] = prf_WADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign prf_WDATA_1[i*CONFIG_DW +: CONFIG_DW] = prf_WDATA[i*CONFIG_DW +: CONFIG_DW];
-         end
-   endgenerate
    
    // r0 as zero
    generate
@@ -112,7 +80,7 @@ module prf
    generate
       for(i=0;i<WW;i=i+1)  
          begin
-            assign dbg_waddr[i] = prf_WADDR_1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+            assign dbg_waddr[i] = prf_WADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
          end
    endgenerate
 `endif

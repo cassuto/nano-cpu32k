@@ -72,9 +72,9 @@ module ex
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_exc,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_opera,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_operb,
-   output [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WADDR,
-   output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WDATA,
-   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WE,
+   output [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WADDR_ex,
+   output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WDATA_ex,
+   output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WE_ex,
    // From WB
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_ready
 );
@@ -94,9 +94,9 @@ module ex
                .wb_valid               (wb_valid[i]),
                .wb_rob_id              (wb_rob_id[i * CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]),
                .wb_rob_bank            (wb_rob_bank[i * CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]),
-               .prf_WE                 (prf_WE[i]),
-               .prf_WADDR              (prf_WADDR[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]),
-               .prf_WDATA              (prf_WDATA[i * CONFIG_DW +: CONFIG_DW]),
+               .prf_WE_ex              (prf_WE_ex[i]),
+               .prf_WADDR_ex           (prf_WADDR_ex[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]),
+               .prf_WDATA_ex           (prf_WDATA_ex[i * CONFIG_DW +: CONFIG_DW]),
                .wb_fls                 (wb_fls[i]),
                .wb_fls_tgt             (wb_fls_tgt[i * `PC_W +: `PC_W]),
                .wb_exc                 (wb_exc[i]),
@@ -145,9 +145,9 @@ module ex
                 .wb_valid               (wb_valid[i]),           // Templated
                 .wb_rob_id              (wb_rob_id[i * CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]), // Templated
                 .wb_rob_bank            (wb_rob_bank[i * CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]), // Templated
-                .prf_WE                 (prf_WE[i]),             // Templated
-                .prf_WADDR              (prf_WADDR[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]), // Templated
-                .prf_WDATA              (prf_WDATA[i * CONFIG_DW +: CONFIG_DW]), // Templated
+                .prf_WE_ex              (prf_WE_ex[i]),          // Templated
+                .prf_WADDR_ex           (prf_WADDR_ex[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]), // Templated
+                .prf_WDATA_ex           (prf_WDATA_ex[i * CONFIG_DW +: CONFIG_DW]), // Templated
                 .wb_fls                 (wb_fls[i]),             // Templated
                 .wb_exc                 (wb_exc[i]),             // Templated
                 .wb_opera               (wb_opera[i * CONFIG_AW +: CONFIG_AW]), // Templated

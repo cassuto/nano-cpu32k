@@ -244,11 +244,14 @@ module ncpu64k
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_PRF_AW-1:0] prf_RADDR;// From U_RO of ro.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0] prf_RDATA;// From U_PRF of prf.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] prf_RE;// From U_RO of ro.v
-   wire [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WADDR;// From U_EX of ex.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WADDR;// From U_WB_MUX of wb_mux.v
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WADDR_ex;// From U_EX of ex.v
    wire [`NCPU_PRF_AW-1:0] prf_WADDR_lsu_epu;   // From U_CMT of cmt.v
-   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WDATA;// From U_EX of ex.v
+   wire [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WDATA;// From U_WB_MUX of wb_mux.v
+   wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WDATA_ex;// From U_EX of ex.v
    wire [CONFIG_DW-1:0] prf_WDATA_lsu_epu;      // From U_CMT of cmt.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WE; // From U_EX of ex.v
+   wire [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WE;// From U_WB_MUX of wb_mux.v
+   wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WE_ex;// From U_EX of ex.v
    wire                 prf_WE_lsu_epu;         // From U_CMT of cmt.v
    wire [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_alu_opc_bus;// From U_ID of id.v
    wire [`BPU_UPD_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_bpu_upd;// From U_ID of id.v
@@ -307,7 +310,7 @@ module ncpu64k
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_fls; // From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_opera;// From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_operb;// From U_EX of ex.v
-   wire [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready;// From U_ROB of rob.v, ...
+   wire [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready;// From U_WB_MUX of wb_mux.v, ...
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] wb_rob_bank;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] wb_rob_id;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_valid;// From U_EX of ex.v
@@ -669,9 +672,9 @@ module ncpu64k
        .wb_exc                          (wb_exc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .wb_opera                        (wb_opera[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .wb_operb                        (wb_operb[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .prf_WADDR                       (prf_WADDR[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .prf_WDATA                       (prf_WDATA[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .prf_WE                          (prf_WE[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .prf_WADDR_ex                    (prf_WADDR_ex[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .prf_WDATA_ex                    (prf_WDATA_ex[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .prf_WE_ex                       (prf_WE_ex[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
@@ -694,6 +697,27 @@ module ncpu64k
        .ex_rob_bank                     (ex_rob_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
        .ex_valid                        (ex_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .wb_ready                        (wb_ready[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]));
+   
+   wb_mux
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .CONFIG_DW                      (CONFIG_DW),
+        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
+        .CONFIG_P_WRITEBACK_WIDTH       (CONFIG_P_WRITEBACK_WIDTH))
+   U_WB_MUX
+      (/*AUTOINST*/
+       // Outputs
+       .wb_ready                        (wb_ready[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
+       .prf_WE                          (prf_WE[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
+       .prf_WADDR                       (prf_WADDR[`NCPU_PRF_AW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
+       .prf_WDATA                       (prf_WDATA[CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
+       // Inputs
+       .prf_WE_ex                       (prf_WE_ex[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
+       .prf_WADDR_ex                    (prf_WADDR_ex[`NCPU_PRF_AW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
+       .prf_WDATA_ex                    (prf_WDATA_ex[CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
+       .prf_WE_lsu_epu                  (prf_WE_lsu_epu),
+       .prf_WADDR_lsu_epu               (prf_WADDR_lsu_epu[`NCPU_PRF_AW-1:0]),
+       .prf_WDATA_lsu_epu               (prf_WDATA_lsu_epu[CONFIG_DW-1:0]));
    
    cmt
       #(/*AUTOINSTPARAM*/
@@ -892,17 +916,13 @@ module ncpu64k
       (/*AUTOINST*/
        // Outputs
        .prf_RDATA                       (prf_RDATA[(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0]),
-       .wb_ready                        (wb_ready[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        // Inputs
        .clk                             (clk),
        .prf_RE                          (prf_RE[(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0]),
        .prf_RADDR                       (prf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_PRF_AW-1:0]),
        .prf_WE                          (prf_WE[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        .prf_WADDR                       (prf_WADDR[`NCPU_PRF_AW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
-       .prf_WDATA                       (prf_WDATA[CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
-       .prf_WE_lsu_epu                  (prf_WE_lsu_epu),
-       .prf_WADDR_lsu_epu               (prf_WADDR_lsu_epu[`NCPU_PRF_AW-1:0]),
-       .prf_WDATA_lsu_epu               (prf_WDATA_lsu_epu[CONFIG_DW-1:0]));
+       .prf_WDATA                       (prf_WDATA[CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]));
        
 `ifdef ENABLE_DIFFTEST
    wire [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmtf_lrd;
