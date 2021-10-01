@@ -43,7 +43,7 @@
 
 #define INS32_OP_BARR   0x20
 #define INS32_OP_SYSCALL 0x21
-#define INS32_OP_RET    0x22
+#define INS32_OP_RETE    0x22
 #define INS32_OP_WMSR   0x23
 #define INS32_OP_RMSR   0x24
 

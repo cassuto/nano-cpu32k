@@ -545,12 +545,11 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         pc_nxt = raise_exception(pc, vect_ESYSCALL, 0, /*syscall*/ 1);
         goto handle_exception;
 
-    case INS32_OP_RET:
+    case INS32_OP_RETE:
         /* restore PSR and PC */
         msr.PSR = msr.EPSR;
-        dbg(2);
         pc_nxt = msr.EPC;
-        goto flush_pc;
+        goto handle_exception; /* RETE causes a special exception */
 
     case INS32_OP_WMSR:
         wmsr(get_reg(rs1) | uimm15, get_reg(rd));
