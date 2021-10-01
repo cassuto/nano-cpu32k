@@ -59,8 +59,7 @@ module rn_rat
    wire [`NCPU_PRF_AW*CW-1:0]          prs1_nobyp;
    wire [`NCPU_PRF_AW*CW-1:0]          prs2_nobyp;
    wire [`NCPU_PRF_AW*CW-1:0]          pfree_nobyp;
-   wire [`NCPU_PRF_AW*IW-1:0]          fl_prd_rev;
-   genvar i;
+   genvar i, k;
    integer x;
    
    mRF_nw_dio_r
@@ -113,17 +112,13 @@ module rn_rat
          end
    endgenerate
 
-   generate
-      for(i=0;i<IW;i=i+1)
-         assign fl_prd_rev[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = fl_prd[(IW-i-1) * `NCPU_PRF_AW +: `NCPU_PRF_AW];
-   endgenerate
-   
    // Bypass for RAW and WAW hazard
    generate
       for(i=1;i<IW;i=i+1)
          begin
             reg [i-1:0] raw_rev;
             reg [i-1:0] waw_rev;
+            wire [`NCPU_PRF_AW*i-1:0] fl_prd_rev;
             
             // Detect RAW hazard in the issue window
             always @(*)
@@ -144,6 +139,9 @@ module rn_rat
                      waw_rev[i-x-1] = waw_rev[i-x-1] | (lrd_we[x] &
                                                 ((lrd_we[i] & (lrd[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW]))));
                end
+            
+            for(k=0;k<i;k=k+1)
+               assign fl_prd_rev[k * `NCPU_PRF_AW +: `NCPU_PRF_AW] = fl_prd[(i-k-1) * `NCPU_PRF_AW +: `NCPU_PRF_AW];
             
             pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs1 (
                .sel({1'b1, raw_rev}),
