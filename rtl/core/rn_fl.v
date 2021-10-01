@@ -140,6 +140,10 @@ module rn_fl
                end
       end
    
-   mDFF_r #(.DW(N_PRF-1)) ff_afl (.CLK(clk), .RST(rst), .D(afl_nxt[N_PRF-1:1]), .Q(afl_ff) );
+   mDFF_r #(.DW(N_PRF-1), .RST_VECTOR({N_PRF-1{1'b1}})) ff_afl (.CLK(clk), .RST(rst), .D(afl_nxt[N_PRF-1:1]), .Q(afl_ff) );
+
+`ifdef ENABLE_DIFFTEST
+   wire [31:0] dbg_afl = {afl_ff, 1'b0};
+`endif
 
 endmodule
