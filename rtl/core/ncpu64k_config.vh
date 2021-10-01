@@ -147,7 +147,7 @@
 `define NCPU_EPU_RMSR 1
 
 // Frontend Exception
-`define NCPU_FE_W 5
+`define NCPU_FE_W 6
 `define NCPU_FE_ESYSCALL 0
 `define NCPU_FE_ERET 1
 `define NCPU_FE_EITM 2

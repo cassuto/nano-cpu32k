@@ -356,7 +356,7 @@ module id_dec
          // LSU insns
          (lsu_opc_bus[`NCPU_LSU_LOAD] | lsu_opc_bus[`NCPU_LSU_STORE] | lsu_opc_bus[`NCPU_LSU_BARR]) |
          // EPU opcodes
-         (|epu_opc_bus)
+         (|epu_opc_bus) | op_syscall | op_ret
       );
    
    // Insn that uses rs1 and imm15 as operands.
