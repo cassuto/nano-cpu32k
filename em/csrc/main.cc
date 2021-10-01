@@ -270,10 +270,10 @@ parse_args(int argc, char **argv)
                 args.enable_dcache = parse_bool(optarg, long_options[15].name);
                 break;
             case 16:
-                args.wave_begin = atol(optarg);
+                args.wave_begin = parse_int(optarg, "--wave-begin");
                 break;
             case 17:
-                args.wave_end = atol(optarg);
+                args.wave_end = parse_int(optarg, "--wave-end");
                 break;
             case 18:
                 args.commit_timeout_max = atol(optarg);

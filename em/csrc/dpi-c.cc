@@ -76,7 +76,7 @@ static void difftest_report_item(const char *item, cpu_unsigned_word_t right, cp
     dpic_emu_CPU->get_pc_queue()->dump();
 
     fprintf(stderr, "--------------------------------------------------------------\n");
-    fprintf(stderr, "[%lu cycle] PC Error!\n", dpic_emu->get_cycle());
+    fprintf(stderr, "[%lu cycle] Error!\n", dpic_emu->get_cycle());
     fprintf(stderr, "%s different: (right = %#8x, wrong = %#8x)\n", item, right, wrong);
     fprintf(stderr, "--------------------------------------------------------------\n");
 }
@@ -237,9 +237,9 @@ void dpic_step()
             }
             if (emu_event.excp != rtl_excp[i])
             {
-                difftest_report_item("EXCEPTION?", emu_event.excp, rtl_excp[i]);
-                validated = false;
-                break;
+                difftest_report_item("EXCEPTION occurred?", emu_event.excp, rtl_excp[i]);
+                //validated = false;
+                //break;
             }
         }
     }
