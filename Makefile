@@ -5,6 +5,7 @@ GTKWAVE = e:/gtkwave-win32/gtkwave/bin/gtkwave
 PYTHON3 = python3
 
 NUM_JOBS = 8
+NUM_EMU_THREADS = 8
 SRC_DIR = rtl
 TESTBENCH_DIR = testbench
 PDK_RTL_DIR = pdk-lib/rtl
@@ -40,6 +41,7 @@ PDK_SRCS += $(PDK_RTL_DIR)/S011HD1P_X32Y2D128.v \
 SIM_INCS = -I$(SRC_DIR)/core
 SIM_DEFS =
 SIM_FLAGS = $(SIM_DEFS) $(SIM_INCS) -Wno-UNUSED
+#SIM_FLAGS += --threads $(NUM_EMU_THREADS) -threads-dpi none
 CFLAGS = -Wall -Wno-attributes -g -I../em/csrc $(EM_CXXFLAGS)
 LDFLAGS = -g $(EM_LDFLAGS)
 SIM_FLAGS += +define+IN_VERILATOR_SIM=1+ --exe --trace --assert -LDFLAGS "$(LDFLAGS)" -CFLAGS "$(CFLAGS)" -j $(NUM_JOBS) -Mdir build/ -o emu
