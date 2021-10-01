@@ -29,6 +29,7 @@ module difftest
    input [CONFIG_P_ROB_DEPTH-1:0]      rob_que_rptr [(1<<CONFIG_P_COMMIT_WIDTH)-1:0],
    // From CMT
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_dft_fire,
+   input                               cmt_exc_flush,
    input [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pc,
    input [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmtf_lrd,
    input [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmtf_lrd_dat,
@@ -45,6 +46,7 @@ module difftest
    // Difftest access point
    //
    wire [CW-1:0] commit_valid_ff;
+   wire commit_excp_ff;
    wire [`PC_W*CW-1:0] commit_pc_ff;
    wire [`NCPU_INSN_DW*CW-1:0] commit_ins_ff; 
    wire [`NCPU_LRF_AW*CW-1:0] commit_rf_waddr_ff;
@@ -77,6 +79,7 @@ module difftest
    endgenerate
    
    mDFF_r #(.DW(CW)) ff_commit_valid (.CLK(clk), .RST(rst), .D(cmt_dft_fire), .Q(commit_valid_ff));
+   mDFF_r #(.DW(1)) ff_commit_excp (.CLK(clk), .RST(rst), .D(cmt_exc_flush), .Q(commit_excp_ff));
    mDFF #(.DW(`PC_W*CW)) ff_commit_pc (.CLK(clk), .D(cmt_pc), .Q(commit_pc_ff));
    mDFF #(.DW(`NCPU_INSN_DW*CW)) ff_commit_ins (.CLK(clk), .D(cmt_ins), .Q(commit_ins_ff));
    assign commit_rf_waddr_ff = cmtf_lrd;
@@ -97,7 +100,8 @@ module difftest
          .insn                            (commit_ins_ff),
          .wen                             (commit_rf_we_ff),
          .wnum                            (commit_rf_waddr_ff),
-         .wdata                           (commit_rf_wdat_ff)
+         .wdata                           (commit_rf_wdat_ff),
+         .excp                            ({{CW-1{1'b0}}, commit_excp_ff})
       );
       
    difftest_sync_irqc

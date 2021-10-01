@@ -43,6 +43,7 @@ static int rtl_insn[rtl_num_channel];
 static svBit rtl_wen[rtl_num_channel];
 static char rtl_wnum[rtl_num_channel];
 static int rtl_wdata[rtl_num_channel];
+static svBit rtl_excp[rtl_num_channel];
 static int rtl_irqc_irr;
 
 void startup_difftest(CPU *cpu_, Emu *emu_, uint64_t commit_timeout_max_)
@@ -106,7 +107,7 @@ static void difftest_report_reg(svBit valid[], int pc[])
     for (int i = 0; i < 32; i++)
     {
         cpu_word_t right = dpic_emu_CPU->get_reg(i);
-        fprintf(stderr, "r%-2d = %-8x%c", i, right, ((i+1)%4==0 ? '\n' : ' '));
+        fprintf(stderr, "r%-2d = %-8x%c", i, right, ((i + 1) % 4 == 0 ? '\n' : ' '));
     }
     fprintf(stderr, "\n");
 
@@ -133,7 +134,8 @@ void dpic_commit_inst(
     int insn,
     svBit wen,
     char wnum,
-    int wdata)
+    int wdata,
+    svBit excp)
 {
     if (!dpic_enable)
         return;
@@ -145,6 +147,7 @@ void dpic_commit_inst(
     rtl_wen[(unsigned int)cmt_index] = wen;
     rtl_wnum[(unsigned int)cmt_index] = wnum;
     rtl_wdata[(unsigned int)cmt_index] = wdata;
+    rtl_excp[(unsigned int)cmt_index] = excp;
 }
 
 void dpic_step()
@@ -182,30 +185,33 @@ void dpic_step()
         {
             rtl_pc = rtl_cmt_pc[i];
             rtl_pc_queue->push(rtl_cmt_pc[i], rtl_insn[i]);
-            if (rtl_wen[i])
+            if (!rtl_excp[i])
             {
-                if (rtl_wnum[i] == 0)
+                if (rtl_wen[i])
                 {
-                    fprintf(stderr, "BUG ON: Invalid writing to r0 reg!\n");
-                    validated = false;
-                    break;
+                    if (rtl_wnum[i] == 0)
+                    {
+                        fprintf(stderr, "BUG ON: Invalid writing to r0 reg!\n");
+                        validated = false;
+                        break;
+                    }
+                    rtl_regfile[(unsigned)rtl_wnum[i]] = rtl_wdata[i];
                 }
-                rtl_regfile[(unsigned)rtl_wnum[i]] = rtl_wdata[i];
-            }
 
-            /* Handle RMSR carefully */
-            if (INS32_GET_BITS(rtl_insn[i], OPCODE) == INS32_OP_RMSR)
-            {
-                uint8_t rs1 = INS32_GET_BITS(rtl_insn[i], RS1);
-                uint8_t rd = INS32_GET_BITS(rtl_insn[i], RD);
-                uint16_t uimm15 = INS32_GET_BITS(rtl_insn[i], IMM15);
-                cpu_unsigned_word_t val = rtl_regfile[rd];
-                switch (rtl_regfile[rs1] | uimm15)
+                /* Handle RMSR carefully */
+                if (INS32_GET_BITS(rtl_insn[i], OPCODE) == INS32_OP_RMSR)
                 {
-                case MSR_TSR:
-                    /* Synchronize the value of TSR before reading */
-                    dpic_emu_CPU->msr_set_tsr(val);
-                    break;
+                    uint8_t rs1 = INS32_GET_BITS(rtl_insn[i], RS1);
+                    uint8_t rd = INS32_GET_BITS(rtl_insn[i], RD);
+                    uint16_t uimm15 = INS32_GET_BITS(rtl_insn[i], IMM15);
+                    cpu_unsigned_word_t val = rtl_regfile[rd];
+                    switch (rtl_regfile[rs1] | uimm15)
+                    {
+                    case MSR_TSR:
+                        /* Synchronize the value of TSR before reading */
+                        dpic_emu_CPU->msr_set_tsr(val);
+                        break;
+                    }
                 }
             }
 
@@ -226,6 +232,12 @@ void dpic_step()
             if (!emu_event.excp && rtl_insn[i] != emu_event.insn)
             {
                 difftest_report_item("INST", emu_event.insn, rtl_insn[i]);
+                validated = false;
+                break;
+            }
+            if (emu_event.excp != rtl_excp[i])
+            {
+                difftest_report_item("EXCEPTION?", emu_event.excp, rtl_excp[i]);
                 validated = false;
                 break;
             }
