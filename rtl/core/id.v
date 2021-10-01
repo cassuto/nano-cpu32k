@@ -156,7 +156,7 @@ module id
    mDFF_l # (.DW(IW)) ff_rn_lrs2_re (.CLK(clk), .LOAD(p_ce), .D(rf_rs2_re), .Q(rn_lrs2_re) );
    mDFF_l # (.DW(IW)) ff_rn_lrd_we (.CLK(clk), .LOAD(p_ce), .D(rf_we), .Q(rn_lrd_we) );
    mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_rn_lrd (.CLK(clk), .LOAD(p_ce), .D(rf_waddr), .Q(rn_lrd) );
-   mDFF_l # (.DW(CONFIG_P_ISSUE_WIDTH+1)) ff_rn_push_size (.CLK(clk), .LOAD(p_ce), .D(id_pop_cnt), .Q(rn_push_size) );
+   mDFF_lr # (.DW(CONFIG_P_ISSUE_WIDTH+1)) ff_rn_push_size (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(id_pop_cnt & {CONFIG_P_ISSUE_WIDTH+1{~flush}}), .Q(rn_push_size) );
    
    
 endmodule

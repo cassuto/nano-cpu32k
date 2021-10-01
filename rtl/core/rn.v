@@ -222,7 +222,7 @@ module rn
    mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_pfree (.CLK(clk), .LOAD(p_ce_s1), .D(rat_pfree), .Q(issue_pfree) );
    mDFF_l # (.DW(IW)) ff_issue_prd_we (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd_we), .Q(issue_prd_we) );
    mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_lrd (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd), .Q(issue_lrd) );
-   mDFF_l # (.DW(CONFIG_P_ISSUE_WIDTH+1)) ff_issue_push_size (.CLK(clk), .LOAD(p_ce_s1), .D(rn_push_size), .Q(issue_push_size) );
+   mDFF_lr # (.DW(CONFIG_P_ISSUE_WIDTH+1)) ff_issue_push_size (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush), .D(rn_push_size & {CONFIG_P_ISSUE_WIDTH+1{~flush}}), .Q(issue_push_size) );
    
    assign issue_push = s1o_valid;
    
