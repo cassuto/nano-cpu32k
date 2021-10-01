@@ -75,7 +75,8 @@ module ex_pipe
    output                              wb_fls,
    output                              wb_exc,
    output [CONFIG_AW-1:0]              wb_opera,
-   output [CONFIG_DW-1:0]              wb_operb
+   output [CONFIG_DW-1:0]              wb_operb,
+   output [`PC_W-1:0]                  wb_fls_tgt
 );
    /*AUTOWIRE*/
    /*AUTOINPUT*/
@@ -195,14 +196,10 @@ module ex_pipe
    // | EPU | operand1+imm |
    // | LSU | operand1+imm |
    // |(EH) | FE           |
-   // |(SF) | fls_tgt      |
    // +-----+--------------+
-   assign s1i_wb_opera = (s1i_wb_fls)
-                           ? {{CONFIG_DW-`PC_W{1'b0}}, s1i_se_tgt}
-                           : (s1i_wb_exc)
-                              ? {{CONFIG_DW-`NCPU_FE_W{1'b0}}, ex_fe}
-                              : s1i_wb_lsa;
-   
+   assign s1i_wb_opera = (s1i_wb_exc)
+                           ? {{CONFIG_DW-`NCPU_FE_W{1'b0}}, ex_fe}
+                           : s1i_wb_lsa;
       
    // +-----+-------------+
    // | FU  | operb       |
@@ -273,6 +270,7 @@ module ex_pipe
    mDFF_l # (.DW(1)) ff_wb_exc (.CLK(clk), .LOAD(p_ce|flush), .D(s1i_wb_exc), .Q(wb_exc) );
    mDFF_l # (.DW(CONFIG_AW)) ff_wb_opera (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_opera), .Q(wb_opera) );
    mDFF_l # (.DW(CONFIG_DW)) ff_wb_operb (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_operb), .Q(wb_operb) );
+   mDFF_l # (.DW(`PC_W)) ff_wb_se_tgt (.CLK(clk), .LOAD(p_ce), .D(s1i_se_tgt), .Q(wb_fls_tgt) );
    
    assign prf_WE_ex = (s1o_prf_we & wb_valid);
    

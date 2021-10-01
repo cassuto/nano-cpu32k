@@ -72,6 +72,7 @@ module ex
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_exc,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_opera,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_operb,
+   output [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_fls_tgt,
    output [`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WADDR_ex,
    output [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WDATA_ex,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] prf_WE_ex,
@@ -98,11 +99,11 @@ module ex
                .prf_WADDR_ex           (prf_WADDR_ex[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]),
                .prf_WDATA_ex           (prf_WDATA_ex[i * CONFIG_DW +: CONFIG_DW]),
                .wb_fls                 (wb_fls[i]),
-               .wb_fls_tgt             (wb_fls_tgt[i * `PC_W +: `PC_W]),
                .wb_exc                 (wb_exc[i]),
                .wb_opera               (wb_opera[i * CONFIG_AW +: CONFIG_AW]),
                .wb_operb               (wb_operb[i * CONFIG_DW +: CONFIG_DW]),
-
+               .wb_fls_tgt             (wb_fls_tgt[i * `PC_W +: `PC_W]),
+               
                .ex_valid               (ex_valid[i]),
                .ex_alu_opc_bus         (ex_alu_opc_bus[i * `NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
                .ex_lpu_opc_bus         (ex_lpu_opc_bus[i * `NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]),
@@ -152,6 +153,7 @@ module ex
                 .wb_exc                 (wb_exc[i]),             // Templated
                 .wb_opera               (wb_opera[i * CONFIG_AW +: CONFIG_AW]), // Templated
                 .wb_operb               (wb_operb[i * CONFIG_DW +: CONFIG_DW]), // Templated
+                .wb_fls_tgt             (wb_fls_tgt[i * `PC_W +: `PC_W]), // Templated
                 // Inputs
                 .clk                    (clk),
                 .rst                    (rst),

@@ -168,6 +168,7 @@ module ncpu64k
    wire [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_exc;// From U_ROB of rob.v
    wire [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire;// From U_CMT of cmt.v
    wire [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fls;// From U_ROB of rob.v
+   wire [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fls_tgt;// From U_ROB of rob.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_is_bcc;// From U_ROB of rob.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_is_breg;// From U_ROB of rob.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] cmt_is_brel;// From U_ROB of rob.v
@@ -308,6 +309,7 @@ module ncpu64k
    wire                 rob_ready;              // From U_ROB of rob.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_exc; // From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_fls; // From U_EX of ex.v
+   wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_fls_tgt;// From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_opera;// From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_operb;// From U_EX of ex.v
    wire [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready;// From U_WB_MUX of wb_mux.v, ...
@@ -672,6 +674,7 @@ module ncpu64k
        .wb_exc                          (wb_exc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .wb_opera                        (wb_opera[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .wb_operb                        (wb_operb[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
+       .wb_fls_tgt                      (wb_fls_tgt[`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .prf_WADDR_ex                    (prf_WADDR_ex[`NCPU_PRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .prf_WDATA_ex                    (prf_WDATA_ex[CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .prf_WE_ex                       (prf_WE_ex[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
@@ -829,6 +832,7 @@ module ncpu64k
        .cmt_exc                         (cmt_exc[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        .cmt_opera                       (cmt_opera[CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        .cmt_operb                       (cmt_operb[CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_fls_tgt                     (cmt_fls_tgt[`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        .dbus_ARREADY                    (dbus_ARREADY),
        .dbus_RVALID                     (dbus_RVALID),
        .dbus_RDATA                      (dbus_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
@@ -881,6 +885,7 @@ module ncpu64k
        .cmt_exc                         (cmt_exc[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        .cmt_opera                       (cmt_opera[CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        .cmt_operb                       (cmt_operb[CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
+       .cmt_fls_tgt                     (cmt_fls_tgt[`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
@@ -904,6 +909,7 @@ module ncpu64k
        .wb_exc                          (wb_exc[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        .wb_opera                        (wb_opera[CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        .wb_operb                        (wb_operb[CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
+       .wb_fls_tgt                      (wb_fls_tgt[`PC_W*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        .cmt_pop_size                    (cmt_pop_size[CONFIG_P_COMMIT_WIDTH:0]));
        
    prf

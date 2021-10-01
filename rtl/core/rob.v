@@ -64,6 +64,7 @@ module rob
    input [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_exc,
    input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_opera,
    input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_operb,
+   input [`PC_W*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_fls_tgt,
    // To WB
    output [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready,
    // To CMT
@@ -83,6 +84,7 @@ module rob
    output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_exc,
    output [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_opera,
    output [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_operb,
+   output [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fls_tgt,
    // From CMT
    input [CONFIG_P_COMMIT_WIDTH:0]     cmt_pop_size
 );
@@ -104,7 +106,8 @@ module rob
    localparam BANKS                    = (1<<P_BANKS);
    localparam [CONFIG_P_ROB_DEPTH-1:0] R_1 = {{CONFIG_P_ROB_DEPTH-1{1'b0}}, 1'b1};
    localparam vBANK_DW                 = (CONFIG_DW +
-                                          CONFIG_DW);
+                                          CONFIG_DW +
+                                          `PC_W);
    wire [P_BANKS-1:0]                  head_ff, tail_ff;
    wire [P_BANKS-1:0]                  head_nxt, tail_nxt;
    wire [P_BANKS-1:0]                  head_l                        [CW-1:0];
@@ -351,7 +354,7 @@ module rob
                                        wb_exc[j]);
                      que_wb_vbank[i] = que_wb_vbank[i] |
                                        ({vBANK_DW{wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH])}} &
-                                       {wb_operb[j*CONFIG_DW +: CONFIG_DW], wb_opera[j*CONFIG_DW +: CONFIG_DW]});
+                                       {wb_fls_tgt[j*`PC_W +: `PC_W], wb_operb[j*CONFIG_DW +: CONFIG_DW], wb_opera[j*CONFIG_DW +: CONFIG_DW]});
                   end
             end
    endgenerate
@@ -382,7 +385,8 @@ module rob
                      cmt_is_breg[i] } = que_dout[head_l[i]];
             assign cmt_fls[i] = que_fls[head_l[i]];
             assign cmt_exc[i] = que_exc[head_l[i]];
-            assign {cmt_operb[i*CONFIG_DW +: CONFIG_DW],
+            assign {cmt_fls_tgt[i*`PC_W +: `PC_W],
+                     cmt_operb[i*CONFIG_DW +: CONFIG_DW],
                      cmt_opera[i*CONFIG_DW +: CONFIG_DW]} = que_vbank[head_l[i]];
             assign ent_valid[i] = (que_valid[head_l[i]] & que_rdy[head_l[i]]);
          end

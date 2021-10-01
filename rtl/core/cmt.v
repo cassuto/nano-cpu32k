@@ -74,6 +74,7 @@ module cmt
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_exc,
    input [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_opera,
    input [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_operb,
+   input [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fls_tgt,
    // To ROB
    output [CONFIG_P_COMMIT_WIDTH:0]     cmt_pop_size,
    output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire,
@@ -308,7 +309,7 @@ module cmt
    
    assign s1i_se_fls = (cmt_fls[0] | refetch) & ~s1o_se_fls;
    assign s1i_se_tgt = (cmt_fls[0])
-                           ? cmt_opera[`PC_W-1:0]
+                           ? cmt_fls_tgt[0 * `PC_W +: `PC_W]
                            : cmt_npc_0 /* (refetch) */;
    
    mDFF_lr #(.DW(1)) ff_s1o_se_fls (.CLK(clk), .RST(rst), .LOAD(cmt_fire[0]|s1o_se_fls), .D(s1i_se_fls), .Q(s1o_se_fls) );
@@ -333,8 +334,8 @@ module cmt
 
    /* cmt_lsu AUTO_TEMPLATE(
          .cmt_valid                    (lsu_req_valid),
-         .cmt_wdat                     (cmt_operb[]),
-         .cmt_lsa                      (cmt_opera[]),
+         .cmt_wdat                     (cmt_operb[0 * CONFIG_DW +: CONFIG_DW]),
+         .cmt_lsa                      (cmt_opera[0 * CONFIG_DW +: CONFIG_DW]),
       )*/
    cmt_lsu
       #(/*AUTOINSTPARAM*/
@@ -402,8 +403,8 @@ module cmt
        .p_ce_s2                         (p_ce_s2),
        .cmt_valid                       (lsu_req_valid),         // Templated
        .cmt_lsu_opc_bus                 (cmt_lsu_opc_bus[`NCPU_LSU_IOPW-1:0]),
-       .cmt_lsa                         (cmt_opera[CONFIG_DW-1:0]), // Templated
-       .cmt_wdat                        (cmt_operb[CONFIG_DW-1:0]), // Templated
+       .cmt_lsa                         (cmt_opera[0 * CONFIG_DW +: CONFIG_DW]), // Templated
+       .cmt_wdat                        (cmt_operb[0 * CONFIG_DW +: CONFIG_DW]), // Templated
        .dbus_ARREADY                    (dbus_ARREADY),
        .dbus_RVALID                     (dbus_RVALID),
        .dbus_RDATA                      (dbus_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]),
@@ -615,7 +616,7 @@ module cmt
    assign bpu_wb_taken = (cmt_bpu_upd[`BPU_UPD_TAKEN] ^ cmt_fls[0]); // Extract the first channel
    assign bpu_wb_pc = cmt_pc[0 +: `PC_W];
    assign bpu_wb_npc_act = (cmt_fls[0])
-                              ? cmt_opera[`PC_W-1:0]
+                              ? cmt_fls_tgt[0 * `PC_W +: `PC_W]
                               : cmt_bpu_upd[`BPU_UPD_TGT]; // Extract the first channel
    assign bpu_wb_upd = cmt_bpu_upd[0*`BPU_UPD_W +: `BPU_UPD_W];
    
