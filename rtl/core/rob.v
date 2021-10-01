@@ -130,6 +130,8 @@ module rob
    wire                                que_fls                       [BANKS-1:0];
    wire                                que_exc                       [BANKS-1:0];
    wire [vBANK_DW-1:0]                 que_vbank                     [BANKS-1:0];
+   wire [CW-1:0]                       ent_valid;
+   reg [CW-1:0]                        cmt_valid_;
    genvar i, k;
    integer j;
 
@@ -382,9 +384,18 @@ module rob
             assign cmt_exc[i] = que_exc[head_l[i]];
             assign {cmt_operb[i*CONFIG_DW +: CONFIG_DW],
                      cmt_opera[i*CONFIG_DW +: CONFIG_DW]} = que_vbank[head_l[i]];
-            assign cmt_valid[i] = (que_valid[head_l[i]] & que_rdy[head_l[i]]);
+            assign ent_valid[i] = (que_valid[head_l[i]] & que_rdy[head_l[i]]);
          end
    endgenerate
+   
+   // Ensure in-order commit
+   always @(*)
+      begin
+         cmt_valid_[0] = ent_valid[0];
+         for(j=1;j<CW;j=j+1)
+            cmt_valid_[j] = cmt_valid_[j-1] & ent_valid[j];
+      end
+   assign cmt_valid = cmt_valid_;
    
    assign rob_ready = &que_ready;
    
