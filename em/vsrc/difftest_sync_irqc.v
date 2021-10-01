@@ -11,12 +11,7 @@ module difftest_sync_irqc
    input clk,
    input [CONFIG_NUM_IRQ-1:0] irqc_irr
 );
-   reg [CONFIG_NUM_IRQ-1:0] irqc_irr_ff = 'b0;
-
    always @(posedge clk)
-      begin
-         irqc_irr_ff <= irqc_irr;
-         if (irqc_irr_ff != irqc_irr)
-            dpic_sync_irqc(irqc_irr);
-      end
+      dpic_sync_irqc(irqc_irr);
+
 endmodule

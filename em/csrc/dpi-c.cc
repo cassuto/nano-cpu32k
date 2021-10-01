@@ -43,6 +43,7 @@ static int rtl_insn[rtl_num_channel];
 static svBit rtl_wen[rtl_num_channel];
 static char rtl_wnum[rtl_num_channel];
 static int rtl_wdata[rtl_num_channel];
+static int rtl_irqc_irr;
 
 void startup_difftest(CPU *cpu_, Emu *emu_, uint64_t commit_timeout_max_)
 {
@@ -122,11 +123,7 @@ static void difftest_report_reg(svBit valid[], int pc[])
 
 void dpic_sync_irqc(int irqc_irr)
 {
-    if (!dpic_enable)
-        return;
-
-    /* Synchronize the asynchronous exception from RTL */
-    dpic_emu_CPU->irqc_set_irr(irqc_irr);
+    rtl_irqc_irr = irqc_irr;
 }
 
 void dpic_commit_inst(
@@ -211,6 +208,9 @@ void dpic_step()
                     break;
                 }
             }
+
+            /* Synchronize the asynchronous exception from RTL */
+            dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr);
 
             ArchEvent emu_event;
             vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
