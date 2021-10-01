@@ -966,7 +966,7 @@ module ncpu64k
          .rob_push_size                   (U_ROB.rob_push_size),
          .rob_head_l                      (U_ROB.head_l),
          .rob_que_rptr                    (U_ROB.que_rptr),
-         .cmt_fire                        (U_CMT.cmt_fire),
+         .cmt_dft_fire                    (U_CMT.cmt_dft_fire),
          .cmt_pc                          (U_CMT.cmt_pc),
          .cmtf_lrd                        (dft_cmtf_lrd),
          .cmtf_lrd_dat                    (dft_cmtf_lrd_dat),

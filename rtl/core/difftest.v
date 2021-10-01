@@ -28,7 +28,7 @@ module difftest
    input [CONFIG_P_COMMIT_WIDTH-1:0]   rob_head_l   [(1<<CONFIG_P_COMMIT_WIDTH)-1:0],
    input [CONFIG_P_ROB_DEPTH-1:0]      rob_que_rptr [(1<<CONFIG_P_COMMIT_WIDTH)-1:0],
    // From CMT
-   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire,
+   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_dft_fire,
    input [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pc,
    input [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmtf_lrd,
    input [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmtf_lrd_dat,
@@ -76,7 +76,7 @@ module difftest
          end
    endgenerate
    
-   mDFF_r #(.DW(CW)) ff_commit_valid (.CLK(clk), .RST(rst), .D(cmt_fire), .Q(commit_valid_ff));
+   mDFF_r #(.DW(CW)) ff_commit_valid (.CLK(clk), .RST(rst), .D(cmt_dft_fire), .Q(commit_valid_ff));
    mDFF #(.DW(`PC_W*CW)) ff_commit_pc (.CLK(clk), .D(cmt_pc), .Q(commit_pc_ff));
    mDFF #(.DW(`NCPU_INSN_DW*CW)) ff_commit_ins (.CLK(clk), .D(cmt_ins), .Q(commit_ins_ff));
    assign commit_rf_waddr_ff = cmtf_lrd;

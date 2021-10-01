@@ -326,6 +326,11 @@ module cmt
    assign cmt_ready_2_fire = (cmt_valid & cmt_mask);
    assign cmt_fire = (cmt_ready_2_fire & {CW{cmt_ce & ~flush}});
 
+`ifdef ENABLE_DIFFTEST
+   // Exceptions should be committed to difftest for inspection
+   wire [CW-1:0] cmt_dft_fire = (cmt_ready_2_fire & {CW{cmt_ce & ~s1o_se_fls}});
+`endif
+
    assign pipe_req = (cmt_ready_2_fire[0] & (lsu_req[0] | epu_req[0]));
    assign lsu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_ready_2_fire[0] & lsu_req[0]);
    assign epu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_ready_2_fire[0] & epu_req[0]);
