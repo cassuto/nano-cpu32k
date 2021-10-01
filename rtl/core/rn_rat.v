@@ -116,19 +116,27 @@ module rn_rat
    generate
       for(i=1;i<IW;i=i+1)
          begin
-            reg [i-1:0] raw_rev;
+            reg [i-1:0] raw_rs1_rev;
+            reg [i-1:0] raw_rs2_rev;
             reg [i-1:0] waw_rev;
             wire [`NCPU_PRF_AW*i-1:0] fl_prd_rev;
             
             // Detect RAW hazard in the issue window
             always @(*)
                begin
-                  raw_rev[i-1] = 'b0;
+                  raw_rs1_rev[i-1] = 'b0;
                   for(x=0;x<i;x=x+1)
-                     raw_rev[i-x-1] = raw_rev[i-x-1] |
-                                          (lrd_we[x] &
-                                             ((lrs1[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]) |
-                                                (lrs2[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ])));
+                     raw_rs1_rev[i-x-1] = raw_rs1_rev[i-x-1] |
+                                             (lrd_we[x] &
+                                             (lrs1[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]));
+               end
+            always @(*)
+               begin
+                  raw_rs2_rev[i-1] = 'b0;
+                  for(x=0;x<i;x=x+1)
+                     raw_rs2_rev[i-x-1] = raw_rs2_rev[i-x-1] |
+                                             (lrd_we[x] &
+                                             (lrs2[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]));
                end
             
             // Detect WAW hazard in the issue window
@@ -144,12 +152,12 @@ module rn_rat
                assign fl_prd_rev[k * `NCPU_PRF_AW +: `NCPU_PRF_AW] = fl_prd[(i-k-1) * `NCPU_PRF_AW +: `NCPU_PRF_AW];
             
             pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs1 (
-               .sel({1'b1, raw_rev}),
+               .sel({1'b1, raw_rs1_rev}),
                .din({prs1_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
                .dout(rat_prs1[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
             );
             pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs2 (
-               .sel({1'b1, raw_rev}),
+               .sel({1'b1, raw_rs2_rev}),
                .din({prs2_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
                .dout(rat_prs2[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
             );
