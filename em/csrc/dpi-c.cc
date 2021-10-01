@@ -182,7 +182,8 @@ void dpic_step()
                 if (rtl_wnum[i] == 0)
                 {
                     fprintf(stderr, "BUG ON: Invalid writing to r0 reg!");
-                    assert(0);
+                    dpic_emu->finish();
+                    panic(1);
                 }
                 rtl_regfile[(unsigned)rtl_wnum[i]] = rtl_wdata[i];
             }
