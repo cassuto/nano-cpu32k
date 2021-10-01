@@ -59,4 +59,14 @@ module mRF_nwnr
          end
    endgenerate
    
+   // synthesis translate_off
+`ifndef SYNTHESIS
+
+   initial
+      for(j=0;j<(1<<AW);j=j+1)
+         regfile[j] = {DW{{$random}[0]}}; // random value since there is no reset port
+
+`endif
+   // synthesis translate_on
+   
 endmodule

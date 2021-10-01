@@ -48,4 +48,14 @@ module mRF_1wr
 
    assign RDATA = ff_dout;
 
+   // synthesis translate_off
+`ifndef SYNTHESIS
+
+   initial
+      for(integer j=0;j<(1<<AW);j=j+1)
+         regfile[j] = {DW{{$random}[0]}}; // random value since there is no reset port
+
+`endif
+   // synthesis translate_on
+   
 endmodule

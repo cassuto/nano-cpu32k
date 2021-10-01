@@ -43,7 +43,6 @@ static int rtl_insn[rtl_num_channel];
 static svBit rtl_wen[rtl_num_channel];
 static char rtl_wnum[rtl_num_channel];
 static int rtl_wdata[rtl_num_channel];
-static int rtl_irqc_irr[rtl_num_channel];
 
 void startup_difftest(CPU *cpu_, Emu *emu_, uint64_t commit_timeout_max_)
 {
@@ -121,6 +120,15 @@ static void difftest_report_reg(svBit valid[], int pc[])
     fprintf(stderr, "--------------------------------------------------------------\n");
 }
 
+void dpic_sync_irqc(int irqc_irr)
+{
+    if (!dpic_enable)
+        return;
+
+    /* Synchronize the asynchronous exception from RTL */
+    dpic_emu_CPU->irqc_set_irr(irqc_irr);
+}
+
 void dpic_commit_inst(
     int cmt_index,
     svBit valid,
@@ -128,8 +136,7 @@ void dpic_commit_inst(
     int insn,
     svBit wen,
     char wnum,
-    int wdata,
-    int irqc_irr)
+    int wdata)
 {
     if (!dpic_enable)
         return;
@@ -141,7 +148,6 @@ void dpic_commit_inst(
     rtl_wen[(unsigned int)cmt_index] = wen;
     rtl_wnum[(unsigned int)cmt_index] = wnum;
     rtl_wdata[(unsigned int)cmt_index] = wdata;
-    rtl_irqc_irr[(unsigned int)cmt_index] = irqc_irr;
 }
 
 void dpic_step()
@@ -206,9 +212,6 @@ void dpic_step()
                 }
             }
 
-            /* Synchronize the asynchronous exception from RTL */
-            dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr[i]);
-
             ArchEvent emu_event;
             vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
             vm_addr_t emu_npc = dpic_emu_CPU->step(emu_pc, true, &emu_event);
@@ -240,72 +243,4 @@ void dpic_step()
     {
         difftest_terminate();
     }
-}
-
-void dpic_regfile(
-    int r0,
-    int r1,
-    int r2,
-    int r3,
-    int r4,
-    int r5,
-    int r6,
-    int r7,
-    int r8,
-    int r9,
-    int r10,
-    int r11,
-    int r12,
-    int r13,
-    int r14,
-    int r15,
-    int r16,
-    int r17,
-    int r18,
-    int r19,
-    int r20,
-    int r21,
-    int r22,
-    int r23,
-    int r24,
-    int r25,
-    int r26,
-    int r27,
-    int r28,
-    int r29,
-    int r30,
-    int r31)
-{
-    /*rtl_regfile[0] = r0;
-    rtl_regfile[1] = r1;
-    rtl_regfile[2] = r2;
-    rtl_regfile[3] = r3;
-    rtl_regfile[4] = r4;
-    rtl_regfile[5] = r5;
-    rtl_regfile[6] = r6;
-    rtl_regfile[7] = r7;
-    rtl_regfile[8] = r8;
-    rtl_regfile[9] = r9;
-    rtl_regfile[10] = r10;
-    rtl_regfile[11] = r11;
-    rtl_regfile[12] = r12;
-    rtl_regfile[13] = r13;
-    rtl_regfile[14] = r14;
-    rtl_regfile[15] = r15;
-    rtl_regfile[16] = r16;
-    rtl_regfile[17] = r17;
-    rtl_regfile[18] = r18;
-    rtl_regfile[19] = r19;
-    rtl_regfile[20] = r20;
-    rtl_regfile[21] = r21;
-    rtl_regfile[22] = r22;
-    rtl_regfile[23] = r23;
-    rtl_regfile[24] = r24;
-    rtl_regfile[25] = r25;
-    rtl_regfile[26] = r26;
-    rtl_regfile[27] = r27;
-    rtl_regfile[28] = r28;
-    rtl_regfile[29] = r29;
-    rtl_regfile[30] = r30;
-    rtl_regfile[31] = r31;*/
 }
