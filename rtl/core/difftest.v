@@ -66,7 +66,10 @@ module difftest
    
    // Extra pipeline in ISSUE & ROB
    reg [`NCPU_INSN_DW-1:0] rob_ins [CW-1:0][ROB_DEPTH-1:0];
-   wire [`NCPU_INSN_DW*IW-1:0] cmt_ins;
+   wire [`NCPU_INSN_DW*CW-1:0] cmt_ins;
+   initial
+      rob_ins[0][1] = 'h123;
+      
    generate
       for(i=0;i<CW;i=i+1)
          begin
