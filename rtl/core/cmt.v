@@ -424,7 +424,7 @@ module cmt
    /* cmt_epu AUTO_TEMPLATE(
          .cmt_valid                    (epu_req_valid),
          .cmt_wdat                     (cmt_operb[]),
-         .cmt_waddr                    (cmt_opera[]),
+         .cmt_addr                     (cmt_opera[]),
          .cmt_fe                       (cmt_opera[`NCPU_FE_W-1:0]),
          .cmt_npc                      (cmt_npc_0[]),
          .s2i_EDTM                     (lsu_EDTM),
@@ -511,7 +511,7 @@ module cmt
        .cmt_valid                       (epu_req_valid),         // Templated
        .cmt_epu_opc_bus                 (cmt_epu_opc_bus[`NCPU_EPU_IOPW-1:0]),
        .cmt_fe                          (cmt_opera[`NCPU_FE_W-1:0]), // Templated
-       .cmt_waddr                       (cmt_opera[CONFIG_DW-1:0]), // Templated
+       .cmt_addr                        (cmt_opera[CONFIG_DW-1:0]), // Templated
        .cmt_wdat                        (cmt_operb[CONFIG_DW-1:0]), // Templated
        .s2i_EDTM                        (lsu_EDTM),              // Templated
        .s2i_EDPF                        (lsu_EDPF),              // Templated

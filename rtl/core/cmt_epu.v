@@ -51,7 +51,7 @@ module cmt_epu
    input                               cmt_valid,
    input [`NCPU_EPU_IOPW-1:0]          cmt_epu_opc_bus,
    input [`NCPU_FE_W-1:0]              cmt_fe,
-   input [CONFIG_DW-1:0]               cmt_waddr,
+   input [CONFIG_DW-1:0]               cmt_addr,
    input [CONFIG_DW-1:0]               cmt_wdat,
    input                               s2i_EDTM,
    input                               s2i_EDPF,
@@ -274,7 +274,7 @@ module cmt_epu
 
    assign s1i_msr_wdat = cmt_wdat;
    
-   assign s1i_msr_addr = cmt_waddr;
+   assign s1i_msr_addr = cmt_addr;
    assign s1i_bank_addr = s1i_msr_addr[`NCPU_MSR_BANK_AW+`NCPU_MSR_BANK_OFF_AW-1:`NCPU_MSR_BANK_OFF_AW];
    assign s1i_bank_off = s1i_msr_addr[`NCPU_MSR_BANK_OFF_AW-1:0];
 

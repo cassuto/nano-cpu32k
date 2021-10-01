@@ -30,12 +30,13 @@ module ex_agu
 )
 (
    input                               ex_lsu_op,
+   input                               ex_epu_op,
    output                              agu_en,
    input [CONFIG_AW-1:0]               add_sum,
    output [CONFIG_AW-1:0]              wb_lsa
 );
 
-   assign agu_en = ex_lsu_op;
+   assign agu_en = (ex_lsu_op | ex_epu_op);
    assign wb_lsa = add_sum;
    
 endmodule

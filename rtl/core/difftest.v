@@ -119,7 +119,7 @@ module difftest
    generate
       for(i=0;i<CW;i=i+1)  
          begin
-            assign dbg_commit_pc[i] = {cmt_pc[i*`PC_W +: `PC_W], 2'b00};
+            assign dbg_commit_pc[i] = {commit_pc_ff[i*`PC_W +: `PC_W], 2'b00};
          end
    endgenerate
       

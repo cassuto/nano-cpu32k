@@ -180,6 +180,7 @@ module ex_pipe
    U_AGU
       (
          .ex_lsu_op                    (ex_lsu_op),
+         .ex_epu_op                    (ex_epu_op),
          .agu_en                       (agu_en),
          .add_sum                      (add_sum),
          .wb_lsa                       (s1i_wb_lsa)

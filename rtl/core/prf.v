@@ -107,4 +107,14 @@ module prf
             (prf_RDATA_1[i*CONFIG_DW +: CONFIG_DW] & {CONFIG_DW{|prf_RADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]}});
    endgenerate
 
+`ifdef ENABLE_DIFFTEST
+   wire [`NCPU_PRF_AW-1:0] dbg_waddr[WW-1:0];
+   generate
+      for(i=0;i<WW;i=i+1)  
+         begin
+            assign dbg_waddr[i] = prf_WADDR_1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+         end
+   endgenerate
+`endif
+
 endmodule
