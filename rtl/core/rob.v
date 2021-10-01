@@ -341,16 +341,16 @@ module rob
                for(j=0;j<WW;j=j+1)
                   begin
                      que_wb_id[i] = que_wb_id[i] |
-                                       ({CONFIG_P_ROB_DEPTH{i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]}} &
+                                       ({CONFIG_P_ROB_DEPTH{wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH])}} &
                                        wb_rob_id[j*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]);
                      que_wb_fls[i] = que_wb_fls[i] |
-                                       ((i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) &
+                                       (wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) &
                                        wb_fls[j]);
                      que_wb_exc[i] = que_wb_exc[i] |
-                                       ((i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) &
+                                       (wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) &
                                        wb_exc[j]);
                      que_wb_vbank[i] = que_wb_vbank[i] |
-                                       ({vBANK_DW{i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]}} &
+                                       ({vBANK_DW{wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH])}} &
                                        {wb_operb[j*CONFIG_DW +: CONFIG_DW], wb_opera[j*CONFIG_DW +: CONFIG_DW]});
                   end
             end
