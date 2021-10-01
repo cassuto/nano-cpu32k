@@ -7,12 +7,27 @@ module difftest
 #(
    parameter                           CONFIG_DW = 0,
    parameter                           CONFIG_AW = 0,
+   parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0,
-   parameter                           CONFIG_NUM_IRQ = 0
+   parameter                           CONFIG_NUM_IRQ = 0,
+   parameter                           CONFIG_P_ROB_DEPTH = 0
 )
 (
    input                               clk,
    input                               rst,
+   
+   // From ID
+   input [`NCPU_INSN_DW * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_ins,
+   input                               id_p_ce,
+   // From RN
+   input                               rn_p_ce_s1,
+   // From ROB
+   input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] rob_free_id,
+   input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] rob_free_bank,
+   input [CONFIG_P_ISSUE_WIDTH:0]      rob_push_size,
+   input [CONFIG_P_COMMIT_WIDTH-1:0]   rob_head_l   [(1<<CONFIG_P_COMMIT_WIDTH)-1:0],
+   input [CONFIG_P_ROB_DEPTH-1:0]      rob_que_rptr [(1<<CONFIG_P_COMMIT_WIDTH)-1:0],
+   // From CMT
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_fire,
    input [`PC_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_pc,
    input [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lrd,
@@ -23,7 +38,10 @@ module difftest
    input                               cmt_p_ce_s1,
    input [CONFIG_NUM_IRQ-1:0]          msr_irqc_irr
 );
+   localparam IW = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam CW = (1<<CONFIG_P_COMMIT_WIDTH);
+   localparam ROB_DEPTH = (1<<CONFIG_P_ROB_DEPTH);
+   genvar i;
    
    //
    // Difftest access point
@@ -37,6 +55,31 @@ module difftest
    wire commit_excp_ff;
    wire [31:0] commit_excp_vect_ff;
    wire [CONFIG_NUM_IRQ-1:0] commit_irqc_irr_ff;
+   
+   // Extra pipeline in ID
+   wire [`NCPU_INSN_DW*IW-1:0] rn_ins;
+   mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_rn_ins (.CLK(clk), .LOAD(id_p_ce), .D(id_ins), .Q(rn_ins) );
+   
+   // Extra pipeline in RN
+   wire [`NCPU_INSN_DW*IW-1:0] issue_ins;
+   mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_issue_ins (.CLK(clk), .LOAD(rn_p_ce_s1), .D(rn_ins), .Q(issue_ins) );
+   
+   // Extra pipeline in ISSUE & ROB
+   reg [`NCPU_INSN_DW-1:0] rob_ins [IW-1:0][ROB_DEPTH-1:0];
+   wire [`NCPU_INSN_DW*IW-1:0] cmt_ins;
+   generate
+      for(i=0;i<IW;i=i+1)
+         begin
+            always @(posedge clk)
+               if (i < rob_push_size[i])
+                  begin
+                     rob_ins[rob_free_bank[i*CONFIG_P_COMMIT_WIDTH+:CONFIG_P_COMMIT_WIDTH]]
+                              [rob_free_id[i*CONFIG_P_ROB_DEPTH+:CONFIG_P_ROB_DEPTH]] <= issue_ins[i * `NCPU_INSN_DW +: `NCPU_INSN_DW];
+                  end
+            
+            assign cmt_ins[i * `NCPU_INSN_DW +: `NCPU_INSN_DW] = rob_ins[rob_head_l[i]][rob_que_rptr[rob_head_l[i]]];
+         end
+   endgenerate
    
    // Extra pipeline in CMT
    mDFF_l #(.DW(CONFIG_DW)) ff_s1o_msr_irqc_irr (.CLK(clk), .LOAD(cmt_p_ce_s1), .D(msr_irqc_irr), .Q(s1o_msr_irqc_irr));
@@ -61,7 +104,7 @@ module difftest
          .clk                             (clk),
          .valid                           (commit_valid_ff),
          .pc                              (commit_pc_ff),
-         .insn                            ('b0), // TODO
+         .insn                            (cmt_ins),
          .wen                             (commit_rf_we_ff),
          .wnum                            (commit_rf_waddr_ff),
          .wdata                           (commit_rf_wdat_ff),
@@ -72,7 +115,7 @@ module difftest
       
    wire [31:0] dbg_commit_pc[CW-1:0];
    generate
-      for(genvar i=0;i<CW;i=i+1)  
+      for(i=0;i<CW;i=i+1)  
          begin
             assign dbg_commit_pc[i] = {cmt_pc[i*`PC_W +: `PC_W], 2'b00};
          end

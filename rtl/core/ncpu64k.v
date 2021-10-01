@@ -921,12 +921,22 @@ module ncpu64k
         // Parameters
         .CONFIG_DW                      (CONFIG_DW),
         .CONFIG_AW                      (CONFIG_AW),
+        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
         .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH),
-        .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ))
+        .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ),
+        .CONFIG_P_ROB_DEPTH             (CONFIG_P_ROB_DEPTH))
    U_DIFFTEST
       (
          .clk                             (clk),
          .rst                             (rst),
+         .id_ins                          (U_ID.id_ins),
+         .id_p_ce                         (U_ID.p_ce),
+         .rn_p_ce_s1                      (U_RN.p_ce_s1),
+         .rob_free_id                     (U_ROB.rob_free_id),
+         .rob_free_bank                   (U_ROB.rob_free_bank),
+         .rob_push_size                   (U_ROB.rob_push_size),
+         .rob_head_l                      (U_ROB.head_l),
+         .rob_que_rptr                    (U_ROB.que_rptr),
          .cmt_fire                        (U_CMT.cmt_fire),
          .cmt_pc                          (U_CMT.cmt_pc),
          .cmt_lrd                         (dft_cmt_lrd),
