@@ -912,8 +912,14 @@ module ncpu64k
       for(genvar i=0;i<(1<<CONFIG_P_COMMIT_WIDTH);i=i+1)
          begin
             assign dft_cmt_lrd[i*`NCPU_LRF_AW +: `NCPU_LRF_AW] = U_RN.U_RAT.arat_inv[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
-            assign dft_cmt_lrd_dat[i*CONFIG_DW +: CONFIG_DW] = U_PRF.U_PRF.regfile[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
          end
+      
+      // Bypass logic for commit channel 1
+      assign dft_cmt_lrd_dat[0*CONFIG_DW +: CONFIG_DW] = (U_PRF.prf_WE_lsu_epu && (U_CMT.cmt_prd[0*`NCPU_PRF_AW +: `NCPU_PRF_AW]==U_PRF.prf_WADDR_lsu_epu) )
+                                                            ? (U_PRF.prf_WDATA_lsu_epu)
+                                                            : U_PRF.U_PRF.regfile[U_CMT.cmt_prd[0*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
+      for(genvar i=1;i<(1<<CONFIG_P_COMMIT_WIDTH);i=i+1)
+         assign dft_cmt_lrd_dat[i*CONFIG_DW +: CONFIG_DW] = U_PRF.U_PRF.regfile[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
    endgenerate
    
    difftest
