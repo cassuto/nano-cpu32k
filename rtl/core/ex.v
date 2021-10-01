@@ -117,7 +117,7 @@ module ex
                .ex_imm                 (ex_imm[i * CONFIG_DW +: CONFIG_DW]),
                .ex_operand1            (ex_operand1[i * CONFIG_DW +: CONFIG_DW]),
                .ex_operand2            (ex_operand2[i * CONFIG_DW +: CONFIG_DW]),
-               .ex_prd                 (ex_prd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]),
+               .ex_prd                 (ex_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]),
                .ex_prd_we              (ex_prd_we[i]),
                .ex_rob_id              (ex_rob_id[i * CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]),
                .ex_rob_bank            (ex_rob_bank[i * CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]),
@@ -171,7 +171,7 @@ module ex
                 .ex_imm                 (ex_imm[i * CONFIG_DW +: CONFIG_DW]), // Templated
                 .ex_operand1            (ex_operand1[i * CONFIG_DW +: CONFIG_DW]), // Templated
                 .ex_operand2            (ex_operand2[i * CONFIG_DW +: CONFIG_DW]), // Templated
-                .ex_prd                 (ex_prd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]), // Templated
+                .ex_prd                 (ex_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]), // Templated
                 .ex_prd_we              (ex_prd_we[i]),          // Templated
                 .ex_rob_id              (ex_rob_id[i * CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]), // Templated
                 .ex_rob_bank            (ex_rob_bank[i * CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]), // Templated

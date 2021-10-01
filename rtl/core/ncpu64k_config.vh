@@ -169,9 +169,7 @@
 `define NCPU_LRF_AW 5
 
 /* Physical regfile index width */
-`define NCPU_PRF_AW 5
-/* Initial value of RAT */
-`define NCPU_INITIAL_RAT {5'd31,5'd30,5'd29,5'd28,5'd27,5'd26,5'd25,5'd24,5'd23,5'd22,5'd21,5'd20,5'd19,5'd18,5'd17,5'd16,5'd15,5'd14,5'd13,5'd12,5'd11,5'd10,5'd9,5'd8,5'd7,5'd6,5'd5,5'd4,5'd3,5'd2,5'd1,5'd0}
+`define NCPU_PRF_AW 6
 
 /* PSR register bitwidth */
 `define NCPU_PSR_DW 10

@@ -1,6 +1,6 @@
 import sys
 
-P_DW_MAX = 6
+P_DW_MAX = 7
 
 def gen(fn, has_gs):
     with open(fn,'w') as fp:

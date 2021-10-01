@@ -141,8 +141,8 @@ module ro
                      
             mDFF_l # (.DW(1)) ff_ex_prd_we (.CLK(clk), .LOAD(p_ce[i]), .D(ro_prd_we[i]), .Q(ex_prd_we[i]) );
             
-            mDFF_l # (.DW(`NCPU_LRF_AW)) ff_ex_prd (.CLK(clk), .LOAD(p_ce[i]),
-                     .D(ro_prd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]), .Q(ex_prd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]) );
+            mDFF_l # (.DW(`NCPU_PRF_AW)) ff_ex_prd (.CLK(clk), .LOAD(p_ce[i]),
+                     .D(ro_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]), .Q(ex_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]) );
                      
             mDFF_l # (.DW(CONFIG_P_ROB_DEPTH)) ff_ex_rob_id (.CLK(clk), .LOAD(p_ce[i]),
                      .D(ro_rob_id[i * CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]), .Q(ex_rob_id[i * CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]) );

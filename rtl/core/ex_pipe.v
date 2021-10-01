@@ -57,7 +57,7 @@ module ex_pipe
    input [CONFIG_DW-1:0]               ex_imm,
    input [CONFIG_DW-1:0]               ex_operand1,
    input [CONFIG_DW-1:0]               ex_operand2,
-   input [`NCPU_LRF_AW-1:0]            ex_prd,
+   input [`NCPU_PRF_AW-1:0]            ex_prd,
    input                               ex_prd_we,
    input [CONFIG_P_ROB_DEPTH-1:0]      ex_rob_id,
    input [CONFIG_P_COMMIT_WIDTH-1:0]   ex_rob_bank,

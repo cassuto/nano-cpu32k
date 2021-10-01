@@ -230,9 +230,9 @@ module rn
    
 `ifdef ENABLE_DIFFTEST
    wire [31:0] dbg_rn_pc [IW-1:0];
-   wire [`NCPU_PRF_AW-1:0] dbg_rn_lrs1 [IW-1:0];
-   wire [`NCPU_PRF_AW-1:0] dbg_rn_lrs2 [IW-1:0];
-   wire [`NCPU_PRF_AW-1:0] dbg_rn_prd [IW-1:0];
+   wire [`NCPU_LRF_AW-1:0] dbg_rn_lrs1 [IW-1:0];
+   wire [`NCPU_LRF_AW-1:0] dbg_rn_lrs2 [IW-1:0];
+   wire [`NCPU_LRF_AW-1:0] dbg_rn_lrd [IW-1:0];
    wire [`NCPU_PRF_AW-1:0] dbg_rat_prs1 [IW-1:0];
    wire [`NCPU_PRF_AW-1:0] dbg_rat_prs2 [IW-1:0];
    wire [`NCPU_PRF_AW-1:0] dbg_fl_prd [IW-1:0];
@@ -245,9 +245,9 @@ module rn
       for(genvar i=0;i<IW;i=i+1)  
          begin
             assign dbg_rn_pc[i] = {rn_pc[i*`PC_W +: `PC_W], 2'b00};
-            assign dbg_rn_lrs1[i] = rn_lrs1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign dbg_rn_lrs2[i] = rn_lrs2[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign dbg_rn_prd[i] = rn_lrd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+            assign dbg_rn_lrs1[i] = rn_lrs1[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
+            assign dbg_rn_lrs2[i] = rn_lrs2[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
+            assign dbg_rn_lrd[i] = rn_lrd[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
             assign dbg_rat_prs1[i] = rat_prs1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
             assign dbg_rat_prs2[i] = rat_prs2[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
             assign dbg_fl_prd[i] = fl_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
