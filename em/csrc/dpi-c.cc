@@ -88,7 +88,7 @@ static bool difftest_compare_reg(bool verbose)
     for (int i = 0; i < 32; i++)
     {
         cpu_word_t right = dpic_emu_CPU->get_reg(i);
-        fprintf(stderr, "r%d=%#8x%c", i, right, ((i+1)%4==0 ? '\n' : ' '));
+        fprintf(stderr, "r%2d=%#8x%c", i, right, ((i+1)%4==0 ? '\n' : ' '));
     }
     fprintf(stderr, "\n");
 
