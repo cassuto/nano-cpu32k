@@ -107,9 +107,9 @@ module rn_rat
    generate
       for(i=0;i<IW;i=i+1)
          begin : gen_readout
-            assign prs1_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs1[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
-            assign prs2_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs2[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
-            assign pfree_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrd[x * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+            assign prs1_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs1[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+            assign prs2_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs2[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+            assign pfree_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
          end
    endgenerate
 
