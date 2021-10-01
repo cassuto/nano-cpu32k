@@ -50,6 +50,7 @@ module cmt_epu
    input [`PC_W-1:0]                   cmt_npc,
    input                               cmt_valid,
    input [`NCPU_EPU_IOPW-1:0]          cmt_epu_opc_bus,
+   input                               cmt_exc,
    input [`NCPU_FE_W-1:0]              cmt_fe,
    input [CONFIG_DW-1:0]               cmt_addr,
    input [CONFIG_DW-1:0]               cmt_wdat,
@@ -369,12 +370,12 @@ module cmt_epu
    
    assign s1i_wb_dout_sel = (cmt_epu_opc_bus[`NCPU_EPU_RMSR]);
 
-   assign s1i_ERET = (cmt_valid & cmt_fe[`NCPU_FE_ERET]);
-   assign s1i_ESYSCALL = (cmt_valid & cmt_fe[`NCPU_FE_ESYSCALL]);
-   assign s1i_EINSN = (cmt_valid & cmt_fe[`NCPU_FE_EINSN]);
-   assign s1i_EIPF = (cmt_valid & cmt_fe[`NCPU_FE_EIPF]);
-   assign s1i_EITM = (cmt_valid & cmt_fe[`NCPU_FE_EITM]);
-   assign s1i_EIRQ = (cmt_valid & cmt_fe[`NCPU_FE_EIRQ]);
+   assign s1i_ERET = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_ERET]);
+   assign s1i_ESYSCALL = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_ESYSCALL]);
+   assign s1i_EINSN = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EINSN]);
+   assign s1i_EIPF = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EIPF]);
+   assign s1i_EITM = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EITM]);
+   assign s1i_EIRQ = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EIRQ]);
    assign s1i_E_FLUSH_TLB = (cmt_valid & (s1i_wmsr_psr_we |
                               s1i_msr_imm_tlbl_we |
                               s1i_msr_imm_tlbh_we |
