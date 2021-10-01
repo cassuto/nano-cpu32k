@@ -907,12 +907,14 @@ module ncpu64k
 `ifdef ENABLE_DIFFTEST
    wire [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmtf_lrd;
    wire [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmtf_lrd_dat;
-   
+   wire [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmtf_prd;
+
+   mDFF #(.DW(`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH))) ff_dft_cmtf_prd (.CLK(clk), .D(U_CMT.cmt_prd), .Q(dft_cmtf_prd) );
    generate
       for(genvar i=0;i<(1<<CONFIG_P_COMMIT_WIDTH);i=i+1)
          begin
-            assign dft_cmtf_lrd[i*`NCPU_LRF_AW +: `NCPU_LRF_AW] = U_RN.U_RAT.arat_inv[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
-            assign dft_cmtf_lrd_dat[i*CONFIG_DW +: CONFIG_DW] = U_PRF.U_PRF.regfile[U_CMT.cmt_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
+            assign dft_cmtf_lrd[i*`NCPU_LRF_AW +: `NCPU_LRF_AW] = U_RN.U_RAT.arat_inv[dft_cmtf_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
+            assign dft_cmtf_lrd_dat[i*CONFIG_DW +: CONFIG_DW] = U_PRF.U_PRF.regfile[dft_cmtf_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]];
          end 
    endgenerate
    
