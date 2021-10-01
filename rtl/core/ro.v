@@ -84,6 +84,8 @@ module ro
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    wire [IW-1:0]                       p_ce;
+   wire [IW-1:0]                       s1o_prs1_re;
+   wire [IW-1:0]                       s1o_prs2_re;
    genvar                              i;
    
    generate
@@ -148,14 +150,22 @@ module ro
             mDFF_l # (.DW(CONFIG_P_COMMIT_WIDTH)) ff_ex_rob_bank (.CLK(clk), .LOAD(p_ce[i]),
                      .D(ro_rob_bank[i * CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]), .Q(ex_rob_bank[i * CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) );
             
+            mDFF_l # (.DW(1)) ff_s1o_prs1_re (.CLK(clk), .LOAD(p_ce[i]), .D(ro_prs1_re[i]), .Q(s1o_prs1_re[i]) );
+            mDFF_l # (.DW(1)) ff_s1o_prs2_re (.CLK(clk), .LOAD(p_ce[i]), .D(ro_prs2_re[i]), .Q(s1o_prs2_re[i]) );
+            
             // PRF could be considered as a pipeline stage
             assign prf_RE[(i<<1)] = (p_ce[i] & ro_prs1_re[i]);
             assign prf_RE[(i<<1)+1] = (p_ce[i] & ro_prs2_re[i]);
             assign prf_RADDR[(i<<1)*`NCPU_PRF_AW +: `NCPU_PRF_AW] = ro_prs1[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
             assign prf_RADDR[((i<<1)+1)*`NCPU_PRF_AW +: `NCPU_PRF_AW] = ro_prs2[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
             
-            assign ex_operand1[i*CONFIG_DW +: CONFIG_DW] = prf_RDATA[(i<<1)*CONFIG_DW +: CONFIG_DW];
-            assign ex_operand2[i*CONFIG_DW +: CONFIG_DW] = prf_RDATA[((i<<1)+1)*CONFIG_DW +: CONFIG_DW];
+            // MUX for operand and immediate number
+            assign ex_operand1[i*CONFIG_DW +: CONFIG_DW] = (s1o_prs1_re[i])
+                                                               ? prf_RDATA[(i<<1)*CONFIG_DW +: CONFIG_DW]
+                                                               : ex_imm[i*CONFIG_DW +: CONFIG_DW];
+            assign ex_operand2[i*CONFIG_DW +: CONFIG_DW] = (s1o_prs2_re[i])
+                                                               ? prf_RDATA[((i<<1)+1)*CONFIG_DW +: CONFIG_DW]
+                                                               : ex_imm[i*CONFIG_DW +: CONFIG_DW];
 
          end
    endgenerate

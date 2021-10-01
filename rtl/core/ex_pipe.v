@@ -91,6 +91,7 @@ module ex_pipe
    wire [`PC_W-1:0]                    b_tgt;
    wire                                agu_en;
    // Stage 1 Input
+   wire [CONFIG_DW-1:0]                s1i_op1, s1i_op2;
    wire                                s1i_se_fail;
    wire [`PC_W-1:0]                    s1i_se_tgt;
    wire                                s1i_wb_fls;
@@ -104,7 +105,7 @@ module ex_pipe
    wire [`PC_W-1:0]                    s1i_npc;
    genvar i;
    integer j;
-
+   
    mADD
       #(.DW(`PC_W))
    U_NPC
