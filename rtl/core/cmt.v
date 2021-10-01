@@ -303,14 +303,15 @@ module cmt
                ;
          endcase
       end
+      
+   mDFF_r #(.DW(2), .RST_VECTOR(S_IDLE)) ff_fsm_state_ff (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
    
-   assign s1i_se_fls = (cmt_fls[0] | refetch);
+   assign s1i_se_fls = (cmt_fls[0] | refetch) & ~s1o_se_fls;
    assign s1i_se_tgt = (cmt_fls[0])
                            ? cmt_opera[`PC_W-1:0]
                            : cmt_npc_0 /* (refetch) */;
    
-   mDFF_r #(.DW(2), .RST_VECTOR(S_IDLE)) ff_fsm_state_ff (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
-   mDFF_lr #(.DW(1)) ff_s1o_se_fls (.CLK(clk), .RST(rst), .LOAD(cmt_fire[0]), .D(s1i_se_fls), .Q(s1o_se_fls) );
+   mDFF_lr #(.DW(1)) ff_s1o_se_fls (.CLK(clk), .RST(rst), .LOAD(cmt_fire[0]|s1o_se_fls), .D(s1i_se_fls), .Q(s1o_se_fls) );
    mDFF_l #(.DW(`PC_W)) ff_s1o_se_tgt (.CLK(clk), .LOAD(cmt_fire[0]), .D(s1i_se_tgt), .Q(s1o_se_tgt) );
    
    assign cmt_ce = (~pipe_req | pipe_finish);
