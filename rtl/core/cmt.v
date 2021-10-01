@@ -318,7 +318,8 @@ module cmt
    always @(*)
       begin
          cmt_mask[0] = cmt_ce & ~flush;
-         for(j=1;j<CW;j=j+1)
+         cmt_mask[1] = cmt_mask[0] & ~single_fu[0] & ~single_fu[1];
+         for(j=2;j<CW;j=j+1)
             cmt_mask[j] = cmt_mask[j-1] & ~single_fu[j];
       end
    assign cmt_fire = (cmt_valid & cmt_mask);
