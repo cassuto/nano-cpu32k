@@ -46,7 +46,7 @@ module prf
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam WW                       = (1<<CONFIG_P_WRITEBACK_WIDTH);
-   
+   wire [IW*2-1:0]                     prf_RADDR_zero_ff;
    wire [IW*2*CONFIG_DW-1:0]           prf_RDATA_1;
    genvar i;
    
@@ -68,11 +68,15 @@ module prf
          .WDATA                        (prf_WDATA)
       );
    
-   // r0 as zero
+   // r0 read as zero
    generate
       for(i=0;i<IW*2;i=i+1)
-         assign prf_RDATA[i*CONFIG_DW +: CONFIG_DW] =
-            (prf_RDATA_1[i*CONFIG_DW +: CONFIG_DW] & {CONFIG_DW{|prf_RADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]}});
+         begin : gen_zero_dec
+            mDFF_l #(.DW(1)) ff_prf_zero_RADDR (.CLK(clk), .LOAD(prf_RE[i]), .D(|prf_RADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]), .Q(prf_RADDR_zero_ff[i]) );
+   
+            assign prf_RDATA[i*CONFIG_DW +: CONFIG_DW] =
+               (prf_RDATA_1[i*CONFIG_DW +: CONFIG_DW] & {CONFIG_DW{prf_RADDR_zero_ff[i]}});
+         end
    endgenerate
 
 `ifdef ENABLE_DIFFTEST
