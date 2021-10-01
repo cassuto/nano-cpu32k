@@ -64,17 +64,14 @@ module difftest
    wire [`NCPU_INSN_DW*IW-1:0] issue_ins;
    mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_issue_ins (.CLK(clk), .LOAD(rn_p_ce_s1), .D(rn_ins), .Q(issue_ins) );
    
-   // Extra pipeline in ISSUE & ROB
+   // Extra ROB entry
    reg [`NCPU_INSN_DW-1:0] rob_ins [CW-1:0][ROB_DEPTH-1:0];
    wire [`NCPU_INSN_DW*CW-1:0] cmt_ins;
-   initial
-      rob_ins[0][1] = 'h123;
-      
    generate
       for(i=0;i<CW;i=i+1)
          begin
             always @(posedge clk)
-               if (i < rob_push_size[i])
+               if (i < rob_push_size)
                   begin
                      rob_ins[rob_free_bank[i*CONFIG_P_COMMIT_WIDTH+:CONFIG_P_COMMIT_WIDTH]]
                               [rob_free_id[i*CONFIG_P_ROB_DEPTH+:CONFIG_P_ROB_DEPTH]] <= issue_ins[i * `NCPU_INSN_DW +: `NCPU_INSN_DW];
