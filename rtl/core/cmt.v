@@ -276,7 +276,7 @@ module cmt
    assign single_fu =
       (lsu_req | epu_req | cmt_fls | cmt_b);
    
-   assign pipe_req = (lsu_req[0] | epu_req[0]);
+   assign pipe_req = (cmt_valid[0] & (lsu_req[0] | epu_req[0]));
    
    assign flush = (s1o_se_fls | exc_flush);
    
@@ -306,8 +306,8 @@ module cmt
    
    assign cmt_ce = (~pipe_req | pipe_finish);
    
-   assign lsu_req_valid = ((fsm_state_ff==S_IDLE) & lsu_req[0]);
-   assign epu_req_valid = ((fsm_state_ff==S_IDLE) & epu_req[0]);
+   assign lsu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_valid[0] & lsu_req[0]);
+   assign epu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_valid[0] & epu_req[0]);
    
    always @(*)
       begin

@@ -65,10 +65,10 @@ module difftest
    mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_issue_ins (.CLK(clk), .LOAD(rn_p_ce_s1), .D(rn_ins), .Q(issue_ins) );
    
    // Extra pipeline in ISSUE & ROB
-   reg [`NCPU_INSN_DW-1:0] rob_ins [IW-1:0][ROB_DEPTH-1:0];
+   reg [`NCPU_INSN_DW-1:0] rob_ins [CW-1:0][ROB_DEPTH-1:0];
    wire [`NCPU_INSN_DW*IW-1:0] cmt_ins;
    generate
-      for(i=0;i<IW;i=i+1)
+      for(i=0;i<CW;i=i+1)
          begin
             always @(posedge clk)
                if (i < rob_push_size[i])
