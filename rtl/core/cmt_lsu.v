@@ -46,7 +46,7 @@ module cmt_lsu
    input                               p_ce_s1,
    input                               p_ce_s2,
    output                              lsu_stall_req,
-   input                               cmt_valid,
+   input                               cmt_req_valid,
    input [`NCPU_LSU_IOPW-1:0]          cmt_lsu_opc_bus,
    input [CONFIG_DW-1:0]               cmt_lsa,
    input [CONFIG_DW-1:0]               cmt_wdat,
@@ -179,7 +179,7 @@ module cmt_lsu
    wire [2:0]                          s2o_size;
    wire                                s2o_sign_ext;
 
-   assign s1i_valid = cmt_valid & (s1i_load|s1i_store|s1i_dcop);
+   assign s1i_valid = cmt_req_valid & (s1i_load|s1i_store|s1i_dcop);
    assign s1i_load = cmt_lsu_opc_bus[`NCPU_LSU_LOAD];
    assign s1i_store = cmt_lsu_opc_bus[`NCPU_LSU_STORE];
    assign s1i_sign_ext = cmt_lsu_opc_bus[`NCPU_LSU_SIGN_EXT];

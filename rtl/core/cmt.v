@@ -250,6 +250,7 @@ module cmt
    wire [CW-1:0]                       cmt_b;
    wire [1:0]                          fsm_state_ff;
    reg [1:0]                           fsm_state_nxt;
+   wire [CW-1:0]                       cmt_ready_2_fire;
    wire                                s1i_se_fls;
    wire [`PC_W-1:0]                    s1i_se_tgt;
    wire                                s1o_se_fls;
@@ -279,8 +280,6 @@ module cmt
    
    assign single_fu =
       (lsu_req | epu_req | cmt_fls | cmt_b);
-   
-   assign pipe_req = (cmt_valid[0] & (lsu_req[0] | epu_req[0]));
    
    // `se_fls` has the highest priority
    assign flush = (s1o_se_fls | exc_flush);
@@ -319,21 +318,24 @@ module cmt
    
    always @(*)
       begin
-         cmt_mask[0] = cmt_ce & ~flush;
-         cmt_mask[1] = cmt_mask[0] & ~single_fu[0] & ~single_fu[1];
+         cmt_mask[0] = 1'b1;
+         cmt_mask[1] = ~single_fu[0] & ~single_fu[1];
          for(j=2;j<CW;j=j+1)
             cmt_mask[j] = cmt_mask[j-1] & ~single_fu[j];
       end
-   assign cmt_fire = (cmt_valid & cmt_mask);
+   assign cmt_ready_2_fire = (cmt_valid & cmt_mask);
+   assign cmt_fire = (cmt_ready_2_fire & {CW{cmt_ce & ~flush}});
 
-   assign lsu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_valid[0] & lsu_req[0]);
-   assign epu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_valid[0] & epu_req[0]);
-
+   assign pipe_req = (cmt_ready_2_fire[0] & (lsu_req[0] | epu_req[0]));
+   assign lsu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_ready_2_fire[0] & lsu_req[0]);
+   assign epu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_ready_2_fire[0] & epu_req[0]);
+   
+   
    // Count the number of commits
    popcnt #(.DW(CW), .P_DW(CONFIG_P_COMMIT_WIDTH)) U_CLO (.bitmap(cmt_fire), .count(cmt_pop_size) );
 
    /* cmt_lsu AUTO_TEMPLATE(
-         .cmt_valid                    (lsu_req_valid),
+         .cmt_req_valid                (lsu_req_valid),
          .cmt_wdat                     (cmt_operb[0 * CONFIG_DW +: CONFIG_DW]),
          .cmt_lsa                      (cmt_opera[0 * CONFIG_DW +: CONFIG_DW]),
       )*/
@@ -401,7 +403,7 @@ module cmt
        .rst                             (rst),
        .p_ce_s1                         (p_ce_s1),
        .p_ce_s2                         (p_ce_s2),
-       .cmt_valid                       (lsu_req_valid),         // Templated
+       .cmt_req_valid                   (lsu_req_valid),         // Templated
        .cmt_lsu_opc_bus                 (cmt_lsu_opc_bus[`NCPU_LSU_IOPW-1:0]),
        .cmt_lsa                         (cmt_opera[0 * CONFIG_DW +: CONFIG_DW]), // Templated
        .cmt_wdat                        (cmt_operb[0 * CONFIG_DW +: CONFIG_DW]), // Templated
@@ -433,7 +435,7 @@ module cmt
        .msr_dcfls_we                    (msr_dcfls_we));
    
    /* cmt_epu AUTO_TEMPLATE(
-         .cmt_valid                    (epu_req_valid),
+         .cmt_req_valid                (epu_req_valid),
          .cmt_wdat                     (cmt_operb[]),
          .cmt_addr                     (cmt_opera[]),
          .cmt_fe                       (cmt_opera[`NCPU_FE_W-1:0]),
@@ -521,7 +523,7 @@ module cmt
        .p_ce_s2                         (p_ce_s2),
        .cmt_pc                          (cmt_pc[`PC_W-1:0]),
        .cmt_npc                         (cmt_npc_0[`PC_W-1:0]),  // Templated
-       .cmt_valid                       (epu_req_valid),         // Templated
+       .cmt_req_valid                   (epu_req_valid),         // Templated
        .cmt_epu_opc_bus                 (cmt_epu_opc_bus[`NCPU_EPU_IOPW-1:0]),
        .cmt_exc                         (cmt_exc[0]),            // Templated
        .cmt_fe                          (cmt_opera[`NCPU_FE_W-1:0]), // Templated

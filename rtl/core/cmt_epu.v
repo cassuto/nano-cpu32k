@@ -48,7 +48,7 @@ module cmt_epu
    input                               p_ce_s2,
    input [`PC_W-1:0]                   cmt_pc,
    input [`PC_W-1:0]                   cmt_npc,
-   input                               cmt_valid,
+   input                               cmt_req_valid,
    input [`NCPU_EPU_IOPW-1:0]          cmt_epu_opc_bus,
    input                               cmt_exc,
    input [`NCPU_FE_W-1:0]              cmt_fe,
@@ -371,13 +371,13 @@ module cmt_epu
    
    assign s1i_wb_dout_sel = (cmt_epu_opc_bus[`NCPU_EPU_RMSR]);
 
-   assign s1i_ERET = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_ERET]);
-   assign s1i_ESYSCALL = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_ESYSCALL]);
-   assign s1i_EINSN = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EINSN]);
-   assign s1i_EIPF = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EIPF]);
-   assign s1i_EITM = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EITM]);
-   assign s1i_EIRQ = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EIRQ]);
-   assign s1i_refetch = (cmt_valid & (s1i_wmsr_psr_we |
+   assign s1i_ERET = (cmt_req_valid & cmt_exc & cmt_fe[`NCPU_FE_ERET]);
+   assign s1i_ESYSCALL = (cmt_req_valid & cmt_exc & cmt_fe[`NCPU_FE_ESYSCALL]);
+   assign s1i_EINSN = (cmt_req_valid & cmt_exc & cmt_fe[`NCPU_FE_EINSN]);
+   assign s1i_EIPF = (cmt_req_valid & cmt_exc & cmt_fe[`NCPU_FE_EIPF]);
+   assign s1i_EITM = (cmt_req_valid & cmt_exc & cmt_fe[`NCPU_FE_EITM]);
+   assign s1i_EIRQ = (cmt_req_valid & cmt_exc & cmt_fe[`NCPU_FE_EIRQ]);
+   assign s1i_refetch = (cmt_req_valid & (s1i_wmsr_psr_we |
                               s1i_msr_imm_tlbl_we |
                               s1i_msr_imm_tlbh_we |
                               s1i_msr_dmm_tlbl_we |
@@ -387,28 +387,28 @@ module cmt_epu
 
    // Decode MSR address
    
-   assign s1i_wmsr_psr_we      = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_PSR];
-   assign s1i_wmsr_epc_we      = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPC];
-   assign s1i_wmsr_epsr_we     = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPSR];
-   assign s1i_wmsr_elsa_we     = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_ELSA];
-   assign s1i_wmsr_evect_we    = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EVECT];
+   assign s1i_wmsr_psr_we      = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_PSR];
+   assign s1i_wmsr_epc_we      = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPC];
+   assign s1i_wmsr_epsr_we     = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EPSR];
+   assign s1i_wmsr_elsa_we     = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_ELSA];
+   assign s1i_wmsr_evect_we    = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ps & s1i_bank_off[`NCPU_MSR_EVECT];
 `ifdef NCPU_ENABLE_MSGPORT
-   assign s1i_wmsr_numport_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[0];
-   assign s1i_wmsr_msgport_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[1];
+   assign s1i_wmsr_numport_we  = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[0];
+   assign s1i_wmsr_msgport_we  = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dbg & s1i_bank_off[1];
 `endif
-   assign s1i_msr_imm_tlbl_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbl_sel;
-   assign s1i_msr_imm_tlbh_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbh_sel;
-   assign s1i_msr_dmm_tlbl_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbl_sel;
-   assign s1i_msr_dmm_tlbh_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbh_sel;
-   assign s1i_msr_ic_inv_we    = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ic & msr_ic_inv_sel;
-   assign s1i_msr_dc_inv_we    = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_inv_sel;
-   assign s1i_msr_dc_fls_we    = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_fls_sel;
+   assign s1i_msr_imm_tlbl_we  = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbl_sel;
+   assign s1i_msr_imm_tlbh_we  = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_imm & msr_imm_tlbh_sel;
+   assign s1i_msr_dmm_tlbl_we  = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbl_sel;
+   assign s1i_msr_dmm_tlbh_we  = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dmm & msr_dmm_tlbh_sel;
+   assign s1i_msr_ic_inv_we    = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_ic & msr_ic_inv_sel;
+   assign s1i_msr_dc_inv_we    = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_inv_sel;
+   assign s1i_msr_dc_fls_we    = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_dc & msr_dc_fls_sel;
 
-   assign s1i_msr_irqc_imr_we  = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_irqc & msr_irqc_imr_sel;
-   assign s1i_msr_tsc_tsr_we   = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tsr_sel;
-   assign s1i_msr_tsc_tcr_we   = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tcr_sel;
+   assign s1i_msr_irqc_imr_we  = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_irqc & msr_irqc_imr_sel;
+   assign s1i_msr_tsc_tsr_we   = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tsr_sel;
+   assign s1i_msr_tsc_tcr_we   = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_tsc & msr_tsc_tcr_sel;
    
-   assign s1i_msr_sr_we        = cmt_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_sr;
+   assign s1i_msr_sr_we        = cmt_req_valid & cmt_epu_opc_bus[`NCPU_EPU_WMSR] & s1i_bank_sr;
    
    ////////////////////////////////////////////////////////////////////////////////
 
@@ -433,7 +433,7 @@ module cmt_epu
                         s1i_bank_off};
 
    // Pipeline stage
-   mDFF_lr # (.DW(1)) ff_epu_wb_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(cmt_valid), .Q(s1o_valid) );
+   mDFF_lr # (.DW(1)) ff_epu_wb_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(cmt_req_valid), .Q(s1o_valid) );
    mDFF_l # (.DW(CONFIG_DW)) ff_epu_wb_dout (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_wb_dout), .Q(epu_wb_dout) );
    mDFF_l # (.DW(1)) ff_epu_wb_dout_sel (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_wb_dout_sel), .Q(epu_wb_dout_sel) );
    mDFF_lr # (.DW(1)) ff_s1o_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_ERET), .Q(s1o_commit_ERET) );
