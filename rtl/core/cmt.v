@@ -229,6 +229,7 @@ module cmt
    wire [CONFIG_DW*`NCPU_SR_NUM-1:0] msr_sr;    // From U_PSR of cmt_psr.v
    wire [CONFIG_DW-1:0] msr_sr_nxt;             // From U_EPU of cmt_epu.v
    wire [`NCPU_SR_NUM-1:0] msr_sr_we;           // From U_EPU of cmt_epu.v
+   wire                 refetch;                // From U_EPU of cmt_epu.v
    // End of automatics
    /*AUTOINPUT*/
    wire                                p_ce_s1;
@@ -248,6 +249,8 @@ module cmt
    wire [CW-1:0]                       cmt_b;
    wire [1:0]                          fsm_state_ff;
    reg [1:0]                           fsm_state_nxt;
+   wire                                s1i_se_fls;
+   wire [`PC_W-1:0]                    s1i_se_tgt;
    wire                                s1o_se_fls;
    wire [`PC_W-1:0]                    s1o_se_tgt;
    genvar i;
@@ -278,8 +281,9 @@ module cmt
    
    assign pipe_req = (cmt_valid[0] & (lsu_req[0] | epu_req[0]));
    
+   // `se_fls` has the highest priority
    assign flush = (s1o_se_fls | exc_flush);
-   
+
    assign flush_tgt = (s1o_se_fls)
                         ? s1o_se_tgt
                         : exc_flush_tgt /* (exc_flush) */ ;
@@ -300,14 +304,16 @@ module cmt
          endcase
       end
    
+   assign s1i_se_fls = (cmt_fls[0] | refetch);
+   assign s1i_se_tgt = (cmt_fls[0])
+                           ? cmt_opera[`PC_W-1:0]
+                           : cmt_npc_0 /* (refetch) */;
+   
    mDFF_r #(.DW(2), .RST_VECTOR(S_IDLE)) ff_fsm_state_ff (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
-   mDFF_lr #(.DW(1)) ff_s1o_se_fls (.CLK(clk), .RST(rst), .LOAD(cmt_fire[0]), .D(cmt_fls[0]), .Q(s1o_se_fls) );
-   mDFF_l #(.DW(`PC_W)) ff_s1o_se_tgt (.CLK(clk), .LOAD(cmt_fire[0]), .D(cmt_opera[`PC_W-1:0]), .Q(s1o_se_tgt) );
+   mDFF_lr #(.DW(1)) ff_s1o_se_fls (.CLK(clk), .RST(rst), .LOAD(cmt_fire[0]), .D(s1i_se_fls), .Q(s1o_se_fls) );
+   mDFF_l #(.DW(`PC_W)) ff_s1o_se_tgt (.CLK(clk), .LOAD(cmt_fire[0]), .D(s1i_se_tgt), .Q(s1o_se_tgt) );
    
    assign cmt_ce = (~pipe_req | pipe_finish);
-   
-   assign lsu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_valid[0] & lsu_req[0]);
-   assign epu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_valid[0] & epu_req[0]);
    
    always @(*)
       begin
@@ -315,8 +321,10 @@ module cmt
          for(j=1;j<CW;j=j+1)
             cmt_mask[j] = cmt_mask[j-1] & ~single_fu[j];
       end
-
    assign cmt_fire = (cmt_valid & cmt_mask);
+
+   assign lsu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_valid[0] & lsu_req[0]);
+   assign epu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_valid[0] & epu_req[0]);
 
    // Count the number of commits
    popcnt #(.DW(CW), .P_DW(CONFIG_P_COMMIT_WIDTH)) U_CLO (.bitmap(cmt_fire), .count(cmt_pop_size) );
@@ -457,6 +465,7 @@ module cmt
        .epu_wb_valid                    (epu_wb_valid),
        .exc_flush                       (exc_flush),
        .exc_flush_tgt                   (exc_flush_tgt[`PC_W-1:0]),
+       .refetch                         (refetch),
        .irq_async                       (irq_async),
        .tsc_irq                         (tsc_irq),
        .msr_psr_rm_nxt                  (msr_psr_rm_nxt),

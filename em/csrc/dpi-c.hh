@@ -12,8 +12,6 @@ extern "C" void dpic_commit_inst(
     svBit wen,
     char wnum,
     int wdata,
-    svBit excp,
-    int excp_vect,
     int irqc_irr
 );
 

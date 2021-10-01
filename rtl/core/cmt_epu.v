@@ -66,6 +66,7 @@ module cmt_epu
    // Flush
    output                              exc_flush,
    output [`PC_W-1:0]                  exc_flush_tgt,
+   output                              refetch,
 
    // IRQs
    input [CONFIG_NUM_IRQ-1:0]          irqs,
@@ -228,7 +229,7 @@ module cmt_epu
    wire                                s1i_EIPF;
    wire                                s1i_EITM;
    wire                                s1i_EIRQ;
-   wire                                s1i_E_FLUSH_TLB;
+   wire                                s1i_refetch;
    wire [CONFIG_DW-1:0]                s1i_wb_dout;
    wire                                s1i_wb_dout_sel;
    wire                                s1o_valid;
@@ -259,7 +260,7 @@ module cmt_epu
    wire                                s1o_commit_EIPF;
    wire                                s1o_commit_EITM;
    wire                                s1o_commit_EIRQ;
-   wire                                s1o_commit_E_FLUSH_TLB;
+   wire                                s1o_commit_refetch;
    wire  [NCPU_WMSR_WE_W-1:0]          s1o_commit_wmsr_we;
    wire  [CONFIG_DW-1:0]               s1o_commit_wmsr_dat;
    wire                                s1o_wmsr_psr_rm;
@@ -376,7 +377,7 @@ module cmt_epu
    assign s1i_EIPF = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EIPF]);
    assign s1i_EITM = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EITM]);
    assign s1i_EIRQ = (cmt_valid & cmt_exc & cmt_fe[`NCPU_FE_EIRQ]);
-   assign s1i_E_FLUSH_TLB = (cmt_valid & (s1i_wmsr_psr_we |
+   assign s1i_refetch = (cmt_valid & (s1i_wmsr_psr_we |
                               s1i_msr_imm_tlbl_we |
                               s1i_msr_imm_tlbh_we |
                               s1i_msr_dmm_tlbl_we |
@@ -441,7 +442,7 @@ module cmt_epu
    mDFF_lr # (.DW(1)) ff_s1o_commit_EIPF (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_EIPF), .Q(s1o_commit_EIPF) );
    mDFF_lr # (.DW(1)) ff_s1o_commit_EITM (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_EITM), .Q(s1o_commit_EITM) );
    mDFF_lr # (.DW(1)) ff_s1o_commit_EIRQ (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_EIRQ), .Q(s1o_commit_EIRQ) );
-   mDFF_lr # (.DW(1)) ff_s1o_commit_E_FLUSH_TLB (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_E_FLUSH_TLB), .Q(s1o_commit_E_FLUSH_TLB) );
+   mDFF_lr # (.DW(1)) ff_s1o_commit_refetch (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_refetch), .Q(s1o_commit_refetch) );
    mDFF_lr # (.DW(NCPU_WMSR_WE_W)) ff_s1o_commit_wmsr_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_wmsr_we), .Q(s1o_commit_wmsr_we) );
    mDFF_l # (.DW(CONFIG_DW)) ff_s1o_commit_wmsr_dat (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_msr_wdat), .Q(s1o_commit_wmsr_dat) );
    mDFF_l # (.DW(`PC_W)) ff_s1o_commit_epc (.CLK(clk), .LOAD(p_ce_s1), .D(cmt_pc), .Q(s1o_commit_epc) );
@@ -572,7 +573,6 @@ module cmt_epu
    assign exc_flush_tgt = ({`PC_W{s2i_EDTM}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EDTM_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
                            ({`PC_W{s2i_EDPF}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EDPF_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
                            ({`PC_W{s2i_EALIGN}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EALIGN_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
-                           ({`PC_W{s1o_commit_E_FLUSH_TLB}} & s1o_commit_nepc) |
                            ({`PC_W{s1o_commit_ESYSCALL}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_ESYSCALL_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
                            ({`PC_W{s1o_commit_ERET}} & msr_epc[`NCPU_P_INSN_LEN +: `PC_W]) |
                            ({`PC_W{s1o_commit_EITM}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EITM_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
@@ -583,13 +583,14 @@ module cmt_epu
    assign exc_flush = p_ce_s2 & (s2i_EDTM |
                         s2i_EDPF |
                         s2i_EALIGN |
-                        s1o_commit_E_FLUSH_TLB |
                         s1o_commit_ESYSCALL |
                         s1o_commit_ERET |
                         s1o_commit_EITM |
                         s1o_commit_EIPF |
                         s1o_commit_EIRQ |
                         s1o_commit_EINSN);
+   
+   assign refetch = (p_ce_s2 & s1o_commit_refetch);
 
    assign epu_wb_valid = (s1o_valid & p_ce_s2);
                         
@@ -665,7 +666,6 @@ module cmt_epu
          if ((s2i_EDTM +
                s2i_EDPF +
                s2i_EALIGN +
-               s1o_commit_E_FLUSH_TLB +
                s1o_commit_ESYSCALL +
                s1o_commit_ERET +
                s1o_commit_EITM +

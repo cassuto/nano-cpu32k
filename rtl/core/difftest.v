@@ -33,8 +33,6 @@ module difftest
    input [`NCPU_LRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmtf_lrd,
    input [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmtf_lrd_dat,
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_lrd_we,
-   input                               cmt_exc,
-   input [CONFIG_DW-1:0]               cmt_exc_vect,
    input                               cmt_p_ce_s1,
    input [CONFIG_NUM_IRQ-1:0]          msr_irqc_irr
 );
@@ -53,8 +51,6 @@ module difftest
    wire [`NCPU_LRF_AW*CW-1:0] commit_rf_waddr_ff;
    wire [CONFIG_DW*CW-1:0] commit_rf_wdat_ff;
    wire [CW-1:0] commit_rf_we_ff;
-   wire commit_excp_ff;
-   wire [31:0] commit_excp_vect_ff;
    wire [CONFIG_NUM_IRQ-1:0] commit_irqc_irr_ff;
    
    // Extra pipeline in ID
@@ -84,15 +80,13 @@ module difftest
    
    // Extra pipeline in CMT
    mDFF_l #(.DW(CONFIG_DW)) ff_s1o_msr_irqc_irr (.CLK(clk), .LOAD(cmt_p_ce_s1), .D(msr_irqc_irr), .Q(s1o_msr_irqc_irr));
-   
+      
    mDFF_r #(.DW(CW)) ff_commit_valid (.CLK(clk), .RST(rst), .D(cmt_fire), .Q(commit_valid_ff));
    mDFF #(.DW(`PC_W*CW)) ff_commit_pc (.CLK(clk), .D(cmt_pc), .Q(commit_pc_ff));
    mDFF #(.DW(`NCPU_INSN_DW*CW)) ff_commit_ins (.CLK(clk), .D(cmt_ins), .Q(commit_ins_ff));
    assign commit_rf_waddr_ff = cmtf_lrd;
    assign commit_rf_wdat_ff = cmtf_lrd_dat;
    mDFF_r #(.DW(CW)) ff_commit_rf_we (.CLK(clk), .RST(rst), .D(cmt_lrd_we), .Q(commit_rf_we_ff));
-   mDFF #(.DW(1)) ff_commit_excp (.CLK(clk), .D(cmt_exc), .Q(commit_excp_ff) );
-   mDFF #(.DW(32)) ff_commit_excp_vect (.CLK(clk), .D(cmt_exc_vect), .Q(commit_excp_vect_ff) );
    mDFF #(.DW(CONFIG_NUM_IRQ)) ff_commit_irqc_irr (.CLK(clk), .D(s1o_msr_irqc_irr), .Q(commit_irqc_irr_ff) );
    
    
@@ -110,8 +104,6 @@ module difftest
          .wen                             (commit_rf_we_ff),
          .wnum                            (commit_rf_waddr_ff),
          .wdata                           (commit_rf_wdat_ff),
-         .excp                            ({{CW-1{1'b0}}, commit_excp_ff}),
-         .excp_vect                       ({{CW-1{{32{1'b0}}}}, commit_excp_vect_ff}),
          .irqc_irr                        ({{CW-1{{CONFIG_NUM_IRQ{1'b0}}}}, commit_irqc_irr_ff})
       );
       

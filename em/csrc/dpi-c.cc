@@ -43,8 +43,6 @@ static int rtl_insn[rtl_num_channel];
 static svBit rtl_wen[rtl_num_channel];
 static char rtl_wnum[rtl_num_channel];
 static int rtl_wdata[rtl_num_channel];
-static svBit rtl_excp[rtl_num_channel];
-static int rtl_excp_vect[rtl_num_channel];
 static int rtl_irqc_irr[rtl_num_channel];
 
 void startup_difftest(CPU *cpu_, Emu *emu_, uint64_t commit_timeout_max_)
@@ -131,8 +129,6 @@ void dpic_commit_inst(
     svBit wen,
     char wnum,
     int wdata,
-    svBit excp,
-    int excp_vect,
     int irqc_irr)
 {
     if (!dpic_enable)
@@ -145,8 +141,6 @@ void dpic_commit_inst(
     rtl_wen[(unsigned int)cmt_index] = wen;
     rtl_wnum[(unsigned int)cmt_index] = wnum;
     rtl_wdata[(unsigned int)cmt_index] = wdata;
-    rtl_excp[(unsigned int)cmt_index] = excp;
-    rtl_excp_vect[(unsigned int)cmt_index] = excp_vect;
     rtl_irqc_irr[(unsigned int)cmt_index] = irqc_irr;
 }
 
@@ -197,7 +191,7 @@ void dpic_step()
             }
 
             /* Handle RMSR carefully */
-            if (!rtl_excp[i] && INS32_GET_BITS(rtl_insn[i], OPCODE) == INS32_OP_RMSR)
+            if (INS32_GET_BITS(rtl_insn[i], OPCODE) == INS32_OP_RMSR)
             {
                 uint8_t rs1 = INS32_GET_BITS(rtl_insn[i], RS1);
                 uint8_t rd = INS32_GET_BITS(rtl_insn[i], RD);

@@ -7,8 +7,6 @@ import "DPI-C" function void dpic_commit_inst(
    input bit wen,
    input byte wnum,
    input int wdata,
-   input bit excp,
-   input int excp_vect,
    input int irqc_irr
 );
 
@@ -27,8 +25,6 @@ module difftest_commit_inst
    input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] wen,
    input [(1<<CONFIG_P_COMMIT_WIDTH)*5-1:0] wnum,
    input [(1<<CONFIG_P_COMMIT_WIDTH)*32-1:0] wdata,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] excp,
-   input [(1<<CONFIG_P_COMMIT_WIDTH)*32-1:0] excp_vect,
    input [(1<<CONFIG_P_COMMIT_WIDTH)*CONFIG_NUM_IRQ-1:0] irqc_irr
 );
    integer i;
@@ -43,8 +39,6 @@ module difftest_commit_inst
                wen[i],
                {3'b0, wnum[i*5 +: 5]},
                wdata[i*32 +: 32],
-               excp[i],
-               excp_vect[i*32 +: 32],
                irqc_irr[i*CONFIG_NUM_IRQ +: CONFIG_NUM_IRQ]
             );
          dpic_step();

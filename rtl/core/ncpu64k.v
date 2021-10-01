@@ -964,8 +964,6 @@ module ncpu64k
          .cmtf_lrd                        (dft_cmtf_lrd),
          .cmtf_lrd_dat                    (dft_cmtf_lrd_dat),
          .cmt_lrd_we                      (U_CMT.cmt_prd_we),
-         .cmt_exc                         (U_CMT.exc_flush),
-         .cmt_exc_vect                    ({U_CMT.exc_flush_tgt, 2'b00}),
          .cmt_p_ce_s1                     (U_CMT.p_ce_s1),
          .msr_irqc_irr                    (U_CMT.U_EPU.msr_irqc_irr)
       );
