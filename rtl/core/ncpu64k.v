@@ -562,6 +562,7 @@ module ncpu64k
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
+       .flush                           (flush),
        .issue_p_ce                      (issue_p_ce),
        .issue_alu_opc_bus               (issue_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .issue_lpu_opc_bus               (issue_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),

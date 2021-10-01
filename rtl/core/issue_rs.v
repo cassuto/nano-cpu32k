@@ -36,6 +36,7 @@ module issue_rs
 (
    input                               clk,
    input                               rst,
+   input                               flush,
    output                              issue_rs_full,
    // From RN
    input [`NCPU_ALU_IOPW-1:0]          issue_alu_opc_bus,
@@ -214,7 +215,9 @@ module issue_rs
          if (issue_push)
             free_vec_nxt = free_vec_nxt & ~(FL_1<<free_addr);
          if (ro_rs_pop)
-               free_vec_nxt = free_vec_nxt | (FL_1<<rdy_addr_ff);
+            free_vec_nxt = free_vec_nxt | (FL_1<<rdy_addr_ff);
+         if (flush)
+            free_vec_nxt = {RS_DEPTH{1'b1}};
       end
    always @(*)
       begin
@@ -246,7 +249,7 @@ module issue_rs
    
    priority_encoder_gs #(.P_DW(CONFIG_P_RS_DEPTH)) penc_rdy (.din(rdy_vec), .dout(rdy_addr), .gs(has_rdy) );
    
-   mDFF_r #(.DW(1)) ff_has_rdy (.CLK(clk), .RST(rst), .D(has_rdy), .Q(has_rdy_ff) );
+   mDFF_r #(.DW(1)) ff_has_rdy (.CLK(clk), .RST(rst), .D(has_rdy & ~flush), .Q(has_rdy_ff) );
    mDFF_l #(.DW(CONFIG_P_RS_DEPTH)) ff_rdy_addr (.CLK(clk), .LOAD(has_rdy), .D(rdy_addr), .Q(rdy_addr_ff) );
    mDFF_l #(.DW(`NCPU_PRF_AW)) ff_issue_prs1 (.CLK(clk), .LOAD(has_rdy), .D(prs1_rf_mux[rdy_addr]), .Q(ro_prs1) );
    mDFF_l #(.DW(`NCPU_PRF_AW)) ff_issue_prs2 (.CLK(clk), .LOAD(has_rdy), .D(prs2_rf_mux[rdy_addr]), .Q(ro_prs2) );

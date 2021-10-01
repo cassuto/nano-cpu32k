@@ -38,6 +38,7 @@ module issue
 (
    input                               clk,
    input                               rst,
+   input                               flush,
    // From RN
    input                               issue_p_ce,
    input [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_alu_opc_bus,
@@ -198,6 +199,7 @@ module issue
                 // Inputs
                 .clk                    (clk),
                 .rst                    (rst),
+                .flush                  (flush),
                 .issue_alu_opc_bus      (issue_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]), // Templated
                 .issue_lpu_opc_bus      (issue_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]), // Templated
                 .issue_epu_op           (|issue_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]), // Templated
