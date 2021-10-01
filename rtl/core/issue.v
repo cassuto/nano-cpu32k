@@ -251,4 +251,14 @@ module issue
    
    assign ro_rs_pop = (ro_valid & ro_ready);
    
+`ifdef ENABLE_DIFFTEST
+   wire [31:0] dbg_issue_pc[IW-1:0];
+   generate
+      for(i=0;i<IW;i=i+1)  
+         begin
+            assign dbg_issue_pc[i] = {issue_pc[i*`PC_W +: `PC_W], 2'b00};
+         end
+   endgenerate
+`endif
+
 endmodule

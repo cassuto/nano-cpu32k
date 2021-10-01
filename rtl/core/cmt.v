@@ -628,4 +628,14 @@ module cmt
                                  ? epu_wb_dout
                                  : lsu_wb_dout;
    
+`ifdef ENABLE_DIFFTEST
+   wire [31:0] dbg_cmt_pc[CW-1:0];
+   generate
+      for(i=0;i<CW;i=i+1)  
+         begin
+            assign dbg_cmt_pc[i] = {cmt_pc[i*`PC_W +: `PC_W], 2'b00};
+         end
+   endgenerate
+`endif
+
 endmodule

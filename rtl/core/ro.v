@@ -160,4 +160,14 @@ module ro
          end
    endgenerate
 
+`ifdef ENABLE_DIFFTEST
+   wire [31:0] dbg_ro_pc [IW-1:0];
+   generate
+      for(i=0;i<IW;i=i+1)  
+         begin
+            assign dbg_ro_pc[i] = {ro_pc[i*`PC_W +: `PC_W], 2'b00};
+         end
+   endgenerate
+`endif
+
 endmodule
