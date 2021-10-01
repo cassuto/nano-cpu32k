@@ -84,14 +84,6 @@ static void difftest_report_item(const char *item, cpu_unsigned_word_t right, cp
 
 static bool difftest_compare_reg(bool verbose)
 {
-    fprintf(stderr, "Right Registers:\n");
-    for (int i = 0; i < 32; i++)
-    {
-        cpu_word_t right = dpic_emu_CPU->get_reg(i);
-        fprintf(stderr, "r%2d=%#8x%c", i, right, ((i+1)%4==0 ? '\n' : ' '));
-    }
-    fprintf(stderr, "\n");
-
     for (int i = 0; i < 32; i++)
     {
         cpu_word_t right = dpic_emu_CPU->get_reg(i);
@@ -111,6 +103,14 @@ static void difftest_report_reg(svBit valid[], int pc[])
     rtl_pc_queue->dump();
     fprintf(stderr, "Emu PC:\n");
     dpic_emu_CPU->get_pc_queue()->dump();
+
+    fprintf(stderr, "Reference registers: (Next PC=%#X)\n", dpic_emu_CPU->get_pc());
+    for (int i = 0; i < 32; i++)
+    {
+        cpu_word_t right = dpic_emu_CPU->get_reg(i);
+        fprintf(stderr, "r%-2d=%-8x%c", i, right, ((i+1)%4==0 ? '\n' : ' '));
+    }
+    fprintf(stderr, "\n");
 
     fprintf(stderr, "--------------------------------------------------------------\n");
     fprintf(stderr, "[%lu cycle] Architectural Register Error!\n", dpic_emu->get_cycle());
