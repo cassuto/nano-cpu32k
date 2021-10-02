@@ -232,7 +232,8 @@ module cmt_epu
    wire                                s1i_refetch;
    wire [CONFIG_DW-1:0]                s1i_wb_dout;
    wire                                s1i_wb_dout_sel;
-   wire                                s1o_valid;
+   wire                                s1i_wb_valid;
+   wire                                s1o_wb_valid;
    wire                                s1o_commit_wmsr_psr_we;
    wire                                s1o_commit_wmsr_epc_we;
    wire                                s1o_commit_wmsr_epsr_we;
@@ -432,8 +433,12 @@ module cmt_epu
                         s1i_msr_sr_we,
                         s1i_bank_off};
 
+   // The validity of writeback depends on the LSU, not myself,
+   // if there is D$ operation.
+   assign s1i_wb_valid = (cmt_req_valid & ~msr_dcfls_we & ~msr_dcinv_we);
+
    // Pipeline stage
-   mDFF_lr # (.DW(1)) ff_epu_wb_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(cmt_req_valid), .Q(s1o_valid) );
+   mDFF_lr # (.DW(1)) ff_epu_wb_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_wb_valid), .Q(s1o_wb_valid) );
    mDFF_l # (.DW(CONFIG_DW)) ff_epu_wb_dout (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_wb_dout), .Q(epu_wb_dout) );
    mDFF_l # (.DW(1)) ff_epu_wb_dout_sel (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_wb_dout_sel), .Q(epu_wb_dout_sel) );
    mDFF_lr # (.DW(1)) ff_s1o_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_ERET), .Q(s1o_commit_ERET) );
@@ -592,7 +597,7 @@ module cmt_epu
    
    assign refetch = (p_ce_s2 & s1o_commit_refetch);
 
-   assign epu_wb_valid = (s1o_valid & p_ce_s2);
+   assign epu_wb_valid = (s1o_wb_valid & p_ce_s2);
                         
 	// synthesis translate_off
 `ifndef SYNTHESIS
