@@ -295,7 +295,7 @@ module cmt
          fsm_state_nxt = fsm_state_ff;
          case(fsm_state_ff)
             S_IDLE:
-               if (pipe_req)
+               if (pipe_req & p_ce_s1)
                   fsm_state_nxt = S_PENDING;
             S_PENDING:
                if (pipe_finish)
@@ -629,7 +629,27 @@ module cmt
                               : cmt_bpu_upd[`BPU_UPD_TGT]; // Extract the first channel
    assign bpu_wb_upd = cmt_bpu_upd[0*`BPU_UPD_W +: `BPU_UPD_W];
    
-       
+
+   // Test signal generator for verification
+`ifdef NCPU_TEST_STALL
+   localparam TEST_STALL_P = 0;
+   wire test_stall;
+   reg [TEST_STALL_P:0] test_stall_ff;
+   
+   always @(posedge clk)
+      if (rst)
+         test_stall_ff <= 'b0;
+      else
+         test_stall_ff <= test_stall_ff + 'b1;
+   assign test_stall = test_stall_ff[TEST_STALL_P];
+   
+   initial
+      $display("=====\n[WARNING] Stall testing enabled (TEST_STALL_P=%d) \n=====\n", TEST_STALL_P);
+`define test_stall test_stall
+`else
+`define test_stall 1'b0
+`endif
+
    //
    // Pipeline stall scope:
    // +---------------------+----------------+
@@ -639,7 +659,7 @@ module cmt
    // | lsu_stall_req       | CMT(s1,s2,s3)  |
    // +---------------------+----------------+
    //
-   assign p_ce_s1_no_icinv_stall = (~lsu_stall_req);
+   assign p_ce_s1_no_icinv_stall = (~lsu_stall_req | `test_stall);
    assign p_ce_s1 = (p_ce_s1_no_icinv_stall & ~icinv_stall_req);
    assign p_ce_s2 = (~lsu_stall_req);
    assign p_ce_s3 = (~lsu_stall_req);
