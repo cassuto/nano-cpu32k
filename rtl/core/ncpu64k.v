@@ -968,6 +968,7 @@ module ncpu64k
          .rob_que_rptr                    (U_ROB.que_rptr),
          .cmt_dft_fire                    (U_CMT.cmt_dft_fire),
          .cmt_exc_flush                   (U_CMT.exc_flush),
+         .cmt_exc_flush_tgt               (U_CMT.exc_flush_tgt),
          .cmt_pc                          (U_CMT.cmt_pc),
          .cmtf_lrd                        (dft_cmtf_lrd),
          .cmtf_lrd_dat                    (dft_cmtf_lrd_dat),

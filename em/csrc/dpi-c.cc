@@ -44,6 +44,7 @@ static svBit rtl_wen[rtl_num_channel];
 static char rtl_wnum[rtl_num_channel];
 static int rtl_wdata[rtl_num_channel];
 static svBit rtl_excp[rtl_num_channel];
+static int rtl_excp_vect[rtl_num_channel];
 static int rtl_irqc_irr;
 
 void startup_difftest(CPU *cpu_, Emu *emu_, uint64_t commit_timeout_max_)
@@ -135,7 +136,8 @@ void dpic_commit_inst(
     svBit wen,
     char wnum,
     int wdata,
-    svBit excp)
+    svBit excp,
+    int excp_vect)
 {
     if (!dpic_enable)
         return;
@@ -148,6 +150,7 @@ void dpic_commit_inst(
     rtl_wnum[(unsigned int)cmt_index] = wnum;
     rtl_wdata[(unsigned int)cmt_index] = wdata;
     rtl_excp[(unsigned int)cmt_index] = excp;
+    rtl_excp_vect[(unsigned int)cmt_index] = excp_vect;
 }
 
 void dpic_step()
@@ -214,9 +217,11 @@ void dpic_step()
                     }
                 }
             }
-
-            /* Synchronize the asynchronous exception from RTL */
-            dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr);
+            else if (rtl_excp_vect[i] == dpic_emu_CPU->get_vect_EIRQ())
+            {
+                /* Synchronize the asynchronous exception from RTL */
+                dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr);
+            }
 
             ArchEvent emu_event;
             vm_addr_t emu_pc = dpic_emu_CPU->get_pc();
@@ -238,8 +243,8 @@ void dpic_step()
             if (emu_event.excp != rtl_excp[i])
             {
                 difftest_report_item("EXCEPTION occurred?", emu_event.excp, rtl_excp[i]);
-                //validated = false;
-                //break;
+                validated = false;
+                break;
             }
         }
     }
