@@ -214,16 +214,20 @@ void dpic_step()
                         /* Synchronize the value of TSR before reading */
                         dpic_emu_CPU->msr_set_tsr(val);
                         break;
+                    case MSR_IRR:
+                        /* FIXME this may be not accurate */
+                        dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr);
+                        break;
                     }
                 }
             }
-            else {
-                printf("v=%#x\n", rtl_excp_vect[i]);
-                if (rtl_excp_vect[i] == dpic_emu_CPU->get_vect_EIRQ())
+            else
             {
-                /* Synchronize the asynchronous exception from RTL */
-                dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr);
-            }
+                if (rtl_excp_vect[i] == dpic_emu_CPU->get_vect_EIRQ())
+                {
+                    /* Synchronize the asynchronous exception from RTL */
+                    dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr);
+                }
             }
 
             ArchEvent emu_event;
