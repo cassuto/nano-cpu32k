@@ -34,7 +34,7 @@ module priority_encoder_gs
 (
    input [(1<<P_DW)-1:0] din,
    output reg [P_DW-1:0] dout
-   , output gs
+   , output reg gs
 );
 
    generate

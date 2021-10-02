@@ -65,8 +65,6 @@ module rob
    input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_opera,
    input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_operb,
    input [`PC_W*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_fls_tgt,
-   // To WB
-   output [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready,
    // To CMT
    output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_valid,
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_epu_opc_bus,
@@ -403,6 +401,4 @@ module rob
    
    assign rob_ready = &que_ready;
    
-   assign wb_ready = {WW{1'b1}};
-
 endmodule

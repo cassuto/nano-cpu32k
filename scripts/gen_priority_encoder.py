@@ -45,7 +45,7 @@ module priority_encoder%s
 );
 
    generate
-""" %('_gs' if has_gs else '', ', output gs' if has_gs else ''))
+""" %('_gs' if has_gs else '', ', output reg gs' if has_gs else ''))
 
         fp.write("      ")
         for P_DW in range(1,P_DW_MAX):

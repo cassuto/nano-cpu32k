@@ -312,7 +312,7 @@ module ncpu64k
    wire [`PC_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_fls_tgt;// From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_opera;// From U_EX of ex.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_operb;// From U_EX of ex.v
-   wire [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready;// From U_WB_MUX of wb_mux.v, ...
+   wire [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready;// From U_WB_MUX of wb_mux.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] wb_rob_bank;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] wb_rob_id;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_valid;// From U_EX of ex.v
@@ -869,7 +869,6 @@ module ncpu64k
        .rob_ready                       (rob_ready),
        .rob_free_id                     (rob_free_id[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0]),
        .rob_free_bank                   (rob_free_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
-       .wb_ready                        (wb_ready[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        .cmt_valid                       (cmt_valid[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        .cmt_epu_opc_bus                 (cmt_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        .cmt_lsu_opc_bus                 (cmt_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),

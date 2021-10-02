@@ -172,6 +172,7 @@ module cmt_lsu
    wire                                s1o_msr_psr_dce;
    // Stage 3 Input / Stage 2 Output
    wire                                s2o_valid;
+   wire                                s2o_req_killed;
    wire [CONFIG_DW-1:0]                s2o_dout_32b;
    wire [7:0]                          s2o_dout_8b;
    wire [15:0]                         s2o_dout_16b;
@@ -372,7 +373,8 @@ module cmt_lsu
    mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_valid), .Q(s1o_valid) );
    mDFF_lr #(.DW(1)) ff_s1o_misalign (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_misalign), .Q(s1o_EALIGN) );
    mDFF_lr #(.DW(1)) ff_s1o_msr_psr_dce (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(msr_psr_dce), .Q(s1o_msr_psr_dce) );
-   mDFF_lr #(.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s2|s2i_kill_req), .D(s1o_valid & ~s2i_kill_req), .Q(s2o_valid) );
+   mDFF_lr #(.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_valid & ~s2i_kill_req), .Q(s2o_valid) );
+   mDFF_lr #(.DW(1)) ff_s2o_s2o_req_killed (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_valid & s2i_kill_req), .Q(s2o_req_killed) );
    
 
    // B/HW align
@@ -393,7 +395,7 @@ module cmt_lsu
 
    assign lsu_vaddr = s1o_vaddr;
 
-   assign lsu_wb_valid = ((s2o_valid | (s1o_valid & s2i_kill_req)) & p_ce_s2);
+   assign lsu_wb_valid = ((s2o_valid | s2o_req_killed) & p_ce_s2);
 
    assign lsu_stall_req = (dc_stall_req);
    
