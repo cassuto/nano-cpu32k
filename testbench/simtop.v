@@ -266,9 +266,9 @@ module simtop
        .io_slave_arburst                (io_slave_arburst[1:0]),
        .io_slave_rready                 (io_slave_rready));
    
-   assign break_point = (U_DUT.U_CORE.U_CMT.U_LSU.U_D_CACHE.fls) |
-                        (U_DUT.U_CORE.U_CMT.U_LSU.U_D_CACHE.inv);
-                        //1'b0;
+   assign break_point = /*(U_DUT.U_CORE.U_CMT.U_LSU.U_D_CACHE.fls) |
+                        (U_DUT.U_CORE.U_CMT.U_LSU.U_D_CACHE.inv)*/
+                        1'b0;
    /*'b0;*/
     
 endmodule

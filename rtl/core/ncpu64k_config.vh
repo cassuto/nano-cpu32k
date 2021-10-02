@@ -26,8 +26,8 @@
 `undef NCPU_CHECK_X
 
 /* Test stall */
-`define NCPU_TEST_STALL
-//`undef NCPU_TEST_STALL
+//`define NCPU_TEST_STALL
+`undef NCPU_TEST_STALL
 
 `ifdef SYNTHESIS
 `undef ENABLE_DIFFTEST
