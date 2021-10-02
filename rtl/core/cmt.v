@@ -235,6 +235,7 @@ module cmt
    /*AUTOINPUT*/
    wire                                p_ce_s1;
    wire                                p_ce_s2;
+   wire                                p_ce_s3;
    wire                                p_ce_s1_no_icinv_stall;
    wire                                icinv_stall_req;
    wire                                cmt_ce;
@@ -408,6 +409,7 @@ module cmt
        .rst                             (rst),
        .p_ce_s1                         (p_ce_s1),
        .p_ce_s2                         (p_ce_s2),
+       .p_ce_s3                         (p_ce_s3),
        .cmt_req_valid                   (lsu_req_valid),         // Templated
        .cmt_lsu_opc_bus                 (cmt_lsu_opc_bus[`NCPU_LSU_IOPW-1:0]),
        .cmt_lsa                         (cmt_opera[0 * CONFIG_DW +: CONFIG_DW]), // Templated
@@ -446,10 +448,10 @@ module cmt
          .cmt_fe                       (cmt_opera[`NCPU_FE_W-1:0]),
          .cmt_exc                      (cmt_exc[0]),
          .cmt_npc                      (cmt_npc_0[]),
-         .s2i_EDTM                     (lsu_EDTM),
-         .s2i_EDPF                     (lsu_EDPF),
-         .s2i_EALIGN                   (lsu_EALIGN),
-         .s2i_vaddr                    (lsu_vaddr[]),
+         .s3i_EDTM                     (lsu_EDTM),
+         .s3i_EDPF                     (lsu_EDPF),
+         .s3i_EALIGN                   (lsu_EALIGN),
+         .s3i_vaddr                    (lsu_vaddr[]),
       )*/
    cmt_epu
       #(/*AUTOINSTPARAM*/
@@ -534,10 +536,10 @@ module cmt
        .cmt_fe                          (cmt_opera[`NCPU_FE_W-1:0]), // Templated
        .cmt_addr                        (cmt_opera[CONFIG_DW-1:0]), // Templated
        .cmt_wdat                        (cmt_operb[CONFIG_DW-1:0]), // Templated
-       .s2i_EDTM                        (lsu_EDTM),              // Templated
-       .s2i_EDPF                        (lsu_EDPF),              // Templated
-       .s2i_EALIGN                      (lsu_EALIGN),            // Templated
-       .s2i_vaddr                       (lsu_vaddr[CONFIG_AW-1:0]), // Templated
+       .s3i_EDTM                        (lsu_EDTM),              // Templated
+       .s3i_EDPF                        (lsu_EDPF),              // Templated
+       .s3i_EALIGN                      (lsu_EALIGN),            // Templated
+       .s3i_vaddr                       (lsu_vaddr[CONFIG_AW-1:0]), // Templated
        .irqs                            (irqs[CONFIG_NUM_IRQ-1:0]),
        .msr_psr                         (msr_psr[`NCPU_PSR_DW-1:0]),
        .msr_psr_ire                     (msr_psr_ire),
@@ -630,16 +632,17 @@ module cmt
        
    //
    // Pipeline stall scope:
-   // +---------------------+-------------+
-   // | Signal              | Scope       |
-   // +---------------------+-------------+
-   // | icinv_stall_req     | CMT(s1)     |
-   // | lsu_stall_req       | CMT(s1,s2)  |
-   // +---------------------+-------------+
+   // +---------------------+----------------+
+   // | Signal              | Scope          |
+   // +---------------------+----------------+
+   // | icinv_stall_req     | CMT(s1)        |
+   // | lsu_stall_req       | CMT(s1,s2,s3)  |
+   // +---------------------+----------------+
    //
    assign p_ce_s1_no_icinv_stall = (~lsu_stall_req);
    assign p_ce_s1 = (p_ce_s1_no_icinv_stall & ~icinv_stall_req);
    assign p_ce_s2 = (~lsu_stall_req);
+   assign p_ce_s3 = (~lsu_stall_req);
        
    assign pipe_finish = (lsu_wb_valid | epu_wb_valid);
    

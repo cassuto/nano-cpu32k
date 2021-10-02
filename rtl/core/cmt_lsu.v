@@ -45,6 +45,7 @@ module cmt_lsu
    input                               rst,
    input                               p_ce_s1,
    input                               p_ce_s2,
+   input                               p_ce_s3,
    output                              lsu_stall_req,
    input                               cmt_req_valid,
    input [`NCPU_LSU_IOPW-1:0]          cmt_lsu_opc_bus,
@@ -164,15 +165,17 @@ module cmt_lsu
    wire                                s2i_uncached;
    wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] s2i_tlb_ppn;
    wire [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] s2i_dc_ppn;
-   wire                                s1o_EDTM;
-   wire                                s1o_EDPF;
+   wire                                s2i_EDTM;
+   wire                                s2i_EDPF;
    wire                                s1o_EALIGN;
    wire [CONFIG_AW-1:0]                s1o_vaddr;
    wire                                s1o_dcop;
    wire                                s1o_msr_psr_dce;
    // Stage 3 Input / Stage 2 Output
    wire                                s2o_valid;
-   wire                                s2o_req_killed;
+   wire                                s2o_EDTM;
+   wire                                s2o_EDPF;
+   wire                                s2o_EALIGN;
    wire [CONFIG_DW-1:0]                s2o_dout_32b;
    wire [7:0]                          s2o_dout_8b;
    wire [15:0]                         s2o_dout_16b;
@@ -242,8 +245,8 @@ module cmt_lsu
          .vpn                          (s1i_dc_vaddr[CONFIG_AW-1:CONFIG_P_PAGE_SIZE]),
          .we                           (s1i_store),
          .ppn                          (s2i_tlb_ppn),
-         .EDTM                         (s1o_EDTM),
-         .EDPF                         (s1o_EDPF),
+         .EDTM                         (s2i_EDTM),
+         .EDPF                         (s2i_EDPF),
          .uncached                     (s2i_tlb_uncached),
          .msr_psr_dmme                 (msr_psr_dmme),
          .msr_psr_rm                   (msr_psr_rm),
@@ -256,7 +259,7 @@ module cmt_lsu
          .msr_dmm_tlbh_we              (msr_dmm_tlbh_we)
       );
 
-   assign s2i_tlb_exc = (s1o_EDTM | s1o_EDPF | s1o_EALIGN);
+   assign s2i_tlb_exc = (s2i_EDTM | s2i_EDPF | s1o_EALIGN);
 
    // Kill the request to D$ if MMU raised exceptions or cache was inhibited
    assign s2i_kill_req = (s2i_tlb_exc);
@@ -365,16 +368,18 @@ module cmt_lsu
    mDFF_l #(.DW(CONFIG_AW)) ff_s1o_vaddr (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_dc_vaddr), .Q(s1o_vaddr) );
    mDFF_l #(.DW(1)) ff_s1o_sign_ext (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_sign_ext), .Q(s1o_sign_ext) );
    mDFF_l #(.DW(1)) ff_s1o_dcop (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_dcop), .Q(s1o_dcop) );
-   mDFF_l #(.DW(CONFIG_AW)) ff_s2o_vaddr (.CLK(clk), .LOAD(p_ce_s1), .D(s1o_vaddr), .Q(s2o_vaddr) );
-   mDFF_l #(.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_ce_s1), .D(s1o_size), .Q(s2o_size) );
-   mDFF_l #(.DW(1)) ff_s2o_sign_ext (.CLK(clk), .LOAD(p_ce_s1), .D(s1o_sign_ext), .Q(s2o_sign_ext) );
+   mDFF_l #(.DW(CONFIG_AW)) ff_s2o_vaddr (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_vaddr), .Q(s2o_vaddr) );
+   mDFF_l #(.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_size), .Q(s2o_size) );
+   mDFF_l #(.DW(1)) ff_s2o_sign_ext (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_sign_ext), .Q(s2o_sign_ext) );
 
    // Control path
    mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_valid), .Q(s1o_valid) );
    mDFF_lr #(.DW(1)) ff_s1o_misalign (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_misalign), .Q(s1o_EALIGN) );
    mDFF_lr #(.DW(1)) ff_s1o_msr_psr_dce (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(msr_psr_dce), .Q(s1o_msr_psr_dce) );
-   mDFF_lr #(.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_valid & ~s2i_kill_req), .Q(s2o_valid) );
-   mDFF_lr #(.DW(1)) ff_s2o_s2o_req_killed (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_valid & s2i_kill_req), .Q(s2o_req_killed) );
+   mDFF_lr #(.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_valid), .Q(s2o_valid) );
+   mDFF_lr #(.DW(1)) ff_s2o_EDTM (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s2i_EDTM), .Q(s2o_EDTM) );
+   mDFF_lr #(.DW(1)) ff_s2o_EDPF (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s2i_EDPF), .Q(s2o_EDPF) );
+   mDFF_lr #(.DW(1)) ff_s2o_EALIGN (.CLK(clk), .RST(rst), .LOAD(p_ce_s2), .D(s1o_EALIGN), .Q(s2o_EALIGN) );
    
 
    // B/HW align
@@ -389,13 +394,13 @@ module cmt_lsu
       ({CONFIG_DW{s2o_size==3'd1}} & {{16{s2o_sign_ext & s2o_dout_16b[15]}}, s2o_dout_16b[15:0]}) |
       ({CONFIG_DW{s2o_size==3'd0}} & {{24{s2o_sign_ext & s2o_dout_8b[7]}}, s2o_dout_8b[7:0]});
 
-   assign lsu_EDTM = (s1o_valid & s1o_EDTM);
-   assign lsu_EDPF = (s1o_valid & s1o_EDPF);
-   assign lsu_EALIGN = (s1o_valid & s1o_EALIGN);
+   assign lsu_EDTM = (s2o_valid & s2o_EDTM);
+   assign lsu_EDPF = (s2o_valid & s2o_EDPF);
+   assign lsu_EALIGN = (s2o_valid & s2o_EALIGN);
 
-   assign lsu_vaddr = s1o_vaddr;
+   assign lsu_vaddr = s2o_vaddr;
 
-   assign lsu_wb_valid = ((s2o_valid | s2o_req_killed) & p_ce_s2);
+   assign lsu_wb_valid = (s2o_valid & p_ce_s3);
 
    assign lsu_stall_req = (dc_stall_req);
    

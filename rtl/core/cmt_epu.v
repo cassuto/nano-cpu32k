@@ -54,10 +54,10 @@ module cmt_epu
    input [`NCPU_FE_W-1:0]              cmt_fe,
    input [CONFIG_DW-1:0]               cmt_addr,
    input [CONFIG_DW-1:0]               cmt_wdat,
-   input                               s2i_EDTM,
-   input                               s2i_EDPF,
-   input                               s2i_EALIGN,
-   input [CONFIG_AW-1:0]               s2i_vaddr,
+   input                               s3i_EDTM,
+   input                               s3i_EDPF,
+   input                               s3i_EALIGN,
+   input [CONFIG_AW-1:0]               s3i_vaddr,
    // To WRITEBACK
    output [CONFIG_DW-1:0]              epu_wb_dout,
    output                              epu_wb_dout_sel,
@@ -478,9 +478,9 @@ module cmt_epu
                                     s1o_commit_EITM |
                                     s1o_commit_EIPF |
                                     s1o_commit_EINSN |
-                                    s2i_EDTM |
-                                    s2i_EDPF |
-                                    s2i_EALIGN |
+                                    s3i_EDTM |
+                                    s3i_EDPF |
+                                    s3i_EALIGN |
                                     s1o_commit_EIRQ));
    assign msr_psr_restore = (p_ce_s2 & s1o_commit_ERET);
    
@@ -513,9 +513,9 @@ module cmt_epu
 
    // Commit ELSA  Assert (03100705)
    assign s1o_set_elsa_as_pc = (s1o_commit_EITM | s1o_commit_EIPF | s1o_commit_EINSN);
-   assign s1o_set_elsa = (s1o_set_elsa_as_pc | s2i_EDTM | s2i_EDPF | s2i_EALIGN);
+   assign s1o_set_elsa = (s1o_set_elsa_as_pc | s3i_EDTM | s3i_EDPF | s3i_EALIGN);
    // Let ELSA be PC if it's IMMU or EINSN exception
-   assign s1o_lsa_nxt = s1o_set_elsa_as_pc ? {s1o_commit_epc,2'b0} : s2i_vaddr;
+   assign s1o_lsa_nxt = s1o_set_elsa_as_pc ? {s1o_commit_epc,2'b0} : s3i_vaddr;
    // Assert (03060933)
    assign msr_elsa_nxt = s1o_set_elsa ? s1o_lsa_nxt : s1o_commit_wmsr_dat;
    assign msr_elsa_we = s1o_set_elsa | s1o_commit_wmsr_elsa_we;
@@ -570,9 +570,9 @@ module cmt_epu
    
    // Exceptions
    // Assert 2105051856
-   assign exc_flush_tgt = ({`PC_W{s2i_EDTM}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EDTM_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
-                           ({`PC_W{s2i_EDPF}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EDPF_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
-                           ({`PC_W{s2i_EALIGN}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EALIGN_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
+   assign exc_flush_tgt = ({`PC_W{s3i_EDTM}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EDTM_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
+                           ({`PC_W{s3i_EDPF}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EDPF_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
+                           ({`PC_W{s3i_EALIGN}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EALIGN_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
                            ({`PC_W{s1o_commit_ESYSCALL}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_ESYSCALL_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
                            ({`PC_W{s1o_commit_ERET}} & msr_epc[`NCPU_P_INSN_LEN +: `PC_W]) |
                            ({`PC_W{s1o_commit_EITM}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EITM_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
@@ -580,9 +580,9 @@ module cmt_epu
                            ({`PC_W{s1o_commit_EIRQ}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EIRQ_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]}) |
                            ({`PC_W{s1o_commit_EINSN}} & {s1o_msr_evect[CONFIG_AW-1:`EXCP_VECT_W], CONFIG_EINSN_VECTOR[`EXCP_VECT_W-1:`NCPU_P_INSN_LEN]});
 
-   assign exc_flush = p_ce_s2 & (s2i_EDTM |
-                        s2i_EDPF |
-                        s2i_EALIGN |
+   assign exc_flush = p_ce_s2 & (s3i_EDTM |
+                        s3i_EDPF |
+                        s3i_EALIGN |
                         s1o_commit_ESYSCALL |
                         s1o_commit_ERET |
                         s1o_commit_EITM |
@@ -657,15 +657,15 @@ module cmt_epu
          if ((s1o_commit_EITM + s1o_commit_EIPF +
                s1o_commit_EINSN +
                s1o_commit_ESYSCALL + s1o_commit_ERET +
-               s2i_EDTM + s2i_EDPF + s2i_EALIGN +
+               s3i_EDTM + s3i_EDPF + s3i_EALIGN +
                s1o_commit_EIRQ +
                s1o_commit_wmsr_psr_we)>'d1)
             $fatal (1, "\n Bugs on exception sources (IMMU, IDU, AGU and DMMU)\n");
 
          // Assertions 2105051856
-         if ((s2i_EDTM +
-               s2i_EDPF +
-               s2i_EALIGN +
+         if ((s3i_EDTM +
+               s3i_EDPF +
+               s3i_EALIGN +
                s1o_commit_ESYSCALL +
                s1o_commit_ERET +
                s1o_commit_EITM +
