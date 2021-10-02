@@ -333,9 +333,10 @@ module cmt
 `endif
 
    assign pipe_req = (cmt_ready_2_fire[0] & (lsu_req[0] | epu_req[0]));
-   assign lsu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_ready_2_fire[0] & lsu_req[0]);
-   assign epu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_ready_2_fire[0] & epu_req[0]);
    
+   // EPU may send request to LSU
+   assign lsu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_ready_2_fire[0] & (lsu_req[0] | epu_req[0]));
+   assign epu_req_valid = ((fsm_state_ff==S_IDLE) & cmt_ready_2_fire[0] & epu_req[0]);
    
    // Count the number of commits
    popcnt #(.DW(CW), .P_DW(CONFIG_P_COMMIT_WIDTH)) U_CLO (.bitmap(cmt_fire), .count(cmt_pop_size) );
