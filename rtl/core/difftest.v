@@ -82,7 +82,7 @@ module difftest
    
    mDFF_r #(.DW(CW)) ff_commit_valid (.CLK(clk), .RST(rst), .D(cmt_dft_fire), .Q(commit_valid_ff));
    mDFF_r #(.DW(1)) ff_commit_excp (.CLK(clk), .RST(rst), .D(cmt_exc_flush), .Q(commit_excp_ff));
-   mDFF_r #(.DW(8)) ff_commit_excp_vect_ff (.CLK(clk), .RST(rst), .D(cmt_exc_flush_tgt[7:0]), .Q(commit_excp_vect_ff));
+   mDFF_r #(.DW(8)) ff_commit_excp_vect_ff (.CLK(clk), .RST(rst), .D({cmt_exc_flush_tgt[5:0],2'b00}), .Q(commit_excp_vect_ff));
    mDFF #(.DW(`PC_W*CW)) ff_commit_pc (.CLK(clk), .D(cmt_pc), .Q(commit_pc_ff));
    mDFF #(.DW(`NCPU_INSN_DW*CW)) ff_commit_ins (.CLK(clk), .D(cmt_ins), .Q(commit_ins_ff));
    assign commit_rf_waddr_ff = cmtf_lrd;
