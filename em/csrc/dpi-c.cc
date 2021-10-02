@@ -104,7 +104,7 @@ static void difftest_report_reg(svBit valid[], int pc[])
     fprintf(stderr, "Emu PC:\n");
     dpic_emu_CPU->get_pc_queue()->dump();
 
-    fprintf(stderr, "Reference registers: (Next PC=%#X)\n", dpic_emu_CPU->get_pc());
+    fprintf(stderr, "Reference registers: (Next PC=%#x)\n", dpic_emu_CPU->get_pc());
     for (int i = 0; i < 32; i++)
     {
         cpu_word_t right = dpic_emu_CPU->get_reg(i);
@@ -217,10 +217,13 @@ void dpic_step()
                     }
                 }
             }
-            else if (rtl_excp_vect[i] == dpic_emu_CPU->get_vect_EIRQ())
+            else {
+                printf("v=%#x\n", rtl_excp_vect[i]);
+                if (rtl_excp_vect[i] == dpic_emu_CPU->get_vect_EIRQ())
             {
                 /* Synchronize the asynchronous exception from RTL */
                 dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr);
+            }
             }
 
             ArchEvent emu_event;
