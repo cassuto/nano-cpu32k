@@ -279,8 +279,7 @@ module cmt
          end
    endgenerate
    
-   assign single_fu =
-      (lsu_req | epu_req | cmt_fls | cmt_b);
+   assign single_fu = (lsu_req | epu_req | cmt_fls | cmt_b);
    
    // `se_fls` has the highest priority
    assign flush = (s1o_se_fls | exc_flush);
