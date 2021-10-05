@@ -660,9 +660,9 @@ module dcache
 
    // Write mask for uncached access
    assign axi_uncached_wstrb = (s2o_size == 3'd0)
-                                 ? 4'b0001
+                                 ? {s2o_paddr[1:0]==2'd3, s2o_paddr[1:0]==2'd2, s2o_paddr[1:0]==2'd1, s2o_paddr[1:0]==2'd0}
                                  : (s2o_size == 3'd1)
-                                    ? 4'b0011
+                                    ? {s2o_paddr[0], s2o_paddr[0], ~s2o_paddr[0], ~s2o_paddr[0]}
                                     : 4'b1111 /* (s2o_size == 3'd2) */;
    
    assign axi_align_be = {PAYLOAD_DW/8{fsm_state_ff == S_WRITEBACK}} |
