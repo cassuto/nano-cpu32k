@@ -109,16 +109,16 @@ void Axi4Crossbar::check_wstrb(uint64_t address, uint8_t wstrb, uint8_t beatsize
     switch (beatsize)
     {
     case 8:
-        excp_wstrb = 0xFFFFFFFFFFFFFFFFUL >> (bytelane << 3);
+        excp_wstrb = 0xFF >> bytelane;
         break;
     case 4:
-        excp_wstrb = (0xFFFFFFFFFFFFFFFFUL >> (bytelane << 3)) & 0xFFFFFFFF;
+        excp_wstrb = (0xFF >> bytelane) & 0xF;
         break;
     case 2:
-        excp_wstrb = (0xFFFFFFFFFFFFFFFFUL >> (bytelane << 3)) & 0xFFFF;
+        excp_wstrb = (0xFF >> bytelane) & 0x3;
         break;
     case 1:
-        excp_wstrb = (0xFFFFFFFFFFFFFFFFUL >> (bytelane << 3)) & 0xFF;
+        excp_wstrb = (0xFF >> bytelane) & 0x1;
         break;
     default:
         assert(0);
