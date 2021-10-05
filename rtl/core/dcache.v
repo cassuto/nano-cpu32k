@@ -202,8 +202,11 @@ module dcache
    wire [PAYLOAD_DW-1:0]               axi_aligned_rdata_ff;
    wire [PAYLOAD_DW/8-1:0]             axi_aligned_rdata_ff_wmsk;
    wire [PAYLOAD_DW-1:0]               axi_aligned_rdata_nxt;
-   wire [PAYLOAD_DW/8-1:0]             axi_uncached_wstrb;
-   wire [PAYLOAD_DW/8-1:0]             axi_align_be;
+   wire [(1<<AXI_P_DW_BYTES)-1:0]      axi_align_be;
+   wire [(1<<AXI_P_DW_BYTES)*8-1:0]    axi_align_dat;
+   wire [(1<<AXI_P_DW_BYTES)-1:0]      axi_uncached_wstrb;
+   wire [(1<<AXI_P_DW_BYTES)*8-1:0]    axi_uncached_wdata;
+   reg  [(1<<AXI_P_DW_BYTES)*8-1:0]    axi_uncached_wdata8, axi_uncached_wdata16, axi_uncached_wdata32;
 
    localparam [3:0] S_BOOT             = 4'd0;
    localparam [3:0] S_IDLE             = 4'd1;
@@ -658,17 +661,69 @@ module dcache
    // AXI - W
    assign dbus_WUSER = 'b0;
 
-   // Write mask for uncached access
-   assign axi_uncached_wstrb = (s2o_size == 3'd0)
-                                 ? {s2o_paddr[1:0]==2'd3, s2o_paddr[1:0]==2'd2, s2o_paddr[1:0]==2'd1, s2o_paddr[1:0]==2'd0}
-                                 : (s2o_size == 3'd1)
-                                    ? {s2o_paddr[0], s2o_paddr[0], ~s2o_paddr[0], ~s2o_paddr[0]}
-                                    : 4'b1111 /* (s2o_size == 3'd2) */;
+   generate
+      if (PAYLOAD_P_DW_BYTES == 2 && AXI_P_DW_BYTES == 3)
+         begin
+            // Write mask for uncached access
+            assign axi_uncached_wstrb = (s2o_size == 3'd0)
+                                          ? {s2o_paddr[2:0]==3'd7, s2o_paddr[2:0]==3'd6, s2o_paddr[2:0]==3'd5, s2o_paddr[2:0]==3'd4,
+                                             s2o_paddr[2:0]==3'd3, s2o_paddr[2:0]==3'd2, s2o_paddr[2:0]==3'd1, s2o_paddr[2:0]==3'd0}
+                                          : (s2o_size == 3'd1)
+                                             ? {s2o_paddr[1:0]==2'd3, s2o_paddr[1:0]==2'd3, s2o_paddr[1:0]==2'd2, s2o_paddr[1:0]==2'd2,
+                                                s2o_paddr[1:0]==2'd1, s2o_paddr[1:0]==2'd1, s2o_paddr[1:0]==2'd0, s2o_paddr[1:0]==2'd0}
+                                             : {s2o_paddr[0], s2o_paddr[0], s2o_paddr[0], s2o_paddr[0],
+                                                ~s2o_paddr[0], ~s2o_paddr[0], ~s2o_paddr[0], ~s2o_paddr[0]};
+            
+            // Convert byte lanes
+            always @(*)
+               case(s2o_paddr[2:0])
+                  3'd0: axi_uncached_wdata8 = {56'b0, s2o_wdat[0 +: 8]};
+                  3'd1: axi_uncached_wdata8 = {48'b0, s2o_wdat[8 +: 8], 8'b0};
+                  3'd2: axi_uncached_wdata8 = {40'b0, s2o_wdat[16 +: 8], 16'b0};
+                  3'd3: axi_uncached_wdata8 = {32'b0, s2o_wdat[24 +: 8], 24'b0};
+                  3'd4: axi_uncached_wdata8 = {24'b0, s2o_wdat[0 +: 8], 32'b0};
+                  3'd5: axi_uncached_wdata8 = {16'b0, s2o_wdat[8 +: 8], 40'b0};
+                  3'd6: axi_uncached_wdata8 = {8'b0, s2o_wdat[16 +: 8], 48'b0};
+                  3'd7: axi_uncached_wdata8 = {s2o_wdat[24 +: 8], 56'b0};
+               endcase
+            
+            always @(*)
+               case (s2o_paddr[1:0])
+                 2'd0: axi_uncached_wdata16 = {48'b0, s2o_wdat[0 +: 16]};
+                 2'd1: axi_uncached_wdata16 = {32'b0, s2o_wdat[16 +: 16], 16'b0};
+                 2'd2: axi_uncached_wdata16 = {16'b0, s2o_wdat[0 +: 16], 32'b0};
+                 2'd3: axi_uncached_wdata16 = {s2o_wdat[16 +: 16], 48'b0};
+               endcase
+            
+            always @(*)
+               case (s2o_paddr[0])
+                  1'd0: axi_uncached_wdata32 = {32'b0, s2o_wdat[0 +: 32]};
+                  1'd1: axi_uncached_wdata32 = {s2o_wdat[0 +: 32], 32'b0};
+               endcase
+            
+            assign axi_uncached_wdata = (s2o_size == 3'd0)
+                                          ? axi_uncached_wdata8
+                                          : (s2o_size == 3'd1)
+                                             ? axi_uncached_wdata16
+                                             : axi_uncached_wdata32 /* (s2o_size == 3'd2) */;
+         end
    
-   assign axi_align_be = {PAYLOAD_DW/8{fsm_state_ff == S_WRITEBACK}} |
-                           ({PAYLOAD_DW/8{fsm_state_ff == S_UNCACHED_WRITE}} & axi_uncached_wstrb);
+   endgenerate
    
    // Aligner for AXI W
+   generate
+      if(AXI_P_DW_BYTES == 3 && PAYLOAD_P_DW_BYTES == 2)
+         begin
+            assign dbus_WDATA = (fsm_state_ff == S_WRITEBACK)
+                                    ? axi_align_dat
+                                    : axi_uncached_wdata /* fsm_state_ff == S_UNCACHED_WRITE */;
+            
+            assign dbus_WSTRB = (fsm_state_ff == S_WRITEBACK)
+                                    ? axi_align_be
+                                    : axi_uncached_wstrb /* fsm_state_ff == S_UNCACHED_WRITE */;
+         end
+   endgenerate
+   
    align_w
       #(
          .IN_P_DW_BYTES                      (AXI_P_DW_BYTES),
@@ -677,11 +732,11 @@ module dcache
       )
    U_ALIGN_W
       (
-         .i_dat                              ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_payload : s2o_wdat),
-         .i_be                               (axi_align_be),
-         .i_addr                             ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_addr : dbus_AWADDR[CONFIG_DC_P_LINE-1:0]),
-         .o_be                               (dbus_WSTRB),
-         .o_out_wdat                         (dbus_WDATA)
+         .i_dat                              (s2o_wb_payload),
+         .i_be                               ({PAYLOAD_DW/8{fsm_state_ff == S_WRITEBACK}}),
+         .i_addr                             (s2o_wb_addr),
+         .o_be                               (axi_align_be),
+         .o_out_wdat                         (axi_align_dat)
       );
 
    // Look ahead one address, since payload RAM takes 1 cycle to output the result
