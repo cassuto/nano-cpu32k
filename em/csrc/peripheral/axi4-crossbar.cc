@@ -123,8 +123,10 @@ void Axi4Crossbar::check_wstrb(uint64_t address, uint8_t wstrb, uint8_t beatsize
     default:
         assert(0);
     }
-    if (wstrb != excp_wstrb) {
-        fprintf(stderr, "WSTRB is invalid.");
+    if (wstrb != excp_wstrb)
+    {
+        fprintf(stderr, "WSTRB is invalid. Expected %#x, got %#x, at address %#lx (size = %d)\n",
+                excp_wstrb, wstrb, address, beatsize);
         assert(0);
     }
 }
