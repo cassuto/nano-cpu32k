@@ -669,10 +669,10 @@ module dcache
                                           ? {s2o_paddr[2:0]==3'd7, s2o_paddr[2:0]==3'd6, s2o_paddr[2:0]==3'd5, s2o_paddr[2:0]==3'd4,
                                              s2o_paddr[2:0]==3'd3, s2o_paddr[2:0]==3'd2, s2o_paddr[2:0]==3'd1, s2o_paddr[2:0]==3'd0}
                                           : (s2o_size == 3'd1)
-                                             ? {s2o_paddr[1:0]==2'd3, s2o_paddr[1:0]==2'd3, s2o_paddr[1:0]==2'd2, s2o_paddr[1:0]==2'd2,
-                                                s2o_paddr[1:0]==2'd1, s2o_paddr[1:0]==2'd1, s2o_paddr[1:0]==2'd0, s2o_paddr[1:0]==2'd0}
-                                             : {s2o_paddr[0], s2o_paddr[0], s2o_paddr[0], s2o_paddr[0],
-                                                ~s2o_paddr[0], ~s2o_paddr[0], ~s2o_paddr[0], ~s2o_paddr[0]};
+                                             ? {s2o_paddr[2:1]==2'd3, s2o_paddr[2:1]==2'd3, s2o_paddr[2:1]==2'd2, s2o_paddr[2:1]==2'd2,
+                                                s2o_paddr[2:1]==2'd1, s2o_paddr[2:1]==2'd1, s2o_paddr[2:1]==2'd0, s2o_paddr[2:1]==2'd0}
+                                             : {s2o_paddr[2], s2o_paddr[2], s2o_paddr[2], s2o_paddr[2],
+                                                ~s2o_paddr[2], ~s2o_paddr[2], ~s2o_paddr[2], ~s2o_paddr[2]};
             
             // Convert byte lanes
             always @(*)
@@ -688,7 +688,7 @@ module dcache
                endcase
             
             always @(*)
-               case (s2o_paddr[1:0])
+               case (s2o_paddr[2:1])
                  2'd0: axi_uncached_wdata16 = {48'b0, s2o_wdat[0 +: 16]};
                  2'd1: axi_uncached_wdata16 = {32'b0, s2o_wdat[16 +: 16], 16'b0};
                  2'd2: axi_uncached_wdata16 = {16'b0, s2o_wdat[0 +: 16], 32'b0};
@@ -696,7 +696,7 @@ module dcache
                endcase
             
             always @(*)
-               case (s2o_paddr[0])
+               case (s2o_paddr[2])
                   1'd0: axi_uncached_wdata32 = {32'b0, s2o_wdat[0 +: 32]};
                   1'd1: axi_uncached_wdata32 = {s2o_wdat[0 +: 32], 32'b0};
                endcase
