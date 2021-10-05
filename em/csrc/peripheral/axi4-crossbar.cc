@@ -102,6 +102,33 @@ void Axi4Crossbar::pwrite(uint64_t address, uint64_t dat, uint8_t beatsize)
     }
 }
 
+void Axi4Crossbar::check_wstrb(uint64_t address, uint8_t wstrb, uint8_t beatsize)
+{
+    uint32_t bytelane = address & (sizeof(uint64_t) - 1);
+    uint8_t excp_wstrb;
+    switch (beatsize)
+    {
+    case 8:
+        excp_wstrb = 0xFFFFFFFFFFFFFFFFUL >> (bytelane << 3);
+        break;
+    case 4:
+        excp_wstrb = (0xFFFFFFFFFFFFFFFFUL >> (bytelane << 3)) & 0xFFFFFFFF;
+        break;
+    case 2:
+        excp_wstrb = (0xFFFFFFFFFFFFFFFFUL >> (bytelane << 3)) & 0xFFFF;
+        break;
+    case 1:
+        excp_wstrb = (0xFFFFFFFFFFFFFFFFUL >> (bytelane << 3)) & 0xFF;
+        break;
+    default:
+        assert(0);
+    }
+    if (wstrb != excp_wstrb) {
+        fprintf(stderr, "WSTRB is invalid.");
+        assert(0);
+    }
+}
+
 void Axi4Crossbar::axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *req)
 {
     uint64_t address = ar.addr;
@@ -280,6 +307,7 @@ void Axi4Crossbar::clk_rising(const axi_channel &axi)
         // FIXME For MMIO, wstrb behaves incorrectly
         uint64_t wdat = pread(waddr, wait_req_w->size);
         axi_get_wdata(axi, &wdat, &wdat, sizeof(uint64_t));
+        check_wstrb(waddr, axi.w.strb, wait_req_w->size);
         pwrite(waddr, wdat, wait_req_w->size);
 
         wait_req_w->offset++;

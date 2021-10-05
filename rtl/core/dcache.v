@@ -202,6 +202,8 @@ module dcache
    wire [PAYLOAD_DW-1:0]               axi_aligned_rdata_ff;
    wire [PAYLOAD_DW/8-1:0]             axi_aligned_rdata_ff_wmsk;
    wire [PAYLOAD_DW-1:0]               axi_aligned_rdata_nxt;
+   wire [PAYLOAD_DW/8-1:0]             axi_uncached_wstrb;
+   wire [PAYLOAD_DW/8-1:0]             axi_align_be;
 
    localparam [3:0] S_BOOT             = 4'd0;
    localparam [3:0] S_IDLE             = 4'd1;
@@ -656,6 +658,16 @@ module dcache
    // AXI - W
    assign dbus_WUSER = 'b0;
 
+   // Write mask for uncached access
+   assign axi_uncached_wstrb = (s2o_size == 3'd0)
+                                 ? 4'b0001
+                                 : (s2o_size == 3'd1)
+                                    ? 4'b0011
+                                    : 4'b1111 /* (s2o_size == 3'd2) */;
+   
+   assign axi_align_be = {PAYLOAD_DW/8{fsm_state_ff == S_WRITEBACK}} |
+                           ({PAYLOAD_DW/8{fsm_state_ff == S_UNCACHED_WRITE}} & axi_uncached_wstrb);
+   
    // Aligner for AXI W
    align_w
       #(
@@ -666,7 +678,7 @@ module dcache
    U_ALIGN_W
       (
          .i_dat                              ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_payload : s2o_wdat),
-         .i_en                               ((fsm_state_ff == S_WRITEBACK) | (fsm_state_ff == S_UNCACHED_WRITE)),
+         .i_be                               (axi_align_be),
          .i_addr                             ((fsm_state_ff == S_WRITEBACK) ? s2o_wb_addr : dbus_AWADDR[CONFIG_DC_P_LINE-1:0]),
          .o_be                               (dbus_WSTRB),
          .o_out_wdat                         (dbus_WDATA)

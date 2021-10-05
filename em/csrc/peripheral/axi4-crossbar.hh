@@ -51,6 +51,7 @@ private:
     void pwrite(uint64_t address, uint64_t dat, uint8_t beatsize);
     Axi4CrossbarRequest *axi_request(const axi_channel &axi, bool is_write);
     void axi_read_data(const axi_ar_channel &ar, Axi4CrossbarRequest *req);
+    void check_wstrb(uint64_t address, uint8_t wstrb, uint8_t beatsize);
 
 private:
     Memory *mem;
