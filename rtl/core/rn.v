@@ -41,7 +41,7 @@ module rn
    output                              rn_stall_req,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0]                rn_valid,
    input [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_alu_opc_bus,
-   input [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lpu_opc_bus,
+//   input [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lpu_opc_bus,
    input [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_epu_opc_bus,
    input [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_bru_opc_bus,
    input [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lsu_opc_bus,
@@ -70,7 +70,7 @@ module rn
    // To issue
    output                              issue_p_ce,
    output [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_alu_opc_bus,
-   output [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lpu_opc_bus,
+//   output [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lpu_opc_bus,
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_epu_opc_bus,
    output [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_bru_opc_bus,
    output [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lsu_opc_bus,
@@ -206,7 +206,7 @@ module rn
    //
    mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush), .D(rn_valid & {IW{~flush}}), .Q(s1o_valid) );
    mDFF_l # (.DW(`NCPU_ALU_IOPW*IW)) ff_issue_alu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_alu_opc_bus), .Q(issue_alu_opc_bus) );
-   mDFF_l # (.DW(`NCPU_LPU_IOPW*IW)) ff_issue_lpu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lpu_opc_bus), .Q(issue_lpu_opc_bus) );
+//   mDFF_l # (.DW(`NCPU_LPU_IOPW*IW)) ff_issue_lpu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lpu_opc_bus), .Q(issue_lpu_opc_bus) );
    mDFF_l # (.DW(`NCPU_EPU_IOPW*IW)) ff_issue_epu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_epu_opc_bus), .Q(issue_epu_opc_bus) );
    mDFF_l # (.DW(`NCPU_BRU_IOPW*IW)) ff_issue_bru_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_bru_opc_bus), .Q(issue_bru_opc_bus) );
    mDFF_l # (.DW(`NCPU_LSU_IOPW*IW)) ff_issue_lsu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lsu_opc_bus), .Q(issue_lsu_opc_bus) );

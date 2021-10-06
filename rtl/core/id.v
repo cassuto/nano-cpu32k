@@ -31,11 +31,11 @@ module id
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_PHT_P_NUM = 0,
    parameter                           CONFIG_BTB_P_NUM = 0,
-   parameter                           CONFIG_ENABLE_MUL = 0,
-   parameter                           CONFIG_ENABLE_DIV = 0,
-   parameter                           CONFIG_ENABLE_DIVU = 0,
-   parameter                           CONFIG_ENABLE_MOD = 0,
-   parameter                           CONFIG_ENABLE_MODU = 0,
+//   parameter                           CONFIG_ENABLE_MUL = 0,
+//   parameter                           CONFIG_ENABLE_DIV = 0,
+//   parameter                           CONFIG_ENABLE_DIVU = 0,
+//   parameter                           CONFIG_ENABLE_MOD = 0,
+//   parameter                           CONFIG_ENABLE_MODU = 0,
    parameter                           CONFIG_ENABLE_ASR = 0
 )
 (
@@ -55,7 +55,7 @@ module id
    // To EX
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0]                rn_valid,
    output [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_alu_opc_bus,
-   output [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lpu_opc_bus,
+//   output [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lpu_opc_bus,
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_epu_opc_bus,
    output [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_bru_opc_bus,
    output [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lsu_opc_bus,
@@ -76,7 +76,7 @@ module id
    wire                                p_ce;
    wire [IW-1:0]                       valid;
    wire [`NCPU_ALU_IOPW*IW-1:0]        s1i_alu_opc_bus;
-   wire [`NCPU_LPU_IOPW*IW-1:0]        s1i_lpu_opc_bus;
+//   wire [`NCPU_LPU_IOPW*IW-1:0]        s1i_lpu_opc_bus;
    wire [`NCPU_EPU_IOPW*IW-1:0]        s1i_epu_opc_bus;
    wire [`NCPU_BRU_IOPW*IW-1:0]        s1i_bru_opc_bus;
    wire [`NCPU_LSU_IOPW*IW-1:0]        s1i_lsu_opc_bus;
@@ -96,13 +96,7 @@ module id
             id_dec
                #(/*AUTOINSTPARAM*/
                  // Parameters
-                 .CONFIG_AW             (CONFIG_AW),
                  .CONFIG_DW             (CONFIG_DW),
-                 .CONFIG_ENABLE_MUL     (CONFIG_ENABLE_MUL),
-                 .CONFIG_ENABLE_DIV     (CONFIG_ENABLE_DIV),
-                 .CONFIG_ENABLE_DIVU    (CONFIG_ENABLE_DIVU),
-                 .CONFIG_ENABLE_MOD     (CONFIG_ENABLE_MOD),
-                 .CONFIG_ENABLE_MODU    (CONFIG_ENABLE_MODU),
                  .CONFIG_ENABLE_ASR     (CONFIG_ENABLE_ASR))
             U_DEC
                (
@@ -112,7 +106,7 @@ module id
                   .irq_async           (irq_async),
                   
                   .alu_opc_bus         (s1i_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
-                  .lpu_opc_bus         (s1i_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]),
+//                  .lpu_opc_bus         (s1i_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]),
                   .epu_opc_bus         (s1i_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
                   .bru_opc_bus         (s1i_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
                   .lsu_opc_bus         (s1i_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
@@ -141,7 +135,7 @@ module id
    //
    mDFF_lr # (.DW(IW)) ff_rn_valid (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(valid & {IW{~flush}}), .Q(rn_valid) );
    mDFF_l # (.DW(`NCPU_ALU_IOPW*IW)) ff_rn_alu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_alu_opc_bus), .Q(rn_alu_opc_bus) );
-   mDFF_l # (.DW(`NCPU_LPU_IOPW*IW)) ff_rn_lpu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_lpu_opc_bus), .Q(rn_lpu_opc_bus) );
+//   mDFF_l # (.DW(`NCPU_LPU_IOPW*IW)) ff_rn_lpu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_lpu_opc_bus), .Q(rn_lpu_opc_bus) );
    mDFF_l # (.DW(`NCPU_EPU_IOPW*IW)) ff_rn_epu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_epu_opc_bus), .Q(rn_epu_opc_bus) );
    mDFF_l # (.DW(`NCPU_BRU_IOPW*IW)) ff_rn_bru_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_bru_opc_bus), .Q(rn_bru_opc_bus) );
    mDFF_l # (.DW(`NCPU_LSU_IOPW*IW)) ff_rn_lsu_opc_bus (.CLK(clk), .LOAD(p_ce), .D(s1i_lsu_opc_bus), .Q(rn_lsu_opc_bus) );

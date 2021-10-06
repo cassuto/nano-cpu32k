@@ -131,7 +131,6 @@ module cmt_lsu
    input [CONFIG_DW-1:0]               msr_dcfls_nxt,
    input                               msr_dcfls_we
 );
-   localparam CONFIG_P_DW_BYTES        = (CONFIG_P_DW-3);
    /*AUTOWIRE*/
    // Beginning of automatic wires (for undeclared instantiated-module outputs)
    wire                 dc_stall_req;           // From U_D_CACHE of dcache.v

@@ -42,7 +42,7 @@ module issue
    // From RN
    input                               issue_p_ce,
    input [`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_alu_opc_bus,
-   input [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lpu_opc_bus,
+//   input [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lpu_opc_bus,
    input [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_epu_opc_bus,
    input [`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_bru_opc_bus,
    input [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lsu_opc_bus,
@@ -89,7 +89,7 @@ module issue
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0] ro_bru_opc_bus,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_epu_op,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ro_imm,
-   output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ro_lpu_opc_bus,
+//   output [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ro_lpu_opc_bus,
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_lsu_op,
    output [`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_fe,
    output [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ro_pc,
@@ -168,7 +168,6 @@ module issue
                  // Parameters
                  .CONFIG_DW             (CONFIG_DW),
                  .CONFIG_AW             (CONFIG_AW),
-                 .CONFIG_P_ISSUE_WIDTH  (CONFIG_P_ISSUE_WIDTH),
                  .CONFIG_P_COMMIT_WIDTH (CONFIG_P_COMMIT_WIDTH),
                  .CONFIG_P_ROB_DEPTH    (CONFIG_P_ROB_DEPTH),
                  .CONFIG_P_RS_DEPTH     (CONFIG_P_RS_DEPTH))
@@ -178,7 +177,6 @@ module issue
                 .issue_rs_full          (issue_rs_full[i]),      // Templated
                 .ro_valid               (ro_valid[i]),           // Templated
                 .ro_alu_opc_bus         (ro_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]), // Templated
-                .ro_lpu_opc_bus         (ro_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]), // Templated
                 .ro_epu_op              (ro_epu_op[i]),          // Templated
                 .ro_bru_opc_bus         (ro_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]), // Templated
                 .ro_bpu_pred_taken      (ro_bpu_pred_taken[i]),  // Templated
@@ -200,11 +198,10 @@ module issue
                 .rst                    (rst),
                 .flush                  (flush),
                 .issue_alu_opc_bus      (issue_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]), // Templated
-                .issue_lpu_opc_bus      (issue_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]), // Templated
                 .issue_epu_op           (|issue_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]), // Templated
                 .issue_bru_opc_bus      (issue_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]), // Templated
                 .issue_lsu_op           (|issue_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]), // Templated
-                .issue_fe               (issue_fe[`NCPU_FE_W-1:0]),
+                .issue_fe               (issue_fe[i*`NCPU_FE_W +: `NCPU_FE_W]), // Templated
                 .issue_bpu_pred_taken   (bpu_upd_bundle[`BPU_UPD_TAKEN]), // Templated
                 .issue_bpu_pred_tgt     (bpu_upd_bundle[`BPU_UPD_TGT]), // Templated
                 .issue_pc               (issue_pc[i*`PC_W +: `PC_W]), // Templated

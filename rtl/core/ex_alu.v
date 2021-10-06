@@ -27,11 +27,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module ex_alu
 #(
    parameter                           CONFIG_DW = 0,
-   parameter                           CONFIG_ENABLE_MUL = 0,
-   parameter                           CONFIG_ENABLE_DIV = 0,
-   parameter                           CONFIG_ENABLE_DIVU = 0,
-   parameter                           CONFIG_ENABLE_MOD = 0,
-   parameter                           CONFIG_ENABLE_MODU = 0,
+   //parameter                           CONFIG_ENABLE_MUL = 0,
+   //parameter                           CONFIG_ENABLE_DIV = 0,
+   //parameter                           CONFIG_ENABLE_DIVU = 0,
+   //parameter                           CONFIG_ENABLE_MOD = 0,
+   //parameter                           CONFIG_ENABLE_MODU = 0,
    parameter                           CONFIG_ENABLE_ASR = 0
 )
 (

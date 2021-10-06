@@ -159,7 +159,7 @@ module icache
    localparam [2:0] S_UNCACHED_BOOT    = 3'd6;
    localparam [2:0] S_UNCACHED_READ    = 3'd7;
 
-   genvar way, i, j;
+   genvar way, j;
 
    assign s2i_paddr = {ppn_s2, s1o_vpo};
 

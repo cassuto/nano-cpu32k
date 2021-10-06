@@ -123,11 +123,11 @@ module immu
 
    wire tlb_v = tlb_l_ff[0];
    wire [VPN_DW-1:0] tlb_vpn = tlb_l_ff[CONFIG_DW-1:CONFIG_DW-VPN_DW];
-   wire tlb_p = tlb_h_ff[0];
+//   wire tlb_p = tlb_h_ff[0];
    wire tlb_ux = tlb_h_ff[3];
    wire tlb_rx = tlb_h_ff[4];
    wire tlb_unc = tlb_h_ff[7];
-   wire tlb_s = tlb_h_ff[8];
+//   wire tlb_s = tlb_h_ff[8];
    wire [PPN_DW-1:0] tlb_ppn = tlb_h_ff[CONFIG_DW-1:CONFIG_DW-PPN_DW];
    wire perm_denied;
    wire tlb_miss;

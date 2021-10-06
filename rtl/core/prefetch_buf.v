@@ -42,7 +42,7 @@ module prefetch_buf
    input [`FNT_EXC_W * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_exc,
    input [`BPU_UPD_W * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_bpu_upd,
    input [CONFIG_P_FETCH_WIDTH:0]      iq_push_cnt,
-   input [CONFIG_P_FETCH_WIDTH:0]      iq_push_offset,
+   input [CONFIG_P_FETCH_WIDTH-1:0]    iq_push_offset,
    output                              iq_ready,
    // To ID
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid,
@@ -53,7 +53,6 @@ module prefetch_buf
    output [`BPU_UPD_W * (1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_bpu_upd
 );
    localparam FW                       = (1<<CONFIG_P_FETCH_WIDTH);
-   localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam FIFO_DW                  = (`NCPU_INSN_DW + `PC_W + `FNT_EXC_W + `BPU_UPD_W); // INST + PC + EXC + BPU
    localparam P_BANKS                  = (CONFIG_P_FETCH_WIDTH);
    localparam BANKS                    = (1<<P_BANKS);

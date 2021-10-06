@@ -28,7 +28,6 @@ module issue_rs
 #(
    parameter                           CONFIG_DW = 0,
    parameter                           CONFIG_AW = 0,
-   parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0,
    parameter                           CONFIG_P_ROB_DEPTH = 0,
    parameter                           CONFIG_P_RS_DEPTH = 0
@@ -40,7 +39,7 @@ module issue_rs
    output                              issue_rs_full,
    // From RN
    input [`NCPU_ALU_IOPW-1:0]          issue_alu_opc_bus,
-   input [`NCPU_LPU_IOPW-1:0]          issue_lpu_opc_bus,
+//   input [`NCPU_LPU_IOPW-1:0]          issue_lpu_opc_bus,
    input                               issue_epu_op,
    input [`NCPU_BRU_IOPW-1:0]          issue_bru_opc_bus,
    input                               issue_lsu_op,
@@ -64,7 +63,7 @@ module issue_rs
    output                              ro_valid,
    input                               ro_rs_pop,
    output [`NCPU_ALU_IOPW-1:0]         ro_alu_opc_bus,
-   output [`NCPU_LPU_IOPW-1:0]         ro_lpu_opc_bus,
+//   output [`NCPU_LPU_IOPW-1:0]         ro_lpu_opc_bus,
    output                              ro_epu_op,
    output [`NCPU_BRU_IOPW-1:0]         ro_bru_opc_bus,
    output                              ro_bpu_pred_taken,
@@ -82,10 +81,9 @@ module issue_rs
    output [CONFIG_P_ROB_DEPTH-1:0]     ro_rob_id,
    output [CONFIG_P_COMMIT_WIDTH-1:0]  ro_rob_bank
 );
-   localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam RS_DEPTH                 = (1<<CONFIG_P_RS_DEPTH);
    localparam OPP_W                    = (`NCPU_ALU_IOPW +
-                                          `NCPU_LPU_IOPW +
+                                          /*`NCPU_LPU_IOPW +*/
                                           1 +
                                           `NCPU_BRU_IOPW +
                                           1 +
@@ -118,7 +116,7 @@ module issue_rs
    
    assign opp_wdat = {
       issue_alu_opc_bus,
-      issue_lpu_opc_bus,
+//      issue_lpu_opc_bus,
       issue_epu_op,
       issue_bru_opc_bus,
       issue_lsu_op,
@@ -260,7 +258,7 @@ module issue_rs
 
    assign {
       ro_alu_opc_bus,
-      ro_lpu_opc_bus,
+//      ro_lpu_opc_bus,
       ro_epu_op,
       ro_bru_opc_bus,
       ro_lsu_op,

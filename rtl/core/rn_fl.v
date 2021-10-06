@@ -54,7 +54,6 @@ module rn_fl
    reg [N_PRF-1:0]                     afl_nxt;
    wire                                gs                            [IW-1:0];
    reg                                 no_free;
-   genvar i;
    integer j;
 
    // Select free PR

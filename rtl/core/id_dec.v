@@ -88,13 +88,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module id_dec
 #(
-   parameter                           CONFIG_AW = 0,
    parameter                           CONFIG_DW = 0,
-   parameter                           CONFIG_ENABLE_MUL = 0,
-   parameter                           CONFIG_ENABLE_DIV = 0,
-   parameter                           CONFIG_ENABLE_DIVU = 0,
-   parameter                           CONFIG_ENABLE_MOD = 0,
-   parameter                           CONFIG_ENABLE_MODU = 0,
+   //parameter                           CONFIG_ENABLE_MUL = 0,
+   //parameter                           CONFIG_ENABLE_DIV = 0,
+   //parameter                           CONFIG_ENABLE_DIVU = 0,
+   //parameter                           CONFIG_ENABLE_MOD = 0,
+   //parameter                           CONFIG_ENABLE_MODU = 0,
    parameter                           CONFIG_ENABLE_ASR = 0
 )
 (
@@ -103,7 +102,7 @@ module id_dec
    input [`FNT_EXC_W-1:0]              id_exc,
    input                               irq_async,
    output [`NCPU_ALU_IOPW-1:0]         alu_opc_bus,
-   output [`NCPU_LPU_IOPW-1:0]         lpu_opc_bus,
+   //output [`NCPU_LPU_IOPW-1:0]         lpu_opc_bus,
    output [`NCPU_EPU_IOPW-1:0]         epu_opc_bus,
    output [`NCPU_BRU_IOPW-1:0]         bru_opc_bus,
    output [`NCPU_LSU_IOPW-1:0]         lsu_opc_bus,
@@ -127,11 +126,13 @@ module id_dec
    wire [24:0]                         f_rel25;
    wire                                enable_asr;
    wire                                enable_asr_i;
+/*
    wire                                enable_mul;
    wire                                enable_div;
    wire                                enable_divu;
    wire                                enable_mod;
    wire                                enable_modu;
+*/
    wire                                op_ldb;
    wire                                op_ldbu;
    wire                                op_ldh;
@@ -155,11 +156,13 @@ module id_dec
    wire                                op_add;
    wire                                op_add_i;
    wire                                op_sub;
+/*
    wire                                op_mul;
    wire                                op_div;
    wire                                op_divu;
    wire                                op_mod;
    wire                                op_modu;
+*/
    wire                                op_mhi;
    wire                                op_jmp_i;
    wire                                op_jmp_lnk_i;
@@ -202,11 +205,13 @@ module id_dec
 
    assign enable_asr = 1'b1;
    assign enable_asr_i = 1'b1;
+/*
    assign enable_mul = 1'b1;
    assign enable_div = 1'b1;
    assign enable_divu = 1'b1;
    assign enable_mod = 1'b1;
    assign enable_modu = 1'b1;
+*/
 
    assign op_ldb = (f_opcode == `NCPU_OP_LDB);
    assign op_ldbu = (f_opcode == `NCPU_OP_LDBU);
@@ -233,6 +238,7 @@ module id_dec
    assign op_sub = (f_opcode == `NCPU_OP_SUB);
 
    generate
+/*
       if (CONFIG_ENABLE_MUL)
          assign op_mul = (f_opcode == `NCPU_OP_MUL) & enable_mul;
       else
@@ -253,6 +259,7 @@ module id_dec
          assign op_modu = (f_opcode == `NCPU_OP_MODU) & enable_modu;
       else
          assign op_modu = 1'b0;
+*/
       if (CONFIG_ENABLE_ASR)
          begin
             assign op_asr = (f_opcode == `NCPU_OP_ASR) & enable_asr;
@@ -306,11 +313,13 @@ module id_dec
    assign is_bcc = (op_beq | op_bne | op_bgt | op_bgtu | op_ble | op_bleu);
    
    // LPU opcodes
+/*
    assign lpu_opc_bus[`NCPU_LPU_MUL] = op_mul;
    assign lpu_opc_bus[`NCPU_LPU_DIV] = op_div;
    assign lpu_opc_bus[`NCPU_LPU_DIVU] = op_divu;
    assign lpu_opc_bus[`NCPU_LPU_MOD] = op_mod;
    assign lpu_opc_bus[`NCPU_LPU_MODU] = op_modu;
+*/
    
    //
    // Target Size of Memory Access.
@@ -350,7 +359,7 @@ module id_dec
          // ALU opcodes
          (|alu_opc_bus) |
          // LPU opcodes
-         (|lpu_opc_bus) |
+//         (|lpu_opc_bus) |
          // BRU opcodes
          (|bru_opc_bus) |
          // LSU insns

@@ -41,11 +41,11 @@ module ncpu64k
    parameter                           CONFIG_PHT_P_NUM = 9,
    parameter                           CONFIG_BTB_P_NUM = 9,
    parameter                           CONFIG_P_IQ_DEPTH = 4,
-   parameter                           CONFIG_ENABLE_MUL = 0,
-   parameter                           CONFIG_ENABLE_DIV = 0,
-   parameter                           CONFIG_ENABLE_DIVU = 0,
-   parameter                           CONFIG_ENABLE_MOD = 0,
-   parameter                           CONFIG_ENABLE_MODU = 0,
+//   parameter                           CONFIG_ENABLE_MUL = 0,
+//   parameter                           CONFIG_ENABLE_DIV = 0,
+//   parameter                           CONFIG_ENABLE_DIVU = 0,
+//   parameter                           CONFIG_ENABLE_MOD = 0,
+//   parameter                           CONFIG_ENABLE_MODU = 0,
    parameter                           CONFIG_ENABLE_ASR = 0,
    parameter                           CONFIG_IMMU_ENABLE_UNCACHED_SEG = 0,
    parameter                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 0,
@@ -159,7 +159,7 @@ module ncpu64k
    wire                 bpu_wb_is_breg;         // From U_CMT of cmt.v
    wire                 bpu_wb_is_brel;         // From U_CMT of cmt.v
    wire [`PC_W-1:0]     bpu_wb_npc_act;         // From U_CMT of cmt.v
-   wire [`PC_W-1:0]     bpu_wb_pc;              // From U_CMT of cmt.v
+   wire [`PC_W-1:CONFIG_BTB_P_NUM] bpu_wb_pc;   // From U_CMT of cmt.v
    wire                 bpu_wb_taken;           // From U_CMT of cmt.v
    wire [`BPU_UPD_W-1:0] bpu_wb_upd;            // From U_CMT of cmt.v
    wire [(1<<`NCPU_PRF_AW)-1:0] busytable;      // From U_RN of rn.v
@@ -189,7 +189,6 @@ module ncpu64k
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_epu_op;// From U_RO of ro.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0] ex_fe;// From U_RO of ro.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ex_imm;// From U_RO of ro.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ex_lpu_opc_bus;// From U_RO of ro.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lsu_op;// From U_RO of ro.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ex_operand1;// From U_RO of ro.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ex_operand2;// From U_RO of ro.v
@@ -213,7 +212,6 @@ module ncpu64k
    wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_epu_opc_bus;// From U_RN of rn.v
    wire [`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_fe;// From U_RN of rn.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_imm;// From U_RN of rn.v
-   wire [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lpu_opc_bus;// From U_RN of rn.v
    wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lrd;// From U_RN of rn.v
    wire [`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_lsu_opc_bus;// From U_RN of rn.v
    wire                 issue_p_ce;             // From U_RN of rn.v
@@ -260,7 +258,6 @@ module ncpu64k
    wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_epu_opc_bus;// From U_ID of id.v
    wire [`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_fe;// From U_ID of id.v
    wire [CONFIG_DW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_imm;// From U_ID of id.v
-   wire [`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lpu_opc_bus;// From U_ID of id.v
    wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd;// From U_ID of id.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrd_we;// From U_ID of id.v
    wire [`NCPU_LRF_AW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] rn_lrs1;// From U_ID of id.v
@@ -279,7 +276,6 @@ module ncpu64k
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_epu_op;// From U_ISSUE of issue.v
    wire [`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_fe;// From U_ISSUE of issue.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ro_imm;// From U_ISSUE of issue.v
-   wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ro_lpu_opc_bus;// From U_ISSUE of issue.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ro_lsu_op;// From U_ISSUE of issue.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ro_pc;// From U_ISSUE of issue.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_PRF_AW-1:0] ro_prd;// From U_ISSUE of issue.v
@@ -379,7 +375,7 @@ module ncpu64k
        .bpu_wb_is_breg                  (bpu_wb_is_breg),
        .bpu_wb_is_brel                  (bpu_wb_is_brel),
        .bpu_wb_taken                    (bpu_wb_taken),
-       .bpu_wb_pc                       (bpu_wb_pc[`PC_W-1:0]),
+       .bpu_wb_pc                       (bpu_wb_pc[`PC_W-1:CONFIG_BTB_P_NUM]),
        .bpu_wb_npc_act                  (bpu_wb_npc_act[`PC_W-1:0]),
        .bpu_wb_upd                      (bpu_wb_upd[`BPU_UPD_W-1:0]),
        .msr_psr_imme                    (msr_psr_imme),
@@ -409,11 +405,6 @@ module ncpu64k
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
         .CONFIG_PHT_P_NUM               (CONFIG_PHT_P_NUM),
         .CONFIG_BTB_P_NUM               (CONFIG_BTB_P_NUM),
-        .CONFIG_ENABLE_MUL              (CONFIG_ENABLE_MUL),
-        .CONFIG_ENABLE_DIV              (CONFIG_ENABLE_DIV),
-        .CONFIG_ENABLE_DIVU             (CONFIG_ENABLE_DIVU),
-        .CONFIG_ENABLE_MOD              (CONFIG_ENABLE_MOD),
-        .CONFIG_ENABLE_MODU             (CONFIG_ENABLE_MODU),
         .CONFIG_ENABLE_ASR              (CONFIG_ENABLE_ASR))
    U_ID
       (/*AUTOINST*/
@@ -421,7 +412,6 @@ module ncpu64k
        .id_pop_cnt                      (id_pop_cnt[CONFIG_P_ISSUE_WIDTH:0]),
        .rn_valid                        (rn_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .rn_alu_opc_bus                  (rn_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .rn_lpu_opc_bus                  (rn_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .rn_epu_opc_bus                  (rn_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .rn_bru_opc_bus                  (rn_bru_opc_bus[`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .rn_lsu_opc_bus                  (rn_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
@@ -464,7 +454,6 @@ module ncpu64k
        .rn_stall_req                    (rn_stall_req),
        .issue_p_ce                      (issue_p_ce),
        .issue_alu_opc_bus               (issue_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .issue_lpu_opc_bus               (issue_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .issue_epu_opc_bus               (issue_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .issue_bru_opc_bus               (issue_bru_opc_bus[`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .issue_lsu_opc_bus               (issue_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
@@ -489,7 +478,6 @@ module ncpu64k
        .flush                           (flush),
        .rn_valid                        (rn_valid[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .rn_alu_opc_bus                  (rn_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .rn_lpu_opc_bus                  (rn_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .rn_epu_opc_bus                  (rn_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .rn_bru_opc_bus                  (rn_bru_opc_bus[`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .rn_lsu_opc_bus                  (rn_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
@@ -546,7 +534,6 @@ module ncpu64k
        .ro_bru_opc_bus                  (ro_bru_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0]),
        .ro_epu_op                       (ro_epu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_imm                          (ro_imm[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
-       .ro_lpu_opc_bus                  (ro_lpu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0]),
        .ro_lsu_op                       (ro_lsu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_fe                           (ro_fe[`NCPU_FE_W*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_pc                           (ro_pc[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
@@ -565,7 +552,6 @@ module ncpu64k
        .flush                           (flush),
        .issue_p_ce                      (issue_p_ce),
        .issue_alu_opc_bus               (issue_alu_opc_bus[`NCPU_ALU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
-       .issue_lpu_opc_bus               (issue_lpu_opc_bus[`NCPU_LPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .issue_epu_opc_bus               (issue_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .issue_bru_opc_bus               (issue_bru_opc_bus[`NCPU_BRU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .issue_lsu_opc_bus               (issue_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
@@ -609,7 +595,6 @@ module ncpu64k
        .ex_bru_opc_bus                  (ex_bru_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0]),
        .ex_epu_op                       (ex_epu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_imm                          (ex_imm[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
-       .ex_lpu_opc_bus                  (ex_lpu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0]),
        .ex_lsu_op                       (ex_lsu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_fe                           (ex_fe[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0]),
        .ex_pc                           (ex_pc[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
@@ -630,7 +615,6 @@ module ncpu64k
        .ro_bru_opc_bus                  (ro_bru_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0]),
        .ro_epu_op                       (ro_epu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_imm                          (ro_imm[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
-       .ro_lpu_opc_bus                  (ro_lpu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0]),
        .ro_lsu_op                       (ro_lsu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ro_fe                           (ro_fe[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0]),
        .ro_pc                           (ro_pc[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
@@ -651,17 +635,9 @@ module ncpu64k
         // Parameters
         .CONFIG_AW                      (CONFIG_AW),
         .CONFIG_DW                      (CONFIG_DW),
-        .CONFIG_P_DW                    (CONFIG_P_DW),
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
         .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH),
         .CONFIG_P_ROB_DEPTH             (CONFIG_P_ROB_DEPTH),
-        .CONFIG_PHT_P_NUM               (CONFIG_PHT_P_NUM),
-        .CONFIG_BTB_P_NUM               (CONFIG_BTB_P_NUM),
-        .CONFIG_ENABLE_MUL              (CONFIG_ENABLE_MUL),
-        .CONFIG_ENABLE_DIV              (CONFIG_ENABLE_DIV),
-        .CONFIG_ENABLE_DIVU             (CONFIG_ENABLE_DIVU),
-        .CONFIG_ENABLE_MOD              (CONFIG_ENABLE_MOD),
-        .CONFIG_ENABLE_MODU             (CONFIG_ENABLE_MODU),
         .CONFIG_ENABLE_ASR              (CONFIG_ENABLE_ASR))
    U_EX
       (/*AUTOINST*/
@@ -688,7 +664,6 @@ module ncpu64k
        .ex_bru_opc_bus                  (ex_bru_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0]),
        .ex_epu_op                       (ex_epu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_imm                          (ex_imm[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0]),
-       .ex_lpu_opc_bus                  (ex_lpu_opc_bus[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0]),
        .ex_lsu_op                       (ex_lsu_op[(1<<CONFIG_P_ISSUE_WIDTH)-1:0]),
        .ex_fe                           (ex_fe[(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0]),
        .ex_pc                           (ex_pc[(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0]),
@@ -767,7 +742,7 @@ module ncpu64k
        .bpu_wb_is_breg                  (bpu_wb_is_breg),
        .bpu_wb_is_brel                  (bpu_wb_is_brel),
        .bpu_wb_taken                    (bpu_wb_taken),
-       .bpu_wb_pc                       (bpu_wb_pc[`PC_W-1:0]),
+       .bpu_wb_pc                       (bpu_wb_pc[`PC_W-1:CONFIG_BTB_P_NUM]),
        .bpu_wb_npc_act                  (bpu_wb_npc_act[`PC_W-1:0]),
        .bpu_wb_upd                      (bpu_wb_upd[`BPU_UPD_W-1:0]),
        .dbus_ARVALID                    (dbus_ARVALID),

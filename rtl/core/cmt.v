@@ -88,7 +88,7 @@ module cmt
    output                              bpu_wb_is_breg,
    output                              bpu_wb_is_brel,
    output                              bpu_wb_taken,
-   output [`PC_W-1:0]                  bpu_wb_pc,
+   output [`PC_W-1:CONFIG_BTB_P_NUM]   bpu_wb_pc,
    output [`PC_W-1:0]                  bpu_wb_npc_act,
    output [`BPU_UPD_W-1:0]             bpu_wb_upd,
    // AXI Master (Cached access)
@@ -206,8 +206,8 @@ module cmt
    wire [`NCPU_PSR_DW-1:0] msr_epsr;            // From U_PSR of cmt_psr.v
    wire [`NCPU_PSR_DW-1:0] msr_epsr_nxt;        // From U_EPU of cmt_epu.v
    wire                 msr_epsr_we;            // From U_EPU of cmt_epu.v
-   wire [CONFIG_DW-1:0] msr_evect;              // From U_PSR of cmt_psr.v
-   wire [CONFIG_AW-1:0] msr_evect_nxt;          // From U_EPU of cmt_epu.v
+   wire [CONFIG_DW-1:`EXCP_VECT_W] msr_evect;   // From U_PSR of cmt_psr.v
+   wire [CONFIG_AW-1:`EXCP_VECT_W] msr_evect_nxt;// From U_EPU of cmt_epu.v
    wire                 msr_evect_we;           // From U_EPU of cmt_epu.v
    wire [`NCPU_PSR_DW-1:0] msr_psr;             // From U_PSR of cmt_psr.v
    wire                 msr_psr_dce;            // From U_PSR of cmt_psr.v
@@ -500,7 +500,7 @@ module cmt
        .msr_epsr_we                     (msr_epsr_we),
        .msr_elsa_nxt                    (msr_elsa_nxt[CONFIG_DW-1:0]),
        .msr_elsa_we                     (msr_elsa_we),
-       .msr_evect_nxt                   (msr_evect_nxt[CONFIG_AW-1:0]),
+       .msr_evect_nxt                   (msr_evect_nxt[CONFIG_AW-1:`EXCP_VECT_W]),
        .msr_evect_we                    (msr_evect_we),
        .msr_imm_tlbl_idx                (msr_imm_tlbl_idx[CONFIG_ITLB_P_SETS-1:0]),
        .msr_imm_tlbl_nxt                (msr_imm_tlbl_nxt[CONFIG_DW-1:0]),
@@ -547,7 +547,7 @@ module cmt
        .msr_epc                         (msr_epc[CONFIG_DW-1:0]),
        .msr_epsr                        (msr_epsr[`NCPU_PSR_DW-1:0]),
        .msr_elsa                        (msr_elsa[CONFIG_DW-1:0]),
-       .msr_evect                       (msr_evect[CONFIG_AW-1:0]),
+       .msr_evect                       (msr_evect[CONFIG_AW-1:`EXCP_VECT_W]),
        .msr_coreid                      (msr_coreid[CONFIG_DW-1:0]),
        .msr_immid                       (msr_immid[CONFIG_DW-1:0]),
        .msr_dmmid                       (msr_dmmid[CONFIG_DW-1:0]),
@@ -584,7 +584,7 @@ module cmt
        .msr_epc                         (msr_epc[CONFIG_DW-1:0]),
        .msr_elsa                        (msr_elsa[CONFIG_DW-1:0]),
        .msr_coreid                      (msr_coreid[CONFIG_DW-1:0]),
-       .msr_evect                       (msr_evect[CONFIG_DW-1:0]),
+       .msr_evect                       (msr_evect[CONFIG_DW-1:`EXCP_VECT_W]),
        .msr_sr                          (msr_sr[CONFIG_DW*`NCPU_SR_NUM-1:0]),
        // Inputs
        .clk                             (clk),
@@ -609,7 +609,7 @@ module cmt
        .msr_epc_we                      (msr_epc_we),
        .msr_elsa_nxt                    (msr_elsa_nxt[CONFIG_DW-1:0]),
        .msr_elsa_we                     (msr_elsa_we),
-       .msr_evect_nxt                   (msr_evect_nxt[CONFIG_DW-1:0]),
+       .msr_evect_nxt                   (msr_evect_nxt[CONFIG_DW-1:`EXCP_VECT_W]),
        .msr_evect_we                    (msr_evect_we),
        .msr_sr_nxt                      (msr_sr_nxt[CONFIG_DW-1:0]),
        .msr_sr_we                       (msr_sr_we[`NCPU_SR_NUM-1:0]));
@@ -623,7 +623,7 @@ module cmt
    assign bpu_wb_is_breg = cmt_is_breg[0];
    assign bpu_wb_is_brel = cmt_is_brel[0];
    assign bpu_wb_taken = (cmt_bpu_upd[`BPU_UPD_TAKEN] ^ cmt_fls[0]); // Extract the first channel
-   assign bpu_wb_pc = cmt_pc[0 +: `PC_W];
+   assign bpu_wb_pc = cmt_pc[`PC_W-1:CONFIG_BTB_P_NUM]; // Extract the first channel
    assign bpu_wb_npc_act = (cmt_fls[0])
                               ? cmt_fls_tgt[0 * `PC_W +: `PC_W]
                               : cmt_bpu_upd[`BPU_UPD_TGT]; // Extract the first channel

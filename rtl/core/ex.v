@@ -28,17 +28,14 @@ module ex
 #(
    parameter                           CONFIG_AW = 0,
    parameter                           CONFIG_DW = 0,
-   parameter                           CONFIG_P_DW = 0,
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0,
    parameter                           CONFIG_P_ROB_DEPTH = 0,
-   parameter                           CONFIG_PHT_P_NUM = 0,
-   parameter                           CONFIG_BTB_P_NUM = 0,
-   parameter                           CONFIG_ENABLE_MUL = 0,
-   parameter                           CONFIG_ENABLE_DIV = 0,
-   parameter                           CONFIG_ENABLE_DIVU = 0,
-   parameter                           CONFIG_ENABLE_MOD = 0,
-   parameter                           CONFIG_ENABLE_MODU = 0,
+//   parameter                           CONFIG_ENABLE_MUL = 0,
+//   parameter                           CONFIG_ENABLE_DIV = 0,
+//   parameter                           CONFIG_ENABLE_DIVU = 0,
+//   parameter                           CONFIG_ENABLE_MOD = 0,
+//   parameter                           CONFIG_ENABLE_MODU = 0,
    parameter                           CONFIG_ENABLE_ASR = 0
 )
 (
@@ -52,7 +49,7 @@ module ex
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_BRU_IOPW-1:0] ex_bru_opc_bus,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_epu_op,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_DW-1:0] ex_imm,
-   input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ex_lpu_opc_bus,
+   //input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_LPU_IOPW-1:0] ex_lpu_opc_bus,
    input [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] ex_lsu_op,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`NCPU_FE_W-1:0] ex_fe,
    input [(1<<CONFIG_P_ISSUE_WIDTH)*`PC_W-1:0] ex_pc,
@@ -128,16 +125,8 @@ module ex
                  // Parameters
                  .CONFIG_AW             (CONFIG_AW),
                  .CONFIG_DW             (CONFIG_DW),
-                 .CONFIG_P_DW           (CONFIG_P_DW),
-                 .CONFIG_PHT_P_NUM      (CONFIG_PHT_P_NUM),
-                 .CONFIG_BTB_P_NUM      (CONFIG_BTB_P_NUM),
                  .CONFIG_P_ROB_DEPTH    (CONFIG_P_ROB_DEPTH),
                  .CONFIG_P_COMMIT_WIDTH (CONFIG_P_COMMIT_WIDTH),
-                 .CONFIG_ENABLE_MUL     (CONFIG_ENABLE_MUL),
-                 .CONFIG_ENABLE_DIV     (CONFIG_ENABLE_DIV),
-                 .CONFIG_ENABLE_DIVU    (CONFIG_ENABLE_DIVU),
-                 .CONFIG_ENABLE_MOD     (CONFIG_ENABLE_MOD),
-                 .CONFIG_ENABLE_MODU    (CONFIG_ENABLE_MODU),
                  .CONFIG_ENABLE_ASR     (CONFIG_ENABLE_ASR))
             U_PIPE
                (/*AUTOINST*/
@@ -160,7 +149,6 @@ module ex
                 .flush                  (flush),
                 .ex_valid               (ex_valid[i]),           // Templated
                 .ex_alu_opc_bus         (ex_alu_opc_bus[i * `NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]), // Templated
-                .ex_lpu_opc_bus         (ex_lpu_opc_bus[i * `NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]), // Templated
                 .ex_epu_op              (ex_epu_op[i]),          // Templated
                 .ex_lsu_op              (ex_lsu_op[i]),          // Templated
                 .ex_bru_opc_bus         (ex_bru_opc_bus[i * `NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]), // Templated

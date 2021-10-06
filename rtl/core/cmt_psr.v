@@ -80,8 +80,8 @@ module cmt_psr
    // COREID
    output [CONFIG_DW-1:0]              msr_coreid,
    // EVECT
-   input [CONFIG_DW-1:0]               msr_evect_nxt,
-   output [CONFIG_DW-1:0]              msr_evect,
+   input [CONFIG_DW-1:`EXCP_VECT_W]    msr_evect_nxt,
+   output [CONFIG_DW-1:`EXCP_VECT_W]   msr_evect,
    input                               msr_evect_we,
    // SR
    output [CONFIG_DW*`NCPU_SR_NUM-1:0] msr_sr,
@@ -103,7 +103,7 @@ module cmt_psr
    wire [`NCPU_PSR_DW-1:0]             msr_epsr_ff;
    wire [CONFIG_DW-1:0]                msr_epc_ff;
    wire [CONFIG_DW-1:0]                msr_elsa_ff;
-   wire [CONFIG_DW-1:0]                msr_evect_ff;
+   wire [CONFIG_DW-1:`EXCP_VECT_W]     msr_evect_ff;
    wire [CONFIG_DW*`NCPU_SR_NUM-1:0]   msr_sr_ff;
    wire                                psr_rm_set;
    wire                                psr_imme_msk;
@@ -160,7 +160,7 @@ module cmt_psr
    // ELSA
    mDFF_lr #(.DW(CONFIG_DW)) dff_msr_elsa (.CLK(clk), .RST(rst), .LOAD(msr_elsa_we), .D(msr_elsa_nxt), .Q(msr_elsa_ff) );
    // EVECT
-   mDFF_lr #(.DW(CONFIG_DW)) dff_msr_evect (.CLK(clk), .RST(rst), .LOAD(msr_evect_we), .D(msr_evect_nxt), .Q(msr_evect_ff) );
+   mDFF_lr #(.DW(CONFIG_DW-`EXCP_VECT_W)) dff_msr_evect (.CLK(clk), .RST(rst), .LOAD(msr_evect_we), .D(msr_evect_nxt), .Q(msr_evect_ff) );
    // SR
    generate
       for(i=0;i<`NCPU_SR_NUM;i=i+1)

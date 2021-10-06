@@ -28,16 +28,13 @@ module ex_pipe
 #(
    parameter                           CONFIG_AW = 0,
    parameter                           CONFIG_DW = 0,
-   parameter                           CONFIG_P_DW = 0,
-   parameter                           CONFIG_PHT_P_NUM = 0,
-   parameter                           CONFIG_BTB_P_NUM = 0,
    parameter                           CONFIG_P_ROB_DEPTH = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0,
-   parameter                           CONFIG_ENABLE_MUL = 0,
-   parameter                           CONFIG_ENABLE_DIV = 0,
-   parameter                           CONFIG_ENABLE_DIVU = 0,
-   parameter                           CONFIG_ENABLE_MOD = 0,
-   parameter                           CONFIG_ENABLE_MODU = 0,
+   //parameter                           CONFIG_ENABLE_MUL = 0,
+   //parameter                           CONFIG_ENABLE_DIV = 0,
+   //parameter                           CONFIG_ENABLE_DIVU = 0,
+   //parameter                           CONFIG_ENABLE_MOD = 0,
+   //parameter                           CONFIG_ENABLE_MODU = 0,
    parameter                           CONFIG_ENABLE_ASR = 0
 )
 (
@@ -46,7 +43,7 @@ module ex_pipe
    input                               flush,
    input                               ex_valid,
    input [`NCPU_ALU_IOPW-1:0]          ex_alu_opc_bus,
-   input [`NCPU_LPU_IOPW-1:0]          ex_lpu_opc_bus,
+   //input [`NCPU_LPU_IOPW-1:0]          ex_lpu_opc_bus,
    input                               ex_epu_op,
    input                               ex_lsu_op,
    input [`NCPU_BRU_IOPW-1:0]          ex_bru_opc_bus,
@@ -88,11 +85,9 @@ module ex_pipe
    wire                                add_carry;
    wire                                add_overflow;
    wire                                b_taken;
-   wire                                b_cc, b_reg, b_rel;
    wire [`PC_W-1:0]                    b_tgt;
    wire                                agu_en;
    // Stage 1 Input
-   wire [CONFIG_DW-1:0]                s1i_op1, s1i_op2;
    wire                                s1i_se_fail;
    wire [`PC_W-1:0]                    s1i_se_tgt;
    wire                                s1i_wb_fls;
@@ -106,8 +101,6 @@ module ex_pipe
    wire [`PC_W-1:0]                    s1i_npc;
    // Stage 1 Output
    wire                                s1o_prf_we;
-   genvar i;
-   integer j;
    
    mADD
       #(.DW(`PC_W))
@@ -135,11 +128,6 @@ module ex_pipe
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_DW                      (CONFIG_DW),
-        .CONFIG_ENABLE_MUL              (CONFIG_ENABLE_MUL),
-        .CONFIG_ENABLE_DIV              (CONFIG_ENABLE_DIV),
-        .CONFIG_ENABLE_DIVU             (CONFIG_ENABLE_DIVU),
-        .CONFIG_ENABLE_MOD              (CONFIG_ENABLE_MOD),
-        .CONFIG_ENABLE_MODU             (CONFIG_ENABLE_MODU),
         .CONFIG_ENABLE_ASR              (CONFIG_ENABLE_ASR))
    U_ALU
       (
@@ -160,7 +148,7 @@ module ex_pipe
          .ex_valid                     (ex_valid),
          .ex_bru_opc_bus               (ex_bru_opc_bus),
          .ex_pc                        (ex_pc),
-         .ex_imm                       (ex_imm),
+         .ex_imm                       (ex_imm[CONFIG_AW-1:`NCPU_P_INSN_LEN]),
          .ex_operand1                  (ex_operand1),
          .ex_operand2                  (ex_operand2),
          .ex_rf_we                     (ex_prd_we),
@@ -170,9 +158,6 @@ module ex_pipe
          .add_overflow                 (add_overflow),
          .b_taken                      (b_taken),
          .b_tgt                        (b_tgt),
-         .is_bcc                       (b_cc),
-         .is_breg                      (b_reg),
-         .is_brel                      (b_rel),
          .bru_dout                     (bru_dout),
          .bru_dout_valid               (bru_dout_valid)
       );

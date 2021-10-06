@@ -64,7 +64,7 @@ module frontend
    input                               bpu_wb_is_breg,
    input                               bpu_wb_is_brel,
    input                               bpu_wb_taken,
-   input [`PC_W-1:0]                   bpu_wb_pc,
+   input [`PC_W-1:CONFIG_BTB_P_NUM]    bpu_wb_pc,
    input [`PC_W-1:0]                   bpu_wb_npc_act,
    input [`BPU_UPD_W-1:0]              bpu_wb_upd,
    // PSR
@@ -250,7 +250,7 @@ module frontend
          .bpu_wb_is_breg                (bpu_wb_is_breg),
          .bpu_wb_is_brel                (bpu_wb_is_brel),
          .bpu_wb_taken                  (bpu_wb_taken),
-         .bpu_wb_pc                     (bpu_wb_pc[`PC_W-1:CONFIG_BTB_P_NUM]),
+         .bpu_wb_pc                     (bpu_wb_pc),
          .bpu_wb_npc_act                (bpu_wb_npc_act),
          .bpu_wb_upd                    (bpu_wb_upd)
       );

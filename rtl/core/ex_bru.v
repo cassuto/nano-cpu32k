@@ -33,7 +33,7 @@ module ex_bru
    input                               ex_valid,
    input [`NCPU_BRU_IOPW-1:0]          ex_bru_opc_bus,
    input [`PC_W-1:0]                   ex_pc,
-   input [CONFIG_DW-1:0]               ex_imm,
+   input [CONFIG_AW-1:`NCPU_P_INSN_LEN] ex_imm,
    input [CONFIG_DW-1:0]               ex_operand1,
    input [CONFIG_DW-1:0]               ex_operand2,
    input                               ex_rf_we,
@@ -45,9 +45,6 @@ module ex_bru
    // Result
    output                              b_taken,
    output [`PC_W-1:0]                  b_tgt,
-   output                              is_bcc,
-   output                              is_breg,
-   output                              is_brel,
    output [CONFIG_DW-1:0]              bru_dout,
    output                              bru_dout_valid
 );
@@ -56,6 +53,8 @@ module ex_bru
    wire                                cmp_lt_u;
    wire                                bcc_taken;
    wire                                b_lnk;
+   wire                                is_breg;
+   wire                                is_brel;
    
    // equal
    assign cmp_eq = (ex_operand1 == ex_operand2);
@@ -63,12 +62,6 @@ module ex_bru
    assign cmp_lt_s = (add_sum[CONFIG_DW-1] ^ add_overflow);
    assign cmp_lt_u = ~add_carry;
 
-   assign is_bcc = (ex_bru_opc_bus[`NCPU_BRU_BEQ] |
-                     ex_bru_opc_bus[`NCPU_BRU_BNE] |
-                     ex_bru_opc_bus[`NCPU_BRU_BGTU] |
-                     ex_bru_opc_bus[`NCPU_BRU_BGT] |
-                     ex_bru_opc_bus[`NCPU_BRU_BLEU] |
-                     ex_bru_opc_bus[`NCPU_BRU_BLE]);
    assign is_breg = (ex_bru_opc_bus[`NCPU_BRU_JMPREG]);
    assign is_brel = (ex_bru_opc_bus[`NCPU_BRU_JMPREL]);
    
@@ -83,7 +76,7 @@ module ex_bru
 
    assign b_tgt =
       // PC-relative 15b addressing
-      ({`PC_W{bcc_taken}} & (ex_pc + ex_imm[CONFIG_AW-1:`NCPU_P_INSN_LEN])) |
+      ({`PC_W{bcc_taken}} & (ex_pc + ex_imm)) |
       // PC-relative 25b addressing
       ({`PC_W{is_brel}} & (ex_pc + ex_operand2[CONFIG_AW-1:`NCPU_P_INSN_LEN])) |
       // Absolute addressing FIXME: alignment check

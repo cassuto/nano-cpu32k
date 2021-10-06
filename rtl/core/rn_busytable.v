@@ -43,8 +43,6 @@ module rn_busytable
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
    localparam WW                       = (1<<CONFIG_P_WRITEBACK_WIDTH);
-   localparam N_PRF                    = (1<<`NCPU_PRF_AW);
-   genvar i;
    
    mRF_nw_dio_r
       #(

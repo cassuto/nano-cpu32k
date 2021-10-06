@@ -106,11 +106,11 @@ module ysyx_210479
    localparam                           CONFIG_PHT_P_NUM = 2;
    localparam                           CONFIG_BTB_P_NUM = 2;
    localparam                           CONFIG_P_IQ_DEPTH = 2;
-   localparam                           CONFIG_ENABLE_MUL = 0;
-   localparam                           CONFIG_ENABLE_DIV = 0;
-   localparam                           CONFIG_ENABLE_DIVU = 0;
-   localparam                           CONFIG_ENABLE_MOD = 0;
-   localparam                           CONFIG_ENABLE_MODU = 0;
+//   localparam                           CONFIG_ENABLE_MUL = 0;
+//   localparam                           CONFIG_ENABLE_DIV = 0;
+//   localparam                           CONFIG_ENABLE_DIVU = 0;
+//   localparam                           CONFIG_ENABLE_MOD = 0;
+//   localparam                           CONFIG_ENABLE_MODU = 0;
    localparam                           CONFIG_ENABLE_ASR = 1;
    localparam                           CONFIG_IMMU_ENABLE_UNCACHED_SEG = 1;
    localparam                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 1;
@@ -275,11 +275,6 @@ module ysyx_210479
         .CONFIG_PHT_P_NUM               (CONFIG_PHT_P_NUM),
         .CONFIG_BTB_P_NUM               (CONFIG_BTB_P_NUM),
         .CONFIG_P_IQ_DEPTH              (CONFIG_P_IQ_DEPTH),
-        .CONFIG_ENABLE_MUL              (CONFIG_ENABLE_MUL),
-        .CONFIG_ENABLE_DIV              (CONFIG_ENABLE_DIV),
-        .CONFIG_ENABLE_DIVU             (CONFIG_ENABLE_DIVU),
-        .CONFIG_ENABLE_MOD              (CONFIG_ENABLE_MOD),
-        .CONFIG_ENABLE_MODU             (CONFIG_ENABLE_MODU),
         .CONFIG_ENABLE_ASR              (CONFIG_ENABLE_ASR),
         .CONFIG_IMMU_ENABLE_UNCACHED_SEG(CONFIG_IMMU_ENABLE_UNCACHED_SEG),
         .CONFIG_DMMU_ENABLE_UNCACHED_SEG(CONFIG_DMMU_ENABLE_UNCACHED_SEG),
