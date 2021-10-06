@@ -161,7 +161,7 @@ module ncpu64k
    wire [`PC_W-1:0]     bpu_wb_npc_act;         // From U_CMT of cmt.v
    wire [`PC_W-1:CONFIG_BTB_P_NUM] bpu_wb_pc;   // From U_CMT of cmt.v
    wire                 bpu_wb_taken;           // From U_CMT of cmt.v
-   wire [`BPU_UPD_W-1:0] bpu_wb_upd;            // From U_CMT of cmt.v
+   wire [`BPU_UPD_W-1:`BPU_UPD_TAKEN_TGT_W] bpu_wb_upd_partial;// From U_CMT of cmt.v
    wire [(1<<`NCPU_PRF_AW)-1:0] busytable;      // From U_RN of rn.v
    wire [`BPU_UPD_W*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_bpu_upd;// From U_ROB of rob.v
    wire [`NCPU_EPU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_epu_opc_bus;// From U_ROB of rob.v
@@ -377,7 +377,7 @@ module ncpu64k
        .bpu_wb_taken                    (bpu_wb_taken),
        .bpu_wb_pc                       (bpu_wb_pc[`PC_W-1:CONFIG_BTB_P_NUM]),
        .bpu_wb_npc_act                  (bpu_wb_npc_act[`PC_W-1:0]),
-       .bpu_wb_upd                      (bpu_wb_upd[`BPU_UPD_W-1:0]),
+       .bpu_wb_upd_partial              (bpu_wb_upd_partial[`BPU_UPD_W-1:`BPU_UPD_TAKEN_TGT_W]),
        .msr_psr_imme                    (msr_psr_imme),
        .msr_psr_rm                      (msr_psr_rm),
        .msr_psr_ice                     (msr_psr_ice),
@@ -744,7 +744,7 @@ module ncpu64k
        .bpu_wb_taken                    (bpu_wb_taken),
        .bpu_wb_pc                       (bpu_wb_pc[`PC_W-1:CONFIG_BTB_P_NUM]),
        .bpu_wb_npc_act                  (bpu_wb_npc_act[`PC_W-1:0]),
-       .bpu_wb_upd                      (bpu_wb_upd[`BPU_UPD_W-1:0]),
+       .bpu_wb_upd_partial              (bpu_wb_upd_partial[`BPU_UPD_W-1:`BPU_UPD_TAKEN_TGT_W]),
        .dbus_ARVALID                    (dbus_ARVALID),
        .dbus_ARADDR                     (dbus_ARADDR[AXI_ADDR_WIDTH-1:0]),
        .dbus_ARPROT                     (dbus_ARPROT[2:0]),

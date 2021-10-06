@@ -47,7 +47,7 @@ module bpu
    input                                        bpu_wb_taken,
    input [`PC_W-1:CONFIG_BTB_P_NUM]             bpu_wb_pc,
    input [`PC_W-1:0]                            bpu_wb_npc_act,
-   input [`BPU_UPD_W-1:0]                       bpu_wb_upd
+   input [`BPU_UPD_W-1:`BPU_UPD_TAKEN_TGT_W]    bpu_wb_upd_partial
 );
 
    localparam PHT_DW                            = 2; // 2-bit counter
@@ -79,10 +79,6 @@ module bpu
    reg [PHT_DW-1:0]                             wb_pht_din;
    wire                                         wb_btb_we;
    wire [BTB_DW-1:0]                            wb_btb_din;
-/* verilator lint_off UNUSED */
-   wire                                         wb_pred_taken; // unused
-   wire [`PC_W-1:0]                             wb_pred_tgt; // unused
-/* verilator lint_on UNUSED */
    // GHSR
    wire [CONFIG_PHT_P_NUM-1:0]                  GHSR_ff;
    wire [CONFIG_PHT_P_NUM-1:0]                  GHSR_nxt;
@@ -156,7 +152,7 @@ module bpu
          .WDATA      (wb_btb_din)
       );
       
-   assign {wb_pht_count_org, wb_pht_addr, wb_btb_addr, wb_pred_tgt, wb_pred_taken} = bpu_wb_upd;
+   assign {wb_pht_count_org, wb_pht_addr, wb_btb_addr} = bpu_wb_upd_partial[`BPU_UPD_W-1:`BPU_UPD_TAKEN_TGT_W];
       
    assign wb_pht_we = (bpu_wb & bpu_wb_is_bcc);
    

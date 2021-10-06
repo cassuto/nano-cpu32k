@@ -42,7 +42,7 @@ module prefetch_buf
    input [`FNT_EXC_W * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_exc,
    input [`BPU_UPD_W * (1<<CONFIG_P_FETCH_WIDTH)-1:0] iq_bpu_upd,
    input [CONFIG_P_FETCH_WIDTH:0]      iq_push_cnt,
-   input [CONFIG_P_FETCH_WIDTH-1:0]    iq_push_offset,
+   input [CONFIG_P_FETCH_WIDTH:0]      iq_push_offset,
    output                              iq_ready,
    // To ID
    output [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] id_valid,

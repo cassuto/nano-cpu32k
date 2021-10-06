@@ -90,7 +90,7 @@ module cmt
    output                              bpu_wb_taken,
    output [`PC_W-1:CONFIG_BTB_P_NUM]   bpu_wb_pc,
    output [`PC_W-1:0]                  bpu_wb_npc_act,
-   output [`BPU_UPD_W-1:0]             bpu_wb_upd,
+   output [`BPU_UPD_W-1:`BPU_UPD_TAKEN_TGT_W] bpu_wb_upd_partial,
    // AXI Master (Cached access)
    input                               dbus_ARREADY,
    output                              dbus_ARVALID,
@@ -627,7 +627,7 @@ module cmt
    assign bpu_wb_npc_act = (cmt_fls[0])
                               ? cmt_fls_tgt[0 * `PC_W +: `PC_W]
                               : cmt_bpu_upd[`BPU_UPD_TGT]; // Extract the first channel
-   assign bpu_wb_upd = cmt_bpu_upd[0*`BPU_UPD_W +: `BPU_UPD_W];
+   assign bpu_wb_upd_partial = cmt_bpu_upd[`BPU_UPD_W-1:`BPU_UPD_TAKEN_TGT_W]; // Extract the first channel
    
 
    // Test signal generator for verification

@@ -75,8 +75,9 @@ SIM_CPPS += $(EM_DIR)/csrc/peripheral/device-tree.cc \
 # Lint
 LINT_DEFS = +define+SYNTHESIS=1
 LINT_INCS = -I$(SRC_DIR)/core
-LINT_FLAGS = $(LINT_DEFS) $(LINT_INCS)
-LINT_SRCS = $(SRCS) $(YSYX_SRCS) $(PDK_SRCS)
+LINT_FLAGS = $(LINT_DEFS) $(LINT_INCS) -Wno-DECLFILENAME
+#LINT_SRCS = $(SRCS) $(YSYX_SRCS) $(PDK_SRCS)
+LINT_SRCS = $(YSYX_TARGET) $(PDK_SRCS)
 
 # YSYX Information
 MYINFO_FILE = myinfo.txt
