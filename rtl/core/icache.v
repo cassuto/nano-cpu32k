@@ -122,11 +122,15 @@ module icache
    wire                                s2i_uncached_get_dat;
    reg [PAYLOAD_DW-1:0]                s2i_ins;
    wire [CONFIG_AW-1:0]                s1o_op_inv_paddr;
+   wire                                s2i_uncached_inflight;
+   wire                                s2i_miss_inflight;
    // Stage 2 Output / Stage 3 Input
    wire [CONFIG_IC_P_SETS-1:0]         s2o_line_addr;
    wire                                s2o_valid;
    wire [CONFIG_AW-1:0]                s2o_paddr;
    wire [(1<<CONFIG_IC_P_WAYS)-1:0]    s2o_fsm_free_way;
+   wire                                s2o_uncached_inflight;
+   wire                                s2o_miss_inflight;
    // FSM
    reg [2:0]                           fsm_state_nxt;
    wire [2:0]                          fsm_state_ff;
@@ -210,6 +214,9 @@ module icache
 
    mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
+   mDFF_r # (.DW(1)) ff_s2o_uncached_inflight (.CLK(clk), .RST(rst), .D(s2i_uncached_inflight), .Q(s2o_uncached_inflight) );
+   mDFF_r # (.DW(1)) ff_s2o_miss_inflight (.CLK(clk), .RST(rst), .D(s2i_miss_inflight), .Q(s2o_miss_inflight) );
+   
 
    // Main FSM
    always @(*)
@@ -226,9 +233,9 @@ module icache
                   begin
                      if (msr_icinv_we) // Invalidate one cache line
                         fsm_state_nxt = S_INVALIDATE;
-                     else if (s1o_valid & uncached_s2 & ~kill_req_s2) // Uncached access
+                     else if (s2i_uncached_inflight) // Uncached access
                         fsm_state_nxt = S_UNCACHED_BOOT;
-                     else if (s1o_valid & ~s2i_hit & ~uncached_s2 & ~kill_req_s2) // Miss
+                     else if (s2i_miss_inflight) // Miss
                         fsm_state_nxt = S_REPLACE;
                   end
 
@@ -240,7 +247,12 @@ module icache
                   fsm_state_nxt = S_RELOAD_S1O;
 
             S_INVALIDATE:
-               fsm_state_nxt = S_IDLE;
+               // Reboot the blocked request
+               fsm_state_nxt = (s2o_uncached_inflight)
+                                 ? S_UNCACHED_BOOT
+                                 : (s2o_miss_inflight)
+                                    ? S_REPLACE
+                                    : S_IDLE;
 
             S_RELOAD_S1O:
                fsm_state_nxt = S_IDLE;
@@ -259,6 +271,10 @@ module icache
             default: ;
          endcase
       end
+   
+   assign s2i_uncached_inflight = (s1o_valid & uncached_s2 & ~kill_req_s2);
+   
+   assign s2i_miss_inflight = (s1o_valid & ~s2i_hit & ~uncached_s2 & ~kill_req_s2);
 
    mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
    
