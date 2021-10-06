@@ -412,7 +412,7 @@ module icache
    assign fsm_idle = (fsm_state_ff == S_IDLE);
    assign stall_req = ~fsm_idle;
 
-   assign msr_icinv_ready = p_ce; // Tell if I$ is temporarily unable to accept ICINV operation
+   assign msr_icinv_ready = (~fsm_idle); // Tell if I$ is temporarily unable to accept ICINV operation
 
    assign s2i_refill_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] ==
                                  fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);
