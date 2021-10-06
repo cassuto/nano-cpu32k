@@ -333,22 +333,7 @@ module frontend
    // PC Register
    mDFF_r # (.DW(CONFIG_AW), .RST_VECTOR(CONFIG_PC_RST)) ff_pc (.CLK(clk), .RST(rst), .D(pc_nxt), .Q(pc) );
 
-   // Test signal generator for verification
-   localparam TEST_STALL_P = 0;
-   wire test_stall;
-   reg [TEST_STALL_P:0] test_stall_ff;
-   
-   always @(posedge clk)
-      if (rst)
-         test_stall_ff <= 'b0;
-      else
-         test_stall_ff <= test_stall_ff + 'b1;
-   assign test_stall = test_stall_ff[TEST_STALL_P];
-   
-   initial
-      $display("=====\n[WARNING] Stall testing enabled (TEST_STALL_P=%d) \n=====\n", TEST_STALL_P);
-   
-   assign p_ce = (~ic_stall_req & iq_ready & ~test_stall);
+   assign p_ce = (~ic_stall_req & iq_ready);
 
    assign s1i_fetch_vaddr = {pc_nxt[CONFIG_AW-1:P_FETCH_DW_BYTES], {P_FETCH_DW_BYTES{1'b0}}}; // Aligned by fetch window
 
