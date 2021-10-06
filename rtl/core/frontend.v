@@ -147,7 +147,6 @@ module frontend
    wire [`BPU_UPD_W*FW-1:0]            s1o_bpu_upd_packed;
    wire [`BPU_UPD_W-1:0]               s1o_bpu_upd                      [FW-1:0];
    wire [FW-1:0]                       s1o_bpu_taken;
-   wire [`BPU_UPD_W-1:0]               s2i_bpu_upd                      [FW-1:0];
    reg [FW-1:0]                        s2i_valid_msk;
    // Stage 3 Input / Stage 2 Output
    wire [`PC_W-1:0]                    s2o_pc                           [FW-1:0];
@@ -251,7 +250,7 @@ module frontend
          .bpu_wb_is_breg                (bpu_wb_is_breg),
          .bpu_wb_is_brel                (bpu_wb_is_brel),
          .bpu_wb_taken                  (bpu_wb_taken),
-         .bpu_wb_pc                     (bpu_wb_pc),
+         .bpu_wb_pc                     (bpu_wb_pc[`PC_W-1:CONFIG_BTB_P_NUM]),
          .bpu_wb_npc_act                (bpu_wb_npc_act),
          .bpu_wb_upd                    (bpu_wb_upd)
       );

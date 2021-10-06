@@ -45,7 +45,6 @@ module prf
    input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] prf_WDATA
 );
    localparam IW                       = (1<<CONFIG_P_ISSUE_WIDTH);
-   localparam WW                       = (1<<CONFIG_P_WRITEBACK_WIDTH);
    wire [IW*2-1:0]                     prf_RADDR_zero_ff;
    wire [IW*2*CONFIG_DW-1:0]           prf_RDATA_1;
    genvar i;
@@ -80,9 +79,9 @@ module prf
    endgenerate
 
 `ifdef ENABLE_DIFFTEST
-   wire [`NCPU_PRF_AW-1:0] dbg_waddr[WW-1:0];
+   wire [`NCPU_PRF_AW-1:0] dbg_waddr[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0];
    generate
-      for(i=0;i<WW;i=i+1)  
+      for(i=0;i<(1<<CONFIG_P_WRITEBACK_WIDTH);i=i+1)  
          begin
             assign dbg_waddr[i] = prf_WADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
          end

@@ -30,8 +30,7 @@ module ro
    parameter                           CONFIG_AW = 0,
    parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_P_COMMIT_WIDTH = 0,
-   parameter                           CONFIG_P_ROB_DEPTH = 0,
-   parameter                           CONFIG_P_RS_DEPTH = 0
+   parameter                           CONFIG_P_ROB_DEPTH = 0
 )
 (
    input                               clk,

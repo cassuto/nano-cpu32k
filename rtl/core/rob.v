@@ -104,7 +104,6 @@ module rob
                                           1);
    localparam P_BANKS                  = (CONFIG_P_COMMIT_WIDTH);
    localparam BANKS                    = (1<<P_BANKS);
-   localparam [CONFIG_P_ROB_DEPTH-1:0] R_1 = {{CONFIG_P_ROB_DEPTH-1{1'b0}}, 1'b1};
    localparam vBANK_DW                 = (CONFIG_DW +
                                           CONFIG_DW +
                                           `PC_W);

@@ -295,6 +295,8 @@ module ysyx_210479
         .CONFIG_EDPF_VECTOR             (CONFIG_EDPF_VECTOR[`EXCP_VECT_W-1:0]),
         .CONFIG_EALIGN_VECTOR           (CONFIG_EALIGN_VECTOR[`EXCP_VECT_W-1:0]),
         .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ),
+        .CONFIG_P_RS_DEPTH              (CONFIG_P_RS_DEPTH),
+        .CONFIG_P_ROB_DEPTH             (CONFIG_P_ROB_DEPTH),
         .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
         .AXI_UNCACHED_P_DW_BYTES        (AXI_UNCACHED_P_DW_BYTES),
         .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),

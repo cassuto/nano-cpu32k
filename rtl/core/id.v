@@ -89,7 +89,6 @@ module id
    wire [IW-1:0]                       rf_rs2_re;
    wire [`NCPU_LRF_AW*IW-1:0]          rf_rs2_addr;
    genvar i;
-   integer j, k;
    
    generate
       for(i=0;i<IW;i=i+1)

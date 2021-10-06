@@ -109,16 +109,14 @@ module issue
    wire [IW-1:0]                       issue_rs_full;          // From U_RS of issue_rs.v
    wire [IW-1:0]                       ro_rs_pop;
    wire [IW-1:0]                       rs_push;
-   wire [CONFIG_P_ROB_DEPTH*IW-1:0]    issue_rob_id;           // To U_RS of issue_rs.v
-   wire [CONFIG_P_COMMIT_WIDTH*IW-1:0] issue_rob_bank;         // To U_RS of issue_rs.v
    genvar i;
    
    generate
       for(i=0;i<IW;i=i+1)
          begin : gen_RS
-            wire [`BPU_UPD_W-1:0]      bpu_upd_bundle;
+            wire [`BPU_UPD_TAKEN_TGT_W-1:0] bpu_upd_bundle;
 
-            assign bpu_upd_bundle = issue_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W];
+            assign bpu_upd_bundle = issue_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_TAKEN_TGT_W];
             
             /* issue_rs AUTO_TEMPLATE (
                   .issue_rs_full          (issue_rs_full[i]),
@@ -147,6 +145,7 @@ module issue
                   .issue_epu_op           (|issue_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
                   .issue_bru_opc_bus      (issue_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
                   .issue_lsu_op           (|issue_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
+                  .issue_fe               (issue_fe[i*`NCPU_FE_W +: `NCPU_FE_W]),
                   .issue_bpu_pred_taken   (bpu_upd_bundle[`BPU_UPD_TAKEN]),
                   .issue_bpu_pred_tgt     (bpu_upd_bundle[`BPU_UPD_TGT]),
                   .issue_pc               (issue_pc[i*`PC_W +: `PC_W]),

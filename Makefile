@@ -74,8 +74,9 @@ SIM_CPPS += $(EM_DIR)/csrc/peripheral/device-tree.cc \
 
 # Lint
 LINT_DEFS = +define+SYNTHESIS=1
-LINT_INCS = -I$(SRC_DIR)
+LINT_INCS = -I$(SRC_DIR)/core
 LINT_FLAGS = $(LINT_DEFS) $(LINT_INCS)
+LINT_SRCS = $(SRCS) $(YSYX_SRCS) $(PDK_SRCS)
 
 # YSYX Information
 MYINFO_FILE = myinfo.txt
@@ -109,7 +110,7 @@ test: build_sim
 	$(GTKWAVE) ./build/dump.vcd
 
 lint:
-	-verilator --lint-only -Wall --top-module $(YSYX_TOPLEVEL) $(LINT_FLAGS) $(YSYX_TARGET) $(PDK_SRCS)
+	-verilator --lint-only -Wall --top-module $(YSYX_TOPLEVEL) $(LINT_FLAGS) $(LINT_SRCS)
 
 $(LIB_DRAMSIM3): $(dir $(LIB_DRAMSIM3)) $(dir $(LIB_DRAMSIM3))/Makefile
 	make -C $< -j$(NUM_JOBS) all

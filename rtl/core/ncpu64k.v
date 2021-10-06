@@ -321,7 +321,6 @@ module ncpu64k
    /*AUTOINPUT*/
    wire                                flush;                  // To U_IFU of frontend.v, ...
    wire [`PC_W-1:0]                    flush_tgt;             // To U_IFU of frontend.v
-   wire                                stall;                  // To U_ID of id.v, ...
 
    frontend
       #(/*AUTOINSTPARAM*/
@@ -597,8 +596,7 @@ module ncpu64k
         .CONFIG_AW                      (CONFIG_AW),
         .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
         .CONFIG_P_COMMIT_WIDTH          (CONFIG_P_COMMIT_WIDTH),
-        .CONFIG_P_ROB_DEPTH             (CONFIG_P_ROB_DEPTH),
-        .CONFIG_P_RS_DEPTH              (CONFIG_P_RS_DEPTH))
+        .CONFIG_P_ROB_DEPTH             (CONFIG_P_ROB_DEPTH))
    U_RO
       (/*AUTOINST*/
        // Outputs
@@ -707,7 +705,6 @@ module ncpu64k
       #(/*AUTOINSTPARAM*/
         // Parameters
         .CONFIG_DW                      (CONFIG_DW),
-        .CONFIG_P_ISSUE_WIDTH           (CONFIG_P_ISSUE_WIDTH),
         .CONFIG_P_WRITEBACK_WIDTH       (CONFIG_P_WRITEBACK_WIDTH))
    U_WB_MUX
       (/*AUTOINST*/

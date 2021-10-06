@@ -45,13 +45,11 @@ module bpu
    input                                        bpu_wb_is_breg,
    input                                        bpu_wb_is_brel,
    input                                        bpu_wb_taken,
-   input [`PC_W-1:0]                            bpu_wb_pc,
+   input [`PC_W-1:CONFIG_BTB_P_NUM]             bpu_wb_pc,
    input [`PC_W-1:0]                            bpu_wb_npc_act,
    input [`BPU_UPD_W-1:0]                       bpu_wb_upd
 );
 
-   localparam PHT_NUM                           = (1<<CONFIG_PHT_P_NUM);
-   localparam BTB_NUM                           = (1<<CONFIG_BTB_P_NUM);
    localparam PHT_DW                            = 2; // 2-bit counter
    localparam BTB_DW                            = (1 + 1 + CONFIG_AW-CONFIG_BTB_P_NUM-2 + `PC_W); // V + IS_BCC + TAG + NPC
 
@@ -175,7 +173,7 @@ module bpu
       
    assign wb_btb_we = (bpu_wb & (bpu_wb_is_breg | bpu_wb_is_brel));
    
-   assign wb_btb_din = {bpu_wb_npc_act, bpu_wb_pc[`PC_W-1:CONFIG_BTB_P_NUM], bpu_wb_is_bcc, 1'b1};
+   assign wb_btb_din = {bpu_wb_npc_act, bpu_wb_pc, bpu_wb_is_bcc, 1'b1};
 
    // Update Global History Shift Register
    assign GHSR_nxt = wb_pht_we ? {GHSR_ff[CONFIG_PHT_P_NUM-2:0], bpu_wb_taken}: GHSR_ff;

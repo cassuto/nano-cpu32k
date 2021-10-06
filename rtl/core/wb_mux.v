@@ -27,7 +27,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module wb_mux
 #(
    parameter                           CONFIG_DW = 0,
-   parameter                           CONFIG_P_ISSUE_WIDTH = 0,
    parameter                           CONFIG_P_WRITEBACK_WIDTH = 0
 )
 (
