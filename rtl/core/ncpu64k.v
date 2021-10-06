@@ -315,6 +315,7 @@ module ncpu64k
    wire [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready;// From U_WB_MUX of wb_mux.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0] wb_rob_bank;// From U_EX of ex.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0] wb_rob_id;// From U_EX of ex.v
+   wire [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_rob_ready;// From U_ROB of rob.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] wb_valid;// From U_EX of ex.v
    // End of automatics
    /*AUTOINPUT*/
@@ -721,7 +722,8 @@ module ncpu64k
        .prf_WDATA_ex                    (prf_WDATA_ex[CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        .prf_WE_lsu_epu                  (prf_WE_lsu_epu),
        .prf_WADDR_lsu_epu               (prf_WADDR_lsu_epu[`NCPU_PRF_AW-1:0]),
-       .prf_WDATA_lsu_epu               (prf_WDATA_lsu_epu[CONFIG_DW-1:0]));
+       .prf_WDATA_lsu_epu               (prf_WDATA_lsu_epu[CONFIG_DW-1:0]),
+       .wb_rob_ready                    (wb_rob_ready[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]));
    
    cmt
       #(/*AUTOINSTPARAM*/
@@ -869,6 +871,7 @@ module ncpu64k
        .rob_ready                       (rob_ready),
        .rob_free_id                     (rob_free_id[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_ROB_DEPTH-1:0]),
        .rob_free_bank                   (rob_free_bank[(1<<CONFIG_P_ISSUE_WIDTH)*CONFIG_P_COMMIT_WIDTH-1:0]),
+       .wb_rob_ready                    (wb_rob_ready[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
        .cmt_valid                       (cmt_valid[(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        .cmt_epu_opc_bus                 (cmt_epu_opc_bus[`NCPU_EPU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),
        .cmt_lsu_opc_bus                 (cmt_lsu_opc_bus[`NCPU_LSU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0]),

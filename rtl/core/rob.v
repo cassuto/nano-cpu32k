@@ -65,6 +65,8 @@ module rob
    input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_opera,
    input [CONFIG_DW*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_operb,
    input [`PC_W*(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_fls_tgt,
+   // To WB
+   output [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_rob_ready,
    // To CMT
    output [(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_valid,
    output [`NCPU_EPU_IOPW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] cmt_epu_opc_bus,
@@ -133,6 +135,7 @@ module rob
    wire [vBANK_DW-1:0]                 que_vbank                     [BANKS-1:0];
    wire [CW-1:0]                       ent_valid;
    reg [CW-1:0]                        cmt_valid_;
+   reg [WW-1:0]                        wb_ready;
    genvar i, k;
    integer j;
 
@@ -326,7 +329,7 @@ module rob
             begin
                que_wb[i] = 'b0;
                for(j=0;j<CW;j=j+1)
-                  que_wb[i] = que_wb[i] | (wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]));
+                  que_wb[i] = que_wb[i] | (wb_valid[j]&wb_ready[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]));
             end
    endgenerate
    
@@ -342,20 +345,40 @@ module rob
                for(j=0;j<WW;j=j+1)
                   begin
                      que_wb_id[i] = que_wb_id[i] |
-                                       ({CONFIG_P_ROB_DEPTH{wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH])}} &
+                                       ({CONFIG_P_ROB_DEPTH{wb_valid[j]&wb_ready[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH])}} &
                                        wb_rob_id[j*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]);
                      que_wb_fls[i] = que_wb_fls[i] |
-                                       (wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) &
+                                       (wb_valid[j]&wb_ready[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) &
                                        wb_fls[j]);
                      que_wb_exc[i] = que_wb_exc[i] |
-                                       (wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) &
+                                       (wb_valid[j]&wb_ready[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) &
                                        wb_exc[j]);
                      que_wb_vbank[i] = que_wb_vbank[i] |
-                                       ({vBANK_DW{wb_valid[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH])}} &
+                                       ({vBANK_DW{wb_valid[j]&wb_ready[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH])}} &
                                        {wb_fls_tgt[j*`PC_W +: `PC_W], wb_operb[j*CONFIG_DW +: CONFIG_DW], wb_opera[j*CONFIG_DW +: CONFIG_DW]});
                   end
             end
    endgenerate
+   
+   // Conflict detection
+   // Not allowed to write to a bank at the same time.
+   
+   // Channel 0 should keep ready, to allow incomplete commits
+   always @(*) wb_ready[0] = 'b1;
+   
+   generate
+      for(i=1;i<WW;i=i+1)
+         begin : gen_conflict_dec
+            always @(*)
+               begin
+                  wb_ready[i] = 'b1;
+                  for(j=0;j<i;j=j+1)
+                     wb_ready[i] = wb_ready[i] & ~(wb_valid[j] &
+                        (wb_rob_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]));
+               end
+         end
+   endgenerate
+   assign wb_rob_ready = wb_ready;
    
    // Output the address of free bank
    generate

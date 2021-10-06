@@ -40,6 +40,9 @@ module wb_mux
    input [`NCPU_PRF_AW-1:0]            prf_WADDR_lsu_epu,
    input [CONFIG_DW-1:0]               prf_WDATA_lsu_epu,
    
+   // From ROB
+   input [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_rob_ready,
+   
    // To WB
    output [(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0] wb_ready,
    
@@ -54,7 +57,7 @@ module wb_mux
    
    // Arbiter between `ex_pipe[0]` and `lsu_epu`
    // `lsu_epu` has the highest priority
-   assign wb_ready[0] = (~prf_WE_lsu_epu);
+   assign wb_ready[0] = (~prf_WE_lsu_epu) & wb_rob_ready[0];
    assign prf_WE[0] = (prf_WE_lsu_epu) ? 1'b1 : prf_WE_ex[0];
    assign prf_WADDR[0*`NCPU_PRF_AW +: `NCPU_PRF_AW] = (prf_WE_lsu_epu)
                                                             ? prf_WADDR_lsu_epu
@@ -66,7 +69,7 @@ module wb_mux
    generate
       for(i=1;i<WW;i=i+1)
          begin : gen_bundle
-            assign wb_ready[i] = 'b1;
+            assign wb_ready[i] = wb_rob_ready[i];
             assign prf_WE[i] = prf_WE_ex[i];
             assign prf_WADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW] = prf_WADDR_ex[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
             assign prf_WDATA[i*CONFIG_DW +: CONFIG_DW] = prf_WDATA_ex[i*CONFIG_DW +: CONFIG_DW];
