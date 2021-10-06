@@ -652,6 +652,7 @@ CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_sysc
     {
         msr.ELSA = lsa;
     }
+    printf("PSR ICA=%d DCA=%d\n", msr.PSR.ICAE, msr.PSR.DCAE);
     msr.EPC = pc + (is_syscall ? INSN_LEN : 0);
     /* save old PSR */
     msr.EPSR = msr.PSR;

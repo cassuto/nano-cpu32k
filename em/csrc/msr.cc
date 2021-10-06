@@ -145,6 +145,7 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr_unpack_bit(PSR, ICAE, val);
             msr_unpack_bit(PSR, DCAE, val);
             dbg(false);
+            printf("w PSR %#x\n", v);
             break;
 
         case MSR_EPSR:
