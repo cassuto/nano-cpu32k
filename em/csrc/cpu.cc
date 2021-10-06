@@ -547,7 +547,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
 
     case INS32_OP_RETE:
         /* restore PSR and PC */
-        printf("EPSR = ICA=%d DCA=%d\n", msr.EPSR.ICAE, msr.EPSR.DCAE);
         msr.PSR = msr.EPSR;
         pc_nxt = msr.EPC;
         goto handle_exception; /* RETE causes a special exception */
@@ -653,7 +652,6 @@ CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_sysc
     {
         msr.ELSA = lsa;
     }
-    printf("PSR ICA=%d DCA=%d\n", msr.PSR.ICAE, msr.PSR.DCAE);
     msr.EPC = pc + (is_syscall ? INSN_LEN : 0);
     /* save old PSR */
     msr.EPSR = msr.PSR;
