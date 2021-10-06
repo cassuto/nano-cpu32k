@@ -143,6 +143,7 @@ module icache
    reg [PAYLOAD_P_DW_BYTES-1:0]        fsm_uncached_cnt_nxt;
    wire [PAYLOAD_P_DW_BYTES:0]         fsm_uncached_cnt_nxt_carry;
    reg                                 fsm_uncached_rd_req;
+   wire                                fsm_idle;
    // AXI
    wire                                ar_set, ar_clr;
    wire                                hds_axi_R;
@@ -207,15 +208,15 @@ module icache
 
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(1'b1), .Q(s1o_valid) );
    mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
-   mDFF_l # (.DW(CONFIG_AW)) ff_s1o_op_inv_paddr (.CLK(clk), .LOAD(p_ce), .D(msr_icinv_nxt), .Q(s1o_op_inv_paddr) );
+   mDFF_l # (.DW(CONFIG_AW)) ff_s1o_op_inv_paddr (.CLK(clk), .LOAD(fsm_idle), .D(msr_icinv_nxt), .Q(s1o_op_inv_paddr) );
    mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s1o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
    mDFF_l # (.DW(PAYLOAD_AW)) ff_s1o_payload_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_payload_addr), .Q(s1o_payload_addr) );
    mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s2o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
 
    mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
    mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
-   mDFF_r # (.DW(1)) ff_s2o_uncached_inflight (.CLK(clk), .RST(rst), .D(s2i_uncached_inflight), .Q(s2o_uncached_inflight) );
-   mDFF_r # (.DW(1)) ff_s2o_miss_inflight (.CLK(clk), .RST(rst), .D(s2i_miss_inflight), .Q(s2o_miss_inflight) );
+   mDFF_lr # (.DW(1)) ff_s2o_uncached_inflight (.CLK(clk), .RST(rst), .LOAD(fsm_idle), .D(s2i_uncached_inflight), .Q(s2o_uncached_inflight) );
+   mDFF_lr # (.DW(1)) ff_s2o_miss_inflight (.CLK(clk), .RST(rst), .LOAD(fsm_idle), .D(s2i_miss_inflight), .Q(s2o_miss_inflight) );
    
 
    // Main FSM
@@ -229,15 +230,12 @@ module icache
                   fsm_state_nxt = S_IDLE;
 
             S_IDLE:
-               if (p_ce)
-                  begin
-                     if (msr_icinv_we) // Invalidate one cache line
-                        fsm_state_nxt = S_INVALIDATE;
-                     else if (s2i_uncached_inflight) // Uncached access
-                        fsm_state_nxt = S_UNCACHED_BOOT;
-                     else if (s2i_miss_inflight) // Miss
-                        fsm_state_nxt = S_REPLACE;
-                  end
+               if (msr_icinv_we) // Invalidate one cache line
+                  fsm_state_nxt = S_INVALIDATE;
+               else if (s2i_uncached_inflight) // Uncached access
+                  fsm_state_nxt = S_UNCACHED_BOOT;
+               else if (s2i_miss_inflight) // Miss
+                  fsm_state_nxt = S_REPLACE;
 
             S_REPLACE:
                fsm_state_nxt = S_REFILL;
@@ -272,9 +270,9 @@ module icache
          endcase
       end
    
-   assign s2i_uncached_inflight = (s1o_valid & uncached_s2 & ~kill_req_s2);
+   assign s2i_uncached_inflight = (p_ce & s1o_valid & uncached_s2 & ~kill_req_s2);
    
-   assign s2i_miss_inflight = (s1o_valid & ~s2i_hit & ~uncached_s2 & ~kill_req_s2);
+   assign s2i_miss_inflight = (p_ce & s1o_valid & ~s2i_hit & ~uncached_s2 & ~kill_req_s2);
 
    mDFF_r # (.DW(3), .RST_VECTOR(S_BOOT)) ff_state_r (.CLK(clk), .RST(rst), .D(fsm_state_nxt), .Q(fsm_state_ff) );
    
@@ -411,7 +409,8 @@ module icache
          .o_dat                        (s1i_uncached_din)
       );
 
-   assign stall_req = (fsm_state_ff != S_IDLE);
+   assign fsm_idle = (fsm_state_ff == S_IDLE);
+   assign stall_req = ~fsm_idle;
 
    assign msr_icinv_ready = p_ce; // Tell if I$ is temporarily unable to accept ICINV operation
 
