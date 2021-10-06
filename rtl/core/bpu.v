@@ -36,6 +36,7 @@ module bpu
    input                                        rst,
    input                                        re,
    input [(1<<CONFIG_P_FETCH_WIDTH)-1:0]        valid,
+   input                                        msr_psr_imme,
    input [`PC_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0]  pc,
    output [`PC_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0] npc,
    output [`BPU_UPD_W*(1<<CONFIG_P_FETCH_WIDTH)-1:0] upd,
@@ -51,13 +52,14 @@ module bpu
 );
 
    localparam PHT_DW                            = 2; // 2-bit counter
-   localparam BTB_DW                            = (1 + 1 + CONFIG_AW-CONFIG_BTB_P_NUM-2 + `PC_W); // V + IS_BCC + TAG + NPC
+   localparam BTB_DW                            = (1 + 1 + CONFIG_AW-CONFIG_BTB_P_NUM-2 + `PC_W + 1); // V + IS_BCC + TAG + NPC + IMME
 
    // Stage 1 Input
    wire [`PC_W-1:0]                             s1i_pc         [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire [(1<<CONFIG_P_FETCH_WIDTH)*CONFIG_PHT_P_NUM-1:0] s1i_pht_addr;
    wire [(1<<CONFIG_P_FETCH_WIDTH)*CONFIG_BTB_P_NUM-1:0] s1i_btb_addr;
    // Stage 2 Input / Stage 1 Output
+   wire                                         s1o_msr_psr_imme;
    wire [`PC_W-1:0]                             s1o_pc         [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire [CONFIG_PHT_P_NUM-1:0]                  s1o_pht_addr   [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire [CONFIG_BTB_P_NUM-1:0]                  s1o_btb_addr   [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
@@ -68,12 +70,14 @@ module bpu
    wire                                         s2i_btb_v      [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire                                         s2i_btb_is_bcc [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire [CONFIG_AW-CONFIG_BTB_P_NUM-3:0]        s2i_btb_tag    [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
+   wire                                         s2i_btb_imme   [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire [`PC_W-1:0]                             s2i_btb_npc    [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire                                         s2i_btb_hit    [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire                                         s2i_taken      [(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    // Stage WB
    wire [CONFIG_PHT_P_NUM-1:0]                  wb_pht_addr;
    wire [CONFIG_BTB_P_NUM-1:0]                  wb_btb_addr;
+   wire                                         wb_imme;
    wire [PHT_DW-1:0]                            wb_pht_count_org;
    wire                                         wb_pht_we;
    reg [PHT_DW-1:0]                             wb_pht_din;
@@ -84,6 +88,8 @@ module bpu
    wire [CONFIG_PHT_P_NUM-1:0]                  GHSR_nxt;
    
    genvar i;
+   
+   mDFF_l #(.DW(1)) ff_s1o_msr_psr_imme (.CLK(clk), .LOAD(re), .D(msr_psr_imme), .Q(s1o_msr_psr_imme) );
    
    generate
       for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
@@ -102,9 +108,9 @@ module bpu
             assign s2i_pht_count[i] = s1o_pht_count[i*PHT_DW +: PHT_DW];
             assign s2i_pht_taken[i] = s2i_pht_count[i][PHT_DW-1];
             
-            assign {s2i_btb_npc[i], s2i_btb_tag[i], s2i_btb_is_bcc[i], s2i_btb_v[i]} = s1o_btb_data[i*BTB_DW +: BTB_DW];
+            assign {s2i_btb_imme[i], s2i_btb_npc[i], s2i_btb_tag[i], s2i_btb_is_bcc[i], s2i_btb_v[i]} = s1o_btb_data[i*BTB_DW +: BTB_DW];
             
-            assign s2i_btb_hit[i] = (s2i_btb_v[i] & (s2i_btb_tag[i] == s1o_pc[i][`PC_W-1:CONFIG_BTB_P_NUM]));
+            assign s2i_btb_hit[i] = (s2i_btb_v[i] & (s2i_btb_tag[i] == s1o_pc[i][`PC_W-1:CONFIG_BTB_P_NUM]) & (s2i_btb_imme[i] == s1o_msr_psr_imme));
             
             assign s2i_taken[i] = (valid[i] & (s2i_btb_hit[i] & (~s2i_btb_is_bcc[i] | s2i_pht_taken[i])));
             
@@ -112,7 +118,7 @@ module bpu
             assign npc[i*`PC_W +: `PC_W] = s2i_btb_npc[i];
             
             // Depended macros: `BPU_UPD_TAKEN
-            assign upd[i*`BPU_UPD_W +: `BPU_UPD_W] = {s1o_pht_count[i*PHT_DW +: PHT_DW], s1o_pht_addr[i], s1o_btb_addr[i], s2i_btb_npc[i], s2i_taken[i]};
+            assign upd[i*`BPU_UPD_W +: `BPU_UPD_W] = {s1o_pht_count[i*PHT_DW +: PHT_DW], s1o_pht_addr[i], s1o_btb_addr[i], s1o_msr_psr_imme, s2i_btb_npc[i], s2i_taken[i]};
          end
    endgenerate
    
@@ -152,7 +158,7 @@ module bpu
          .WDATA      (wb_btb_din)
       );
       
-   assign {wb_pht_count_org, wb_pht_addr, wb_btb_addr} = bpu_wb_upd_partial[`BPU_UPD_W-1:`BPU_UPD_TAKEN_TGT_W];
+   assign {wb_pht_count_org, wb_pht_addr, wb_btb_addr, wb_imme} = bpu_wb_upd_partial[`BPU_UPD_W-1:`BPU_UPD_TAKEN_TGT_W];
       
    assign wb_pht_we = (bpu_wb & bpu_wb_is_bcc);
    
@@ -169,7 +175,7 @@ module bpu
       
    assign wb_btb_we = (bpu_wb & (bpu_wb_is_breg | bpu_wb_is_brel));
    
-   assign wb_btb_din = {bpu_wb_npc_act, bpu_wb_pc, bpu_wb_is_bcc, 1'b1};
+   assign wb_btb_din = {wb_imme, bpu_wb_npc_act, bpu_wb_pc, bpu_wb_is_bcc, 1'b1};
 
    // Update Global History Shift Register
    assign GHSR_nxt = wb_pht_we ? {GHSR_ff[CONFIG_PHT_P_NUM-2:0], bpu_wb_taken}: GHSR_ff;

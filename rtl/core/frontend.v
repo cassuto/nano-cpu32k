@@ -241,6 +241,7 @@ module frontend
          .rst                           (rst),
          .re                            (p_ce),
          .valid                         (s1o_fetch_aligned),
+         .msr_psr_imme                  (msr_psr_imme),
          .pc                            (s1i_bpu_pc),
          .npc                           (s1o_bpu_npc_packed),
          .upd                           (s1o_bpu_upd_packed),

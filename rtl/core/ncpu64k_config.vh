@@ -101,7 +101,7 @@
 `define FNT_EXC_EIPF 1
 
 /* BPU packet width */
-`define BPU_UPD_W (2 + CONFIG_PHT_P_NUM + CONFIG_BTB_P_NUM + `PC_W + 1)
+`define BPU_UPD_W (2 + CONFIG_PHT_P_NUM + CONFIG_BTB_P_NUM + 1 + `PC_W + 1)
 `define BPU_UPD_TAKEN_TGT_W (`PC_W + 1)
 `define BPU_UPD_TAKEN 0
 `define BPU_UPD_TGT `PC_W:1
