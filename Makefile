@@ -17,8 +17,8 @@ SRCS += $(foreach x,$(SRC_DIR)/fabric, $(wildcard $(addprefix ${x}/*,.v) ) )
 
 # SoC - YSYX
 YSYX_SRCS += $(foreach x,$(SRC_DIR)/soc/ysyx, $(wildcard $(addprefix ${x}/*,.v) ) )
-YSYX_TOPLEVEL = ysyx_20210479
-YSYX_PREFIX = ysyx_20210479_
+YSYX_TOPLEVEL = ysyx_210479
+YSYX_PREFIX = ysyx_210479_
 YSYX_TARGET = build/$(YSYX_TOPLEVEL).v
 
 # Emulator

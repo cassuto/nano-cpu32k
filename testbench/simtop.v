@@ -200,7 +200,7 @@ module simtop
    
    assign io_interrupt = 'b0;
    
-   ysyx_20210479 U_DUT
+   ysyx_210479 U_DUT
       (/*AUTOINST*/
        // Outputs
        .io_master_awvalid               (io_master_awvalid),

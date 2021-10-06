@@ -235,8 +235,8 @@ module ex_pipe
    assign s1i_prf_we = (s1i_prf_wdat_valid & ex_prd_we);
    
    // Speculative execution check point
-   assign s1i_se_fail = ((b_taken ^ ex_bpu_pred_taken) | (b_tgt != ex_bpu_pred_tgt)); // FAIL
-   //((b_taken ^ ex_bpu_pred_taken) | (b_taken & (b_tgt != ex_bpu_pred_tgt))); // RIGHT
+   assign s1i_se_fail = ((b_taken ^ ex_bpu_pred_taken) | (b_taken & (b_tgt != ex_bpu_pred_tgt))); // RIGHT
+   // ((b_taken ^ ex_bpu_pred_taken) | (b_tgt != ex_bpu_pred_tgt)); // FAIL
    assign s1i_se_tgt = (b_taken) ? b_tgt : s1i_npc;
    
    assign s1i_wb_fls = (ex_valid & s1i_se_fail);

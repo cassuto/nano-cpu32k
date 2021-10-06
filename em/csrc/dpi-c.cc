@@ -243,12 +243,14 @@ void dpic_step()
             }
             if (!emu_event.excp && rtl_insn[i] != emu_event.insn)
             {
+                fprintf(stderr, "At PC %#x\n", emu_pc);
                 difftest_report_item("INST", emu_event.insn, rtl_insn[i]);
                 validated = false;
                 break;
             }
             if (emu_event.excp != rtl_excp[i])
             {
+                fprintf(stderr, "At PC %#x\n", emu_pc);
                 difftest_report_item("EXCEPTION occurred?", emu_event.excp, rtl_excp[i]);
                 validated = false;
                 break;
