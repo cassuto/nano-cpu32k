@@ -167,6 +167,7 @@ module frontend
 
    /* icache AUTO_TEMPLATE (
       .stall_req                       (ic_stall_req),
+      .p_ce                            (p_ce),
       .ins                             (iq_ins[]),
       .valid                           (s2o_valid),
       .uncached_s2                     (s2i_uncached),
@@ -213,6 +214,7 @@ module frontend
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
+       .p_ce                            (p_ce),                  // Templated
        .vpo                             (vpo[CONFIG_P_PAGE_SIZE-1:0]),
        .ppn_s2                          (s1o_tlb_ppn),           // Templated
        .uncached_s2                     (s2i_uncached),          // Templated

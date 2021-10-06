@@ -42,6 +42,7 @@ module icache
 (
    input                               clk,
    input                               rst,
+   input                               p_ce,
    output                              stall_req,
    input [CONFIG_P_PAGE_SIZE-1:0]      vpo,
    input [CONFIG_AW-CONFIG_P_PAGE_SIZE-1:0] ppn_s2,
@@ -138,7 +139,6 @@ module icache
    reg [PAYLOAD_P_DW_BYTES-1:0]        fsm_uncached_cnt_nxt;
    wire [PAYLOAD_P_DW_BYTES:0]         fsm_uncached_cnt_nxt_carry;
    reg                                 fsm_uncached_rd_req;
-   wire                                p_ce;
    // AXI
    wire                                ar_set, ar_clr;
    wire                                hds_axi_R;
@@ -157,7 +157,6 @@ module icache
 
    genvar way, i, j;
 
-   assign p_ce = (~stall_req);
    assign s2i_paddr = {ppn_s2, s1o_vpo};
 
    generate
@@ -223,12 +222,15 @@ module icache
                   fsm_state_nxt = S_IDLE;
 
             S_IDLE:
-               if (msr_icinv_we) // Invalidate one cache line
-                  fsm_state_nxt = S_INVALIDATE;
-               else if (s1o_valid & uncached_s2 & ~kill_req_s2) // Uncached access
-                  fsm_state_nxt = S_UNCACHED_BOOT;
-               else if (s1o_valid & ~s2i_hit & ~uncached_s2 & ~kill_req_s2) // Miss
-                  fsm_state_nxt = S_REPLACE;
+               if (p_ce)
+                  begin
+                     if (msr_icinv_we) // Invalidate one cache line
+                        fsm_state_nxt = S_INVALIDATE;
+                     else if (s1o_valid & uncached_s2 & ~kill_req_s2) // Uncached access
+                        fsm_state_nxt = S_UNCACHED_BOOT;
+                     else if (s1o_valid & ~s2i_hit & ~uncached_s2 & ~kill_req_s2) // Miss
+                        fsm_state_nxt = S_REPLACE;
+                  end
 
             S_REPLACE:
                fsm_state_nxt = S_REFILL;
@@ -395,7 +397,7 @@ module icache
 
    assign stall_req = (fsm_state_ff != S_IDLE);
 
-   assign msr_icinv_ready = (~stall_req); // Tell if I$ is temporarily unable to accept ICINV operation
+   assign msr_icinv_ready = p_ce; // Tell if I$ is temporarily unable to accept ICINV operation
 
    assign s2i_refill_get_dat = (s2o_paddr[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES] ==
                                  fsm_refill_cnt[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);
@@ -429,7 +431,7 @@ module icache
 
    mDFF_l # (.DW(PAYLOAD_DW)) ff_ins (.CLK(clk), .LOAD(p_ce|(fsm_state_ff==S_REFILL)|(fsm_state_ff==S_UNCACHED_READ)), .D(s2i_ins), .Q(ins) );
 
-   assign valid = (s2o_valid & ~stall_req);
+   assign valid = s2o_valid;
 
    // AXI - AR
    assign ibus_ARPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
