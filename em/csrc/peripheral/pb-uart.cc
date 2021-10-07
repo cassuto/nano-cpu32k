@@ -46,6 +46,7 @@ void DevicePbUart::reset()
 
 void DevicePbUart::writem8(phy_addr_t addr, uint8_t val, void *opaque)
 {
+    printf("w %#x =%#x\n", addr, val);
     addr &= (pb_uart_mmio_size - 1);
 
     // Accept/clear IRQ
