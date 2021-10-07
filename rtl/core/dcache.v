@@ -220,7 +220,7 @@ module dcache
    localparam [3:0] S_UNCACHED_READ    = 4'd9;
    localparam [3:0] S_UNCACHED_WRITE   = 4'd10;
 
-   genvar way, j;
+   genvar way;
 
    assign p_ce = (~stall_req);
 

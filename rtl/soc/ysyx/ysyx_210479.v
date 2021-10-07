@@ -114,8 +114,8 @@ module ysyx_210479
    localparam                           CONFIG_ENABLE_ASR = 1;
    localparam                           CONFIG_IMMU_ENABLE_UNCACHED_SEG = 1;
    localparam                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 1;
-   localparam                           CONFIG_DTLB_P_SETS = 7;
-   localparam                           CONFIG_ITLB_P_SETS = 7;
+   localparam                           CONFIG_DTLB_P_SETS = 2;
+   localparam                           CONFIG_ITLB_P_SETS = 2;
 
    localparam [CONFIG_AW-1:0]           CONFIG_PC_RST = 32'h30000000;
    localparam [`EXCP_VECT_W-1:0]        CONFIG_EITM_VECTOR = 8'h1c;
