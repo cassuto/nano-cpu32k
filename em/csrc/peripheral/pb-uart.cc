@@ -46,7 +46,6 @@ void DevicePbUart::reset()
 
 void DevicePbUart::writem8(phy_addr_t addr, uint8_t val, void *opaque)
 {
-    printf("w %#x =%#x\n", addr, val);
     addr &= (pb_uart_mmio_size - 1);
 
     // Accept/clear IRQ
@@ -69,7 +68,6 @@ void DevicePbUart::writem8(phy_addr_t addr, uint8_t val, void *opaque)
             DLR = (((DLR >> 8) & 0xff) << 8) | val;
         else
         {
-            printf("ch %d \m", val);
             if (!tree->in_difftest())
                 virt_uart_putch(val);
             RBR_written = 1;

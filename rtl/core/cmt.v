@@ -312,7 +312,7 @@ module cmt
                            : cmt_npc_0 /* (refetch) */;
    
    mDFF_lr #(.DW(1)) ff_s1o_se_fls (.CLK(clk), .RST(rst), .LOAD(cmt_fire[0]|s1o_se_fls), .D(s1i_se_fls), .Q(s1o_se_fls) );
-   mDFF_l #(.DW(`PC_W)) ff_s1o_se_tgt (.CLK(clk), .LOAD(cmt_fire[0]), .D(s1i_se_tgt), .Q(s1o_se_tgt) );
+   `mDFF_l #(.DW(`PC_W)) ff_s1o_se_tgt (.CLK(clk),`rst .LOAD(cmt_fire[0]), .D(s1i_se_tgt), .Q(s1o_se_tgt) );
    
    assign cmt_ce = (~pipe_req | pipe_finish);
    

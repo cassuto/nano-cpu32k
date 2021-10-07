@@ -43,9 +43,33 @@
 `define NCPU_INSN_DW (`NCPU_INSN_LEN*8)
 `define PC_W (CONFIG_AW-`NCPU_P_INSN_LEN)
 
+/* Are we in ASIC design flow? */
+`define NCPU_ASIC
+//`undef NCPU_ASIC
+
+`ifdef NCPU_ASIC
+
 /* Use SMIC std cell library */
 `define NCPU_USE_S011_STD_CELL_LIB
-//`undef NCPU_USE_S011_STD_CELL_LIB
+
+/* Reset workaround for ASIC design */
+`define rst .RST(rst),
+`define mDFF mDFF_r
+`define mDFF_l mDFF_lr
+`define mRF_nwnr mRF_nwnr_r
+`define mRF_1wr mRF_1wr_r
+`define mRF_nw_do mRF_nw_do_r
+
+`else /* NCPU_ASIC */
+
+/* Keep non-reset style in FPGA */
+`define mDFF mDFF
+`define mDFF_l mDFF_l
+`define mRF_nwnr mRF_nwnr
+`define mRF_1wr mRF_1wr
+`define mRF_nw_do mRF_nw_do
+
+`endif /* NCPU_ASIC */
 
 /* AXI Definitions */
 /* Burst types */

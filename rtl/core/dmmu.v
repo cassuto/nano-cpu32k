@@ -83,10 +83,10 @@ module dmmu
    mDFF_lr #(.DW(1)) ff_msr_psr_dmme (.CLK(clk),.RST(rst), .LOAD(re), .D(msr_psr_dmme), .Q(msr_psr_dmme_ff) );
    mDFF_lr #(.DW(1)) ff_msr_psr_rm (.CLK(clk),.RST(rst), .LOAD(re), .D(msr_psr_rm), .Q(msr_psr_rm_ff) );
    mDFF_lr #(.DW(1)) ff_we (.CLK(clk),.RST(rst), .LOAD(re), .D(we), .Q(we_ff) );
-   mDFF_l #(.DW(VPN_DW)) ff_tgt_vpn (.CLK(clk), .LOAD(re), .D(vpn), .Q(tgt_vpn_ff) );
+   `mDFF_l #(.DW(VPN_DW)) ff_tgt_vpn (.CLK(clk),`rst .LOAD(re), .D(vpn), .Q(tgt_vpn_ff) );
 
    // Instance of lower-part TLB
-   mRF_nwnr
+   `mRF_nwnr
       #(
          .DW      (CONFIG_DW),
          .AW      (CONFIG_DTLB_P_SETS),
@@ -96,6 +96,7 @@ module dmmu
    U_TLB_L
       (
          .CLK     (clk),
+         `rst
          .RE      (re),
          .RADDR   (tgt_index_nxt),
          .RDATA   (tlb_l_ff),
@@ -105,7 +106,7 @@ module dmmu
       );
 
    // Instance of higher-part TLB
-   mRF_nwnr
+   `mRF_nwnr
       #(
          .DW      (CONFIG_DW),
          .AW      (CONFIG_DTLB_P_SETS),
@@ -115,6 +116,7 @@ module dmmu
    U_TLB_H
       (
          .CLK     (clk),
+         `rst
          .RE      (re),
          .RADDR   (tgt_index_nxt),
          .RDATA   (tlb_h_ff),

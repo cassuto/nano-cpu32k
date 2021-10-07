@@ -22,6 +22,10 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+`include "ncpu64k_config.vh"
+
+`ifndef rst
+
 module mRF_nwnr
 #(
    parameter DW = 0,
@@ -70,3 +74,6 @@ module mRF_nwnr
    // synthesis translate_on
    
 endmodule
+
+`endif
+

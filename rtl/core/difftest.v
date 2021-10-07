@@ -57,11 +57,11 @@ module difftest
    
    // Extra pipeline in ID
    wire [`NCPU_INSN_DW*IW-1:0] rn_ins;
-   mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_rn_ins (.CLK(clk), .LOAD(id_p_ce), .D(id_ins), .Q(rn_ins) );
+   `mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_rn_ins (.CLK(clk),`rst .LOAD(id_p_ce), .D(id_ins), .Q(rn_ins) );
    
    // Extra pipeline in RN
    wire [`NCPU_INSN_DW*IW-1:0] issue_ins;
-   mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_issue_ins (.CLK(clk), .LOAD(rn_p_ce_s1), .D(rn_ins), .Q(issue_ins) );
+   `mDFF_l # (.DW(`NCPU_INSN_DW*IW)) ff_issue_ins (.CLK(clk),`rst .LOAD(rn_p_ce_s1), .D(rn_ins), .Q(issue_ins) );
    
    // Extra ROB entry
    reg [`NCPU_INSN_DW-1:0] rob_ins [CW-1:0][ROB_DEPTH-1:0];
@@ -83,8 +83,8 @@ module difftest
    mDFF_r #(.DW(CW)) ff_commit_valid (.CLK(clk), .RST(rst), .D(cmt_dft_fire), .Q(commit_valid_ff));
    mDFF_r #(.DW(1)) ff_commit_excp (.CLK(clk), .RST(rst), .D(cmt_exc_flush), .Q(commit_excp_ff));
    mDFF_r #(.DW(8)) ff_commit_excp_vect_ff (.CLK(clk), .RST(rst), .D({cmt_exc_flush_tgt[5:0],2'b00}), .Q(commit_excp_vect_ff));
-   mDFF #(.DW(`PC_W*CW)) ff_commit_pc (.CLK(clk), .D(cmt_pc), .Q(commit_pc_ff));
-   mDFF #(.DW(`NCPU_INSN_DW*CW)) ff_commit_ins (.CLK(clk), .D(cmt_ins), .Q(commit_ins_ff));
+   `mDFF #(.DW(`PC_W*CW)) ff_commit_pc (.CLK(clk),`rst .D(cmt_pc), .Q(commit_pc_ff));
+   `mDFF #(.DW(`NCPU_INSN_DW*CW)) ff_commit_ins (.CLK(clk),`rst .D(cmt_ins), .Q(commit_ins_ff));
    assign commit_rf_waddr_ff = cmtf_lrd;
    assign commit_rf_wdat_ff = cmtf_lrd_dat;
    mDFF_r #(.DW(CW)) ff_commit_rf_we (.CLK(clk), .RST(rst), .D(cmt_lrd_we), .Q(commit_rf_we_ff));

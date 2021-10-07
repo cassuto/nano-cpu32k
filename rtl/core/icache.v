@@ -175,6 +175,7 @@ module icache
             U_PAYLOAD_RAM
                (
                   .CLK  (clk),
+                  .RST  (rst),
                   .ADDR (s1i_payload_addr),
                   .RE   (s1i_payload_re),
                   .DOUT (s1o_payload[way*PAYLOAD_DW +: PAYLOAD_DW]),
@@ -182,7 +183,7 @@ module icache
                   .DIN  (s1i_payload_din)
                );
 
-            mRF_1wr
+            `mRF_1wr
                #(
                   .DW   (TAG_V_RAM_DW),
                   .AW   (TAG_V_RAM_AW)
@@ -190,6 +191,7 @@ module icache
             U_TAG_V_RAM
                (
                   .CLK  (clk),
+                  `rst
                   .ADDR (s1i_line_addr),
                   .RE   (s1i_tag_v_re),
                   .RDATA (s1o_tag_v[way]),
@@ -207,14 +209,14 @@ module icache
    pmux_v #(.SELW(1<<CONFIG_IC_P_WAYS), .DW(PAYLOAD_DW)) pmux_s1o_payload (.sel(s2i_hit_vec), .din(s1o_payload), .dout(s1o_match_payload), .valid(s2i_hit) );
 
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(1'b1), .Q(s1o_valid) );
-   mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
-   mDFF_l # (.DW(CONFIG_AW)) ff_s1o_op_inv_paddr (.CLK(clk), .LOAD(fsm_idle), .D(msr_icinv_nxt), .Q(s1o_op_inv_paddr) );
-   mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s1o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
-   mDFF_l # (.DW(PAYLOAD_AW)) ff_s1o_payload_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_payload_addr), .Q(s1o_payload_addr) );
-   mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s2o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
+   `mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk),`rst .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
+   `mDFF_l # (.DW(CONFIG_AW)) ff_s1o_op_inv_paddr (.CLK(clk),`rst .LOAD(fsm_idle), .D(msr_icinv_nxt), .Q(s1o_op_inv_paddr) );
+   `mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s1o_line_addr (.CLK(clk),`rst .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
+   `mDFF_l # (.DW(PAYLOAD_AW)) ff_s1o_payload_addr (.CLK(clk),`rst .LOAD(p_ce), .D(s1i_payload_addr), .Q(s1o_payload_addr) );
+   `mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s2o_line_addr (.CLK(clk),`rst .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
 
    mDFF_lr # (.DW(1)) ff_s2o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_valid), .Q(s2o_valid) );
-   mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
+   `mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk),`rst .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
    mDFF_lr # (.DW(1)) ff_s2o_uncached_inflight (.CLK(clk), .RST(rst), .LOAD(fsm_idle), .D(s2i_uncached_inflight), .Q(s2o_uncached_inflight) );
    mDFF_lr # (.DW(1)) ff_s2o_miss_inflight (.CLK(clk), .RST(rst), .LOAD(fsm_idle), .D(s2i_miss_inflight), .Q(s2o_miss_inflight) );
    
@@ -343,7 +345,7 @@ module icache
                                     ((fsm_state_ff==S_REPLACE) & (fsm_free_way[way]));
    endgenerate
    
-   mDFF_l #(.DW(1<<CONFIG_IC_P_WAYS)) ff_s2o_fsm_free_way(.CLK(clk), .LOAD(fsm_state_ff==S_REPLACE), .D(fsm_free_way), .Q(s2o_fsm_free_way));
+   `mDFF_l #(.DW(1<<CONFIG_IC_P_WAYS)) ff_s2o_fsm_free_way(.CLK(clk),`rst .LOAD(fsm_state_ff==S_REPLACE), .D(fsm_free_way), .Q(s2o_fsm_free_way));
 
    // MUX for payload RAM addr
    always @(*)
@@ -444,7 +446,7 @@ module icache
          end
    endgenerate
 
-   mDFF_l # (.DW(PAYLOAD_DW)) ff_ins (.CLK(clk), .LOAD(p_ce|(fsm_state_ff==S_REFILL)|(fsm_state_ff==S_UNCACHED_READ)), .D(s2i_ins), .Q(ins) );
+   `mDFF_l # (.DW(PAYLOAD_DW)) ff_ins (.CLK(clk),`rst .LOAD(p_ce|(fsm_state_ff==S_REFILL)|(fsm_state_ff==S_UNCACHED_READ)), .D(s2i_ins), .Q(ins) );
 
    assign valid = s2o_valid;
 

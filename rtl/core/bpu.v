@@ -89,14 +89,14 @@ module bpu
    
    genvar i;
    
-   mDFF_l #(.DW(1)) ff_s1o_msr_psr_imme (.CLK(clk), .LOAD(re), .D(msr_psr_imme), .Q(s1o_msr_psr_imme) );
+   `mDFF_l #(.DW(1)) ff_s1o_msr_psr_imme (.CLK(clk),`rst .LOAD(re), .D(msr_psr_imme), .Q(s1o_msr_psr_imme) );
    
    generate
       for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
          begin
-            mDFF_l #(.DW(`PC_W)) ff_s1o_pc (.CLK(clk), .LOAD(re), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
-            mDFF_l #(.DW(CONFIG_PHT_P_NUM)) ff_s1o_pht_addr (.CLK(clk), .LOAD(re), .D(s1i_pht_addr[i*CONFIG_PHT_P_NUM +: CONFIG_PHT_P_NUM]), .Q(s1o_pht_addr[i]) );
-            mDFF_l #(.DW(CONFIG_BTB_P_NUM)) ff_s1o_btb_addr (.CLK(clk), .LOAD(re), .D(s1i_btb_addr[i*CONFIG_BTB_P_NUM +: CONFIG_BTB_P_NUM]), .Q(s1o_btb_addr[i]) );
+            `mDFF_l #(.DW(`PC_W)) ff_s1o_pc (.CLK(clk),`rst .LOAD(re), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
+            `mDFF_l #(.DW(CONFIG_PHT_P_NUM)) ff_s1o_pht_addr (.CLK(clk),`rst .LOAD(re), .D(s1i_pht_addr[i*CONFIG_PHT_P_NUM +: CONFIG_PHT_P_NUM]), .Q(s1o_pht_addr[i]) );
+            `mDFF_l #(.DW(CONFIG_BTB_P_NUM)) ff_s1o_btb_addr (.CLK(clk),`rst .LOAD(re), .D(s1i_btb_addr[i*CONFIG_BTB_P_NUM +: CONFIG_BTB_P_NUM]), .Q(s1o_btb_addr[i]) );
             
             assign s1i_pc[i] = pc[i*`PC_W +: `PC_W];
             
@@ -122,7 +122,7 @@ module bpu
          end
    endgenerate
    
-   mRF_nwnr
+   `mRF_nwnr
       #(
          .DW         (PHT_DW),
          .AW         (CONFIG_PHT_P_NUM),
@@ -132,6 +132,7 @@ module bpu
    U_PHT
       (
          .CLK        (clk),
+         `rst
          .RE         ({(1<<CONFIG_P_FETCH_WIDTH){re}}),
          .RADDR      (s1i_pht_addr),
          .RDATA      (s1o_pht_count),
@@ -140,7 +141,7 @@ module bpu
          .WDATA      (wb_pht_din)
       );
       
-   mRF_nwnr
+   `mRF_nwnr
       #(
          .DW         (BTB_DW),
          .AW         (CONFIG_BTB_P_NUM),
@@ -150,6 +151,7 @@ module bpu
    U_BTB
       (
          .CLK        (clk),
+         `rst
          .RE         ({((1<<CONFIG_P_FETCH_WIDTH)){re}}),
          .RADDR      (s1i_btb_addr),
          .RDATA      (s1o_btb_data),

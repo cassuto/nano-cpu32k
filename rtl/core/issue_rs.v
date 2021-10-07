@@ -131,7 +131,7 @@ module issue_rs
       issue_rob_bank
    };
    
-   mRF_nwnr
+   `mRF_nwnr
       #(
          .DW   (OPP_W),
          .AW   (CONFIG_P_RS_DEPTH),
@@ -141,6 +141,7 @@ module issue_rs
    U_PAYLOAD
       (
          .CLK     (clk),
+         `rst
          .RE      (has_rdy),
          .RADDR   (rdy_addr),
          .RDATA   (opp_rdat),
@@ -149,7 +150,7 @@ module issue_rs
          .WDATA   (opp_wdat)
       );
    
-   mRF_nw_do
+   `mRF_nw_do
       #(
          .DW (`NCPU_PRF_AW),
          .AW (CONFIG_P_RS_DEPTH),
@@ -158,12 +159,13 @@ module issue_rs
    U_RF_RS1
       (
          .CLK     (clk),
+         `rst
          .WE      (issue_push),
          .WADDR   (free_addr),
          .WDATA   (issue_prs1),
          .DO      (prs1_rf)
       );
-   mRF_nw_do
+   `mRF_nw_do
       #(
          .DW (`NCPU_PRF_AW),
          .AW (CONFIG_P_RS_DEPTH),
@@ -172,13 +174,14 @@ module issue_rs
    U_RF_RS2
       (
          .CLK     (clk),
+         `rst
          .WE      (issue_push),
          .WADDR   (free_addr),
          .WDATA   (issue_prs2),
          .DO      (prs2_rf)
       );
       
-   mRF_nw_do
+   `mRF_nw_do
       #(
          .DW (1),
          .AW (CONFIG_P_RS_DEPTH),
@@ -187,12 +190,13 @@ module issue_rs
    U_RF_RS1_RE
       (
          .CLK     (clk),
+         `rst
          .WE      (issue_push),
          .WADDR   (free_addr),
          .WDATA   (issue_prs1_re),
          .DO      (prs1_re_rf)
       );
-   mRF_nw_do
+   `mRF_nw_do
       #(
          .DW (1),
          .AW (CONFIG_P_RS_DEPTH),
@@ -201,6 +205,7 @@ module issue_rs
    U_RF_RS2_RE
       (
          .CLK     (clk),
+         `rst
          .WE      (issue_push),
          .WADDR   (free_addr),
          .WDATA   (issue_prs2_re),
@@ -248,11 +253,11 @@ module issue_rs
    priority_encoder_gs #(.P_DW(CONFIG_P_RS_DEPTH)) penc_rdy (.din(rdy_vec), .dout(rdy_addr), .gs(has_rdy) );
    
    mDFF_r #(.DW(1)) ff_has_rdy (.CLK(clk), .RST(rst), .D(has_rdy & ~flush), .Q(has_rdy_ff) );
-   mDFF_l #(.DW(CONFIG_P_RS_DEPTH)) ff_rdy_addr (.CLK(clk), .LOAD(has_rdy), .D(rdy_addr), .Q(rdy_addr_ff) );
-   mDFF_l #(.DW(`NCPU_PRF_AW)) ff_issue_prs1 (.CLK(clk), .LOAD(has_rdy), .D(prs1_rf_mux[rdy_addr]), .Q(ro_prs1) );
-   mDFF_l #(.DW(`NCPU_PRF_AW)) ff_issue_prs2 (.CLK(clk), .LOAD(has_rdy), .D(prs2_rf_mux[rdy_addr]), .Q(ro_prs2) );
-   mDFF_l #(.DW(1)) ff_issue_prs1_re (.CLK(clk), .LOAD(has_rdy), .D(prs1_re_rf[rdy_addr]), .Q(ro_prs1_re) );
-   mDFF_l #(.DW(1)) ff_issue_prs2_re (.CLK(clk), .LOAD(has_rdy), .D(prs2_re_rf[rdy_addr]), .Q(ro_prs2_re) );
+   `mDFF_l #(.DW(CONFIG_P_RS_DEPTH)) ff_rdy_addr (.CLK(clk),`rst .LOAD(has_rdy), .D(rdy_addr), .Q(rdy_addr_ff) );
+   `mDFF_l #(.DW(`NCPU_PRF_AW)) ff_issue_prs1 (.CLK(clk),`rst .LOAD(has_rdy), .D(prs1_rf_mux[rdy_addr]), .Q(ro_prs1) );
+   `mDFF_l #(.DW(`NCPU_PRF_AW)) ff_issue_prs2 (.CLK(clk),`rst .LOAD(has_rdy), .D(prs2_rf_mux[rdy_addr]), .Q(ro_prs2) );
+   `mDFF_l #(.DW(1)) ff_issue_prs1_re (.CLK(clk),`rst .LOAD(has_rdy), .D(prs1_re_rf[rdy_addr]), .Q(ro_prs1_re) );
+   `mDFF_l #(.DW(1)) ff_issue_prs2_re (.CLK(clk),`rst .LOAD(has_rdy), .D(prs2_re_rf[rdy_addr]), .Q(ro_prs2_re) );
    
    assign ro_valid = has_rdy_ff;
 

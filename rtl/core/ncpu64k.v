@@ -899,6 +899,7 @@ module ncpu64k
        .prf_RDATA                       (prf_RDATA[(1<<CONFIG_P_ISSUE_WIDTH)*2*CONFIG_DW-1:0]),
        // Inputs
        .clk                             (clk),
+       .rst                             (rst),
        .prf_RE                          (prf_RE[(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0]),
        .prf_RADDR                       (prf_RADDR[(1<<CONFIG_P_ISSUE_WIDTH)*2*`NCPU_PRF_AW-1:0]),
        .prf_WE                          (prf_WE[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0]),
@@ -910,7 +911,7 @@ module ncpu64k
    wire [CONFIG_DW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmtf_lrd_dat;
    wire [`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH)-1:0] dft_cmtf_prd;
 
-   mDFF #(.DW(`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH))) ff_dft_cmtf_prd (.CLK(clk), .D(U_CMT.cmt_prd), .Q(dft_cmtf_prd) );
+   `mDFF #(.DW(`NCPU_PRF_AW*(1<<CONFIG_P_COMMIT_WIDTH))) ff_dft_cmtf_prd (.CLK(clk),`rst .D(U_CMT.cmt_prd), .Q(dft_cmtf_prd) );
    generate
       for(genvar i=0;i<(1<<CONFIG_P_COMMIT_WIDTH);i=i+1)
          begin

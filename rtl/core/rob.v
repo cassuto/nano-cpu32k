@@ -225,7 +225,7 @@ module rob
                   .payload_wdata (payload_wdata)
                );
                
-            mRF_nwnr
+            `mRF_nwnr
                #(
                   .DW (uBANK_DW),
                   .AW (CONFIG_P_ROB_DEPTH),
@@ -235,6 +235,7 @@ module rob
             U_uBANK
                (
                   .CLK     (clk),
+                  `rst
                   .RE      (payload_re),
                   .RADDR   (payload_raddr),
                   .RDATA   (payload_rdata),
@@ -294,7 +295,7 @@ module rob
                   .DO   (tag_exc)
                );
             
-            mRF_nw_do
+            `mRF_nw_do
                #(
                   .DW (vBANK_DW),
                   .AW (CONFIG_P_ROB_DEPTH),
@@ -303,6 +304,7 @@ module rob
             U_vBANK
                (
                   .CLK  (clk),
+                  `rst
                   .WE   (que_wb[i]),
                   .WADDR (que_wb_id[i]),
                   .WDATA (que_wb_vbank[i]),

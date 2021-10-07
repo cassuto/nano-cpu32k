@@ -31,6 +31,7 @@ module mRAM_s_s_be
 )
 (
    input CLK,
+   input RST, /* Reset port for address register */
    input [AW-1:0] ADDR,
    input RE,
    output [(1<<P_DW)-1:0] DOUT,
@@ -51,7 +52,7 @@ module mRAM_s_s_be
    genvar i;
    
    // Address register
-   mDFF_l #(.DW(AW)) ff_re_addr (.CLK(CLK), .LOAD(RE), .D(ADDR), .Q(re_addr_ff) );
+   mDFF_lr #(.DW(AW)) ff_re_addr (.CLK(CLK), .RST(RST), .LOAD(RE), .D(ADDR), .Q(re_addr_ff) );
    
    assign addr_w = (RE | (|WE)) ? ADDR : re_addr_ff;
    

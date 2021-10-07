@@ -352,8 +352,8 @@ module frontend
    mDFF_lr # (.DW(1)) ff_s1o_msr_psr_ice (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(msr_psr_ice), .Q(s1o_msr_psr_ice) );
 
    // Data path
-   mDFF_l # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s1o_push_offset (.CLK(clk), .LOAD(p_ce), .D(s1i_push_offset), .Q(s1o_push_offset) );
-   mDFF_l # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s2o_push_offset (.CLK(clk), .LOAD(p_ce), .D(s1o_push_offset), .Q(s2o_push_offset) );
+   `mDFF_l # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s1o_push_offset (.CLK(clk),`rst .LOAD(p_ce), .D(s1i_push_offset), .Q(s1o_push_offset) );
+   `mDFF_l # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s2o_push_offset (.CLK(clk),`rst .LOAD(p_ce), .D(s1o_push_offset), .Q(s2o_push_offset) );
    
 
    generate

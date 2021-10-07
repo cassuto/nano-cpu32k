@@ -164,7 +164,7 @@ module cmt_psr
    // SR
    generate
       for(i=0;i<`NCPU_SR_NUM;i=i+1)
-         mDFF_l #(.DW(CONFIG_DW)) dff_sr (.CLK(clk), .LOAD(msr_sr_we[i]), .D(msr_sr_nxt), .Q(msr_sr_ff[i*CONFIG_DW +: CONFIG_DW]) );
+         `mDFF_l #(.DW(CONFIG_DW)) dff_sr (.CLK(clk),`rst .LOAD(msr_sr_we[i]), .D(msr_sr_nxt), .Q(msr_sr_ff[i*CONFIG_DW +: CONFIG_DW]) );
    endgenerate
    
    // Bypass logic for PSR

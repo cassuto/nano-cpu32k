@@ -363,13 +363,13 @@ module cmt_lsu
        .dbus_BUSER                      (dbus_BUSER[AXI_USER_WIDTH-1:0]));
 
    // Data path
-   mDFF_l #(.DW(3)) ff_s1o_size (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_size), .Q(s1o_size) );
-   mDFF_l #(.DW(CONFIG_AW)) ff_s1o_vaddr (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_dc_vaddr), .Q(s1o_vaddr) );
-   mDFF_l #(.DW(1)) ff_s1o_sign_ext (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_sign_ext), .Q(s1o_sign_ext) );
-   mDFF_l #(.DW(1)) ff_s1o_dcop (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_dcop), .Q(s1o_dcop) );
-   mDFF_l #(.DW(CONFIG_AW)) ff_s2o_vaddr (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_vaddr), .Q(s2o_vaddr) );
-   mDFF_l #(.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_size), .Q(s2o_size) );
-   mDFF_l #(.DW(1)) ff_s2o_sign_ext (.CLK(clk), .LOAD(p_ce_s2), .D(s1o_sign_ext), .Q(s2o_sign_ext) );
+   `mDFF_l #(.DW(3)) ff_s1o_size (.CLK(clk),`rst .LOAD(p_ce_s1), .D(s1i_size), .Q(s1o_size) );
+   `mDFF_l #(.DW(CONFIG_AW)) ff_s1o_vaddr (.CLK(clk),`rst .LOAD(p_ce_s1), .D(s1i_dc_vaddr), .Q(s1o_vaddr) );
+   `mDFF_l #(.DW(1)) ff_s1o_sign_ext (.CLK(clk),`rst .LOAD(p_ce_s1), .D(s1i_sign_ext), .Q(s1o_sign_ext) );
+   `mDFF_l #(.DW(1)) ff_s1o_dcop (.CLK(clk),`rst .LOAD(p_ce_s1), .D(s1i_dcop), .Q(s1o_dcop) );
+   `mDFF_l #(.DW(CONFIG_AW)) ff_s2o_vaddr (.CLK(clk),`rst .LOAD(p_ce_s2), .D(s1o_vaddr), .Q(s2o_vaddr) );
+   `mDFF_l #(.DW(3)) ff_s2o_size (.CLK(clk),`rst .LOAD(p_ce_s2), .D(s1o_size), .Q(s2o_size) );
+   `mDFF_l #(.DW(1)) ff_s2o_sign_ext (.CLK(clk),`rst .LOAD(p_ce_s2), .D(s1o_sign_ext), .Q(s2o_sign_ext) );
 
    // Control path
    mDFF_lr #(.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_valid), .Q(s1o_valid) );

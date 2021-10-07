@@ -111,46 +111,46 @@ module ro
             // Pipeline stage
             //
             
-            mDFF_l # (.DW(`NCPU_ALU_IOPW)) ff_ex_alu_opc_bus (.CLK(clk), .LOAD(p_ce[i]),
+            `mDFF_l # (.DW(`NCPU_ALU_IOPW)) ff_ex_alu_opc_bus (.CLK(clk),`rst .LOAD(p_ce[i]),
                      .D(ro_alu_opc_bus[i * `NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]), .Q(ex_alu_opc_bus[i * `NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]) );
                      
-//            mDFF_l # (.DW(`NCPU_LPU_IOPW)) ff_ex_lpu_opc_bus (.CLK(clk), .LOAD(p_ce[i]),
+//            `mDFF_l # (.DW(`NCPU_LPU_IOPW)) ff_ex_lpu_opc_bus (.CLK(clk),`rst .LOAD(p_ce[i]),
 //                     .D(ro_lpu_opc_bus[i * `NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]), .Q(ex_lpu_opc_bus[i * `NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]) );
                      
-            mDFF_l # (.DW(1)) ff_ex_epu_opc_bus (.CLK(clk), .LOAD(p_ce[i]), .D(ro_epu_op[i]), .Q(ex_epu_op[i]) );
+            `mDFF_l # (.DW(1)) ff_ex_epu_opc_bus (.CLK(clk),`rst .LOAD(p_ce[i]), .D(ro_epu_op[i]), .Q(ex_epu_op[i]) );
             
-            mDFF_l # (.DW(`NCPU_BRU_IOPW)) ff_ex_bru_opc_bus (.CLK(clk), .LOAD(p_ce[i]),
+            `mDFF_l # (.DW(`NCPU_BRU_IOPW)) ff_ex_bru_opc_bus (.CLK(clk),`rst .LOAD(p_ce[i]),
                      .D(ro_bru_opc_bus[i * `NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]), .Q(ex_bru_opc_bus[i * `NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]) );
                      
-            mDFF_l # (.DW(1)) ff_ex_lsu_opc_bus (.CLK(clk), .LOAD(p_ce[i]), .D(ro_lsu_op[i]), .Q(ex_lsu_op[i]) );
+            `mDFF_l # (.DW(1)) ff_ex_lsu_opc_bus (.CLK(clk),`rst .LOAD(p_ce[i]), .D(ro_lsu_op[i]), .Q(ex_lsu_op[i]) );
             
-            mDFF_l # (.DW(`NCPU_FE_W)) ff_ex_fe (.CLK(clk), .LOAD(p_ce[i]),
+            `mDFF_l # (.DW(`NCPU_FE_W)) ff_ex_fe (.CLK(clk),`rst .LOAD(p_ce[i]),
                      .D(ro_fe[i * `NCPU_FE_W +: `NCPU_FE_W]), .Q(ex_fe[i * `NCPU_FE_W +: `NCPU_FE_W]) );
                      
-            mDFF_l # (.DW(1)) ff_ex_bpu_pred_taken (.CLK(clk), .LOAD(p_ce[i]), .D(ro_bpu_pred_taken[i]), .Q(ex_bpu_pred_taken[i]) );
+            `mDFF_l # (.DW(1)) ff_ex_bpu_pred_taken (.CLK(clk),`rst .LOAD(p_ce[i]), .D(ro_bpu_pred_taken[i]), .Q(ex_bpu_pred_taken[i]) );
             
-            mDFF_l # (.DW(`PC_W)) ff_ex_bpu_pred_tgt (.CLK(clk), .LOAD(p_ce[i]),
+            `mDFF_l # (.DW(`PC_W)) ff_ex_bpu_pred_tgt (.CLK(clk),`rst .LOAD(p_ce[i]),
                      .D(ro_bpu_pred_tgt[i * `PC_W +: `PC_W]), .Q(ex_bpu_pred_tgt[i * `PC_W +: `PC_W]) );
                      
-            mDFF_l # (.DW(`PC_W)) ff_ex_pc (.CLK(clk), .LOAD(p_ce[i]),
+            `mDFF_l # (.DW(`PC_W)) ff_ex_pc (.CLK(clk),`rst .LOAD(p_ce[i]),
                      .D(ro_pc[i * `PC_W +: `PC_W]), .Q(ex_pc[i * `PC_W +: `PC_W]) );
                      
-            mDFF_l # (.DW(CONFIG_DW)) ff_ex_imm (.CLK(clk), .LOAD(p_ce[i]),
+            `mDFF_l # (.DW(CONFIG_DW)) ff_ex_imm (.CLK(clk),`rst .LOAD(p_ce[i]),
                      .D(ro_imm[i * CONFIG_DW +: CONFIG_DW]), .Q(ex_imm[i * CONFIG_DW +: CONFIG_DW]) );
                      
-            mDFF_l # (.DW(1)) ff_ex_prd_we (.CLK(clk), .LOAD(p_ce[i]), .D(ro_prd_we[i]), .Q(ex_prd_we[i]) );
+            `mDFF_l # (.DW(1)) ff_ex_prd_we (.CLK(clk),`rst .LOAD(p_ce[i]), .D(ro_prd_we[i]), .Q(ex_prd_we[i]) );
             
-            mDFF_l # (.DW(`NCPU_PRF_AW)) ff_ex_prd (.CLK(clk), .LOAD(p_ce[i]),
+            `mDFF_l # (.DW(`NCPU_PRF_AW)) ff_ex_prd (.CLK(clk),`rst .LOAD(p_ce[i]),
                      .D(ro_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]), .Q(ex_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW]) );
                      
-            mDFF_l # (.DW(CONFIG_P_ROB_DEPTH)) ff_ex_rob_id (.CLK(clk), .LOAD(p_ce[i]),
+            `mDFF_l # (.DW(CONFIG_P_ROB_DEPTH)) ff_ex_rob_id (.CLK(clk),`rst .LOAD(p_ce[i]),
                      .D(ro_rob_id[i * CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]), .Q(ex_rob_id[i * CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH]) );
                      
-            mDFF_l # (.DW(CONFIG_P_COMMIT_WIDTH)) ff_ex_rob_bank (.CLK(clk), .LOAD(p_ce[i]),
+            `mDFF_l # (.DW(CONFIG_P_COMMIT_WIDTH)) ff_ex_rob_bank (.CLK(clk),`rst .LOAD(p_ce[i]),
                      .D(ro_rob_bank[i * CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]), .Q(ex_rob_bank[i * CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]) );
             
-            mDFF_l # (.DW(1)) ff_s1o_prs1_re (.CLK(clk), .LOAD(p_ce[i]), .D(ro_prs1_re[i]), .Q(s1o_prs1_re[i]) );
-            mDFF_l # (.DW(1)) ff_s1o_prs2_re (.CLK(clk), .LOAD(p_ce[i]), .D(ro_prs2_re[i]), .Q(s1o_prs2_re[i]) );
+            `mDFF_l # (.DW(1)) ff_s1o_prs1_re (.CLK(clk),`rst .LOAD(p_ce[i]), .D(ro_prs1_re[i]), .Q(s1o_prs1_re[i]) );
+            `mDFF_l # (.DW(1)) ff_s1o_prs2_re (.CLK(clk),`rst .LOAD(p_ce[i]), .D(ro_prs2_re[i]), .Q(s1o_prs2_re[i]) );
             
             // PRF could be considered as a pipeline stage
             assign prf_RE[(i<<1)] = (p_ce[i] & ro_prs1_re[i]);

@@ -205,23 +205,23 @@ module rn
    // Pipeline stage
    //
    mDFF_lr # (.DW(IW)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush), .D(rn_valid & {IW{~flush}}), .Q(s1o_valid) );
-   mDFF_l # (.DW(`NCPU_ALU_IOPW*IW)) ff_issue_alu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_alu_opc_bus), .Q(issue_alu_opc_bus) );
-//   mDFF_l # (.DW(`NCPU_LPU_IOPW*IW)) ff_issue_lpu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lpu_opc_bus), .Q(issue_lpu_opc_bus) );
-   mDFF_l # (.DW(`NCPU_EPU_IOPW*IW)) ff_issue_epu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_epu_opc_bus), .Q(issue_epu_opc_bus) );
-   mDFF_l # (.DW(`NCPU_BRU_IOPW*IW)) ff_issue_bru_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_bru_opc_bus), .Q(issue_bru_opc_bus) );
-   mDFF_l # (.DW(`NCPU_LSU_IOPW*IW)) ff_issue_lsu_opc_bus (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lsu_opc_bus), .Q(issue_lsu_opc_bus) );
-   mDFF_l # (.DW(`NCPU_FE_W*IW)) ff_issue_fe (.CLK(clk), .LOAD(p_ce_s1), .D(rn_fe), .Q(issue_fe) );
-   mDFF_l # (.DW(`BPU_UPD_W*IW)) ff_issue_bpu_upd (.CLK(clk), .LOAD(p_ce_s1), .D(rn_bpu_upd), .Q(issue_bpu_upd) );
-   mDFF_l # (.DW(`PC_W*IW)) ff_issue_pc (.CLK(clk), .LOAD(p_ce_s1), .D(rn_pc), .Q(issue_pc) );
-   mDFF_l # (.DW(CONFIG_DW*IW)) ff_issue_imm (.CLK(clk), .LOAD(p_ce_s1), .D(rn_imm), .Q(issue_imm) );
-   mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_prs1 (.CLK(clk), .LOAD(p_ce_s1), .D(rat_prs1), .Q(issue_prs1) );
-   mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_prs2 (.CLK(clk), .LOAD(p_ce_s1), .D(rat_prs2), .Q(issue_prs2) );
-   mDFF_l # (.DW(IW)) ff_issue_prs1_re (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs1_re), .Q(issue_prs1_re) );
-   mDFF_l # (.DW(IW)) ff_issue_prs2_re (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrs2_re), .Q(issue_prs2_re) );
-   mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_prd (.CLK(clk), .LOAD(p_ce_s1), .D(fl_prd), .Q(issue_prd) );
-   mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_pfree (.CLK(clk), .LOAD(p_ce_s1), .D(rat_pfree), .Q(issue_pfree) );
-   mDFF_l # (.DW(IW)) ff_issue_prd_we (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd_we), .Q(issue_prd_we) );
-   mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_lrd (.CLK(clk), .LOAD(p_ce_s1), .D(rn_lrd), .Q(issue_lrd) );
+   `mDFF_l # (.DW(`NCPU_ALU_IOPW*IW)) ff_issue_alu_opc_bus (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_alu_opc_bus), .Q(issue_alu_opc_bus) );
+//   `mDFF_l # (.DW(`NCPU_LPU_IOPW*IW)) ff_issue_lpu_opc_bus (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_lpu_opc_bus), .Q(issue_lpu_opc_bus) );
+   `mDFF_l # (.DW(`NCPU_EPU_IOPW*IW)) ff_issue_epu_opc_bus (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_epu_opc_bus), .Q(issue_epu_opc_bus) );
+   `mDFF_l # (.DW(`NCPU_BRU_IOPW*IW)) ff_issue_bru_opc_bus (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_bru_opc_bus), .Q(issue_bru_opc_bus) );
+   `mDFF_l # (.DW(`NCPU_LSU_IOPW*IW)) ff_issue_lsu_opc_bus (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_lsu_opc_bus), .Q(issue_lsu_opc_bus) );
+   `mDFF_l # (.DW(`NCPU_FE_W*IW)) ff_issue_fe (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_fe), .Q(issue_fe) );
+   `mDFF_l # (.DW(`BPU_UPD_W*IW)) ff_issue_bpu_upd (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_bpu_upd), .Q(issue_bpu_upd) );
+   `mDFF_l # (.DW(`PC_W*IW)) ff_issue_pc (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_pc), .Q(issue_pc) );
+   `mDFF_l # (.DW(CONFIG_DW*IW)) ff_issue_imm (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_imm), .Q(issue_imm) );
+   `mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_prs1 (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rat_prs1), .Q(issue_prs1) );
+   `mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_prs2 (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rat_prs2), .Q(issue_prs2) );
+   `mDFF_l # (.DW(IW)) ff_issue_prs1_re (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_lrs1_re), .Q(issue_prs1_re) );
+   `mDFF_l # (.DW(IW)) ff_issue_prs2_re (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_lrs2_re), .Q(issue_prs2_re) );
+   `mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_prd (.CLK(clk),`rst .LOAD(p_ce_s1), .D(fl_prd), .Q(issue_prd) );
+   `mDFF_l # (.DW(`NCPU_PRF_AW*IW)) ff_issue_pfree (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rat_pfree), .Q(issue_pfree) );
+   `mDFF_l # (.DW(IW)) ff_issue_prd_we (.CLK(clk), .LOAD(p_ce_s1),`rst .D(rn_lrd_we), .Q(issue_prd_we) );
+   `mDFF_l # (.DW(`NCPU_LRF_AW*IW)) ff_issue_lrd (.CLK(clk),`rst .LOAD(p_ce_s1), .D(rn_lrd), .Q(issue_lrd) );
    mDFF_lr # (.DW(CONFIG_P_ISSUE_WIDTH+1)) ff_issue_push_size (.CLK(clk), .RST(rst), .LOAD(p_ce_s1|flush), .D(rn_push_size & {CONFIG_P_ISSUE_WIDTH+1{~flush}}), .Q(issue_push_size) );
    
    assign issue_push = s1o_valid;

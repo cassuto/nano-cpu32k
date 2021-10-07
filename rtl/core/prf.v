@@ -32,6 +32,7 @@ module prf
 )
 (
    input                               clk,
+   input                               rst,
    
    // From RO
    input [(1<<CONFIG_P_ISSUE_WIDTH)*2-1:0] prf_RE,
@@ -49,7 +50,7 @@ module prf
    wire [IW*2*CONFIG_DW-1:0]           prf_RDATA_1;
    genvar i;
    
-   mRF_nwnr
+   `mRF_nwnr
       #(
          .DW                           (CONFIG_DW),
          .AW                           (`NCPU_PRF_AW),
@@ -59,6 +60,7 @@ module prf
    U_PRF
       (
          .CLK                          (clk),
+         `rst
          .RE                           (prf_RE),
          .RADDR                        (prf_RADDR),
          .RDATA                        (prf_RDATA_1),
@@ -71,7 +73,7 @@ module prf
    generate
       for(i=0;i<IW*2;i=i+1)
          begin : gen_zero_dec
-            mDFF_l #(.DW(1)) ff_prf_zero_RADDR (.CLK(clk), .LOAD(prf_RE[i]), .D(|prf_RADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]), .Q(prf_RADDR_zero_ff[i]) );
+            `mDFF_l #(.DW(1)) ff_prf_zero_RADDR (.CLK(clk),`rst .LOAD(prf_RE[i]), .D(|prf_RADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]), .Q(prf_RADDR_zero_ff[i]) );
    
             assign prf_RDATA[i*CONFIG_DW +: CONFIG_DW] =
                (prf_RDATA_1[i*CONFIG_DW +: CONFIG_DW] & {CONFIG_DW{prf_RADDR_zero_ff[i]}});

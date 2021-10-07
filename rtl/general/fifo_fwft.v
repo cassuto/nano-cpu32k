@@ -74,7 +74,7 @@ module fifo_fwft
        .pop                             (pop),
        .payload_rdata                   (payload_rdata[DW-1:0]));
 
-   mRF_nwnr
+   `mRF_nwnr
       #(
          .DW (DW),
          .AW (DEPTH_WIDTH),
@@ -84,6 +84,7 @@ module fifo_fwft
    U_RF
       (
          .CLK     (clk),
+         `rst
          .RE      (payload_re),
          .RADDR   (payload_raddr),
          .RDATA   (payload_rdata),

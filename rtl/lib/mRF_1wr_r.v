@@ -22,17 +22,15 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-`include "ncpu64k_config.vh"
-
-`ifndef rst
-
-module mRF_1wr
+module mRF_1wr_r
 #(
    parameter DW = 0,
-   parameter AW = 0
+   parameter AW = 0,
+   parameter [DW*(1<<AW)-1:0] RST_VECTOR = 'b0
 )
 (
    input CLK,
+   input RST,
    input [AW-1:0] ADDR,
    input RE,
    output [DW-1:0] RDATA,
@@ -41,28 +39,35 @@ module mRF_1wr
 );
    reg [DW-1:0] regfile [(1<<AW)-1:0];
    reg [DW-1:0] ff_dout;
+   integer j;
    
-   always @(posedge CLK)
-      begin
-         if (WE)
-            regfile[ADDR] <= WDATA;
-         if (RE)
-            ff_dout <= regfile[ADDR];
-      end
+`ifdef NCPU_RST_ASYNC
+ `ifdef NCPU_RST_POS_POLARITY
+   always @(posedge CLK or posedge RST) begin
+ `else // neg polarity
+   always @(posedge CLK or negedge RST) begin
+ `endif
+`else // synchronous
+   always @(posedge CLK) begin
+`endif
+`ifdef NCPU_RST_POS_POLARITY
+      if (RST)
+`else // neg polarity
+      if (~RST)
+`endif
+         begin
+            for(j=0;j<(1<<AW);j=j+1)
+               regfile[j] <= RST_VECTOR[j*DW +: DW];
+         end
+      else
+         begin
+            if (WE)
+               regfile[ADDR] <= WDATA;
+            if (RE)
+               ff_dout <= regfile[ADDR];
+         end
+   end
 
    assign RDATA = ff_dout;
 
-   // synthesis translate_off
-`ifndef SYNTHESIS
-
-   initial
-      for(integer j=0;j<(1<<AW);j=j+1)
-         regfile[j] = {DW{{$random}[0]}}; // random value since there is no reset port
-
-`endif
-   // synthesis translate_on
-   
 endmodule
-
-`endif
-

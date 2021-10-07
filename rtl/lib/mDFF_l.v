@@ -24,6 +24,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
+`ifndef rst
+
 module mDFF_l # (
    parameter DW = 1 // Data Width in bits
 )
@@ -59,3 +61,5 @@ module mDFF_l # (
    // synthesis translate_on
 
 endmodule
+
+`endif

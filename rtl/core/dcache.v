@@ -239,6 +239,7 @@ module dcache
             U_PAYLOAD_RAM
                (
                   .CLK  (clk),
+                  .RST  (rst),
                   .ADDR (s2i_payload_addr),
                   .RE   (s2i_payload_re),
                   .DOUT (s2o_payload[way*PAYLOAD_DW +: PAYLOAD_DW]),
@@ -246,7 +247,7 @@ module dcache
                   .DIN  (s2i_payload_din)
                );
 
-            mRF_1wr
+            `mRF_1wr
                #(
                   .DW   (TAG_V_RAM_DW),
                   .AW   (TAG_V_RAM_AW)
@@ -254,13 +255,14 @@ module dcache
             U_TAG_V_RAM
                (
                   .CLK  (clk),
+                  `rst
                   .ADDR (s1i_line_addr),
                   .RE   (s1i_tag_v_re),
                   .RDATA (s1o_tag_v[way]),
                   .WE   (s1i_tag_v_we[way]),
                   .WDATA (s1i_replace_tag_v)
                );
-            mRF_nwnr
+            `mRF_nwnr
                #(
                   .DW   (1),
                   .AW   (TAG_V_RAM_AW),
@@ -270,6 +272,7 @@ module dcache
             U_D_RF
                (
                   .CLK     (clk),
+                  `rst
                   .RE      (s1i_tag_v_re),
                   .RADDR   (s1i_line_addr),
                   .RDATA   (rf_d),
@@ -282,7 +285,7 @@ module dcache
             assign rf_conflict = ((s1i_line_addr == s2i_d_waddr) & s2i_d_we[way]);
             
             mDFF_lr #(.DW(1)) ff_bypass (.CLK(clk), .RST(rst), .LOAD(rf_conflict | s1i_tag_v_re), .D(rf_conflict | ~s1i_tag_v_re), .Q(rf_bypass) );
-            mDFF_l #(.DW(1)) ff_rd_d (.CLK(clk), .LOAD(s1i_tag_v_re), .D(s2i_d_wdat[way]), .Q(rf_d_ff) );
+            `mDFF_l #(.DW(1)) ff_rd_d (.CLK(clk),`rst .LOAD(s1i_tag_v_re), .D(s2i_d_wdat[way]), .Q(rf_d_ff) );
 
             assign s1o_d[way] = rf_bypass ? rf_d_ff : rf_d;
 
@@ -312,24 +315,24 @@ module dcache
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(req), .Q(s1o_valid) );
    mDFF_lr # (.DW(1)) ff_s1o_inv (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(inv), .Q(s1o_inv) );
    mDFF_lr # (.DW(1)) ff_s1o_fls (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(fls), .Q(s1o_fls) );
-   mDFF_l # (.DW(3)) ff_s1o_size (.CLK(clk), .LOAD(p_ce), .D(size), .Q(s1o_size) );
+   `mDFF_l # (.DW(3)) ff_s1o_size (.CLK(clk),`rst .LOAD(p_ce), .D(size), .Q(s1o_size) );
    mDFF_lr # (.DW(CONFIG_DW/8)) ff_s1o_wmsk (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(wmsk), .Q(s1o_wmsk) );
-   mDFF_l # (.DW(CONFIG_DW)) ff_s1o_wdat (.CLK(clk), .LOAD(p_ce), .D(wdat), .Q(s1o_wdat) );
-   mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk), .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
-   mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s1o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
-   mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_match_vec (.CLK(clk), .LOAD(s2i_match_vec_ce), .D(s2i_match_vec), .Q(s2o_match_vec) );
-   mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s2o_line_addr (.CLK(clk), .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
-   mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_fsm_free_way (.CLK(clk), .LOAD(p_ce), .D(fsm_free_way), .Q(s2o_fsm_free_way) );
+   `mDFF_l # (.DW(CONFIG_DW)) ff_s1o_wdat (.CLK(clk),`rst .LOAD(p_ce), .D(wdat), .Q(s1o_wdat) );
+   `mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk),`rst .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
+   `mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s1o_line_addr (.CLK(clk),`rst .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
+   `mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_match_vec (.CLK(clk),`rst .LOAD(s2i_match_vec_ce), .D(s2i_match_vec), .Q(s2o_match_vec) );
+   `mDFF_l # (.DW(CONFIG_DC_P_SETS)) ff_s2o_line_addr (.CLK(clk),`rst .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
+   `mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_fsm_free_way (.CLK(clk),`rst .LOAD(p_ce), .D(fsm_free_way), .Q(s2o_fsm_free_way) );
 
    mDFF_lr # (.DW(1)) ff_s2o_fls (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_fls), .Q(s2o_fls) );
-   mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk), .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
-   mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_d (.CLK(clk), .LOAD(p_ce), .D(s1o_d), .Q(s2o_d) );
-   mDFF_l # (.DW(1)) ff_s2o_free_dirty (.CLK(clk), .LOAD(p_ce), .D(s1o_free_dirty), .Q(s2o_free_dirty) );
-   mDFF_l # (.DW(TAG_WIDTH)) ff_s2o_free_tag (.CLK(clk), .LOAD(p_ce), .D(s2i_free_tag), .Q(s2o_free_tag) );
-   mDFF_l # (.DW(PAYLOAD_AW)) ff_s2o_payload_addr (.CLK(clk), .LOAD(p_ce), .D(s2i_payload_addr), .Q(s2o_payload_addr) );
-   mDFF_l # (.DW(CONFIG_DC_P_LINE)) ff_s2o_wb_addr (.CLK(clk), .LOAD(s2i_wb_re), .D(fsm_refill_cnt), .Q(s2o_wb_addr) );
-   mDFF_l # (.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_ce), .D(s1o_size), .Q(s2o_size) );
-   mDFF_l # (.DW(CONFIG_DW)) ff_s2o_wdat (.CLK(clk), .LOAD(p_ce), .D(s1o_wdat), .Q(s2o_wdat) );
+   `mDFF_l # (.DW(CONFIG_AW)) ff_s2o_paddr (.CLK(clk),`rst .LOAD(p_ce), .D(s2i_paddr), .Q(s2o_paddr) );
+   `mDFF_l # (.DW(1<<CONFIG_DC_P_WAYS)) ff_s2o_d (.CLK(clk),`rst .LOAD(p_ce), .D(s1o_d), .Q(s2o_d) );
+   `mDFF_l # (.DW(1)) ff_s2o_free_dirty (.CLK(clk),`rst .LOAD(p_ce), .D(s1o_free_dirty), .Q(s2o_free_dirty) );
+   `mDFF_l # (.DW(TAG_WIDTH)) ff_s2o_free_tag (.CLK(clk),`rst .LOAD(p_ce), .D(s2i_free_tag), .Q(s2o_free_tag) );
+   `mDFF_l # (.DW(PAYLOAD_AW)) ff_s2o_payload_addr (.CLK(clk),`rst .LOAD(p_ce), .D(s2i_payload_addr), .Q(s2o_payload_addr) );
+   `mDFF_l # (.DW(CONFIG_DC_P_LINE)) ff_s2o_wb_addr (.CLK(clk),`rst .LOAD(s2i_wb_re), .D(fsm_refill_cnt), .Q(s2o_wb_addr) );
+   `mDFF_l # (.DW(3)) ff_s2o_size (.CLK(clk), .LOAD(p_ce),`rst .D(s1o_size), .Q(s2o_size) );
+   `mDFF_l # (.DW(CONFIG_DW)) ff_s2o_wdat (.CLK(clk),`rst .LOAD(p_ce), .D(s1o_wdat), .Q(s2o_wdat) );
    mDFF_lr # (.DW(CONFIG_DW/8)) ff_s2o_wmsk (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_wmsk), .Q(s2o_wmsk) );
    mDFF_lr # (.DW(1)) ff_s2o_use_uncached_dout (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(uncached_s2), .Q(s2o_uncached) );
    
@@ -635,7 +638,7 @@ module dcache
                   .o_dat                        (axi_aligned_rdata_nxt)
                );
                
-            mDFF_l # (.DW(PAYLOAD_DW)) ff_axi_aligned_rdata (.CLK(clk), .LOAD(|axi_aligned_rdata_ff_wmsk), .D(axi_aligned_rdata_nxt), .Q(axi_aligned_rdata_ff) );
+            `mDFF_l # (.DW(PAYLOAD_DW)) ff_axi_aligned_rdata (.CLK(clk),`rst .LOAD(|axi_aligned_rdata_ff_wmsk), .D(axi_aligned_rdata_nxt), .Q(axi_aligned_rdata_ff) );
          end
       else
          initial $fatal(1, "Unsupported bitwidth for uncached device!");

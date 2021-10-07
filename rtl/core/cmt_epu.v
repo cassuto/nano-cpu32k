@@ -442,8 +442,8 @@ module cmt_epu
 
    // Pipeline stage
    mDFF_lr # (.DW(1)) ff_epu_wb_valid (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_wb_valid), .Q(s1o_wb_valid) );
-   mDFF_l # (.DW(CONFIG_DW)) ff_epu_wb_dout (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_wb_dout), .Q(epu_wb_dout) );
-   mDFF_l # (.DW(1)) ff_epu_wb_dout_sel (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_wb_dout_sel), .Q(epu_wb_dout_sel) );
+   `mDFF_l # (.DW(CONFIG_DW)) ff_epu_wb_dout (.CLK(clk),`rst .LOAD(p_ce_s1), .D(s1i_wb_dout), .Q(epu_wb_dout) );
+   `mDFF_l # (.DW(1)) ff_epu_wb_dout_sel (.CLK(clk),`rst .LOAD(p_ce_s1), .D(s1i_wb_dout_sel), .Q(epu_wb_dout_sel) );
    mDFF_lr # (.DW(1)) ff_s1o_commit_ERET (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_ERET), .Q(s1o_commit_ERET) );
    mDFF_lr # (.DW(1)) ff_s1o_commit_ESYSCALL (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_ESYSCALL), .Q(s1o_commit_ESYSCALL) );
    mDFF_lr # (.DW(1)) ff_s1o_commit_EINSN (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_EINSN), .Q(s1o_commit_EINSN) );
@@ -452,10 +452,10 @@ module cmt_epu
    mDFF_lr # (.DW(1)) ff_s1o_commit_EIRQ (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_EIRQ), .Q(s1o_commit_EIRQ) );
    mDFF_lr # (.DW(1)) ff_s1o_commit_refetch (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_refetch), .Q(s1o_commit_refetch) );
    mDFF_lr # (.DW(NCPU_WMSR_WE_W)) ff_s1o_commit_wmsr_we (.CLK(clk), .RST(rst), .LOAD(p_ce_s1), .D(s1i_wmsr_we), .Q(s1o_commit_wmsr_we) );
-   mDFF_l # (.DW(CONFIG_DW)) ff_s1o_commit_wmsr_dat (.CLK(clk), .LOAD(p_ce_s1), .D(s1i_msr_wdat), .Q(s1o_commit_wmsr_dat) );
-   mDFF_l # (.DW(`PC_W)) ff_s1o_commit_epc (.CLK(clk), .LOAD(p_ce_s1), .D(cmt_pc), .Q(s1o_commit_epc) );
-   mDFF_l # (.DW(`PC_W)) ff_s1o_commit_nepc (.CLK(clk), .LOAD(p_ce_s1), .D(cmt_npc), .Q(s1o_commit_nepc) );
-   mDFF_l # (.DW(CONFIG_AW-`EXCP_VECT_W)) ff_s1o_msr_evect (.CLK(clk), .LOAD(p_ce_s1), .D(msr_evect), .Q(s1o_msr_evect) );
+   `mDFF_l # (.DW(CONFIG_DW)) ff_s1o_commit_wmsr_dat (.CLK(clk),`rst .LOAD(p_ce_s1), .D(s1i_msr_wdat), .Q(s1o_commit_wmsr_dat) );
+   `mDFF_l # (.DW(`PC_W)) ff_s1o_commit_epc (.CLK(clk),`rst .LOAD(p_ce_s1), .D(cmt_pc), .Q(s1o_commit_epc) );
+   `mDFF_l # (.DW(`PC_W)) ff_s1o_commit_nepc (.CLK(clk),`rst .LOAD(p_ce_s1), .D(cmt_npc), .Q(s1o_commit_nepc) );
+   `mDFF_l # (.DW(CONFIG_AW-`EXCP_VECT_W)) ff_s1o_msr_evect (.CLK(clk),`rst .LOAD(p_ce_s1), .D(msr_evect), .Q(s1o_msr_evect) );
    
    // Unpack commit wmsr we
    assign {

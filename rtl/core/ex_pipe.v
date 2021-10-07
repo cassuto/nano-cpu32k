@@ -246,16 +246,16 @@ module ex_pipe
    //
    // Pipeline stages
    //
-   mDFF_l # (.DW(CONFIG_P_ROB_DEPTH)) ff_wb_rob_id (.CLK(clk), .LOAD(p_ce), .D(ex_rob_id), .Q(wb_rob_id) );
-   mDFF_l # (.DW(CONFIG_P_COMMIT_WIDTH)) ff_wb_rob_bank (.CLK(clk), .LOAD(p_ce), .D(ex_rob_bank), .Q(wb_rob_bank) );
-   mDFF_l # (.DW(`NCPU_PRF_AW)) ff_prf_WADDR_ex (.CLK(clk), .LOAD(p_ce), .D(ex_prd), .Q(prf_WADDR_ex) );
+   `mDFF_l # (.DW(CONFIG_P_ROB_DEPTH)) ff_wb_rob_id (.CLK(clk),`rst .LOAD(p_ce), .D(ex_rob_id), .Q(wb_rob_id) );
+   `mDFF_l # (.DW(CONFIG_P_COMMIT_WIDTH)) ff_wb_rob_bank (.CLK(clk),`rst .LOAD(p_ce), .D(ex_rob_bank), .Q(wb_rob_bank) );
+   `mDFF_l # (.DW(`NCPU_PRF_AW)) ff_prf_WADDR_ex (.CLK(clk),`rst .LOAD(p_ce), .D(ex_prd), .Q(prf_WADDR_ex) );
    mDFF_lr # (.DW(1)) ff_prf_WE_ex (.CLK(clk), .RST(rst), .LOAD(p_ce|flush), .D(s1i_prf_we & ~flush), .Q(s1o_prf_we) );
-   mDFF_l # (.DW(CONFIG_DW)) ff_prf_WDATA_ex (.CLK(clk), .LOAD(p_ce), .D(s1i_rf_dout), .Q(prf_WDATA_ex) );
-   mDFF_l # (.DW(1)) ff_wb_fls (.CLK(clk), .LOAD(p_ce|flush), .D(s1i_wb_fls), .Q(wb_fls) );
-   mDFF_l # (.DW(1)) ff_wb_exc (.CLK(clk), .LOAD(p_ce|flush), .D(s1i_wb_exc), .Q(wb_exc) );
-   mDFF_l # (.DW(CONFIG_AW)) ff_wb_opera (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_opera), .Q(wb_opera) );
-   mDFF_l # (.DW(CONFIG_DW)) ff_wb_operb (.CLK(clk), .LOAD(p_ce), .D(s1i_wb_operb), .Q(wb_operb) );
-   mDFF_l # (.DW(`PC_W)) ff_wb_se_tgt (.CLK(clk), .LOAD(p_ce), .D(s1i_se_tgt), .Q(wb_fls_tgt) );
+   `mDFF_l # (.DW(CONFIG_DW)) ff_prf_WDATA_ex (.CLK(clk),`rst .LOAD(p_ce), .D(s1i_rf_dout), .Q(prf_WDATA_ex) );
+   `mDFF_l # (.DW(1)) ff_wb_fls (.CLK(clk),`rst .LOAD(p_ce|flush), .D(s1i_wb_fls), .Q(wb_fls) );
+   `mDFF_l # (.DW(1)) ff_wb_exc (.CLK(clk),`rst .LOAD(p_ce|flush), .D(s1i_wb_exc), .Q(wb_exc) );
+   `mDFF_l # (.DW(CONFIG_AW)) ff_wb_opera (.CLK(clk),`rst .LOAD(p_ce), .D(s1i_wb_opera), .Q(wb_opera) );
+   `mDFF_l # (.DW(CONFIG_DW)) ff_wb_operb (.CLK(clk),`rst .LOAD(p_ce), .D(s1i_wb_operb), .Q(wb_operb) );
+   `mDFF_l # (.DW(`PC_W)) ff_wb_se_tgt (.CLK(clk),`rst .LOAD(p_ce), .D(s1i_se_tgt), .Q(wb_fls_tgt) );
    
    assign prf_WE_ex = (s1o_prf_we & wb_valid);
    
