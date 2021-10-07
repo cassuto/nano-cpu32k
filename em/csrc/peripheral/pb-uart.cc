@@ -69,6 +69,7 @@ void DevicePbUart::writem8(phy_addr_t addr, uint8_t val, void *opaque)
             DLR = (((DLR >> 8) & 0xff) << 8) | val;
         else
         {
+            printf("ch %c\m", val);
             if (!tree->in_difftest())
                 virt_uart_putch(val);
             RBR_written = 1;
