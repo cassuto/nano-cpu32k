@@ -89,16 +89,18 @@ module %s
                 end
          end
 """)
-            fp.write(
+            if SELW != SELW_MAX-1:
+                fp.write(
 """
       else
 """)
 
         fp.write(
-"""      begin : gen_enc_fail
-            initial
-                $fatal("\\n Unimplemented size. Please update parameters of generator. \\n");
-         end
+"""//else
+//      begin : gen_enc_fail
+//            initial
+//                $fatal("\\n Unimplemented size. Please update parameters of generator. \\n");
+//         end
 
     endgenerate
 

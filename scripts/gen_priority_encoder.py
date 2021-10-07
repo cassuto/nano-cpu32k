@@ -76,12 +76,14 @@ module priority_encoder%s
                 end
         end
 """)
-            fp.write("      else ")
+            if P_DW!=P_DW_MAX-1:
+                fp.write("      else ")
 
-        fp.write("""\n         begin : gen_enc_fail
-            initial
-                $fatal("\\n Unimplemented size of binary encoder. Please update parameters of generator. \\n");
-         end
+        fp.write("""\n//else
+//         begin : gen_enc_fail
+//            initial
+//                $fatal("\\n Unimplemented size of binary encoder. Please update parameters of generator. \\n");
+//         end
 
     endgenerate
 

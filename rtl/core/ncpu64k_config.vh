@@ -62,7 +62,7 @@
 
 `else /* NCPU_ASIC */
 
-/* Keep non-reset style in FPGA */
+/* Keep partial-reset style in FPGA */
 `define mDFF mDFF
 `define mDFF_l mDFF_l
 `define mRF_nwnr mRF_nwnr

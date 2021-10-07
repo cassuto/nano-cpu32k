@@ -640,8 +640,8 @@ module dcache
                
             `mDFF_l # (.DW(PAYLOAD_DW)) ff_axi_aligned_rdata (.CLK(clk),`rst .LOAD(|axi_aligned_rdata_ff_wmsk), .D(axi_aligned_rdata_nxt), .Q(axi_aligned_rdata_ff) );
          end
-      else
-         initial $fatal(1, "Unsupported bitwidth for uncached device!");
+//      else
+//         initial $fatal(1, "Unsupported bitwidth for uncached device!");
    endgenerate
    
 

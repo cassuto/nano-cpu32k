@@ -230,11 +230,12 @@ gs = 1'b1;
                     endcase
                 end
         end
-      else 
-         begin : gen_enc_fail
-            initial
-                $fatal("\n Unimplemented size of binary encoder. Please update parameters of generator. \n");
-         end
+
+//else
+//         begin : gen_enc_fail
+//            initial
+//                $fatal("\n Unimplemented size of binary encoder. Please update parameters of generator. \n");
+//         end
 
     endgenerate
 

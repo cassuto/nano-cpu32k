@@ -186,12 +186,11 @@ module pmux
                     endcase
                 end
          end
-
-      else
-      begin : gen_enc_fail
-            initial
-                $fatal("\n Unimplemented size. Please update parameters of generator. \n");
-         end
+//else
+//      begin : gen_enc_fail
+//            initial
+//                $fatal("\n Unimplemented size. Please update parameters of generator. \n");
+//         end
 
     endgenerate
 
