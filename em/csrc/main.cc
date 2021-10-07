@@ -88,8 +88,8 @@ public:
         vect_EALIGN = 0x24;
 
         ram_size = 32 * 1024 * 1024;
-        dmmu_tlb_count = 128;
-        immu_tlb_count = 128;
+        dmmu_tlb_count = 4;
+        immu_tlb_count = 4;
         dmmu_enable_uncached_seg = true;
         immu_enable_uncached_seg = true;
         enable_icache = true;
