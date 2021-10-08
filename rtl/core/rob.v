@@ -134,7 +134,7 @@ module rob
    wire [vBANK_DW-1:0]                 que_vbank                     [BANKS-1:0];
    wire [CW-1:0]                       ent_valid;
    reg [CW-1:0]                        cmt_valid_;
-   reg [WW-1:0]                        wb_ready;
+   reg [WW-1:1]                        wb_ready;
    genvar i, k;
    integer j;
 
@@ -364,10 +364,6 @@ module rob
    
    // Conflict detection
    // Not allowed to write to a bank at the same time.
-   
-   // Channel 0 should keep ready, to allow incomplete commits
-   always @(*) wb_ready[0] = 'b1;
-   
    generate for(i=1;i<WW;i=i+1)
       begin : gen_conflict_dec
          always @(*)
@@ -379,7 +375,7 @@ module rob
             end
       end
    endgenerate
-   assign wb_rob_ready = wb_ready;
+   assign wb_rob_ready = {wb_ready, 1'b1};
    
    // Output the address of free bank
    generate for(i=0;i<BANKS;i=i+1)
