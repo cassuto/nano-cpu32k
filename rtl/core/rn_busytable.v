@@ -48,7 +48,7 @@ module rn_busytable
       #(
          .DW         (1),
          .AW         (`NCPU_PRF_AW),
-         .RST_VECTOR ('b0),
+         .RST_VECTOR ({(1<<`NCPU_PRF_AW){1'b0}}),
          .NUM_WRITE  (IW+WW)
       )
    U_BUSYTABLE
@@ -60,7 +60,7 @@ module rn_busytable
          .WDATA   ({{IW{1'b1}}, {WW{1'b0}}}),
          .REP     (flush),
          .DO      (busytable),
-         .DI      ('b0)
+         .DI      ({(1<<`NCPU_PRF_AW){1'b0}})
       );
    
 endmodule

@@ -264,8 +264,8 @@ module cmt
    U_NPC
       (
          .a                   (cmt_pc[0 * `PC_W +: `PC_W]),
-         .b                   ('b1),
-         .s                   ('b0),
+         .b                   ({{`PC_W-1{1'b0}}, 1'b1}),
+         .s                   (1'b0),
          .sum                 (cmt_npc_0)
       );
 

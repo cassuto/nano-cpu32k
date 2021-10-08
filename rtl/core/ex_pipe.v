@@ -107,8 +107,8 @@ module ex_pipe
    U_NPC
       (
          .a                            (ex_pc),
-         .b                            ('b1),
-         .s                            ('b0),
+         .b                            ({{`PC_W-1{1'b0}}, 1'b1}),
+         .s                            (1'b0),
          .sum                          (s1i_npc)
       );
    
