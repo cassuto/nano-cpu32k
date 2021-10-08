@@ -79,7 +79,7 @@ module prf
       end
    endgenerate
 
-`ifdef ENABLE_DIFFTEST
+`ifdef ENABLE_DEBUG_SIM
    wire [`NCPU_PRF_AW-1:0] dbg_waddr[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0];
    generate for(i=0;i<(1<<CONFIG_P_WRITEBACK_WIDTH);i=i+1)  
       begin : gen_dbg

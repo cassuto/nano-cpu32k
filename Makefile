@@ -110,8 +110,11 @@ test: build_sim
 	./build/emu --mode=difftest -b ./build/coremark.bin --dump-wave=./build/dump.vcd
 	$(GTKWAVE) ./build/dump.vcd
 
-lint:
-	-verilator --lint-only -Wall --top-module $(YSYX_TOPLEVEL) $(LINT_FLAGS) $(LINT_SRCS)
+lint: build/lint.csv
+
+build/lint.csv: $(LINT_SRCS)
+	-verilator --lint-only -Wall --top-module $(YSYX_TOPLEVEL) $(LINT_FLAGS) $(LINT_SRCS) 2> build/lint.log
+	$(PYTHON3) scripts/parse_verilator_out.py build/lint.log $@
 
 $(LIB_DRAMSIM3): $(dir $(LIB_DRAMSIM3)) $(dir $(LIB_DRAMSIM3))/Makefile
 	make -C $< -j$(NUM_JOBS) all

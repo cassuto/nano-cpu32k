@@ -228,7 +228,7 @@ module rn
    
    assign issue_p_ce = p_ce_s2;
    
-`ifdef ENABLE_DIFFTEST
+`ifdef ENABLE_DEBUG_SIM
    wire [31:0] dbg_rn_pc [IW-1:0];
    wire [`NCPU_LRF_AW-1:0] dbg_rn_lrs1 [IW-1:0];
    wire [`NCPU_LRF_AW-1:0] dbg_rn_lrs2 [IW-1:0];

@@ -407,7 +407,7 @@ module frontend
        .iq_push_offset                  (iq_push_offset[CONFIG_P_FETCH_WIDTH:0]),
        .id_pop_cnt                      (id_pop_cnt[CONFIG_P_ISSUE_WIDTH:0]));
 
-`ifdef ENABLE_DIFFTEST
+`ifdef ENABLE_DEBUG_SIM
    wire [31:0] dbg_iq_pc[(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire [31:0] dbg_id_pc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0];
    generate for(i=0;i<FW;i=i+1)  

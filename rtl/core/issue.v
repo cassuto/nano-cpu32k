@@ -247,7 +247,7 @@ module issue
    
    assign ro_rs_pop = (ro_valid & ro_ready);
    
-`ifdef ENABLE_DIFFTEST
+`ifdef ENABLE_DEBUG_SIM
    wire [31:0] dbg_issue_pc[IW-1:0];
    generate for(i=0;i<IW;i=i+1)  
       begin : gen_dbg_iw

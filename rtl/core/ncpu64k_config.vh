@@ -13,6 +13,10 @@
 //`undef ENABLE_DIFFTEST
 `define ENABLE_DIFFTEST
 
+/* Debug stuffs for simulation */
+`define ENABLE_DEBUG_SIM
+//`undef ENABLE_DEBUG_SIM
+
 /* Print MSGR in simulation */
 `define NCPU_ENABLE_MSGPORT
 //`undef NCPU_ENABLE_MSGPORT

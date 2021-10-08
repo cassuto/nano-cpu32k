@@ -166,7 +166,7 @@ module ex
       end
    endgenerate
 
-`ifdef ENABLE_DIFFTEST
+`ifdef ENABLE_DEBUG_SIM
    wire [31:0] dbg_ex_pc[IW-1:0];
    generate for(i=0;i<IW;i=i+1)  
       begin : gen_dbg

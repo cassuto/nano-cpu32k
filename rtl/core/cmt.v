@@ -671,7 +671,7 @@ module cmt
                                  ? epu_wb_dout
                                  : lsu_wb_dout;
    
-`ifdef ENABLE_DIFFTEST
+`ifdef ENABLE_DEBUG_SIM
    wire [31:0] dbg_cmt_pc[CW-1:0];
    generate for(i=0;i<CW;i=i+1)  
       begin : gen_dbg
