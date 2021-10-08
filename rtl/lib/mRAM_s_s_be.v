@@ -57,8 +57,11 @@ module mRAM_s_s_be
    assign addr_w = (RE | (|WE)) ? ADDR : re_addr_ff;
    
    // Convert byte mask to bit mask
-   for(i=0;i<(1<<P_DW_BYTES);i=i+1)
-      assign we_bmsk[i*8 +: 8] = {8{WE[i]}};
+   generate for(i=0;i<(1<<P_DW_BYTES);i=i+1)
+      begin : gen_we_bmsk
+         assign we_bmsk[i*8 +: 8] = {8{WE[i]}};
+      end
+   endgenerate
    
    generate
       if (((1<<P_DW) == SRAM_DW) && (AW == SRAM_AW))
@@ -87,9 +90,10 @@ module mRAM_s_s_be
 
             // Din address encoder
             for(i=0;i<WIN_NUM;i=i+1)
-               assign sram_bwen[i*WIN_DW +: WIN_DW] = (we_bmsk & {WIN_DW{addr_w[WIN_P_NUM-1:0] == i}});
-            for(i=0;i<WIN_NUM;i=i+1)
-               assign sram_d[i*WIN_DW +: WIN_DW] = DIN;
+               begin : gen_addr_enc
+                  assign sram_bwen[i*WIN_DW +: WIN_DW] = (we_bmsk & {WIN_DW{addr_w[WIN_P_NUM-1:0] == i}});
+                  assign sram_d[i*WIN_DW +: WIN_DW] = DIN;
+               end
 
             S011HD1P_X32Y2D128_BW S011HD1P_X32Y2D128_BW
                (
@@ -104,7 +108,9 @@ module mRAM_s_s_be
             
             // Dout address decoder
             for(i=0;i<WIN_NUM;i=i+1)
-               assign DOUT_win[i] = sram_q[i*WIN_DW +: WIN_DW];
+               begin : gen_addr_dec
+                  assign DOUT_win[i] = sram_q[i*WIN_DW +: WIN_DW];
+               end
             assign DOUT = DOUT_win[re_addr_ff[WIN_P_NUM-1:0]];
          end
 //      else

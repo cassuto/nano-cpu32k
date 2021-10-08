@@ -53,10 +53,10 @@ module align_w
             localparam WIN_P_DW_BYTES = (OUT_P_DW_BYTES);
          
             for(i=0;i<WIN_NUM;i=i+1)
-               assign o_be[i*(WIN_DW/8) +: (WIN_DW/8)] = ({(WIN_DW/8){i_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}} & i_be);
-            
-            for(i=0;i<WIN_NUM;i=i+1)
-               assign o_out_wdat[i*WIN_DW +: WIN_DW] = i_dat;
+               begin : gen_o
+                  assign o_be[i*(WIN_DW/8) +: (WIN_DW/8)] = ({(WIN_DW/8){i_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}} & i_be);
+                  assign o_out_wdat[i*WIN_DW +: WIN_DW] = i_dat;
+               end
          end
       else
          begin : gen_3
@@ -68,7 +68,7 @@ module align_w
             wire [WIN_DW/8-1:0] i_be_win [WIN_NUM-1:0];
             
             for(i=0;i<WIN_NUM;i=i+1)
-               begin
+               begin : gen_i
                   assign i_axi_din_win[i] = i_dat[i*WIN_DW +: WIN_DW];
                   assign i_be_win[i] = i_be[i*(WIN_DW/8) +: (WIN_DW/8)];
                end

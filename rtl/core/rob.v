@@ -314,7 +314,9 @@ module rob
          assign que_exc[i] = tag_exc[que_rptr[i]];
          
          for(k=0;k<ROB_DEPTH;k=k+1)
-            assign tag_vbank_mux[k] = tag_vbank[k * vBANK_DW +: vBANK_DW];
+            begin : gen_tag_vbank_mux
+               assign tag_vbank_mux[k] = tag_vbank[k * vBANK_DW +: vBANK_DW];
+            end
          
          assign que_vbank[i] = tag_vbank_mux[que_rptr[i]];
       end

@@ -148,7 +148,9 @@ module rn_rat
             end
          
          for(k=0;k<i;k=k+1)
-            assign fl_prd_rev[k * `NCPU_PRF_AW +: `NCPU_PRF_AW] = fl_prd[(i-k-1) * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+            begin : gen_fl_prd_rev
+               assign fl_prd_rev[k * `NCPU_PRF_AW +: `NCPU_PRF_AW] = fl_prd[(i-k-1) * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+            end
          
          pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs1 (
             .sel({1'b1, raw_rs1_rev}),
