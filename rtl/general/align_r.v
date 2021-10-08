@@ -41,12 +41,12 @@ module align_r
    
    generate
       if (OUT_P_DW_BYTES == IN_P_DW_BYTES)
-         begin
+         begin : gen_1
             assign o_dat = i_dat;
             assign o_be = i_be;
          end
       else if (OUT_P_DW_BYTES < IN_P_DW_BYTES)
-         begin
+         begin : gen_2
             localparam WIN_NUM = (IN_BYTES/OUT_BYTES);
             localparam WIN_P_NUM = (IN_P_DW_BYTES - OUT_P_DW_BYTES);
             localparam WIN_DW = (OUT_BYTES*8);
@@ -65,7 +65,7 @@ module align_r
             assign o_be = rbe_win[i_addr[WIN_P_DW_BYTES +: WIN_P_NUM]];
          end
       else
-         begin
+         begin : gen_3
             localparam WIN_NUM = (OUT_BYTES/IN_BYTES);
             localparam WIN_P_NUM = (OUT_P_DW_BYTES - IN_P_DW_BYTES);
             localparam WIN_DW = (IN_BYTES*8);

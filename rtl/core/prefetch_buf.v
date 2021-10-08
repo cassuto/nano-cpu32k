@@ -76,46 +76,44 @@ module prefetch_buf
    wire [P_BANKS:0]                    pop_cnt_adapt;
    genvar i;
 
-   generate
-      for(i=0;i<BANKS;i=i+1)
-         begin : gen_ptr
-            assign head_l[i]  = i + head_ff;
-            assign head_r[i]  = i - head_ff;
-            assign tail_r[i] = i - tail_ff;
-            
-            //
-            // The data layout in a fetch window is as follows (FW=4)
-            // Case: iq_push_offset = 0:
-            // Idx   0   1   2   3
-            //     +---+---+---+---+
-            // Dat |D0 |D1 |D2 |D3 |
-            //     +---+---+---+---+
-            // Case: iq_push_offset = 1:
-            //     +---+---+---+---+
-            // Dat |X  |D0 |D1 |D2 |
-            //     +---+---+---+---+
-            // Case: iq_push_offset = 2:
-            //     +---+---+---+---+
-            // Dat |X  |X  |D0 |D1 |
-            //     +---+---+---+---+
-            // Case: iq_push_offset = 3:
-            //     +---+---+---+---+
-            // Dat |X  |X  |X  |D0 |
-            //     +---+---+---+---+
-            //
-            assign tail_inv[i] = i - tail_ff + iq_push_offset[P_BANKS-1:0];
-         end
+   generate for(i=0;i<BANKS;i=i+1)
+      begin : gen_ptr
+         assign head_l[i]  = i + head_ff;
+         assign head_r[i]  = i - head_ff;
+         assign tail_r[i] = i - tail_ff;
+         
+         //
+         // The data layout in a fetch window is as follows (FW=4)
+         // Case: iq_push_offset = 0:
+         // Idx   0   1   2   3
+         //     +---+---+---+---+
+         // Dat |D0 |D1 |D2 |D3 |
+         //     +---+---+---+---+
+         // Case: iq_push_offset = 1:
+         //     +---+---+---+---+
+         // Dat |X  |D0 |D1 |D2 |
+         //     +---+---+---+---+
+         // Case: iq_push_offset = 2:
+         //     +---+---+---+---+
+         // Dat |X  |X  |D0 |D1 |
+         //     +---+---+---+---+
+         // Case: iq_push_offset = 3:
+         //     +---+---+---+---+
+         // Dat |X  |X  |X  |D0 |
+         //     +---+---+---+---+
+         //
+         assign tail_inv[i] = i - tail_ff + iq_push_offset[P_BANKS-1:0];
+      end
    endgenerate
    
    // Would you like some syntactic sugar?
-   generate
-      for(i=0;i<FW;i=i+1)
-         begin
-            assign iq_ins_unpacked[i] = iq_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW];
-            assign iq_pc_unpacked[i] = iq_pc[i*`PC_W +: `PC_W];
-            assign iq_exc_unpacked[i] = iq_exc[i*`FNT_EXC_W +: `FNT_EXC_W];
-            assign iq_bpu_upd_unpacked[i] = iq_bpu_upd[i*`BPU_UPD_W +: `BPU_UPD_W];
-         end
+   generate for(i=0;i<FW;i=i+1)
+      begin : gen_iq_bundle
+         assign iq_ins_unpacked[i] = iq_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW];
+         assign iq_pc_unpacked[i] = iq_pc[i*`PC_W +: `PC_W];
+         assign iq_exc_unpacked[i] = iq_exc[i*`FNT_EXC_W +: `FNT_EXC_W];
+         assign iq_bpu_upd_unpacked[i] = iq_bpu_upd[i*`BPU_UPD_W +: `BPU_UPD_W];
+      end
    endgenerate
    
    // Width adapter
@@ -127,16 +125,15 @@ module prefetch_buf
    endgenerate
    
    // MUX for FIFO input
-   generate
-      for(i=0;i<BANKS;i=i+1)
-         begin : gen_bank_ctrl
-            assign que_din[i] = {iq_ins_unpacked[tail_inv[i]],
-                                 iq_pc_unpacked[tail_inv[i]],
-                                 iq_exc_unpacked[tail_inv[i]],
-                                 iq_bpu_upd_unpacked[tail_inv[i]]};
-            assign que_pop[i]  = ({1'b0, head_r[i]} < pop_cnt_adapt);
-            assign que_push[i] = ({1'b0, tail_r[i]} < iq_push_cnt);
-         end
+   generate for(i=0;i<BANKS;i=i+1)
+      begin : gen_bank_ctrl
+         assign que_din[i] = {iq_ins_unpacked[tail_inv[i]],
+                              iq_pc_unpacked[tail_inv[i]],
+                              iq_exc_unpacked[tail_inv[i]],
+                              iq_bpu_upd_unpacked[tail_inv[i]]};
+         assign que_pop[i]  = ({1'b0, head_r[i]} < pop_cnt_adapt);
+         assign que_push[i] = ({1'b0, tail_r[i]} < iq_push_cnt);
+      end
    endgenerate
    
    assign head_nxt = (head_ff + pop_cnt_adapt[P_BANKS-1:0]) & {P_BANKS{~flush}};
@@ -145,39 +142,37 @@ module prefetch_buf
    mDFF_r #(.DW(P_BANKS)) ff_head (.CLK(clk), .RST(rst), .D(head_nxt), .Q(head_ff) );
    mDFF_r #(.DW(P_BANKS)) ff_tail (.CLK(clk), .RST(rst), .D(tail_nxt), .Q(tail_ff) );
    
-   generate
-      for(i=0;i<BANKS;i=i+1)
-         begin
-            fifo_fwft
-               #(
-                  .DW            (FIFO_DW),
-                  .DEPTH_WIDTH   (CONFIG_P_IQ_DEPTH)
-               )
-            U_FIFO
-               (
-                  .clk           (clk),
-                  .rst           (rst),
-                  .flush         (flush),
-                  .push          (que_push[i]),
-                  .din           (que_din[i]),
-                  .ready         (que_ready[i]),
-                  .pop           (que_pop[i]),
-                  .dout          (que_dout[i]),
-                  .valid         (que_valid[i])
-               );
-         end
+   generate for(i=0;i<BANKS;i=i+1)
+      begin : gen_banks
+         fifo_fwft
+            #(
+               .DW            (FIFO_DW),
+               .DEPTH_WIDTH   (CONFIG_P_IQ_DEPTH)
+            )
+         U_FIFO
+            (
+               .clk           (clk),
+               .rst           (rst),
+               .flush         (flush),
+               .push          (que_push[i]),
+               .din           (que_din[i]),
+               .ready         (que_ready[i]),
+               .pop           (que_pop[i]),
+               .dout          (que_dout[i]),
+               .valid         (que_valid[i])
+            );
+      end
    endgenerate
    
    // MUX for data output
-   generate
-      for(i=0;i<(1<<CONFIG_P_ISSUE_WIDTH);i=i+1)
-         begin : gen_pop
-            assign {id_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW],
-                     id_pc[i*`PC_W +: `PC_W],
-                     id_exc[i*`FNT_EXC_W +: `FNT_EXC_W],
-                     id_bpu_upd[i*`BPU_UPD_W +: `BPU_UPD_W] } = que_dout[head_l[i]];
-            assign id_valid[i] = que_valid[head_l[i]];
-         end
+   generate for(i=0;i<(1<<CONFIG_P_ISSUE_WIDTH);i=i+1)
+      begin : gen_pop
+         assign {id_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW],
+                  id_pc[i*`PC_W +: `PC_W],
+                  id_exc[i*`FNT_EXC_W +: `FNT_EXC_W],
+                  id_bpu_upd[i*`BPU_UPD_W +: `BPU_UPD_W] } = que_dout[head_l[i]];
+         assign id_valid[i] = que_valid[head_l[i]];
+      end
    endgenerate
    
    assign iq_ready = &que_ready;

@@ -62,7 +62,7 @@ module mRAM_s_s_be
    
    generate
       if (((1<<P_DW) == SRAM_DW) && (AW == SRAM_AW))
-         begin
+         begin : gen_1
             S011HD1P_X32Y2D128_BW U_S011HD1P_X32Y2D128_BW
                (
                   .Q                      (DOUT),
@@ -75,7 +75,7 @@ module mRAM_s_s_be
                );
          end
       else if (((1<<P_DW) < SRAM_DW) && ((AW-(SRAM_P_DW_BYTES - P_DW_BYTES)) == SRAM_AW))
-         begin
+         begin : gen_2
             localparam WIN_P_NUM = (SRAM_P_DW_BYTES - P_DW_BYTES);
             localparam WIN_NUM = (1<<WIN_P_NUM);
             localparam WIN_DW = (1<<P_DW);
@@ -122,11 +122,12 @@ module mRAM_s_s_be
    always @(posedge CLK)
       if (RE)
          dff_rdat <= mem_vector[ADDR];
-   generate
-      for(i=0;i<(1<<P_DW);i=i+8)
+   generate for(i=0;i<(1<<P_DW);i=i+8)
+      begin : gen_we
          always @(posedge CLK)
             if (WE[i/8])
                mem_vector[ADDR][i+:8] <= DIN[i+:8];
+      end
    endgenerate
    
    // The following logic is used to simulate the behavior of ASIC SRAM cell

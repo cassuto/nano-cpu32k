@@ -91,35 +91,34 @@ module bpu
    
    `mDFF_l #(.DW(1)) ff_s1o_msr_psr_imme (.CLK(clk),`rst .LOAD(re), .D(msr_psr_imme), .Q(s1o_msr_psr_imme) );
    
-   generate
-      for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
-         begin
-            `mDFF_l #(.DW(`PC_W)) ff_s1o_pc (.CLK(clk),`rst .LOAD(re), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
-            `mDFF_l #(.DW(CONFIG_PHT_P_NUM)) ff_s1o_pht_addr (.CLK(clk),`rst .LOAD(re), .D(s1i_pht_addr[i*CONFIG_PHT_P_NUM +: CONFIG_PHT_P_NUM]), .Q(s1o_pht_addr[i]) );
-            `mDFF_l #(.DW(CONFIG_BTB_P_NUM)) ff_s1o_btb_addr (.CLK(clk),`rst .LOAD(re), .D(s1i_btb_addr[i*CONFIG_BTB_P_NUM +: CONFIG_BTB_P_NUM]), .Q(s1o_btb_addr[i]) );
-            
-            assign s1i_pc[i] = pc[i*`PC_W +: `PC_W];
-            
-            // Hash
-            assign s1i_pht_addr[i*CONFIG_PHT_P_NUM +: CONFIG_PHT_P_NUM] = s1i_pc[i][CONFIG_PHT_P_NUM-1:0] ^ GHSR_ff;
-            assign s1i_btb_addr[i*CONFIG_BTB_P_NUM +: CONFIG_BTB_P_NUM] = s1i_pc[i][CONFIG_BTB_P_NUM-1:0];
-            
-            // Weakly/Strongly taken
-            assign s2i_pht_count[i] = s1o_pht_count[i*PHT_DW +: PHT_DW];
-            assign s2i_pht_taken[i] = s2i_pht_count[i][PHT_DW-1];
-            
-            assign {s2i_btb_imme[i], s2i_btb_npc[i], s2i_btb_tag[i], s2i_btb_is_bcc[i], s2i_btb_v[i]} = s1o_btb_data[i*BTB_DW +: BTB_DW];
-            
-            assign s2i_btb_hit[i] = (s2i_btb_v[i] & (s2i_btb_tag[i] == s1o_pc[i][`PC_W-1:CONFIG_BTB_P_NUM]) & (s2i_btb_imme[i] == s1o_msr_psr_imme));
-            
-            assign s2i_taken[i] = (valid[i] & (s2i_btb_hit[i] & (~s2i_btb_is_bcc[i] | s2i_pht_taken[i])));
-            
-            // MUX of NPC
-            assign npc[i*`PC_W +: `PC_W] = s2i_btb_npc[i];
-            
-            // Depended macros: `BPU_UPD_TAKEN
-            assign upd[i*`BPU_UPD_W +: `BPU_UPD_W] = {s1o_pht_count[i*PHT_DW +: PHT_DW], s1o_pht_addr[i], s1o_btb_addr[i], s1o_msr_psr_imme, s2i_btb_npc[i], s2i_taken[i]};
-         end
+   generate for(i=0;i<(1<<CONFIG_P_FETCH_WIDTH);i=i+1)
+      begin : gen_fw
+         `mDFF_l #(.DW(`PC_W)) ff_s1o_pc (.CLK(clk),`rst .LOAD(re), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
+         `mDFF_l #(.DW(CONFIG_PHT_P_NUM)) ff_s1o_pht_addr (.CLK(clk),`rst .LOAD(re), .D(s1i_pht_addr[i*CONFIG_PHT_P_NUM +: CONFIG_PHT_P_NUM]), .Q(s1o_pht_addr[i]) );
+         `mDFF_l #(.DW(CONFIG_BTB_P_NUM)) ff_s1o_btb_addr (.CLK(clk),`rst .LOAD(re), .D(s1i_btb_addr[i*CONFIG_BTB_P_NUM +: CONFIG_BTB_P_NUM]), .Q(s1o_btb_addr[i]) );
+         
+         assign s1i_pc[i] = pc[i*`PC_W +: `PC_W];
+         
+         // Hash
+         assign s1i_pht_addr[i*CONFIG_PHT_P_NUM +: CONFIG_PHT_P_NUM] = s1i_pc[i][CONFIG_PHT_P_NUM-1:0] ^ GHSR_ff;
+         assign s1i_btb_addr[i*CONFIG_BTB_P_NUM +: CONFIG_BTB_P_NUM] = s1i_pc[i][CONFIG_BTB_P_NUM-1:0];
+         
+         // Weakly/Strongly taken
+         assign s2i_pht_count[i] = s1o_pht_count[i*PHT_DW +: PHT_DW];
+         assign s2i_pht_taken[i] = s2i_pht_count[i][PHT_DW-1];
+         
+         assign {s2i_btb_imme[i], s2i_btb_npc[i], s2i_btb_tag[i], s2i_btb_is_bcc[i], s2i_btb_v[i]} = s1o_btb_data[i*BTB_DW +: BTB_DW];
+         
+         assign s2i_btb_hit[i] = (s2i_btb_v[i] & (s2i_btb_tag[i] == s1o_pc[i][`PC_W-1:CONFIG_BTB_P_NUM]) & (s2i_btb_imme[i] == s1o_msr_psr_imme));
+         
+         assign s2i_taken[i] = (valid[i] & (s2i_btb_hit[i] & (~s2i_btb_is_bcc[i] | s2i_pht_taken[i])));
+         
+         // MUX of NPC
+         assign npc[i*`PC_W +: `PC_W] = s2i_btb_npc[i];
+         
+         // Depended macros: `BPU_UPD_TAKEN
+         assign upd[i*`BPU_UPD_W +: `BPU_UPD_W] = {s1o_pht_count[i*PHT_DW +: PHT_DW], s1o_pht_addr[i], s1o_btb_addr[i], s1o_msr_psr_imme, s2i_btb_npc[i], s2i_taken[i]};
+      end
    endgenerate
    
    `mRF_nwnr

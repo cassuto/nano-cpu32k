@@ -294,13 +294,12 @@ module frontend
    assign s2i_uncached = (s1o_tlb_uncached | ~s1o_msr_psr_ice);
 
    // Collect branch predication info
-   generate
-      for(i=0;i<FW;i=i+1)
-         begin
-            assign s1i_bpu_pc[i*`PC_W +: `PC_W] = s1i_pc[i];
-            assign s1o_bpu_upd[i] = s1o_bpu_upd_packed[i*`BPU_UPD_W +: `BPU_UPD_W];
-            assign s1o_bpu_taken[i] = s1o_bpu_upd[i][`BPU_UPD_TAKEN];
-         end
+   generate for(i=0;i<FW;i=i+1)
+      begin : gen_bpi
+         assign s1i_bpu_pc[i*`PC_W +: `PC_W] = s1i_pc[i];
+         assign s1o_bpu_upd[i] = s1o_bpu_upd_packed[i*`BPU_UPD_W +: `BPU_UPD_W];
+         assign s1o_bpu_taken[i] = s1o_bpu_upd[i][`BPU_UPD_TAKEN];
+      end
    endgenerate
 
    // Generate valid mask
@@ -312,9 +311,10 @@ module frontend
       end
 
    // Process unaligned access
-   generate
-      for(i=0;i<FW;i=i+1)
+   generate for(i=0;i<FW;i=i+1)
+      begin : gen_fetch_aligned
          assign s1i_fetch_aligned[i] = (pc_nxt[`NCPU_P_INSN_LEN +: CONFIG_P_FETCH_WIDTH] <= i);
+      end
    endgenerate
 
    pmux_v #(.SELW(FW), .DW(`PC_W)) pmux_s1o_bpu_npc (.sel(s1o_bpu_taken), .din(s1o_bpu_npc_packed), .dout(pred_branch_tgt), .valid(pred_branch_taken) );
@@ -356,22 +356,21 @@ module frontend
    `mDFF_l # (.DW(CONFIG_P_FETCH_WIDTH+1)) ff_s2o_push_offset (.CLK(clk),`rst .LOAD(p_ce), .D(s1o_push_offset), .Q(s2o_push_offset) );
    
 
-   generate
-      for(i=0;i<FW;i=i+1)
-         begin
-            // Restore PC of each inst
-            // We need re-align PC and related attributes(if any) here.
-            assign s1i_pc[i] = (pc_nxt[CONFIG_AW-1: `NCPU_P_INSN_LEN] + i - {{`PC_W-CONFIG_P_FETCH_WIDTH-1{1'b0}}, s1i_push_offset});
+   generate for(i=0;i<FW;i=i+1)
+      begin : gen_iq_din
+         // Restore PC of each inst
+         // We need re-align PC and related attributes(if any) here.
+         assign s1i_pc[i] = (pc_nxt[CONFIG_AW-1: `NCPU_P_INSN_LEN] + i - {{`PC_W-CONFIG_P_FETCH_WIDTH-1{1'b0}}, s1i_push_offset});
 
-            mDFF_lr # (.DW(`PC_W)) ff_s1o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
-            mDFF_lr # (.DW(`PC_W)) ff_s2o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_pc[i]), .Q(s2o_pc[i]) );
-            mDFF_lr # (.DW(`BPU_UPD_W)) ff_s2o_bpu_upd (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_bpu_upd[i]), .Q(s2o_bpu_upd[i]) );
+         mDFF_lr # (.DW(`PC_W)) ff_s1o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
+         mDFF_lr # (.DW(`PC_W)) ff_s2o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_pc[i]), .Q(s2o_pc[i]) );
+         mDFF_lr # (.DW(`BPU_UPD_W)) ff_s2o_bpu_upd (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_bpu_upd[i]), .Q(s2o_bpu_upd[i]) );
 
-            // Pack signals
-            assign iq_pc[i*`PC_W +: `PC_W] = s2o_pc[i];
-            assign iq_exc[i*`FNT_EXC_W +: `FNT_EXC_W] = s2o_exc;
-            assign iq_bpu_upd[i*`BPU_UPD_W +: `BPU_UPD_W] = s2o_bpu_upd[i];
-         end
+         // Pack signals
+         assign iq_pc[i*`PC_W +: `PC_W] = s2o_pc[i];
+         assign iq_exc[i*`FNT_EXC_W +: `FNT_EXC_W] = s2o_exc;
+         assign iq_bpu_upd[i*`BPU_UPD_W +: `BPU_UPD_W] = s2o_bpu_upd[i];
+      end
    endgenerate
 
    assign iq_push_cnt = (s2o_push_cnt & {CONFIG_P_FETCH_WIDTH+1{s2o_valid & p_ce}});
@@ -411,16 +410,16 @@ module frontend
 `ifdef ENABLE_DIFFTEST
    wire [31:0] dbg_iq_pc[(1<<CONFIG_P_FETCH_WIDTH)-1:0];
    wire [31:0] dbg_id_pc[(1<<CONFIG_P_ISSUE_WIDTH)-1:0];
-   generate
-      for(i=0;i<FW;i=i+1)  
-         begin
-            assign dbg_iq_pc[i] = {iq_pc[i*`PC_W +: `PC_W], 2'b00};
-            
-         end
+   generate for(i=0;i<FW;i=i+1)  
+      begin : gen_dbg_fw
+         assign dbg_iq_pc[i] = {iq_pc[i*`PC_W +: `PC_W], 2'b00};
+         
+      end
    endgenerate
-   generate
-      for(i=0;i<(1<<CONFIG_P_ISSUE_WIDTH);i=i+1)
+   generate for(i=0;i<(1<<CONFIG_P_ISSUE_WIDTH);i=i+1)
+      begin : gen_dbg_iw
          assign dbg_id_pc[i] = {id_pc[i*`PC_W +: `PC_W], 2'b00};
+      end
    endgenerate
 `endif
        

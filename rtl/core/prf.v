@@ -70,23 +70,21 @@ module prf
       );
    
    // r0 read as zero
-   generate
-      for(i=0;i<IW*2;i=i+1)
-         begin : gen_zero_dec
-            `mDFF_l #(.DW(1)) ff_prf_zero_RADDR (.CLK(clk),`rst .LOAD(prf_RE[i]), .D(|prf_RADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]), .Q(prf_RADDR_zero_ff[i]) );
-   
-            assign prf_RDATA[i*CONFIG_DW +: CONFIG_DW] =
-               (prf_RDATA_1[i*CONFIG_DW +: CONFIG_DW] & {CONFIG_DW{prf_RADDR_zero_ff[i]}});
-         end
+   generate for(i=0;i<IW*2;i=i+1)
+      begin : gen_zero_dec
+         `mDFF_l #(.DW(1)) ff_prf_zero_RADDR (.CLK(clk),`rst .LOAD(prf_RE[i]), .D(|prf_RADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW]), .Q(prf_RADDR_zero_ff[i]) );
+
+         assign prf_RDATA[i*CONFIG_DW +: CONFIG_DW] =
+            (prf_RDATA_1[i*CONFIG_DW +: CONFIG_DW] & {CONFIG_DW{prf_RADDR_zero_ff[i]}});
+      end
    endgenerate
 
 `ifdef ENABLE_DIFFTEST
    wire [`NCPU_PRF_AW-1:0] dbg_waddr[(1<<CONFIG_P_WRITEBACK_WIDTH)-1:0];
-   generate
-      for(i=0;i<(1<<CONFIG_P_WRITEBACK_WIDTH);i=i+1)  
-         begin
-            assign dbg_waddr[i] = prf_WADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-         end
+   generate for(i=0;i<(1<<CONFIG_P_WRITEBACK_WIDTH);i=i+1)  
+      begin : gen_dbg
+         assign dbg_waddr[i] = prf_WADDR[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+      end
    endgenerate
 `endif
 

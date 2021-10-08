@@ -269,14 +269,13 @@ module cmt
          .sum                 (cmt_npc_0)
       );
 
-   generate
-      for(i=0;i<CW;i=i+1)
-         begin
-            assign lsu_req[i] = (~s1o_se_fls & (|cmt_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]));
-            assign epu_req[i] = (~s1o_se_fls & ((|cmt_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]) |
-                                 cmt_exc[i]));
-            assign cmt_b[i] = (cmt_is_bcc[i] | cmt_is_breg[i] | cmt_is_brel[i]);
-         end
+   generate for(i=0;i<CW;i=i+1)
+      begin : gen_req
+         assign lsu_req[i] = (~s1o_se_fls & (|cmt_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]));
+         assign epu_req[i] = (~s1o_se_fls & ((|cmt_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]) |
+                              cmt_exc[i]));
+         assign cmt_b[i] = (cmt_is_bcc[i] | cmt_is_breg[i] | cmt_is_brel[i]);
+      end
    endgenerate
    
    assign single_fu = (lsu_req | epu_req | cmt_fls | cmt_b);
@@ -674,11 +673,10 @@ module cmt
    
 `ifdef ENABLE_DIFFTEST
    wire [31:0] dbg_cmt_pc[CW-1:0];
-   generate
-      for(i=0;i<CW;i=i+1)  
-         begin
-            assign dbg_cmt_pc[i] = {cmt_pc[i*`PC_W +: `PC_W], 2'b00};
-         end
+   generate for(i=0;i<CW;i=i+1)  
+      begin : gen_dbg
+         assign dbg_cmt_pc[i] = {cmt_pc[i*`PC_W +: `PC_W], 2'b00};
+      end
    endgenerate
 `endif
 

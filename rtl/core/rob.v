@@ -138,14 +138,13 @@ module rob
    genvar i, k;
    integer j;
 
-   generate
-      for(i=0;i<BANKS;i=i+1)
-         begin : gen_ptr
-            assign head_l[i]  = i + head_ff;
-            assign head_r[i]  = i - head_ff;
-            assign tail_l[i] = i + tail_ff;
-            assign tail_r[i] = i - tail_ff;
-         end
+   generate for(i=0;i<BANKS;i=i+1)
+      begin : gen_ptr
+         assign head_l[i]  = i + head_ff;
+         assign head_r[i]  = i - head_ff;
+         assign tail_l[i] = i + tail_ff;
+         assign tail_r[i] = i - tail_ff;
+      end
    endgenerate
    
    // Width adapter
@@ -157,24 +156,23 @@ module rob
    endgenerate
    
    // MUX for FIFO input
-   generate
-      for(i=0;i<BANKS;i=i+1)
-         begin : gen_bank_ctrl
-            assign que_din_mux[i] = {rob_push_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW],
-                                       rob_push_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
-                                       rob_push_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
-                                       rob_push_pc[i * `PC_W +: `PC_W],
-                                       rob_push_lrd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW],
-                                       rob_push_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
-                                       rob_push_prd_we[i],
-                                       rob_push_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
-                                       rob_push_is_bcc[i],
-                                       rob_push_is_brel[i],
-                                       rob_push_is_breg[i]};
-            assign que_din[i] = que_din_mux[tail_r[i]];
-            assign que_pop[i]  = ({1'b0, head_r[i]} < pop_cnt_adapt);
-            assign que_push[i] = ({1'b0, tail_r[i]} < rob_push_size);
-         end
+   generate for(i=0;i<BANKS;i=i+1)
+      begin : gen_bank_ctrl
+         assign que_din_mux[i] = {rob_push_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW],
+                                    rob_push_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
+                                    rob_push_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
+                                    rob_push_pc[i * `PC_W +: `PC_W],
+                                    rob_push_lrd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW],
+                                    rob_push_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
+                                    rob_push_prd_we[i],
+                                    rob_push_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
+                                    rob_push_is_bcc[i],
+                                    rob_push_is_brel[i],
+                                    rob_push_is_breg[i]};
+         assign que_din[i] = que_din_mux[tail_r[i]];
+         assign que_pop[i]  = ({1'b0, head_r[i]} < pop_cnt_adapt);
+         assign que_push[i] = ({1'b0, tail_r[i]} < rob_push_size);
+      end
    endgenerate
    
    assign head_nxt = (head_ff + pop_cnt_adapt[P_BANKS-1:0]) & {P_BANKS{~flush}};
@@ -183,160 +181,160 @@ module rob
    mDFF_r #(.DW(P_BANKS)) ff_head (.CLK(clk), .RST(rst), .D(head_nxt), .Q(head_ff) );
    mDFF_r #(.DW(P_BANKS)) ff_tail (.CLK(clk), .RST(rst), .D(tail_nxt), .Q(tail_ff) );
    
-   generate
-      for(i=0;i<BANKS;i=i+1)
-         begin : gen_BANKS
-            wire                       payload_re;
-            wire [CONFIG_P_ROB_DEPTH-1:0] payload_raddr;
-            wire [CONFIG_P_ROB_DEPTH-1:0] payload_waddr;
-            wire [uBANK_DW-1:0]        payload_rdata;
-            wire                       payload_we;
-            wire [uBANK_DW-1:0]        payload_wdata;
+   generate for(i=0;i<BANKS;i=i+1)
+      begin : gen_BANKS
+         wire                       payload_re;
+         wire [CONFIG_P_ROB_DEPTH-1:0] payload_raddr;
+         wire [CONFIG_P_ROB_DEPTH-1:0] payload_waddr;
+         wire [uBANK_DW-1:0]        payload_rdata;
+         wire                       payload_we;
+         wire [uBANK_DW-1:0]        payload_wdata;
+         
+         wire [ROB_DEPTH-1:0]       tag_rdy;
+         wire [ROB_DEPTH-1:0]       tag_fls;
+         wire [ROB_DEPTH-1:0]       tag_exc;
+         wire [vBANK_DW*ROB_DEPTH-1:0] tag_vbank;
+         wire [vBANK_DW-1:0]        tag_vbank_mux [ROB_DEPTH-1:0];
+         
+         fifo_fwft_ctrl_rp_wp
+            #(
+               .DW            (uBANK_DW),
+               .DEPTH_WIDTH   (CONFIG_P_ROB_DEPTH)
+            )
+         U_FIFO_CTRL
+            (
+               .clk           (clk),
+               .rst           (rst),
+               .flush         (flush),
+               .push          (que_push[i]),
+               .din           (que_din[i]),
+               .ready         (que_ready[i]),
+               .pop           (que_pop[i]),
+               .dout          (que_dout[i]),
+               .valid         (que_valid[i]),
+               .rptr          (que_rptr[i]),
+               .wptr          (que_wptr[i]),
+               .payload_re    (payload_re),
+               .payload_raddr (payload_raddr),
+               .payload_rdata (payload_rdata),
+               .payload_we    (payload_we),
+               .payload_waddr (payload_waddr),
+               .payload_wdata (payload_wdata)
+            );
             
-            wire [ROB_DEPTH-1:0]       tag_rdy;
-            wire [ROB_DEPTH-1:0]       tag_fls;
-            wire [ROB_DEPTH-1:0]       tag_exc;
-            wire [vBANK_DW*ROB_DEPTH-1:0] tag_vbank;
-            wire [vBANK_DW-1:0]        tag_vbank_mux [ROB_DEPTH-1:0];
+         `mRF_nwnr
+            #(
+               .DW (uBANK_DW),
+               .AW (CONFIG_P_ROB_DEPTH),
+               .NUM_READ   (1),
+               .NUM_WRITE  (1)
+            )
+         U_uBANK
+            (
+               .CLK     (clk),
+               `rst
+               .RE      (payload_re),
+               .RADDR   (payload_raddr),
+               .RDATA   (payload_rdata),
+               .WE      (payload_we),
+               .WADDR   (payload_waddr),
+               .WDATA   (payload_wdata)
+            );
             
-            fifo_fwft_ctrl_rp_wp
-               #(
-                  .DW            (uBANK_DW),
-                  .DEPTH_WIDTH   (CONFIG_P_ROB_DEPTH)
-               )
-            U_FIFO_CTRL
-               (
-                  .clk           (clk),
-                  .rst           (rst),
-                  .flush         (flush),
-                  .push          (que_push[i]),
-                  .din           (que_din[i]),
-                  .ready         (que_ready[i]),
-                  .pop           (que_pop[i]),
-                  .dout          (que_dout[i]),
-                  .valid         (que_valid[i]),
-                  .rptr          (que_rptr[i]),
-                  .wptr          (que_wptr[i]),
-                  .payload_re    (payload_re),
-                  .payload_raddr (payload_raddr),
-                  .payload_rdata (payload_rdata),
-                  .payload_we    (payload_we),
-                  .payload_waddr (payload_waddr),
-                  .payload_wdata (payload_wdata)
-               );
-               
-            `mRF_nwnr
-               #(
-                  .DW (uBANK_DW),
-                  .AW (CONFIG_P_ROB_DEPTH),
-                  .NUM_READ   (1),
-                  .NUM_WRITE  (1)
-               )
-            U_uBANK
-               (
-                  .CLK     (clk),
-                  `rst
-                  .RE      (payload_re),
-                  .RADDR   (payload_raddr),
-                  .RDATA   (payload_rdata),
-                  .WE      (payload_we),
-                  .WADDR   (payload_waddr),
-                  .WDATA   (payload_wdata)
-               );
-               
-            mRF_nw_do_r
-               #(
-                  .DW (1),
-                  .AW (CONFIG_P_ROB_DEPTH),
-                  .RST_VECTOR ('b0),
-                  .NUM_WRITE (2)
-               )
-            U_TAG_RDY
-               (
-                  .CLK  (clk),
-                  .RST  (rst),
-                  .WE   ({que_wb[i], que_push[i]}),
-                  .WADDR ({que_wb_id[i], payload_waddr}),
-                  .WDATA ({1'b1, 1'b0}),
-                  .DO   (tag_rdy)
-               );
-               
-            mRF_nw_do_r
-               #(
-                  .DW (1),
-                  .AW (CONFIG_P_ROB_DEPTH),
-                  .RST_VECTOR ('b0),
-                  .NUM_WRITE (2)
-               )
-            U_TAG_FLS
-               (
-                  .CLK  (clk),
-                  .RST  (rst),
-                  .WE   ({que_wb[i], que_push[i]}),
-                  .WADDR ({que_wb_id[i], payload_waddr}),
-                  .WDATA ({que_wb_fls[i], 1'b0}),
-                  .DO   (tag_fls)
-               );
-      
-            mRF_nw_do_r
-               #(
-                  .DW (1),
-                  .AW (CONFIG_P_ROB_DEPTH),
-                  .RST_VECTOR ('b0),
-                  .NUM_WRITE (2)
-               )
-            U_TAG_EXC
-               (
-                  .CLK  (clk),
-                  .RST  (rst),
-                  .WE   ({que_wb[i], que_push[i]}),
-                  .WADDR ({que_wb_id[i], payload_waddr}),
-                  .WDATA ({que_wb_exc[i], 1'b0}),
-                  .DO   (tag_exc)
-               );
+         mRF_nw_do_r
+            #(
+               .DW (1),
+               .AW (CONFIG_P_ROB_DEPTH),
+               .RST_VECTOR ('b0),
+               .NUM_WRITE (2)
+            )
+         U_TAG_RDY
+            (
+               .CLK  (clk),
+               .RST  (rst),
+               .WE   ({que_wb[i], que_push[i]}),
+               .WADDR ({que_wb_id[i], payload_waddr}),
+               .WDATA ({1'b1, 1'b0}),
+               .DO   (tag_rdy)
+            );
             
-            `mRF_nw_do
-               #(
-                  .DW (vBANK_DW),
-                  .AW (CONFIG_P_ROB_DEPTH),
-                  .NUM_WRITE (1)
-               )
-            U_vBANK
-               (
-                  .CLK  (clk),
-                  `rst
-                  .WE   (que_wb[i]),
-                  .WADDR (que_wb_id[i]),
-                  .WDATA (que_wb_vbank[i]),
-                  .DO   (tag_vbank)
-               );
-              
-            // Address decoder
-            assign que_rdy[i] = tag_rdy[que_rptr[i]];
-            assign que_fls[i] = tag_fls[que_rptr[i]];
-            assign que_exc[i] = tag_exc[que_rptr[i]];
-            
-            for(k=0;k<ROB_DEPTH;k=k+1)
-               assign tag_vbank_mux[k] = tag_vbank[k * vBANK_DW +: vBANK_DW];
-            
-            assign que_vbank[i] = tag_vbank_mux[que_rptr[i]];
-         end
+         mRF_nw_do_r
+            #(
+               .DW (1),
+               .AW (CONFIG_P_ROB_DEPTH),
+               .RST_VECTOR ('b0),
+               .NUM_WRITE (2)
+            )
+         U_TAG_FLS
+            (
+               .CLK  (clk),
+               .RST  (rst),
+               .WE   ({que_wb[i], que_push[i]}),
+               .WADDR ({que_wb_id[i], payload_waddr}),
+               .WDATA ({que_wb_fls[i], 1'b0}),
+               .DO   (tag_fls)
+            );
+   
+         mRF_nw_do_r
+            #(
+               .DW (1),
+               .AW (CONFIG_P_ROB_DEPTH),
+               .RST_VECTOR ('b0),
+               .NUM_WRITE (2)
+            )
+         U_TAG_EXC
+            (
+               .CLK  (clk),
+               .RST  (rst),
+               .WE   ({que_wb[i], que_push[i]}),
+               .WADDR ({que_wb_id[i], payload_waddr}),
+               .WDATA ({que_wb_exc[i], 1'b0}),
+               .DO   (tag_exc)
+            );
+         
+         `mRF_nw_do
+            #(
+               .DW (vBANK_DW),
+               .AW (CONFIG_P_ROB_DEPTH),
+               .NUM_WRITE (1)
+            )
+         U_vBANK
+            (
+               .CLK  (clk),
+               `rst
+               .WE   (que_wb[i]),
+               .WADDR (que_wb_id[i]),
+               .WDATA (que_wb_vbank[i]),
+               .DO   (tag_vbank)
+            );
+           
+         // Address decoder
+         assign que_rdy[i] = tag_rdy[que_rptr[i]];
+         assign que_fls[i] = tag_fls[que_rptr[i]];
+         assign que_exc[i] = tag_exc[que_rptr[i]];
+         
+         for(k=0;k<ROB_DEPTH;k=k+1)
+            assign tag_vbank_mux[k] = tag_vbank[k * vBANK_DW +: vBANK_DW];
+         
+         assign que_vbank[i] = tag_vbank_mux[que_rptr[i]];
+      end
    endgenerate
    
    // wb signal for each bank
-   generate
-      for(i=0;i<BANKS;i=i+1)
+   generate for(i=0;i<BANKS;i=i+1)
+      begin : gen_que_wb
          always @(*)
             begin
                que_wb[i] = 'b0;
                for(j=0;j<CW;j=j+1)
                   que_wb[i] = que_wb[i] | (wb_valid[j]&wb_ready[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]));
             end
+      end
    endgenerate
    
    // MUX for each bank
-   generate
-      for(i=0;i<BANKS;i=i+1)
+   generate for(i=0;i<BANKS;i=i+1)
+      begin : gen_que_wb_din
          always @(*)
             begin : gen_wb_id_mux
                que_wb_id[i] = 'b0;
@@ -359,6 +357,7 @@ module rob
                                        {wb_fls_tgt[j*`PC_W +: `PC_W], wb_operb[j*CONFIG_DW +: CONFIG_DW], wb_opera[j*CONFIG_DW +: CONFIG_DW]});
                   end
             end
+      end
    endgenerate
    
    // Conflict detection
@@ -367,51 +366,48 @@ module rob
    // Channel 0 should keep ready, to allow incomplete commits
    always @(*) wb_ready[0] = 'b1;
    
-   generate
-      for(i=1;i<WW;i=i+1)
-         begin : gen_conflict_dec
-            always @(*)
-               begin
-                  wb_ready[i] = 'b1;
-                  for(j=0;j<i;j=j+1)
-                     wb_ready[i] = wb_ready[i] & ~(wb_valid[j] &
-                        (wb_rob_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]));
-               end
-         end
+   generate for(i=1;i<WW;i=i+1)
+      begin : gen_conflict_dec
+         always @(*)
+            begin
+               wb_ready[i] = 'b1;
+               for(j=0;j<i;j=j+1)
+                  wb_ready[i] = wb_ready[i] & ~(wb_valid[j] &
+                     (wb_rob_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]));
+            end
+      end
    endgenerate
    assign wb_rob_ready = wb_ready;
    
    // Output the address of free bank
-   generate
-      for(i=0;i<BANKS;i=i+1)
-         begin : gen_rob_free
-            assign rob_free_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH] = que_wptr[tail_l[i]];
-            assign rob_free_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH] = tail_l[i];
-         end
+   generate for(i=0;i<BANKS;i=i+1)
+      begin : gen_rob_free
+         assign rob_free_id[i*CONFIG_P_ROB_DEPTH +: CONFIG_P_ROB_DEPTH] = que_wptr[tail_l[i]];
+         assign rob_free_bank[i*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH] = tail_l[i];
+      end
    endgenerate
    
    // MUX for data output
-   generate
-      for(i=0;i<CW;i=i+1)
-         begin : gen_pop
-            assign {cmt_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW],
-                     cmt_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
-                     cmt_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
-                     cmt_pc[i * `PC_W +: `PC_W],
-                     cmt_lrd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW],
-                     cmt_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
-                     cmt_prd_we[i],
-                     cmt_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
-                     cmt_is_bcc[i],
-                     cmt_is_brel[i],
-                     cmt_is_breg[i] } = que_dout[head_l[i]];
-            assign cmt_fls[i] = que_fls[head_l[i]];
-            assign cmt_exc[i] = que_exc[head_l[i]];
-            assign {cmt_fls_tgt[i*`PC_W +: `PC_W],
-                     cmt_operb[i*CONFIG_DW +: CONFIG_DW],
-                     cmt_opera[i*CONFIG_DW +: CONFIG_DW]} = que_vbank[head_l[i]];
-            assign ent_valid[i] = (que_valid[head_l[i]] & que_rdy[head_l[i]]);
-         end
+   generate for(i=0;i<CW;i=i+1)
+      begin : gen_pop
+         assign {cmt_epu_opc_bus[i * `NCPU_EPU_IOPW +: `NCPU_EPU_IOPW],
+                  cmt_lsu_opc_bus[i * `NCPU_LSU_IOPW +: `NCPU_LSU_IOPW],
+                  cmt_bpu_upd[i * `BPU_UPD_W +: `BPU_UPD_W],
+                  cmt_pc[i * `PC_W +: `PC_W],
+                  cmt_lrd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW],
+                  cmt_prd[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
+                  cmt_prd_we[i],
+                  cmt_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW],
+                  cmt_is_bcc[i],
+                  cmt_is_brel[i],
+                  cmt_is_breg[i] } = que_dout[head_l[i]];
+         assign cmt_fls[i] = que_fls[head_l[i]];
+         assign cmt_exc[i] = que_exc[head_l[i]];
+         assign {cmt_fls_tgt[i*`PC_W +: `PC_W],
+                  cmt_operb[i*CONFIG_DW +: CONFIG_DW],
+                  cmt_opera[i*CONFIG_DW +: CONFIG_DW]} = que_vbank[head_l[i]];
+         assign ent_valid[i] = (que_valid[head_l[i]] & que_rdy[head_l[i]]);
+      end
    endgenerate
    
    // Ensure in-order commit

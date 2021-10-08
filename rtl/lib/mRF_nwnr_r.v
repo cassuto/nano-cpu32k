@@ -68,15 +68,14 @@ module mRF_nwnr_r
                regfile[WADDR[j*AW +: AW]] <= WDATA[j*DW +: DW];
    end
    
-   generate
-      for(i=0;i<NUM_READ;i=i+1)
-         begin
-            always @(posedge CLK)
-               if (RE[i])
-                  ff_dout[i] <= regfile[RADDR[i*AW +: AW]];
-                  
-            assign RDATA[i*DW +: DW] = ff_dout[i];
-         end
+   generate for(i=0;i<NUM_READ;i=i+1)
+      begin : gen_rdata
+         always @(posedge CLK)
+            if (RE[i])
+               ff_dout[i] <= regfile[RADDR[i*AW +: AW]];
+               
+         assign RDATA[i*DW +: DW] = ff_dout[i];
+      end
    endgenerate
    
 endmodule

@@ -164,45 +164,44 @@ module icache
 
    assign s2i_paddr = {ppn_s2, s1o_vpo};
 
-   generate
-      for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
-         begin : gen_ways
-            mRAM_s_s_be
-               #(
-                  .P_DW (PAYLOAD_P_DW_BYTES + 3),
-                  .AW   (PAYLOAD_AW)
-               )
-            U_PAYLOAD_RAM
-               (
-                  .CLK  (clk),
-                  .RST  (rst),
-                  .ADDR (s1i_payload_addr),
-                  .RE   (s1i_payload_re),
-                  .DOUT (s1o_payload[way*PAYLOAD_DW +: PAYLOAD_DW]),
-                  .WE   (s1i_payload_we[way]),
-                  .DIN  (s1i_payload_din)
-               );
+   generate for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
+      begin : gen_ways
+         mRAM_s_s_be
+            #(
+               .P_DW (PAYLOAD_P_DW_BYTES + 3),
+               .AW   (PAYLOAD_AW)
+            )
+         U_PAYLOAD_RAM
+            (
+               .CLK  (clk),
+               .RST  (rst),
+               .ADDR (s1i_payload_addr),
+               .RE   (s1i_payload_re),
+               .DOUT (s1o_payload[way*PAYLOAD_DW +: PAYLOAD_DW]),
+               .WE   (s1i_payload_we[way]),
+               .DIN  (s1i_payload_din)
+            );
 
-            `mRF_1wr
-               #(
-                  .DW   (TAG_V_RAM_DW),
-                  .AW   (TAG_V_RAM_AW)
-               )
-            U_TAG_V_RAM
-               (
-                  .CLK  (clk),
-                  `rst
-                  .ADDR (s1i_line_addr),
-                  .RE   (s1i_tag_v_re),
-                  .RDATA (s1o_tag_v[way]),
-                  .WE   (s1i_tag_v_we[way]),
-                  .WDATA (s1i_replace_tag_v)
-               );
+         `mRF_1wr
+            #(
+               .DW   (TAG_V_RAM_DW),
+               .AW   (TAG_V_RAM_AW)
+            )
+         U_TAG_V_RAM
+            (
+               .CLK  (clk),
+               `rst
+               .ADDR (s1i_line_addr),
+               .RE   (s1i_tag_v_re),
+               .RDATA (s1o_tag_v[way]),
+               .WE   (s1i_tag_v_we[way]),
+               .WDATA (s1i_replace_tag_v)
+            );
 
-            assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];
+         assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];
 
-            assign s2i_hit_vec[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS]) );
-         end
+         assign s2i_hit_vec[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS]) );
+      end
    endgenerate
 
    // Sel the dout of matched way
@@ -338,11 +337,12 @@ module icache
    assign s1i_tag_v_re = (p_ce | (fsm_state_ff==S_RELOAD_S1O));
 
    // tag RAM write enable
-   generate
-      for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
+   generate for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
+      begin : gen_tag_v_we
          assign s1i_tag_v_we[way] = (fsm_state_ff==S_BOOT) |
                                     (fsm_state_ff==S_INVALIDATE) |
                                     ((fsm_state_ff==S_REPLACE) & (fsm_free_way[way]));
+      end
    endgenerate
    
    `mDFF_l #(.DW(1<<CONFIG_IC_P_WAYS)) ff_s2o_fsm_free_way(.CLK(clk),`rst .LOAD(fsm_state_ff==S_REPLACE), .D(fsm_free_way), .Q(s2o_fsm_free_way));
@@ -376,9 +376,10 @@ module icache
          .o_dat                        (s1i_payload_din)
       );
       
-   generate
-      for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
+   generate for(way=0; way<(1<<CONFIG_IC_P_WAYS); way=way+1)
+      begin : gen_payload_we
          assign s1i_payload_we[way] = (s1i_payload_tgt_we & {PAYLOAD_DW/8{s2o_fsm_free_way[way]}});
+      end
    endgenerate
    
    // Aligner for uncached din
@@ -423,27 +424,26 @@ module icache
                                  ibus_ARADDR[PAYLOAD_P_DW_BYTES +: CONFIG_IC_P_LINE-PAYLOAD_P_DW_BYTES]);
 
    // Output
-   generate
-      for(j=0;j<PAYLOAD_DW/8;j=j+1)
-         begin : gen_output_inner
-            always @(*)
-               case (fsm_state_ff)
-                  S_REFILL:
-                     if (s2i_refill_get_dat & s1i_payload_tgt_we[j])
-                        s2i_ins[j*8 +: 8] = s1i_payload_din[j*8 +: 8]; // Get data from AXI bus
-                     else
-                        s2i_ins[j*8 +: 8] = ins[j*8 +: 8];
-                  
-                  S_UNCACHED_READ:
-                     if (s2i_uncached_get_dat & s1i_uncached_we[j])
-                        s2i_ins[j*8 +: 8] = s1i_uncached_din[j*8 +: 8]; // Get data from AXI bus, but not write to any payload RAM
-                     else
-                        s2i_ins[j*8 +: 8] = ins[j*8 +: 8];
-                        
-                  default:
-                     s2i_ins[j*8 +: 8] = s1o_match_payload[j*8 +: 8]; // From the matched way
-               endcase
-         end
+   generate for(j=0;j<PAYLOAD_DW/8;j=j+1)
+      begin : gen_output_inner
+         always @(*)
+            case (fsm_state_ff)
+               S_REFILL:
+                  if (s2i_refill_get_dat & s1i_payload_tgt_we[j])
+                     s2i_ins[j*8 +: 8] = s1i_payload_din[j*8 +: 8]; // Get data from AXI bus
+                  else
+                     s2i_ins[j*8 +: 8] = ins[j*8 +: 8];
+               
+               S_UNCACHED_READ:
+                  if (s2i_uncached_get_dat & s1i_uncached_we[j])
+                     s2i_ins[j*8 +: 8] = s1i_uncached_din[j*8 +: 8]; // Get data from AXI bus, but not write to any payload RAM
+                  else
+                     s2i_ins[j*8 +: 8] = ins[j*8 +: 8];
+                     
+               default:
+                  s2i_ins[j*8 +: 8] = s1o_match_payload[j*8 +: 8]; // From the matched way
+            endcase
+      end
    endgenerate
 
    `mDFF_l # (.DW(PAYLOAD_DW)) ff_ins (.CLK(clk),`rst .LOAD(p_ce|(fsm_state_ff==S_REFILL)|(fsm_state_ff==S_UNCACHED_READ)), .D(s2i_ins), .Q(ins) );

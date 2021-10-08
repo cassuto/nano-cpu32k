@@ -72,9 +72,10 @@ module mRF_nw_dio_r
                regfile[WADDR[j*AW +: AW]] <= WDATA[j*DW +: DW];
    end
    
-   generate
-      for(i=0;i<(1<<AW);i=i+1)
+   generate for(i=0;i<(1<<AW);i=i+1)
+      begin : gen_do
          assign DO[i * DW +: DW] = regfile[i];
+      end
    endgenerate
    
 endmodule

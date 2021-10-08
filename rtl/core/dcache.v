@@ -224,76 +224,75 @@ module dcache
 
    assign p_ce = (~stall_req);
 
-   generate
-      for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
-         begin : gen_ways
-            wire rf_d, rf_d_ff;
-            wire rf_conflict;
-            wire rf_bypass;
+   generate for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
+      begin : gen_ways
+         wire rf_d, rf_d_ff;
+         wire rf_conflict;
+         wire rf_bypass;
 
-            mRAM_s_s_be
-               #(
-                  .P_DW (PAYLOAD_P_DW_BYTES + 3),
-                  .AW   (PAYLOAD_AW)
-               )
-            U_PAYLOAD_RAM
-               (
-                  .CLK  (clk),
-                  .RST  (rst),
-                  .ADDR (s2i_payload_addr),
-                  .RE   (s2i_payload_re),
-                  .DOUT (s2o_payload[way*PAYLOAD_DW +: PAYLOAD_DW]),
-                  .WE   (s2i_payload_we[way]),
-                  .DIN  (s2i_payload_din)
-               );
+         mRAM_s_s_be
+            #(
+               .P_DW (PAYLOAD_P_DW_BYTES + 3),
+               .AW   (PAYLOAD_AW)
+            )
+         U_PAYLOAD_RAM
+            (
+               .CLK  (clk),
+               .RST  (rst),
+               .ADDR (s2i_payload_addr),
+               .RE   (s2i_payload_re),
+               .DOUT (s2o_payload[way*PAYLOAD_DW +: PAYLOAD_DW]),
+               .WE   (s2i_payload_we[way]),
+               .DIN  (s2i_payload_din)
+            );
 
-            `mRF_1wr
-               #(
-                  .DW   (TAG_V_RAM_DW),
-                  .AW   (TAG_V_RAM_AW)
-               )
-            U_TAG_V_RAM
-               (
-                  .CLK  (clk),
-                  `rst
-                  .ADDR (s1i_line_addr),
-                  .RE   (s1i_tag_v_re),
-                  .RDATA (s1o_tag_v[way]),
-                  .WE   (s1i_tag_v_we[way]),
-                  .WDATA (s1i_replace_tag_v)
-               );
-            `mRF_nwnr
-               #(
-                  .DW   (1),
-                  .AW   (TAG_V_RAM_AW),
-                  .NUM_READ (1),
-                  .NUM_WRITE (1)
-               )
-            U_D_RF
-               (
-                  .CLK     (clk),
-                  `rst
-                  .RE      (s1i_tag_v_re),
-                  .RADDR   (s1i_line_addr),
-                  .RDATA   (rf_d),
-                  .WE      (s2i_d_we[way]),
-                  .WADDR   (s2i_d_waddr),
-                  .WDATA   (s2i_d_wdat[way])
-               );
+         `mRF_1wr
+            #(
+               .DW   (TAG_V_RAM_DW),
+               .AW   (TAG_V_RAM_AW)
+            )
+         U_TAG_V_RAM
+            (
+               .CLK  (clk),
+               `rst
+               .ADDR (s1i_line_addr),
+               .RE   (s1i_tag_v_re),
+               .RDATA (s1o_tag_v[way]),
+               .WE   (s1i_tag_v_we[way]),
+               .WDATA (s1i_replace_tag_v)
+            );
+         `mRF_nwnr
+            #(
+               .DW   (1),
+               .AW   (TAG_V_RAM_AW),
+               .NUM_READ (1),
+               .NUM_WRITE (1)
+            )
+         U_D_RF
+            (
+               .CLK     (clk),
+               `rst
+               .RE      (s1i_tag_v_re),
+               .RADDR   (s1i_line_addr),
+               .RDATA   (rf_d),
+               .WE      (s2i_d_we[way]),
+               .WADDR   (s2i_d_waddr),
+               .WDATA   (s2i_d_wdat[way])
+            );
 
-            // Bypass D flag
-            assign rf_conflict = ((s1i_line_addr == s2i_d_waddr) & s2i_d_we[way]);
-            
-            mDFF_lr #(.DW(1)) ff_bypass (.CLK(clk), .RST(rst), .LOAD(rf_conflict | s1i_tag_v_re), .D(rf_conflict | ~s1i_tag_v_re), .Q(rf_bypass) );
-            `mDFF_l #(.DW(1)) ff_rd_d (.CLK(clk),`rst .LOAD(s1i_tag_v_re), .D(s2i_d_wdat[way]), .Q(rf_d_ff) );
+         // Bypass D flag
+         assign rf_conflict = ((s1i_line_addr == s2i_d_waddr) & s2i_d_we[way]);
+         
+         mDFF_lr #(.DW(1)) ff_bypass (.CLK(clk), .RST(rst), .LOAD(rf_conflict | s1i_tag_v_re), .D(rf_conflict | ~s1i_tag_v_re), .Q(rf_bypass) );
+         `mDFF_l #(.DW(1)) ff_rd_d (.CLK(clk),`rst .LOAD(s1i_tag_v_re), .D(s2i_d_wdat[way]), .Q(rf_d_ff) );
 
-            assign s1o_d[way] = rf_bypass ? rf_d_ff : rf_d;
+         assign s1o_d[way] = rf_bypass ? rf_d_ff : rf_d;
 
-            assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];
-            assign s2i_tag_packed[way * TAG_WIDTH +: TAG_WIDTH] = s2i_tag[way];
+         assign {s2i_tag[way], s2i_v[way]} = s1o_tag_v[way];
+         assign s2i_tag_packed[way * TAG_WIDTH +: TAG_WIDTH] = s2i_tag[way];
 
-            assign s2i_hit_vec[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_DC_P_LINE+CONFIG_DC_P_SETS]) );
-         end
+         assign s2i_hit_vec[way] = (s2i_v[way] & (s2i_tag[way] == s2i_paddr[CONFIG_AW-1:CONFIG_DC_P_LINE+CONFIG_DC_P_SETS]) );
+      end
    endgenerate
 
    assign s2i_hit = (|s2i_hit_vec);
@@ -466,11 +465,12 @@ module dcache
    assign s1i_tag_v_re = (p_ce | (fsm_state_ff==S_RELOAD_S1O_S2O));
 
    // tag RAM write enable
-   generate
-      for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
+   generate for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
+      begin : gen_tag_v_we
          assign s1i_tag_v_we[way] = (fsm_state_ff==S_BOOT) |
                                     (fsm_state_ff==S_INVALIDATE) |
                                     ((fsm_state_ff==S_REPLACE) & (s2o_fsm_free_way[way]));
+      end
    endgenerate
 
    // MUX for D flag RAM addr
@@ -485,8 +485,8 @@ module dcache
       endcase
 
    // MUX for D flag RAM din
-   generate
-      for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
+   generate for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
+      begin : gen_d_wdat
          always @(*)
             case (fsm_state_ff)
                S_IDLE:
@@ -496,16 +496,18 @@ module dcache
                default: // S_BOOT, S_INVALIDATE, S_REPLACE:
                   s2i_d_wdat[way] = 'b0;
             endcase
+      end
    endgenerate
 
    // D flag RAM write enable
-   generate
-      for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
+   generate for(way=0; way<(1<<CONFIG_DC_P_WAYS); way=way+1)
+      begin : gen_d_we
          assign s2i_d_we[way] = (fsm_state_ff==S_BOOT) |
                                  (fsm_state_ff==S_INVALIDATE) |
                                  ((fsm_state_ff==S_REPLACE) & (s2o_fsm_free_way[way])) |
                                  ((fsm_state_ff==S_RELOAD_S1O_S2O) & s2o_fsm_free_way[way]) |
                                  (s2i_ready & s2i_hit_vec[way]);
+      end
    endgenerate
 
    // MUX for physical addr tag to match
@@ -545,14 +547,15 @@ module dcache
                                  ({CONFIG_DW/8{fsm_state_ff==S_RELOAD_S1O_S2O}} & s2o_wmsk) |
                                  s2i_wb_we;
    
-   generate
-      for(way=0;way<(1<<CONFIG_DC_P_WAYS);way=way+1)
+   generate for(way=0;way<(1<<CONFIG_DC_P_WAYS);way=way+1)
+      begin : gen_payload_we
          assign s2i_payload_we[way] = (s2i_payload_tgt_we &
                                        {CONFIG_DW/8{
                                           (s2i_ready & s2i_hit_vec[way]) |
                                           ((fsm_state_ff==S_RELOAD_S1O_S2O) & s2o_fsm_free_way[way]) |
                                           ((fsm_state_ff==S_REFILL) & s2o_fsm_free_way[way])
                                        }});
+      end
    endgenerate
 
    // Aligner for payload RAM din
@@ -666,7 +669,7 @@ module dcache
 
    generate
       if (PAYLOAD_P_DW_BYTES == 2 && AXI_P_DW_BYTES == 3)
-         begin
+         begin : gen_uncached_wstrb
             // Write mask for uncached access
             assign axi_uncached_wstrb = (s2o_size == 3'd0)
                                           ? {s2o_paddr[2:0]==3'd7, s2o_paddr[2:0]==3'd6, s2o_paddr[2:0]==3'd5, s2o_paddr[2:0]==3'd4,
@@ -716,7 +719,7 @@ module dcache
    // Aligner for AXI W
    generate
       if(AXI_P_DW_BYTES == 3 && PAYLOAD_P_DW_BYTES == 2)
-         begin
+         begin : gen_axi_wdata
             assign dbus_WDATA = (fsm_state_ff == S_WRITEBACK)
                                     ? axi_align_dat
                                     : axi_uncached_wdata /* fsm_state_ff == S_UNCACHED_WRITE */;

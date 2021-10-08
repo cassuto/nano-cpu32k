@@ -261,12 +261,12 @@ module id_dec
          assign op_modu = 1'b0;
 */
       if (CONFIG_ENABLE_ASR)
-         begin
+         begin : gen_op_asr
             assign op_asr = (f_opcode == `NCPU_OP_ASR) & enable_asr;
             assign op_asr_i = (f_opcode == `NCPU_OP_ASR_I) & enable_asr_i;
          end
       else
-         begin
+         begin : gen_op_asr_disabled
             assign op_asr = 1'b0;
             assign op_asr_i = 1'b0;
          end

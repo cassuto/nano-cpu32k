@@ -90,36 +90,35 @@ module id
    wire [`NCPU_LRF_AW*IW-1:0]          rf_rs2_addr;
    genvar i;
    
-   generate
-      for(i=0;i<IW;i=i+1)
-         begin : gen_dec
-            id_dec
-               #(/*AUTOINSTPARAM*/
-                 // Parameters
-                 .CONFIG_DW             (CONFIG_DW),
-                 .CONFIG_ENABLE_ASR     (CONFIG_ENABLE_ASR))
-            U_DEC
-               (
-                  .id_valid            (id_valid[i]),
-                  .id_ins              (id_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW]),
-                  .id_exc              (id_exc[i*`FNT_EXC_W +: `FNT_EXC_W]),
-                  .irq_async           (irq_async),
-                  
-                  .alu_opc_bus         (s1i_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
+   generate for(i=0;i<IW;i=i+1)
+      begin : gen_dec
+         id_dec
+            #(/*AUTOINSTPARAM*/
+              // Parameters
+              .CONFIG_DW             (CONFIG_DW),
+              .CONFIG_ENABLE_ASR     (CONFIG_ENABLE_ASR))
+         U_DEC
+            (
+               .id_valid            (id_valid[i]),
+               .id_ins              (id_ins[i*`NCPU_INSN_DW +: `NCPU_INSN_DW]),
+               .id_exc              (id_exc[i*`FNT_EXC_W +: `FNT_EXC_W]),
+               .irq_async           (irq_async),
+               
+               .alu_opc_bus         (s1i_alu_opc_bus[i*`NCPU_ALU_IOPW +: `NCPU_ALU_IOPW]),
 //                  .lpu_opc_bus         (s1i_lpu_opc_bus[i*`NCPU_LPU_IOPW +: `NCPU_LPU_IOPW]),
-                  .epu_opc_bus         (s1i_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
-                  .bru_opc_bus         (s1i_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
-                  .lsu_opc_bus         (s1i_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
-                  .fe                  (s1i_fe[i*`NCPU_FE_W +: `NCPU_FE_W]),
-                  .imm                 (s1i_imm[i*CONFIG_DW +: CONFIG_DW]),
-                  .rf_we               (rf_we[i]),
-                  .rf_waddr            (rf_waddr[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]),
-                  .rf_rs1_re           (rf_rs1_re[i]),
-                  .rf_rs1_addr         (rf_rs1_addr[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]),
-                  .rf_rs2_re           (rf_rs2_re[i]),
-                  .rf_rs2_addr         (rf_rs2_addr[i*`NCPU_LRF_AW +:`NCPU_LRF_AW])
-               );
-         end
+               .epu_opc_bus         (s1i_epu_opc_bus[i*`NCPU_EPU_IOPW +: `NCPU_EPU_IOPW]),
+               .bru_opc_bus         (s1i_bru_opc_bus[i*`NCPU_BRU_IOPW +: `NCPU_BRU_IOPW]),
+               .lsu_opc_bus         (s1i_lsu_opc_bus[i*`NCPU_LSU_IOPW +: `NCPU_LSU_IOPW]),
+               .fe                  (s1i_fe[i*`NCPU_FE_W +: `NCPU_FE_W]),
+               .imm                 (s1i_imm[i*CONFIG_DW +: CONFIG_DW]),
+               .rf_we               (rf_we[i]),
+               .rf_waddr            (rf_waddr[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]),
+               .rf_rs1_re           (rf_rs1_re[i]),
+               .rf_rs1_addr         (rf_rs1_addr[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]),
+               .rf_rs2_re           (rf_rs2_re[i]),
+               .rf_rs2_addr         (rf_rs2_addr[i*`NCPU_LRF_AW +:`NCPU_LRF_AW])
+            );
+      end
    endgenerate
    
    assign p_ce = (~rn_stall_req);

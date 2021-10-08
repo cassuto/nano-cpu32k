@@ -162,9 +162,10 @@ module cmt_psr
    // EVECT
    mDFF_lr #(.DW(CONFIG_DW-`EXCP_VECT_W)) dff_msr_evect (.CLK(clk), .RST(rst), .LOAD(msr_evect_we), .D(msr_evect_nxt), .Q(msr_evect_ff) );
    // SR
-   generate
-      for(i=0;i<`NCPU_SR_NUM;i=i+1)
+   generate for(i=0;i<`NCPU_SR_NUM;i=i+1)
+      begin : gen_sr
          `mDFF_l #(.DW(CONFIG_DW)) dff_sr (.CLK(clk),`rst .LOAD(msr_sr_we[i]), .D(msr_sr_nxt), .Q(msr_sr_ff[i*CONFIG_DW +: CONFIG_DW]) );
+      end
    endgenerate
    
    // Bypass logic for PSR
@@ -188,9 +189,10 @@ module cmt_psr
    assign msr_evect = msr_evect_we ? msr_evect_nxt : msr_evect_ff;
    
    // Bypass logic for SR
-   generate
-      for(i=0;i<`NCPU_SR_NUM;i=i+1)
+   generate for(i=0;i<`NCPU_SR_NUM;i=i+1)
+      begin : gen_sr_out
          assign msr_sr[i*CONFIG_DW +: CONFIG_DW] = (msr_sr_we[i]) ? msr_sr_nxt : msr_sr_ff[i*CONFIG_DW +: CONFIG_DW];
+      end
    endgenerate
 
    // Pack PSR

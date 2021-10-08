@@ -235,19 +235,19 @@ module issue_rs
    
    assign issue_rs_full = ~has_free;
    
-   generate
-      for(i=0;i<RS_DEPTH;i=i+1)
-         begin : gen_mux
-            assign prs1_rf_mux[i] = prs1_rf[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign prs2_rf_mux[i] = prs2_rf[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
-         end
+   generate for(i=0;i<RS_DEPTH;i=i+1)
+      begin : gen_mux
+         assign prs1_rf_mux[i] = prs1_rf[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+         assign prs2_rf_mux[i] = prs2_rf[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+      end
    endgenerate
    
-   generate
-      for(i=0;i<RS_DEPTH;i=i+1)
+   generate for(i=0;i<RS_DEPTH;i=i+1)
+      begin : gen_rdy_vec
          assign rdy_vec[i] = ~free_vec_ff_byp[i] &
                               (~prs1_re_rf[i] | ~busytable[prs1_rf_mux[i]]) &
                               (~prs2_re_rf[i] | ~busytable[prs2_rf_mux[i]]);
+      end
    endgenerate
    
    priority_encoder_gs #(.P_DW(CONFIG_P_RS_DEPTH)) penc_rdy (.din(rdy_vec), .dout(rdy_addr), .gs(has_rdy) );

@@ -98,76 +98,75 @@ module rn_rat
          .DO  (arat_ff)
       );
       
-   generate
-      for(i=0;i<N_LRF;i=i+1)
+   generate for(i=0;i<N_LRF;i=i+1)
+      begin : gen_rat_mux
          assign rat_mux[i] = rat_ff[i * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+      end
    endgenerate
 
-   generate
-      for(i=0;i<IW;i=i+1)
-         begin : gen_readout
-            assign prs1_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs1[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
-            assign prs2_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs2[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
-            assign pfree_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
-         end
+   generate for(i=0;i<IW;i=i+1)
+      begin : gen_readout
+         assign prs1_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs1[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+         assign prs2_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrs2[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+         assign pfree_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW] = rat_mux[lrd[i * `NCPU_LRF_AW +: `NCPU_LRF_AW]];
+      end
    endgenerate
 
    // Bypass for RAW and WAW hazard
-   generate
-      for(i=1;i<IW;i=i+1)
-         begin
-            reg [i-1:0] raw_rs1_rev;
-            reg [i-1:0] raw_rs2_rev;
-            reg [i-1:0] waw_rev;
-            wire [`NCPU_PRF_AW*i-1:0] fl_prd_rev;
-            
-            // Detect RAW hazard in the issue window
-            always @(*)
-               begin
-                  raw_rs1_rev[i-1] = 'b0;
-                  for(x=0;x<i;x=x+1)
-                     raw_rs1_rev[i-x-1] = raw_rs1_rev[i-x-1] |
-                                             (lrd_we[x] &
-                                             (lrs1[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]));
-               end
-            always @(*)
-               begin
-                  raw_rs2_rev[i-1] = 'b0;
-                  for(x=0;x<i;x=x+1)
-                     raw_rs2_rev[i-x-1] = raw_rs2_rev[i-x-1] |
-                                             (lrd_we[x] &
-                                             (lrs2[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]));
-               end
-            
-            // Detect WAW hazard in the issue window
-            always @(*)
-               begin
-                  waw_rev[i-1] = 'b0;
-                  for(x=0;x<i;x=x+1)
-                     waw_rev[i-x-1] = waw_rev[i-x-1] | (lrd_we[x] &
-                                                ((lrd_we[i] & (lrd[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW]))));
-               end
-            
-            for(k=0;k<i;k=k+1)
-               assign fl_prd_rev[k * `NCPU_PRF_AW +: `NCPU_PRF_AW] = fl_prd[(i-k-1) * `NCPU_PRF_AW +: `NCPU_PRF_AW];
-            
-            pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs1 (
-               .sel({1'b1, raw_rs1_rev}),
-               .din({prs1_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
-               .dout(rat_prs1[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
-            );
-            pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs2 (
-               .sel({1'b1, raw_rs2_rev}),
-               .din({prs2_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
-               .dout(rat_prs2[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
-            );
-            pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_pfree (
-               .sel({1'b1, waw_rev}),
-               .din({pfree_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
-               .dout(rat_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
-            );
-            
-         end
+   generate for(i=1;i<IW;i=i+1)
+      begin : gen_raw_waw
+         reg [i-1:0] raw_rs1_rev;
+         reg [i-1:0] raw_rs2_rev;
+         reg [i-1:0] waw_rev;
+         wire [`NCPU_PRF_AW*i-1:0] fl_prd_rev;
+         
+         // Detect RAW hazard in the issue window
+         always @(*)
+            begin
+               raw_rs1_rev[i-1] = 'b0;
+               for(x=0;x<i;x=x+1)
+                  raw_rs1_rev[i-x-1] = raw_rs1_rev[i-x-1] |
+                                          (lrd_we[x] &
+                                          (lrs1[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]));
+            end
+         always @(*)
+            begin
+               raw_rs2_rev[i-1] = 'b0;
+               for(x=0;x<i;x=x+1)
+                  raw_rs2_rev[i-x-1] = raw_rs2_rev[i-x-1] |
+                                          (lrd_we[x] &
+                                          (lrs2[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW ]));
+            end
+         
+         // Detect WAW hazard in the issue window
+         always @(*)
+            begin
+               waw_rev[i-1] = 'b0;
+               for(x=0;x<i;x=x+1)
+                  waw_rev[i-x-1] = waw_rev[i-x-1] | (lrd_we[x] &
+                                             ((lrd_we[i] & (lrd[i*`NCPU_LRF_AW +:`NCPU_LRF_AW]==lrd[x*`NCPU_LRF_AW +:`NCPU_LRF_AW]))));
+            end
+         
+         for(k=0;k<i;k=k+1)
+            assign fl_prd_rev[k * `NCPU_PRF_AW +: `NCPU_PRF_AW] = fl_prd[(i-k-1) * `NCPU_PRF_AW +: `NCPU_PRF_AW];
+         
+         pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs1 (
+            .sel({1'b1, raw_rs1_rev}),
+            .din({prs1_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
+            .dout(rat_prs1[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
+         );
+         pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_prs2 (
+            .sel({1'b1, raw_rs2_rev}),
+            .din({prs2_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
+            .dout(rat_prs2[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
+         );
+         pmux #(.SELW(i+1), .DW(`NCPU_PRF_AW)) pmux_pfree (
+            .sel({1'b1, waw_rev}),
+            .din({pfree_nobyp[i * `NCPU_PRF_AW +: `NCPU_PRF_AW], fl_prd_rev[0 +: i*`NCPU_PRF_AW]}),
+            .dout(rat_pfree[i * `NCPU_PRF_AW +: `NCPU_PRF_AW])
+         );
+         
+      end
    endgenerate
    
    assign rat_prs1[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW] = prs1_nobyp[0 * `NCPU_PRF_AW +: `NCPU_PRF_AW];
@@ -197,9 +196,10 @@ module rn_rat
          .DO  (arat_inv_vec)
       );
    
-   generate
-      for(i=0;i<(1<<`NCPU_PRF_AW);i=i+1)
+   generate for(i=0;i<(1<<`NCPU_PRF_AW);i=i+1)
+      begin : gen_arat_inv
          assign arat_inv[i] = arat_inv_vec[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
+      end
    endgenerate
    
 `endif

@@ -241,22 +241,21 @@ module rn
    wire [`NCPU_PRF_AW-1:0] dbg_issue_prs2 [IW-1:0];
    wire [`NCPU_PRF_AW-1:0] dbg_issue_prd [IW-1:0];
    wire [`NCPU_PRF_AW-1:0] dbg_issue_pfree [IW-1:0];
-   generate
-      for(genvar i=0;i<IW;i=i+1)  
-         begin
-            assign dbg_rn_pc[i] = {rn_pc[i*`PC_W +: `PC_W], 2'b00};
-            assign dbg_rn_lrs1[i] = rn_lrs1[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
-            assign dbg_rn_lrs2[i] = rn_lrs2[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
-            assign dbg_rn_lrd[i] = rn_lrd[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
-            assign dbg_rat_prs1[i] = rat_prs1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign dbg_rat_prs2[i] = rat_prs2[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign dbg_fl_prd[i] = fl_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign dbg_rat_pfree[i] = rat_pfree[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign dbg_issue_prs1[i] = issue_prs1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign dbg_issue_prs2[i] = issue_prs2[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign dbg_issue_prd[i] = issue_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-            assign dbg_issue_pfree[i] = issue_pfree[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
-         end
+   generate for(genvar i=0;i<IW;i=i+1)  
+      begin : gen_dbg
+         assign dbg_rn_pc[i] = {rn_pc[i*`PC_W +: `PC_W], 2'b00};
+         assign dbg_rn_lrs1[i] = rn_lrs1[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
+         assign dbg_rn_lrs2[i] = rn_lrs2[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
+         assign dbg_rn_lrd[i] = rn_lrd[i*`NCPU_LRF_AW +: `NCPU_LRF_AW];
+         assign dbg_rat_prs1[i] = rat_prs1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+         assign dbg_rat_prs2[i] = rat_prs2[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+         assign dbg_fl_prd[i] = fl_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+         assign dbg_rat_pfree[i] = rat_pfree[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+         assign dbg_issue_prs1[i] = issue_prs1[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+         assign dbg_issue_prs2[i] = issue_prs2[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+         assign dbg_issue_prd[i] = issue_prd[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+         assign dbg_issue_pfree[i] = issue_pfree[i*`NCPU_PRF_AW +: `NCPU_PRF_AW];
+      end
    endgenerate
 `endif
 
