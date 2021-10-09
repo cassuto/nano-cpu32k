@@ -46,6 +46,10 @@ module mRAM_s_s_be
    localparam SRAM_AW = 6;
    localparam SRAM_P_DW_BYTES = 4; // = $clog2(SRAM_DW/8)
    
+   localparam WIN_P_NUM = (SRAM_P_DW_BYTES - P_DW_BYTES);
+   localparam WIN_NUM = (1<<WIN_P_NUM);
+   localparam WIN_DW = (1<<P_DW);
+   
    wire [(1<<P_DW)-1:0] we_bmsk;
    wire [AW-1:0] re_addr_ff;
    wire [AW-1:0] addr_w;
@@ -79,10 +83,6 @@ module mRAM_s_s_be
          end
       else if (((1<<P_DW) < SRAM_DW) && ((AW-(SRAM_P_DW_BYTES - P_DW_BYTES)) == SRAM_AW))
          begin : gen_2
-            localparam WIN_P_NUM = (SRAM_P_DW_BYTES - P_DW_BYTES);
-            localparam WIN_NUM = (1<<WIN_P_NUM);
-            localparam WIN_DW = (1<<P_DW);
-            
             wire [SRAM_DW-1:0] sram_q;
             wire [SRAM_DW-1:0] sram_bwen;
             wire [SRAM_DW-1:0] sram_d;

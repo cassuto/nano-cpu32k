@@ -37,6 +37,11 @@ module align_w
 );
    localparam IN_BYTES                 = (1<<IN_P_DW_BYTES);
    localparam OUT_BYTES                = (1<<OUT_P_DW_BYTES);
+   
+   localparam WIN_NUM                  = (OUT_P_DW_BYTES <= IN_P_DW_BYTES) ? (IN_BYTES/OUT_BYTES)              : (OUT_BYTES/IN_BYTES);
+   localparam WIN_P_NUM                = (OUT_P_DW_BYTES <= IN_P_DW_BYTES) ? (IN_P_DW_BYTES - OUT_P_DW_BYTES)  : (OUT_P_DW_BYTES - IN_P_DW_BYTES);
+   localparam WIN_DW                   = (OUT_P_DW_BYTES <= IN_P_DW_BYTES) ? (OUT_BYTES*8)                     : (IN_BYTES*8);
+   localparam WIN_P_DW_BYTES           = (OUT_P_DW_BYTES <= IN_P_DW_BYTES) ? (OUT_P_DW_BYTES)                  : (IN_P_DW_BYTES);
    genvar i;
    
    generate
@@ -47,11 +52,6 @@ module align_w
          end
       else if (OUT_P_DW_BYTES <= IN_P_DW_BYTES)
          begin : gen_2
-            localparam WIN_NUM = (IN_BYTES/OUT_BYTES);
-            localparam WIN_P_NUM = (IN_P_DW_BYTES - OUT_P_DW_BYTES);
-            localparam WIN_DW = (OUT_BYTES*8);
-            localparam WIN_P_DW_BYTES = (OUT_P_DW_BYTES);
-         
             for(i=0;i<WIN_NUM;i=i+1)
                begin : gen_o
                   assign o_be[i*(WIN_DW/8) +: (WIN_DW/8)] = ({(WIN_DW/8){i_addr[WIN_P_DW_BYTES +: WIN_P_NUM] == i}} & i_be);
@@ -60,10 +60,6 @@ module align_w
          end
       else
          begin : gen_3
-            localparam WIN_NUM = (OUT_BYTES/IN_BYTES);
-            localparam WIN_P_NUM = (OUT_P_DW_BYTES - IN_P_DW_BYTES);
-            localparam WIN_DW = (IN_BYTES*8);
-            localparam WIN_P_DW_BYTES = (IN_P_DW_BYTES);
             wire [WIN_DW-1:0] i_axi_din_win [WIN_NUM-1:0];
             wire [WIN_DW/8-1:0] i_be_win [WIN_NUM-1:0];
             
