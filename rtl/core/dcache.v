@@ -587,8 +587,9 @@ module dcache
    assign dbus_ARPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign dbus_ARID = {AXI_ID_WIDTH{1'b0}};
    assign dbus_ARUSER = {AXI_USER_WIDTH{1'b0}};
-   assign dbus_ARLEN = (fsm_state_ff==S_UNCACHED_READ) ? 8'b0 : ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
-   assign dbus_ARSIZE = (fsm_state_ff==S_UNCACHED_READ) ? s2o_size : AXI_FETCH_SIZE;
+   localparam [7:0] ARLEN_CACHED = ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
+   assign dbus_ARLEN = (fsm_state_ff==S_UNCACHED_READ) ? 8'b0 : ARLEN_CACHED;
+   assign dbus_ARSIZE = (fsm_state_ff==S_UNCACHED_READ) ? s2o_size : AXI_FETCH_SIZE[2:0];
    assign dbus_ARBURST = `AXI_BURST_TYPE_INCR;
    assign dbus_ARLOCK = 1'b0;
    assign dbus_ARCACHE = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
@@ -656,8 +657,9 @@ module dcache
    assign dbus_AWPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign dbus_AWID = {AXI_ID_WIDTH{1'b0}};
    assign dbus_AWUSER = {AXI_USER_WIDTH{1'b0}};
-   assign dbus_AWLEN = (fsm_state_ff==S_UNCACHED_WRITE) ? 8'b0 : ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
-   assign dbus_AWSIZE = (fsm_state_ff==S_UNCACHED_WRITE) ? s2o_size : AXI_FETCH_SIZE;
+   localparam [7:0] AWLEN_CACHED = ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
+   assign dbus_AWLEN = (fsm_state_ff==S_UNCACHED_WRITE) ? 8'b0 : AWLEN_CACHED;
+   assign dbus_AWSIZE = (fsm_state_ff==S_UNCACHED_WRITE) ? s2o_size : AXI_FETCH_SIZE[2:0];
    assign dbus_AWBURST = `AXI_BURST_TYPE_INCR;
    assign dbus_AWLOCK = 1'b0;
    assign dbus_AWCACHE = `AXI_AWCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;

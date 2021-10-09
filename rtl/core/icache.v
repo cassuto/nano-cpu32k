@@ -458,8 +458,9 @@ module icache
    assign ibus_ARPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign ibus_ARID = {AXI_ID_WIDTH{1'b0}};
    assign ibus_ARUSER = {AXI_USER_WIDTH{1'b0}};
-   assign ibus_ARLEN = (fsm_state_ff==S_REFILL) ? ((1<<(CONFIG_IC_P_LINE-AXI_FETCH_SIZE))-1) : 8'b0;
-   assign ibus_ARSIZE = (fsm_state_ff==S_REFILL) ? AXI_FETCH_SIZE : AXI_UNCACHED_P_DW_BYTES;
+   localparam [7:0] ARLEN_S_REFILL = ((1<<(CONFIG_IC_P_LINE-AXI_FETCH_SIZE))-1);
+   assign ibus_ARLEN = (fsm_state_ff==S_REFILL) ? ARLEN_S_REFILL : 8'b0;
+   assign ibus_ARSIZE = (fsm_state_ff==S_REFILL) ? AXI_FETCH_SIZE[2:0] : AXI_UNCACHED_P_DW_BYTES[2:0];
    assign ibus_ARBURST = `AXI_BURST_TYPE_INCR;
    assign ibus_ARLOCK = 1'b0;
    assign ibus_ARCACHE = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
