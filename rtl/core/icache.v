@@ -267,7 +267,8 @@ module icache
                else if (hds_axi_R)
                   fsm_uncached_rd_req = 'b1; // Start the next read transaction
             
-            default: ;
+            default:
+               fsm_state_nxt = fsm_state_ff;
          endcase
       end
    
