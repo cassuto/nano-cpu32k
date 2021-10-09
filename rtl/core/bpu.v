@@ -121,7 +121,7 @@ module bpu
       end
    endgenerate
    
-   `mRF_nwnr
+   mRF_nwnr_r
       #(
          .DW         (PHT_DW),
          .AW         (CONFIG_PHT_P_NUM),
@@ -131,7 +131,7 @@ module bpu
    U_PHT
       (
          .CLK        (clk),
-         `rst
+         .RST        (rst),
          .RE         ({(1<<CONFIG_P_FETCH_WIDTH){re}}),
          .RADDR      (s1i_pht_addr),
          .RDATA      (s1o_pht_count),
@@ -140,7 +140,7 @@ module bpu
          .WDATA      (wb_pht_din)
       );
       
-   `mRF_nwnr
+   mRF_nwnr_r
       #(
          .DW         (BTB_DW),
          .AW         (CONFIG_BTB_P_NUM),
@@ -150,7 +150,7 @@ module bpu
    U_BTB
       (
          .CLK        (clk),
-         `rst
+         .RST        (rst),
          .RE         ({((1<<CONFIG_P_FETCH_WIDTH)){re}}),
          .RADDR      (s1i_btb_addr),
          .RDATA      (s1o_btb_data),

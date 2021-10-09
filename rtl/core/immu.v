@@ -84,7 +84,7 @@ module immu
    mDFF_lr #(.DW(VPN_DW)) ff_tgt_vpn (.CLK(clk),.RST(rst), .LOAD(re), .D(tgt_vpn_nxt), .Q(tgt_vpn_ff) );
 
    // Instance of lower-part TLB
-   `mRF_nwnr
+   mRF_nwnr_r
       #(
          .DW      (CONFIG_DW),
          .AW      (CONFIG_ITLB_P_SETS),
@@ -94,7 +94,7 @@ module immu
    U_TLB_L
       (
          .CLK     (clk),
-         `rst
+         .RST     (rst),
          .RE      (re),
          .RADDR   (tgt_index_nxt),
          .RDATA   (tlb_l_ff),
@@ -104,7 +104,7 @@ module immu
       );
 
    // Instance of higher-part TLB
-   `mRF_nwnr
+   mRF_nwnr_r
       #(
          .DW      (CONFIG_DW),
          .AW      (CONFIG_ITLB_P_SETS),
@@ -114,7 +114,7 @@ module immu
    U_TLB_H
       (
          .CLK     (clk),
-         `rst
+         .RST     (rst),
          .RE      (re),
          .RADDR   (tgt_index_nxt),
          .RDATA   (tlb_h_ff),

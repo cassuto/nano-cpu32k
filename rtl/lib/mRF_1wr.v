@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 `include "ncpu64k_config.vh"
 
-`ifndef rst
+`ifndef NCPU_ASIC
 
 module mRF_1wr
 #(
