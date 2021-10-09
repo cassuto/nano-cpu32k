@@ -113,10 +113,12 @@ module mRAM_s_s_be
                end
             assign DOUT = DOUT_win[re_addr_ff[WIN_P_NUM-1:0]];
          end
-//      else
-//         begin
-//            initial $fatal(1, "SRAM with the specified size is unsupported.");
-//         end
+`ifndef SYNTHESIS
+      else
+         begin
+            initial $fatal(1, "SRAM with the specified size is unsupported.");
+         end
+`endif
    endgenerate
    
 `else

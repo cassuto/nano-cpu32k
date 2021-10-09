@@ -79,16 +79,18 @@ module priority_encoder%s
             if P_DW!=P_DW_MAX-1:
                 fp.write("      else ")
 
-        fp.write("""\n//else
-//         begin : gen_enc_fail
-//            initial
-//                $fatal("\\n Unimplemented size of binary encoder. Please update parameters of generator. \\n");
-//         end
+        fp.write("""\n`ifndef SYNTHESIS
+        else
+         begin : gen_enc_fail
+            initial
+                $fatal("\\n Unimplemented size of binary encoder. Please update parameters of generator. \\n");
+         end
+`endif
 
     endgenerate
 
 endmodule
 """)
     
-gen(sys.argv[1]+".v", False)
-gen(sys.argv[1]+"_gs.v", True)
+fn = sys.argv[1]
+gen(fn, fn.find('_gs.v')!=-1)

@@ -99,8 +99,10 @@ module rn_fl
             
             assign fl_prd = {fl_prd_1, fl_prd_0};
          end
-//      else
-//         $fatal(1, "Unimplemented");
+`ifndef SYNTHESIS
+      else
+         $fatal(1, "Unimplemented");
+`endif
    endgenerate
    
    // Check if there is no free physical register

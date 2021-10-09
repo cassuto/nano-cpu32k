@@ -231,11 +231,13 @@ gs = 1'b1;
                 end
         end
 
-//else
-//         begin : gen_enc_fail
-//            initial
-//                $fatal("\n Unimplemented size of binary encoder. Please update parameters of generator. \n");
-//         end
+`ifndef SYNTHESIS
+        else
+         begin : gen_enc_fail
+            initial
+                $fatal("\n Unimplemented size of binary encoder. Please update parameters of generator. \n");
+         end
+`endif
 
     endgenerate
 

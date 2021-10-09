@@ -96,16 +96,18 @@ module %s
 """)
 
         fp.write(
-"""//else
-//      begin : gen_enc_fail
-//            initial
-//                $fatal("\\n Unimplemented size. Please update parameters of generator. \\n");
-//         end
+"""`ifndef SYNTHESIS
+else
+      begin : gen_enc_fail
+            initial
+                $fatal("\\n Unimplemented size. Please update parameters of generator. \\n");
+         end
+`endif
 
     endgenerate
 
 endmodule
 """)
 
-gen(sys.argv[1]+"_v.v", True)
-gen(sys.argv[1]+".v", False)
+fn = sys.argv[1]
+gen(fn, fn.find('_v.v')!=-1)
