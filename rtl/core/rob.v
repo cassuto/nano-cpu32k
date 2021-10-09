@@ -327,7 +327,7 @@ module rob
       begin : gen_que_wb
          always @(*)
             begin
-               que_wb[i] = 'b0;
+               que_wb[i] = 1'b0;
                for(j=0;j<CW;j=j+1)
                   que_wb[i] = que_wb[i] | (wb_valid[j]&wb_ready[j] & (i==wb_rob_bank[j*CONFIG_P_COMMIT_WIDTH +: CONFIG_P_COMMIT_WIDTH]));
             end
@@ -339,10 +339,10 @@ module rob
       begin : gen_que_wb_din
          always @(*)
             begin : gen_wb_id_mux
-               que_wb_id[i] = 'b0;
-               que_wb_fls[i] = 'b0;
-               que_wb_exc[i] = 'b0;
-               que_wb_vbank[i] = 'b0;
+               que_wb_id[i] = {CONFIG_P_ROB_DEPTH{1'b0}};
+               que_wb_fls[i] = 1'b0;
+               que_wb_exc[i] = 1'b0;
+               que_wb_vbank[i] = {vBANK_DW{1'b0}};
                for(j=0;j<WW;j=j+1)
                   begin
                      que_wb_id[i] = que_wb_id[i] |

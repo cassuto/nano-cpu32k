@@ -340,10 +340,10 @@ module dcache
    always @(*)
       begin
          fsm_state_nxt = fsm_state_ff;
-         ar_set = 'b0;
-         aw_set = 'b0;
-         fsm_uncached_req = 'b0;
-         s2i_ready = 'b0;
+         ar_set = 1'b0;
+         aw_set = 1'b0;
+         fsm_uncached_req = 1'b0;
+         s2i_ready = 1'b0;
          case (fsm_state_ff)
             S_BOOT:
                if (fsm_boot_cnt_nxt_carry[CONFIG_DC_P_SETS])
@@ -408,7 +408,8 @@ module dcache
                if (hds_axi_B)
                   fsm_state_nxt = S_IDLE;
                
-            default: ;
+            default:
+               fsm_state_nxt = fsm_state_ff;
          endcase
       end
 
@@ -459,7 +460,7 @@ module dcache
          S_REPLACE:
             s1i_replace_tag_v = {s2o_paddr[CONFIG_AW-1:CONFIG_DC_P_LINE+CONFIG_DC_P_SETS], 1'b1};
          default: // S_BOOT, S_INVALIDATE:
-            s1i_replace_tag_v = 'b0;
+            s1i_replace_tag_v = {TAG_V_RAM_DW{1'b0}};
       endcase
 
    assign s1i_tag_v_re = (p_ce | (fsm_state_ff==S_RELOAD_S1O_S2O));
@@ -494,7 +495,7 @@ module dcache
                S_RELOAD_S1O_S2O:
                   s2i_d_wdat[way] = s2o_d[way] | (|s2o_wmsk);
                default: // S_BOOT, S_INVALIDATE, S_REPLACE:
-                  s2i_d_wdat[way] = 'b0;
+                  s2i_d_wdat[way] = 1'b0;
             endcase
       end
    endgenerate
@@ -585,13 +586,13 @@ module dcache
    assign dbus_ARPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign dbus_ARID = {AXI_ID_WIDTH{1'b0}};
    assign dbus_ARUSER = {AXI_USER_WIDTH{1'b0}};
-   assign dbus_ARLEN = (fsm_state_ff==S_UNCACHED_READ) ? 'b0 : ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
+   assign dbus_ARLEN = (fsm_state_ff==S_UNCACHED_READ) ? 8'b0 : ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
    assign dbus_ARSIZE = (fsm_state_ff==S_UNCACHED_READ) ? s2o_size : AXI_FETCH_SIZE;
    assign dbus_ARBURST = `AXI_BURST_TYPE_INCR;
-   assign dbus_ARLOCK = 'b0;
+   assign dbus_ARLOCK = 1'b0;
    assign dbus_ARCACHE = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
-   assign dbus_ARQOS = 'b0;
-   assign dbus_ARREGION = 'b0;
+   assign dbus_ARQOS = 4'b0;
+   assign dbus_ARREGION = 4'b0;
    assign ar_clr = (dbus_ARREADY & dbus_ARVALID);
    
    assign axi_paddr_nxt = (fsm_uncached_req)
@@ -654,20 +655,20 @@ module dcache
    assign dbus_AWPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign dbus_AWID = {AXI_ID_WIDTH{1'b0}};
    assign dbus_AWUSER = {AXI_USER_WIDTH{1'b0}};
-   assign dbus_AWLEN = (fsm_state_ff==S_UNCACHED_WRITE) ? 'b0 : ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
+   assign dbus_AWLEN = (fsm_state_ff==S_UNCACHED_WRITE) ? 8'b0 : ((1<<(CONFIG_DC_P_LINE-AXI_FETCH_SIZE))-1);
    assign dbus_AWSIZE = (fsm_state_ff==S_UNCACHED_WRITE) ? s2o_size : AXI_FETCH_SIZE;
    assign dbus_AWBURST = `AXI_BURST_TYPE_INCR;
-   assign dbus_AWLOCK = 'b0;
+   assign dbus_AWLOCK = 1'b0;
    assign dbus_AWCACHE = `AXI_AWCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
-   assign dbus_AWQOS = 'b0;
-   assign dbus_AWREGION = 'b0;
+   assign dbus_AWQOS = 4'b0;
+   assign dbus_AWREGION = 4'b0;
    assign aw_clr = (dbus_AWREADY & dbus_AWVALID);
 
    mDFF_lr # (.DW(1)) ff_dbus_AWVALID (.CLK(clk), .RST(rst), .LOAD(aw_set|aw_clr), .D(aw_set|~aw_clr), .Q(dbus_AWVALID) );
    mDFF_lr # (.DW(AXI_ADDR_WIDTH)) ff_dbus_AWADDR (.CLK(clk), .RST(rst), .LOAD(aw_set), .D(axi_arw_addr_nxt), .Q(dbus_AWADDR) );
 
    // AXI - W
-   assign dbus_WUSER = 'b0;
+   assign dbus_WUSER = {AXI_USER_WIDTH{1'b0}};
 
    generate
       if (PAYLOAD_P_DW_BYTES == 2 && AXI_P_DW_BYTES == 3)

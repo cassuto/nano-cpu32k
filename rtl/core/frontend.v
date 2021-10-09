@@ -360,7 +360,7 @@ module frontend
       begin : gen_iq_din
          // Restore PC of each inst
          // We need re-align PC and related attributes(if any) here.
-         assign s1i_pc[i] = (pc_nxt[CONFIG_AW-1: `NCPU_P_INSN_LEN] + i - {{`PC_W-CONFIG_P_FETCH_WIDTH-1{1'b0}}, s1i_push_offset});
+         assign s1i_pc[i] = (pc_nxt[CONFIG_AW-1: `NCPU_P_INSN_LEN] + i[`PC_W-1:0] - {{`PC_W-CONFIG_P_FETCH_WIDTH-1{1'b0}}, s1i_push_offset});
 
          mDFF_lr # (.DW(`PC_W)) ff_s1o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1i_pc[i]), .Q(s1o_pc[i]) );
          mDFF_lr # (.DW(`PC_W)) ff_s2o_pc (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(s1o_pc[i]), .Q(s2o_pc[i]) );

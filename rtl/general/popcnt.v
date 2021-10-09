@@ -36,7 +36,7 @@ module popcnt
    // Adder chain
    always @(*)
       begin
-         count = 'b0;
+         count = {P_DW+1{1'b0}};
          for(j=0;j<(1<<P_DW);j=j+1)
             count = count + {{P_DW{1'b0}}, bitmap[j]};
       end

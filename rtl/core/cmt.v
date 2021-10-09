@@ -299,7 +299,7 @@ module cmt
                if (pipe_finish)
                   fsm_state_nxt = S_IDLE;
             default:
-               ;
+               fsm_state_nxt = fsm_state_ff;
          endcase
       end
       
@@ -637,9 +637,9 @@ module cmt
    
    always @(posedge clk)
       if (rst)
-         test_stall_ff <= 'b0;
+         test_stall_ff <= 1'b0;
       else
-         test_stall_ff <= test_stall_ff + 'b1;
+         test_stall_ff <= test_stall_ff + {{TEST_STALL_P{1'b0}}, 1'b1};
    assign test_stall = test_stall_ff[TEST_STALL_P];
    
    initial

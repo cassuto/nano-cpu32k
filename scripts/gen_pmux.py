@@ -68,7 +68,7 @@ module %s
             if (with_valid):
                 fp.write(
 """
-                    valid = 'b1;
+                    valid = 1'b1;
 """)
             fp.write(
 """
@@ -81,7 +81,7 @@ module %s
                 fp.write("".join(['0' for j in range(i)]))
                 fp.write(": dout = din[%d*DW +: DW];\n" %i)
             if (with_valid):
-                fp.write("                       default: begin dout = din[0 +: DW]; valid = 'b0; end\n")
+                fp.write("                       default: begin dout = din[0 +: DW]; valid = 1'b0; end\n")
             else:
                 fp.write("                       default: begin dout = din[0 +: DW]; end\n")
             fp.write(

@@ -50,15 +50,15 @@ module axi4_arbiter_r
    always @(*)
       begin
          fsm_state_nxt = fsm_state_ff;
-         s0_pending_set = 'b0;
-         s1_pending_set = 'b0;
+         s0_pending_set = 1'b0;
+         s1_pending_set = 1'b0;
          case (fsm_state_ff)
             S_S0:
                begin
                   if (s0_ARVALID)
                      begin
                         fsm_state_nxt = S_S0;
-                        s0_pending_set = 'b1;
+                        s0_pending_set = 1'b1;
                      end
                   else if (s0_pending & ~s0_pending_clr)
                     fsm_state_nxt = S_S0; // Lock the bus for slave0
@@ -67,7 +67,7 @@ module axi4_arbiter_r
                   else if (s1_ARVALID)
                      begin
                         fsm_state_nxt = S_S1;
-                        s1_pending_set = 'b1;
+                        s1_pending_set = 1'b1;
                      end
                   else
                     fsm_state_nxt = S_S0;
@@ -78,7 +78,7 @@ module axi4_arbiter_r
                   if (s1_ARVALID)
                      begin
                         fsm_state_nxt = S_S1;
-                        s1_pending_set = 'b1;
+                        s1_pending_set = 1'b1;
                      end
                   else if (s1_pending & ~s1_pending_clr)
                     fsm_state_nxt = S_S1; // Lock the bus for slave1
@@ -87,13 +87,14 @@ module axi4_arbiter_r
                   else if (s0_ARVALID)
                      begin
                         fsm_state_nxt = S_S0;
-                        s0_pending_set = 'b1;
+                        s0_pending_set = 1'b1;
                      end
                   else
                     fsm_state_nxt = S_S1;
                end
             
-            default: ;
+            default:
+               fsm_state_nxt = fsm_state_ff;
          endcase
       end
 

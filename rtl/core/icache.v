@@ -224,7 +224,7 @@ module icache
    always @(*)
       begin
          fsm_state_nxt = fsm_state_ff;
-         fsm_uncached_rd_req = 'b0;
+         fsm_uncached_rd_req = 1'b0;
          case (fsm_state_ff)
             S_BOOT:
                if (fsm_boot_cnt_nxt_carry[CONFIG_IC_P_SETS])
@@ -286,7 +286,7 @@ module icache
       (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
 
    // Boot counter
-   assign fsm_boot_cnt_nxt_carry = fsm_boot_cnt + 'b1;
+   assign fsm_boot_cnt_nxt_carry = fsm_boot_cnt + {{CONFIG_IC_P_SETS-1{1'b0}}, 1'b1};
 
    mDFF_r # (.DW(CONFIG_IC_P_SETS)) ff_fsm_boot_cnt_nxt (.CLK(clk), .RST(rst), .D(fsm_boot_cnt_nxt_carry[CONFIG_IC_P_SETS-1:0]), .Q(fsm_boot_cnt) );
 
@@ -331,7 +331,7 @@ module icache
          S_REPLACE:
             s1i_replace_tag_v = {s2o_paddr[CONFIG_AW-1:CONFIG_IC_P_LINE+CONFIG_IC_P_SETS], 1'b1};
          default: // S_BOOT, S_INVALIDATE:
-            s1i_replace_tag_v = 'b0;
+            s1i_replace_tag_v = {TAG_V_RAM_DW{1'b0}};
       endcase
 
    assign s1i_tag_v_re = (p_ce | (fsm_state_ff==S_RELOAD_S1O));
@@ -455,13 +455,13 @@ module icache
    assign ibus_ARPROT = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
    assign ibus_ARID = {AXI_ID_WIDTH{1'b0}};
    assign ibus_ARUSER = {AXI_USER_WIDTH{1'b0}};
-   assign ibus_ARLEN = (fsm_state_ff==S_REFILL) ? ((1<<(CONFIG_IC_P_LINE-AXI_FETCH_SIZE))-1) : 'b0;
+   assign ibus_ARLEN = (fsm_state_ff==S_REFILL) ? ((1<<(CONFIG_IC_P_LINE-AXI_FETCH_SIZE))-1) : 8'b0;
    assign ibus_ARSIZE = (fsm_state_ff==S_REFILL) ? AXI_FETCH_SIZE : AXI_UNCACHED_P_DW_BYTES;
    assign ibus_ARBURST = `AXI_BURST_TYPE_INCR;
-   assign ibus_ARLOCK = 'b0;
+   assign ibus_ARLOCK = 1'b0;
    assign ibus_ARCACHE = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
-   assign ibus_ARQOS = 'b0;
-   assign ibus_ARREGION = 'b0;
+   assign ibus_ARQOS = 4'b0;
+   assign ibus_ARREGION = 4'b0;
    assign ar_set = ((fsm_state_ff==S_REPLACE) | fsm_uncached_rd_req);
    assign ar_clr = (ibus_ARREADY & ibus_ARVALID);
    
