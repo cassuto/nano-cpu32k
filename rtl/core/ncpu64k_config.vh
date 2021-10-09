@@ -193,7 +193,7 @@
 `define NCPU_LSU_SIGN_EXT 3
 `define NCPU_LSU_SIZE 6:4
 
-`define NCPU_REGNO_LNK 1 // the only one machine-dependent register
+`define NCPU_REGNO_LNK (`NCPU_LRF_AW'd1) // the only one machine-dependent register
 
 /* Logical regfile index width */
 `define NCPU_LRF_AW 5

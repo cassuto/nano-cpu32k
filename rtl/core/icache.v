@@ -290,10 +290,12 @@ module icache
 
    mDFF_r # (.DW(CONFIG_IC_P_SETS)) ff_fsm_boot_cnt_nxt (.CLK(clk), .RST(rst), .D(fsm_boot_cnt_nxt_carry[CONFIG_IC_P_SETS-1:0]), .Q(fsm_boot_cnt) );
 
+   localparam [CONFIG_IC_P_LINE-1:0] FSM_REFILL_CNT_DELTA = (1<<AXI_FETCH_SIZE);
+   
    // Refill counter
    always @(*)
       if ((fsm_state_ff == S_REFILL) & hds_axi_R)
-         fsm_refill_cnt_nxt = fsm_refill_cnt + (1<<AXI_FETCH_SIZE);
+         fsm_refill_cnt_nxt = fsm_refill_cnt + FSM_REFILL_CNT_DELTA;
       else
          fsm_refill_cnt_nxt = fsm_refill_cnt;
 
@@ -306,7 +308,8 @@ module icache
       else
          fsm_uncached_cnt_nxt = fsm_uncached_cnt;
    
-   assign fsm_uncached_cnt_nxt_carry = fsm_uncached_cnt + (1<<AXI_UNCACHED_P_DW_BYTES);
+   localparam [PAYLOAD_P_DW_BYTES-1:0] FSM_UNCACHED_CNT_DELTA = (1<<AXI_UNCACHED_P_DW_BYTES);
+   assign fsm_uncached_cnt_nxt_carry = fsm_uncached_cnt + FSM_UNCACHED_CNT_DELTA;
    
    mDFF_r # (.DW(PAYLOAD_P_DW_BYTES)) ff_fsm_uncached_cnt (.CLK(clk), .RST(rst), .D(fsm_uncached_cnt_nxt), .Q(fsm_uncached_cnt) );
 

@@ -522,46 +522,46 @@ module ysyx_210479
        .m_BUSER                         (io_master_buser[AXI_USER_WIDTH-1:0])); // Templated
 
    // ibus is read only
-   assign ibus_AWADDR = 'b0;
-   assign ibus_AWBURST = 'b0;
-   assign ibus_AWCACHE = 'b0;
-   assign ibus_AWID = 'b0;
-   assign ibus_AWLEN = 'b0;
-   assign ibus_AWLOCK = 'b0;
-   assign ibus_AWPROT = 'b0;
-   assign ibus_AWQOS = 'b0;
-   assign ibus_AWREGION = 'b0;
-   assign ibus_AWSIZE = 'b0;
-   assign ibus_AWUSER = 'b0;
-   assign ibus_AWVALID = 'b0;
-   assign ibus_BREADY = 'b0;
-   assign ibus_WDATA = 'b0;
-   assign ibus_WLAST = 'b0;
-   assign ibus_WSTRB = 'b0;
-   assign ibus_WUSER = 'b0;
-   assign ibus_WVALID = 'b0;
+   assign ibus_AWADDR = {AXI_ADDR_WIDTH{1'b0}};
+   assign ibus_AWBURST = 2'b0;
+   assign ibus_AWCACHE = 4'b0;
+   assign ibus_AWID = {AXI_ID_WIDTH{1'b0}};
+   assign ibus_AWLEN = 8'b0;
+   assign ibus_AWLOCK = 1'b0;
+   assign ibus_AWPROT = 3'b0;
+   assign ibus_AWQOS = 4'b0;
+   assign ibus_AWREGION = 4'b0;
+   assign ibus_AWSIZE = 3'b0;
+   assign ibus_AWUSER = {AXI_USER_WIDTH{1'b0}};
+   assign ibus_AWVALID = 1'b0;
+   assign ibus_BREADY = 1'b0;
+   assign ibus_WDATA = {(1<<AXI_P_DW_BYTES)*8{1'b0}};
+   assign ibus_WLAST = 1'b0;
+   assign ibus_WSTRB = {(1<<AXI_P_DW_BYTES){1'b0}};
+   assign ibus_WUSER = {AXI_USER_WIDTH{1'b0}};
+   assign ibus_WVALID = 1'b0;
    
    // These signals are unsupported by SoC
-   assign io_master_buser = 'b0;
-   assign io_master_ruser = 'b0;
+   assign io_master_buser = {AXI_USER_WIDTH{1'b0}};
+   assign io_master_ruser = {AXI_USER_WIDTH{1'b0}};
    
    // Interrupts
    assign irqs[0] = tsc_irq;
-   assign irqs[30:1] = 'b0;
+   assign irqs[30:1] = 30'b0;
    assign irqs[31] = io_interrupt;
        
    // AXI Slave is unused
-   assign io_slave_awready = 'b0;
-	assign io_slave_wready = 'b0;
-	assign io_slave_bvalid = 'b0;
-	assign io_slave_bresp = 'b0;
-	assign io_slave_bid = 'b0;
-	assign io_slave_arready = 'b0;
-	assign io_slave_rvalid = 'b0;
-	assign io_slave_rresp = 'b0;
-	assign io_slave_rdata = 'b0;
-	assign io_slave_rlast = 'b0;
-	assign io_slave_rid = 'b0;
+   assign io_slave_awready = 1'b0;
+	assign io_slave_wready = 1'b0;
+	assign io_slave_bvalid = 1'b0;
+	assign io_slave_bresp = 2'b0;
+	assign io_slave_bid = 4'b0;
+	assign io_slave_arready = 1'b0;
+	assign io_slave_rvalid = 1'b0;
+	assign io_slave_rresp = 2'b0;
+	assign io_slave_rdata = 64'b0;
+	assign io_slave_rlast = 1'b0;
+	assign io_slave_rid = 4'b0;
 
 endmodule
 

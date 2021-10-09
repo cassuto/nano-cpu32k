@@ -11,7 +11,7 @@ modules = set()
 
 SPACES = ' \t\v\f\r\n'
 EOL = '\r\n'
-TOKEN_SPLIT = SPACES + '+-*/()=&|~%,;[]:{}<>'
+TOKEN_SPLIT = SPACES + '+-*/()=&|~%,;[]:{}<>\''
 GENERATOR = sys.argv[0]
 
 def scan_files(path, ext):

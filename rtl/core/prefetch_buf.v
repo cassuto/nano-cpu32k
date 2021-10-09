@@ -78,9 +78,9 @@ module prefetch_buf
 
    generate for(i=0;i<BANKS;i=i+1)
       begin : gen_ptr
-         assign head_l[i]  = i + head_ff;
-         assign head_r[i]  = i - head_ff;
-         assign tail_r[i] = i - tail_ff;
+         assign head_l[i] = i[P_BANKS-1:0] + head_ff;
+         assign head_r[i] = i[P_BANKS-1:0] - head_ff;
+         assign tail_r[i] = i[P_BANKS-1:0] - tail_ff;
          
          //
          // The data layout in a fetch window is as follows (FW=4)
@@ -102,7 +102,7 @@ module prefetch_buf
          // Dat |X  |X  |X  |D0 |
          //     +---+---+---+---+
          //
-         assign tail_inv[i] = i - tail_ff + iq_push_offset[P_BANKS-1:0];
+         assign tail_inv[i] = i[P_BANKS-1:0] - tail_ff + iq_push_offset[P_BANKS-1:0];
       end
    endgenerate
    

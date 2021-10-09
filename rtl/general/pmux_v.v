@@ -48,12 +48,12 @@ module pmux_v
             always @(*)
                 begin
 
-                    valid = 'b1;
+                    valid = 1'b1;
 
                     casez(sel)
                        2'b?1: dout = din[0*DW +: DW];
                        2'b10: dout = din[1*DW +: DW];
-                       default: begin dout = din[0 +: DW]; valid = 'b0; end
+                       default: begin dout = din[0 +: DW]; valid = 1'b0; end
                     endcase
                 end
          end
@@ -65,13 +65,13 @@ module pmux_v
             always @(*)
                 begin
 
-                    valid = 'b1;
+                    valid = 1'b1;
 
                     casez(sel)
                        3'b??1: dout = din[0*DW +: DW];
                        3'b?10: dout = din[1*DW +: DW];
                        3'b100: dout = din[2*DW +: DW];
-                       default: begin dout = din[0 +: DW]; valid = 'b0; end
+                       default: begin dout = din[0 +: DW]; valid = 1'b0; end
                     endcase
                 end
          end
@@ -83,14 +83,14 @@ module pmux_v
             always @(*)
                 begin
 
-                    valid = 'b1;
+                    valid = 1'b1;
 
                     casez(sel)
                        4'b???1: dout = din[0*DW +: DW];
                        4'b??10: dout = din[1*DW +: DW];
                        4'b?100: dout = din[2*DW +: DW];
                        4'b1000: dout = din[3*DW +: DW];
-                       default: begin dout = din[0 +: DW]; valid = 'b0; end
+                       default: begin dout = din[0 +: DW]; valid = 1'b0; end
                     endcase
                 end
          end
@@ -102,7 +102,7 @@ module pmux_v
             always @(*)
                 begin
 
-                    valid = 'b1;
+                    valid = 1'b1;
 
                     casez(sel)
                        5'b????1: dout = din[0*DW +: DW];
@@ -110,7 +110,7 @@ module pmux_v
                        5'b??100: dout = din[2*DW +: DW];
                        5'b?1000: dout = din[3*DW +: DW];
                        5'b10000: dout = din[4*DW +: DW];
-                       default: begin dout = din[0 +: DW]; valid = 'b0; end
+                       default: begin dout = din[0 +: DW]; valid = 1'b0; end
                     endcase
                 end
          end
@@ -122,7 +122,7 @@ module pmux_v
             always @(*)
                 begin
 
-                    valid = 'b1;
+                    valid = 1'b1;
 
                     casez(sel)
                        6'b?????1: dout = din[0*DW +: DW];
@@ -131,7 +131,7 @@ module pmux_v
                        6'b??1000: dout = din[3*DW +: DW];
                        6'b?10000: dout = din[4*DW +: DW];
                        6'b100000: dout = din[5*DW +: DW];
-                       default: begin dout = din[0 +: DW]; valid = 'b0; end
+                       default: begin dout = din[0 +: DW]; valid = 1'b0; end
                     endcase
                 end
          end
@@ -143,7 +143,7 @@ module pmux_v
             always @(*)
                 begin
 
-                    valid = 'b1;
+                    valid = 1'b1;
 
                     casez(sel)
                        7'b??????1: dout = din[0*DW +: DW];
@@ -153,7 +153,7 @@ module pmux_v
                        7'b??10000: dout = din[4*DW +: DW];
                        7'b?100000: dout = din[5*DW +: DW];
                        7'b1000000: dout = din[6*DW +: DW];
-                       default: begin dout = din[0 +: DW]; valid = 'b0; end
+                       default: begin dout = din[0 +: DW]; valid = 1'b0; end
                     endcase
                 end
          end
@@ -165,7 +165,7 @@ module pmux_v
             always @(*)
                 begin
 
-                    valid = 'b1;
+                    valid = 1'b1;
 
                     casez(sel)
                        8'b???????1: dout = din[0*DW +: DW];
@@ -176,7 +176,7 @@ module pmux_v
                        8'b??100000: dout = din[5*DW +: DW];
                        8'b?1000000: dout = din[6*DW +: DW];
                        8'b10000000: dout = din[7*DW +: DW];
-                       default: begin dout = din[0 +: DW]; valid = 'b0; end
+                       default: begin dout = din[0 +: DW]; valid = 1'b0; end
                     endcase
                 end
          end
@@ -188,7 +188,7 @@ module pmux_v
             always @(*)
                 begin
 
-                    valid = 'b1;
+                    valid = 1'b1;
 
                     casez(sel)
                        9'b????????1: dout = din[0*DW +: DW];
@@ -200,7 +200,7 @@ module pmux_v
                        9'b??1000000: dout = din[6*DW +: DW];
                        9'b?10000000: dout = din[7*DW +: DW];
                        9'b100000000: dout = din[8*DW +: DW];
-                       default: begin dout = din[0 +: DW]; valid = 'b0; end
+                       default: begin dout = din[0 +: DW]; valid = 1'b0; end
                     endcase
                 end
          end

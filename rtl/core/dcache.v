@@ -424,7 +424,7 @@ module dcache
       (.CLK(clk), .RST(rst), .D(fsm_free_way_nxt), .Q(fsm_free_way) );
 
    // Boot counter
-   assign fsm_boot_cnt_nxt_carry = fsm_boot_cnt + 'b1;
+   assign fsm_boot_cnt_nxt_carry = fsm_boot_cnt + {{CONFIG_DC_P_SETS-1{1'b0}}, 1'b1};
 
    mDFF_r # (.DW(CONFIG_DC_P_SETS)) ff_fsm_boot_cnt_nxt (.CLK(clk), .RST(rst), .D(fsm_boot_cnt_nxt_carry[CONFIG_DC_P_SETS-1:0]), .Q(fsm_boot_cnt) );
 
@@ -435,7 +435,8 @@ module dcache
       else
          fsm_refill_cnt_nxt = fsm_refill_cnt;
 
-   assign fsm_refill_cnt_nxt_carry = (fsm_refill_cnt + (1<<AXI_FETCH_SIZE));
+   localparam [CONFIG_DC_P_LINE-1:0] FSM_REFILL_CNT_DELTA = (1<<AXI_FETCH_SIZE);
+   assign fsm_refill_cnt_nxt_carry = (fsm_refill_cnt + FSM_REFILL_CNT_DELTA);
 
    mDFF_r # (.DW(CONFIG_DC_P_LINE)) ff_fsm_refill_cnt (.CLK(clk), .RST(rst), .D(fsm_refill_cnt_nxt), .Q(fsm_refill_cnt) );
 

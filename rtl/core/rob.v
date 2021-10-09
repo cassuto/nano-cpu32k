@@ -140,10 +140,10 @@ module rob
 
    generate for(i=0;i<BANKS;i=i+1)
       begin : gen_ptr
-         assign head_l[i]  = i + head_ff;
-         assign head_r[i]  = i - head_ff;
-         assign tail_l[i] = i + tail_ff;
-         assign tail_r[i] = i - tail_ff;
+         assign head_l[i]  = i[P_BANKS-1:0] + head_ff;
+         assign head_r[i]  = i[P_BANKS-1:0] - head_ff;
+         assign tail_l[i] = i[P_BANKS-1:0] + tail_ff;
+         assign tail_r[i] = i[P_BANKS-1:0] - tail_ff;
       end
    endgenerate
    
