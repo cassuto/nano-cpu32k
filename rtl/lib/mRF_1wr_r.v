@@ -26,7 +26,7 @@ module mRF_1wr_r
 #(
    parameter DW = 0,
    parameter AW = 0,
-   parameter [DW*(1<<AW)-1:0] RST_VECTOR = 'b0
+   parameter [DW*(1<<AW)-1:0] RST_VECTOR = {DW*(1<<AW){1'b0}}
 )
 (
    input CLK,

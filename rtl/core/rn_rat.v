@@ -66,7 +66,7 @@ module rn_rat
       #(
          .DW (`NCPU_PRF_AW),
          .AW (`NCPU_LRF_AW),
-         .RST_VECTOR ('b0),
+         .RST_VECTOR ({`NCPU_PRF_AW*(1<<`NCPU_LRF_AW){1'b0}}),
          .NUM_WRITE (IW)
       )
    U_RAT
@@ -85,7 +85,7 @@ module rn_rat
       #(
          .DW (`NCPU_PRF_AW),
          .AW (`NCPU_LRF_AW),
-         .RST_VECTOR ('b0),
+         .RST_VECTOR ({`NCPU_PRF_AW*(1<<`NCPU_LRF_AW){1'b0}}),
          .NUM_WRITE (IW)
       )
    U_aRAT

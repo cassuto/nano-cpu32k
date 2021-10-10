@@ -28,7 +28,7 @@ module mRF_nwnr_r
    parameter AW = 0,
    parameter NUM_READ = 0,
    parameter NUM_WRITE = 0,
-   parameter [DW*(1<<AW)-1:0] RST_VECTOR = 'b0
+   parameter [DW*(1<<AW)-1:0] RST_VECTOR = {DW*(1<<AW){1'b0}}
 )
 (
    input CLK,

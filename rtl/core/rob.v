@@ -245,7 +245,7 @@ module rob
             #(
                .DW (1),
                .AW (CONFIG_P_ROB_DEPTH),
-               .RST_VECTOR ('b0),
+               .RST_VECTOR ({(1<<CONFIG_P_ROB_DEPTH){1'b0}}),
                .NUM_WRITE (2)
             )
          U_TAG_RDY
@@ -262,7 +262,7 @@ module rob
             #(
                .DW (1),
                .AW (CONFIG_P_ROB_DEPTH),
-               .RST_VECTOR ('b0),
+               .RST_VECTOR ({(1<<CONFIG_P_ROB_DEPTH){1'b0}}),
                .NUM_WRITE (2)
             )
          U_TAG_FLS
@@ -279,7 +279,7 @@ module rob
             #(
                .DW (1),
                .AW (CONFIG_P_ROB_DEPTH),
-               .RST_VECTOR ('b0),
+               .RST_VECTOR ({(1<<CONFIG_P_ROB_DEPTH){1'b0}}),
                .NUM_WRITE (2)
             )
          U_TAG_EXC
