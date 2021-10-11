@@ -543,10 +543,9 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
 
     case INS32_OP_SYSCALL:
     {
-        printf("syscall %x\n", uimm15);
         switch (uimm15)
         {
-            case 0x900d:
+            case 0x90d:
                 fprintf(stdout, "\033[1;31mHIT BAD TRAP!\033[0m\n");
                 panic(1);
             case 0xbad:
