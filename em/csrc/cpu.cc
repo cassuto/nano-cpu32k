@@ -546,11 +546,13 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         switch (uimm15)
         {
             case 0x90d:
-                fprintf(stdout, "\033[1;31mHIT BAD TRAP!\033[0m\n");
-                panic(1);
-            case 0xbad:
                 fprintf(stdout, "\033[1;32mHIT GOOD TRAP!\033[0m\n");
                 panic(0);
+                break;
+            case 0xbad:
+                fprintf(stdout, "\033[1;31mHIT BAD TRAP!\033[0m\n");
+                panic(1);
+                break;
             default:
                 pc_nxt = raise_exception(pc, vect_ESYSCALL, 0, /*syscall*/ 1);
                 goto handle_exception;
