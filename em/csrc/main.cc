@@ -457,6 +457,6 @@ int main(int argc, char *argv[])
 
 void panic(int code)
 {
-    fprintf(stderr, "[ERR] Panic. code = %d\n", code);
+    fprintf(stderr, "%s Panic. code = %d\n", (code ? "[ERR]" : "[OK]"), code);
     exit(code);
 }

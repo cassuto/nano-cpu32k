@@ -542,8 +542,21 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         break;
 
     case INS32_OP_SYSCALL:
-        pc_nxt = raise_exception(pc, vect_ESYSCALL, 0, /*syscall*/ 1);
-        goto handle_exception;
+    {
+        switch (uimm15)
+        {
+            case 0x900d:
+                printf("\033[1;31mHIT BAD TRAP!\033[0m\n");
+                panic(1);
+            case 0xbad:
+                printf("\033[1;32mHIT GOOD TRAP!\033[0m\n");
+                panic(0);
+            default:
+                pc_nxt = raise_exception(pc, vect_ESYSCALL, 0, /*syscall*/ 1);
+                goto handle_exception;
+        }
+    }
+    break;
 
     case INS32_OP_RETE:
         /* restore PSR and PC */
