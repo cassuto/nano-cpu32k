@@ -6,11 +6,14 @@ if sys.version_info < (3, 0):
     exit(1)
 
 if len(sys.argv) < 2:
-    print('%s <src> <dst>' % sys.argv[0])
+    print('%s <src> <dst> <wordsize>' % sys.argv[0])
     exit(1);
 
-DW_BYTES = 4
+DW_BYTES = int(sys.argv[3])
     
+print('Wordsize = %d bytes' % DW_BYTES)
+print('Writing to "%s"' % sys.argv[2])
+
 with open(sys.argv[2], 'w') as fp, open(sys.argv[1], 'rb') as fs:
     bytes = fs.read()
     while True:

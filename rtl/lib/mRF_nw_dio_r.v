@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module mRF_nw_dio_r
 #(
-   parameter DW = 0,
+   parameter DW = 1,
    parameter AW = 0,
    parameter [DW*(1<<AW)-1:0] RST_VECTOR = {DW*(1<<AW){1'b0}},
    parameter NUM_WRITE = 0

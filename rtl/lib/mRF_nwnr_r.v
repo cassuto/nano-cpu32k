@@ -24,7 +24,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module mRF_nwnr_r
 #(
-   parameter DW = 0,
+   parameter DW = 1,
    parameter AW = 0,
    parameter NUM_READ = 0,
    parameter NUM_WRITE = 0,
@@ -70,10 +70,26 @@ module mRF_nwnr_r
    
    generate for(i=0;i<NUM_READ;i=i+1)
       begin : gen_rdata
-         always @(posedge CLK)
-            if (RE[i])
-               ff_dout[i] <= regfile[RADDR[i*AW +: AW]];
-               
+`ifdef NCPU_RST_ASYNC
+ `ifdef NCPU_RST_POS_POLARITY
+   always @(posedge CLK or posedge RST) begin
+ `else // neg polarity
+   always @(posedge CLK or negedge RST) begin
+ `endif
+`else // synchronous
+   always @(posedge CLK) begin
+`endif
+`ifdef NCPU_RST_POS_POLARITY
+      if (RST)
+`else // neg polarity
+      if (~RST)
+`endif
+         ff_dout[i] <= {DW{1'b0}};
+      else
+         if (RE[i])
+            ff_dout[i] <= regfile[RADDR[i*AW +: AW]];
+   end
+   
          assign RDATA[i*DW +: DW] = ff_dout[i];
       end
    endgenerate
