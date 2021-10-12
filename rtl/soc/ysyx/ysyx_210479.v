@@ -94,7 +94,7 @@ module ysyx_210479
    localparam                           CONFIG_AW = 32;
    localparam                           CONFIG_DW = 32;
    localparam                           CONFIG_P_DW = 5;
-   localparam                           CONFIG_P_FETCH_WIDTH = 1;
+   localparam                           CONFIG_P_FETCH_WIDTH = 2;
    localparam                           CONFIG_P_ISSUE_WIDTH = 1;
    localparam                           CONFIG_P_PAGE_SIZE = 13;
    localparam                           CONFIG_IC_P_LINE = 6;
