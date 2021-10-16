@@ -191,17 +191,19 @@ module id_dec
    wire [CONFIG_DW-1:0]                uimm17;
    wire [CONFIG_DW-1:0]                rel15;
    wire [CONFIG_DW-1:0]                rel25;
+   wire [`NCPU_INSN_DW-1:0]            inst;
    
    assign msk = ((~|id_exc) & ~irq_async & id_valid);
    
-   assign f_opcode = id_ins[11:5] & {7{msk}}; // 7'b000000 is `add r0,r0,r0`, i.e., NOP.
-   assign f_rd = id_ins[4:0];
-   assign f_rs1 = id_ins[16:12];
-   assign f_rs2 = id_ins[21:17];
-   assign f_imm15 = id_ins[31:17];
-   assign f_imm17 = id_ins[31:15];
-   assign f_rel15 = id_ins[31:17];
-   assign f_rel25 = {id_ins[31:12], id_ins[4:0]};
+   assign inst = (id_ins & {`NCPU_INSN_DW{msk}}); // 'b000000 is `add r0,r0,r0`, i.e., NOP.
+   assign f_opcode = inst[11:5]; 
+   assign f_rd = inst[4:0];
+   assign f_rs1 = inst[16:12];
+   assign f_rs2 = inst[21:17];
+   assign f_imm15 = inst[31:17];
+   assign f_imm17 = inst[31:15];
+   assign f_rel15 = inst[31:17];
+   assign f_rel25 = {inst[31:12], inst[4:0]};
 
    assign enable_asr = 1'b1;
    assign enable_asr_i = 1'b1;
