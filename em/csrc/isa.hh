@@ -129,10 +129,10 @@ static inline uint32_t ins32_parse_rel25(insn_t insn)
 #define MSR_PSR_IMME (1 << MSR_PSR_IMME_SHIFT)
 #define MSR_PSR_DMME_SHIFT 7
 #define MSR_PSR_DMME (1 << MSR_PSR_DMME_SHIFT)
-#define MSR_PSR_ICAE_SHIFT 8
-#define MSR_PSR_ICAE (1 << MSR_PSR_ICAE_SHIFT)
-#define MSR_PSR_DCAE_SHIFT 9
-#define MSR_PSR_DCAE (1 << MSR_PSR_DCAE_SHIFT)
+#define MSR_PSR_ICE_SHIFT 8
+#define MSR_PSR_ICE (1 << MSR_PSR_ICE_SHIFT)
+#define MSR_PSR_DCE_SHIFT 9
+#define MSR_PSR_DCE (1 << MSR_PSR_DCE_SHIFT)
 
 /* MSR.CPUID R */
 #define MSR_CPUID (MSR_BANK_PS + (1 << 1))

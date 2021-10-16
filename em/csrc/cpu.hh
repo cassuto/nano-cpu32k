@@ -18,8 +18,8 @@ struct psr_s
     char IRE;
     char IMME;
     char DMME;
-    char ICAE;
-    char DCAE;
+    char ICE;
+    char DCE;
 };
 /* ITLB */
 struct itlbl_s
@@ -85,8 +85,8 @@ public:
                     PSR.IRE =
                         PSR.IMME =
                             PSR.DMME =
-                                PSR.ICAE =
-                                    PSR.DCAE = 0;
+                                PSR.ICE =
+                                    PSR.DCE = 0;
         PSR.RM = 1;
         EVECT = 0;
         TSR = 0;

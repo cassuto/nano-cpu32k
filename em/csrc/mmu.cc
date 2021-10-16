@@ -38,6 +38,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 int CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool store_insn)
 {
+    int ret = 0;
     *uncached = false;
     if (msr.PSR.DMME)
     {
@@ -50,7 +51,8 @@ int CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool s
                 if ((store_insn && !msr.DTLBH[offset].RW) ||
                     (!store_insn && !msr.DTLBH[offset].RR))
                 {
-                    return -EM_PAGE_FAULT;
+                    ret = -EM_PAGE_FAULT;
+                    goto out;
                 }
             }
             else
@@ -58,7 +60,8 @@ int CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool s
                 if ((store_insn && !msr.DTLBH[offset].UW) ||
                     (!store_insn && !msr.DTLBH[offset].UR))
                 {
-                    return -EM_PAGE_FAULT;
+                    ret = -EM_PAGE_FAULT;
+                    goto out;
                 }
             }
             *pa = (msr.DTLBH[offset].PPN << PPN_SHIFT) | (va & ((1 << PPN_SHIFT) - 1));
@@ -74,7 +77,7 @@ int CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool s
         }
         else
         {
-            return -EM_TLB_MISS;
+            ret = -EM_TLB_MISS;
         }
     }
     else
@@ -84,8 +87,11 @@ int CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool s
         if (dmmu_enable_uncached_seg)
             *uncached = !(va >> (32 - 1));
     }
-
-    return 0;
+out:
+    /* dcache disabled */
+    if (!msr.PSR.DCE)
+        *uncached = true;
+    return ret;
 }
 
 /**
@@ -98,6 +104,7 @@ int CPU::dmmu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached, bool s
  */
 int CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached)
 {
+    int ret = 0;
     *uncached = false;
     if (msr.PSR.IMME)
     {
@@ -108,7 +115,8 @@ int CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached)
             if ((msr.PSR.RM && !msr.ITLBH[offset].RX) ||
                 (!msr.PSR.RM && !msr.ITLBH[offset].UX))
             {
-                return -EM_PAGE_FAULT;
+                ret = -EM_PAGE_FAULT;
+                goto out;
             }
             *pa = (msr.ITLBH[offset].PPN << PPN_SHIFT) | (va & ((1 << PPN_SHIFT) - 1));
             if (immu_enable_uncached_seg)
@@ -116,11 +124,10 @@ int CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached)
                 *uncached = (msr.ITLBH[offset].NC) || !((msr.ITLBH[offset].PPN >> (32 - PPN_SHIFT - 1))&0x1);
             else
                 *uncached = (msr.ITLBH[offset].NC);
-            return 0;
         }
         else
         {
-            return -EM_TLB_MISS;
+            ret = -EM_TLB_MISS;
         }
     }
     else
@@ -130,5 +137,9 @@ int CPU::immu_translate_vma(vm_addr_t va, phy_addr_t *pa, bool *uncached)
         if (immu_enable_uncached_seg)
             *uncached = !(va >> (32 - 1));
     }
-    return 0;
+out:
+    /* icache disabled */
+    if (!msr.PSR.ICE)
+        *uncached = true;
+    return ret;
 }

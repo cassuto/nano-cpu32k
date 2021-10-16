@@ -142,8 +142,8 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr_unpack_bit(PSR, IRE, val);
             msr_unpack_bit(PSR, IMME, val);
             msr_unpack_bit(PSR, DMME, val);
-            msr_unpack_bit(PSR, ICAE, val);
-            msr_unpack_bit(PSR, DCAE, val);
+            msr_unpack_bit(PSR, ICE, val);
+            msr_unpack_bit(PSR, DCE, val);
             dbg(false);
             break;
 
@@ -155,8 +155,8 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr_unpack_bit_dup(EPSR, PSR, IRE, val);
             msr_unpack_bit_dup(EPSR, PSR, IMME, val);
             msr_unpack_bit_dup(EPSR, PSR, DMME, val);
-            msr_unpack_bit_dup(EPSR, PSR, ICAE, val);
-            msr_unpack_bit_dup(EPSR, PSR, DCAE, val);
+            msr_unpack_bit_dup(EPSR, PSR, ICE, val);
+            msr_unpack_bit_dup(EPSR, PSR, DCE, val);
             break;
 
         case MSR_EPC:
@@ -293,8 +293,8 @@ CPU::rmsr(msr_index_t index)
             ret |= msr_pack_bit(PSR, IRE);
             ret |= msr_pack_bit(PSR, IMME);
             ret |= msr_pack_bit(PSR, DMME);
-            ret |= msr_pack_bit(PSR, ICAE);
-            ret |= msr_pack_bit(PSR, DCAE);
+            ret |= msr_pack_bit(PSR, ICE);
+            ret |= msr_pack_bit(PSR, DCE);
             return ret;
 
         case MSR_CPUID:
@@ -318,8 +318,8 @@ CPU::rmsr(msr_index_t index)
             ret |= msr_pack_bit_dup(EPSR, PSR, IRE);
             ret |= msr_pack_bit_dup(EPSR, PSR, IMME);
             ret |= msr_pack_bit_dup(EPSR, PSR, DMME);
-            ret |= msr_pack_bit_dup(EPSR, PSR, ICAE);
-            ret |= msr_pack_bit_dup(EPSR, PSR, DCAE);
+            ret |= msr_pack_bit_dup(EPSR, PSR, ICE);
+            ret |= msr_pack_bit_dup(EPSR, PSR, DCE);
             return ret;
 
         case MSR_EPC:
