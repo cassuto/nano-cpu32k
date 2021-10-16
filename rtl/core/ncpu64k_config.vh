@@ -10,12 +10,12 @@
 //`undef NCPU_RST_POS_POLARITY
 
 /* Difftest configuration */
-//`undef ENABLE_DIFFTEST
 `define ENABLE_DIFFTEST
+//`undef ENABLE_DIFFTEST
 
 /* Debug stuffs for simulation */
-//`define ENABLE_DEBUG_SIM
-`undef ENABLE_DEBUG_SIM
+`define ENABLE_DEBUG_SIM
+//`undef ENABLE_DEBUG_SIM
 
 /* Print MSGR in simulation */
 `define NCPU_ENABLE_MSGPORT
@@ -35,6 +35,7 @@
 
 `ifdef SYNTHESIS
 `undef ENABLE_DIFFTEST
+`undef ENABLE_DEBUG_SIM
 `undef NCPU_ENABLE_MSGPORT
 `undef NCPU_ENABLE_ASSERT
 `undef NCPU_CHECK_X
