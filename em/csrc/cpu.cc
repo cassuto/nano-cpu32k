@@ -195,6 +195,10 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     pc_nxt = pc + INSN_LEN;
     if (event)
         event->insn = insn;
+    
+    if (1){
+        printf("pc=%#x insn=%#x\n", pc, insn);
+    }
 
     /* decode and execute */
     opcode = INS32_GET_BITS(insn, OPCODE);
@@ -642,9 +646,6 @@ void CPU::run_step()
         printf("**%#x r2-4=%#x\n", pc, get_reg(2)-4);
     }
 #endif
-    if (1 || npc==0xc0002cfc){
-        printf("pc=%#x\n", pc);
-    }
     pc = npc;
 }
 
