@@ -214,12 +214,6 @@ void dpic_step()
                         /* Synchronize the value of TSR before reading */
                         dpic_emu_CPU->msr_set_tsr(val);
                         break;
-#if 0
-                    case MSR_IRR:
-                        /* FIXME this may be not accurate */
-                        dpic_emu_CPU->irqc_set_irr(rtl_irqc_irr);
-                        break;
-#endif
                     }
                 }
             }
@@ -247,6 +241,14 @@ void dpic_step()
             {
                 fprintf(stderr, "At PC %#x\n", emu_pc);
                 difftest_report_item("INST", emu_event.insn, rtl_insn[i]);
+                validated = false;
+                break;
+            }
+            if (emu_event.excp != rtl_excp[i])
+            {
+                fprintf(stderr, "At PC %#x\n", emu_pc);
+                fprintf(stderr, "RTL exception vector = %#x\n", rtl_excp_vect[i]);
+                difftest_report_item("EXCEPTION occurred?", emu_event.excp, rtl_excp[i]);
                 validated = false;
                 break;
             }
