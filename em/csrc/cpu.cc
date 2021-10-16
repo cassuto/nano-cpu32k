@@ -391,7 +391,7 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         }
         if (pa==0x80eff800)
         {
-            printf("stw %#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
+            //printf("stw %#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
         }
     }
     break;
