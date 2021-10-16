@@ -103,10 +103,6 @@ void CPU::set_reg(uint16_t addr, cpu_word_t val)
     {
         regfile.r[addr] = val;
     }
-    if (addr == 3 && val == 0xdeadbeef)
-    {
-        printf("set reg %d = %#x pc=%#x\n", addr, val, pc);
-    }
 }
 
 cpu_word_t
@@ -195,10 +191,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     pc_nxt = pc + INSN_LEN;
     if (event)
         event->insn = insn;
-    
-    if (1){
-        printf("pc=%#x insn=%#x\n", pc, insn);
-    }
 
     /* decode and execute */
     opcode = INS32_GET_BITS(insn, OPCODE);
@@ -347,18 +339,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
         else
             readout = dcache->phy_readm32(pa);
         set_reg(rd, readout);
-        if (readout == 0xdeadbeef)
-        {
-            //printf("load bad pc=%#x va=%#x\n", pc, va);
-        }
-        if (va == 0x800248c8)
-        {
-            //printf("load pc=%#x va=%#x d=%#x\n", pc, va, readout);
-        }
-        if (pc == 0xc02c4bf0)
-        {
-            //printf("ldw va=%#x d=%#x\n", va, readout);
-        }
     }
     break;
 
@@ -385,14 +365,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
             mem->phy_writem32(pa, (uint32_t)get_reg(rd));
         else
             dcache->phy_writem32(pa, (uint32_t)get_reg(rd));
-        if (va == 0x80024938) //((uint32_t)get_reg(rd) == 0xdeadbeef)
-        {
-            //printf("-----store pc=%#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
-        }
-        if (pa==0x80eff800)
-        {
-            //printf("stw %#x va=%#x d=%#x\n", pc, va, (uint32_t)get_reg(rd));
-        }
     }
     break;
 
@@ -628,24 +600,6 @@ flush_pc:
 void CPU::run_step()
 {
     vm_addr_t npc = step(pc, false);
-    extern bool flag;
-    static uint64_t cnt;
-    if (++cnt == 1000000)
-    {
-        //ras->dump();
-        cnt = 0;
-    }
-#if 0
-    if(pc==0x8000019c){
-        printf("rt_hw_context_switch_exit r2+12=%#x\n", get_reg(2)+12);
-    }
-    if(pc==0x80008710){
-        printf("==%#x r3=%#x r2-4=%#x\n", pc, get_reg(3), get_reg(2)-4);
-    }
-    if(pc==0x80008730){
-        printf("**%#x r2-4=%#x\n", pc, get_reg(2)-4);
-    }
-#endif
     pc = npc;
 }
 
@@ -658,7 +612,6 @@ void CPU::run_step()
 vm_addr_t
 CPU::raise_exception(vm_addr_t pc, vm_addr_t vector, vm_addr_t lsa, bool is_syscall)
 {
-    //printf("v=%#x\n", vector);
     if ((vector == vect_EITM) ||
         (vector == vect_EIPF) ||
         (vector == vect_EINSN) ||

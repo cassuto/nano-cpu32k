@@ -77,27 +77,6 @@ void CPU::warn_illegal_access_reg(const char *reg)
     fprintf(stderr, "warning: illegal access to %s in non-root mode at PC=%#x\n", reg, pc);
 }
 
-bool flag;
-int irq_cnt = 0;
-bool last_ire = 1;
-
-void CPU::dbg(int excp)
-{
-    if (msr.PSR.IRE != last_ire || excp==2)
-    {
-        last_ire = msr.PSR.IRE;
-        /*if (!msr.PSR.IRE)
-            printf("disIRQ %d pc=%#x cyc=%d\n", excp, pc, irq_cnt);
-        if (msr.PSR.IRE)
-            printf("enaIRQ %d pc=%#x cyc=%d\n", excp, pc, irq_cnt);*/
-    }
-    if (irq_cnt == 1551){
-       // ras->dump();
-    }
-
-    ++irq_cnt;
-}
-
 void CPU::wmsr(msr_index_t index, cpu_word_t v)
 {
     cpu_unsigned_word_t val = v;
@@ -113,10 +92,6 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             while (*p)
                 fprintf(stdout, "%c", *p++);
             //ras->dump();
-            if (val == 0x123)
-                flag = true;
-            if (val == 0x456)
-                flag = false;
         }
         return;
     }
@@ -144,7 +119,6 @@ void CPU::wmsr(msr_index_t index, cpu_word_t v)
             msr_unpack_bit(PSR, DMME, val);
             msr_unpack_bit(PSR, ICE, val);
             msr_unpack_bit(PSR, DCE, val);
-            dbg(false);
             break;
 
         case MSR_EPSR:
