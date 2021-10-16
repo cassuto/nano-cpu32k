@@ -451,7 +451,7 @@ module icache
    endgenerate
 
    // Control path
-   mDFF_lr # (.DW(PAYLOAD_DW)) ff_ins (.CLK(clk), .RST(rst), .LOAD(p_ce|(fsm_state_ff==S_REFILL)|(fsm_state_ff==S_UNCACHED_READ)), .D(s2i_ins & {PAYLOAD_DW{~kill_req_s2}}), .Q(ins) );
+   mDFF_lr # (.DW(PAYLOAD_DW)) ff_ins (.CLK(clk), .RST(rst), .LOAD(p_ce|(fsm_state_ff==S_REFILL)|(fsm_state_ff==S_UNCACHED_READ)), .D(s2i_ins & {PAYLOAD_DW{p_ce & ~kill_req_s2}}), .Q(ins) );
 
    assign valid = s2o_valid;
 
