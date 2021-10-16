@@ -5,6 +5,8 @@
 #include "device-tree.hh"
 #include "cpu.hh"
 
+//#define HAS_IRQ
+
 const phy_addr_t pb_uart_mmio_size = 0x8;
 
 DevicePbUart::DevicePbUart(DeviceTree *tree_, phy_addr_t mmio_base, int irq_, const char *virt_uart_file)
@@ -55,8 +57,10 @@ void DevicePbUart::writem8(phy_addr_t addr, uint8_t val, void *opaque)
         if ((IIR_sel == 0x1) && ((addr == 0x0) && !LCR_DLAB)) // Write IER
         {
             IIR |= 0x1; // no IRQ pending
+#ifdef HAS_IRQ
             if (!tree->in_difftest())
                 tree->cpu->irqc_set_interrupt(irq, 0);
+#endif
         }
     }
 
@@ -145,8 +149,10 @@ uint8_t DevicePbUart::readm8(phy_addr_t addr, void *opaque)
         {
             dat_ready = 0; /* fixme RX queue */
             IIR |= 0x1;    // no IRQ pending
+#ifdef HAS_IRQ
             if (!tree->in_difftest())
                 tree->cpu->irqc_set_interrupt(irq, 0);
+#endif
         }
     }
 
@@ -168,16 +174,20 @@ void DevicePbUart::step()
         {
             // Raise RX buffer full IRQ
             IIR = 0x4; // b100
+#ifdef HAS_IRQ
             if (!tree->in_difftest())
                 tree->cpu->irqc_set_interrupt(irq, 1);
+#endif
         }
         else if (!tx_full && RBR_written && (IER & 0x2))
         {
             // Raise TX buffer empty IRQ
             RBR_written = 0;
             IIR = 0x2; // b010
+#ifdef HAS_IRQ
             if (!tree->in_difftest())
                 tree->cpu->irqc_set_interrupt(irq, 1);
+#endif
         }
     }
 }
