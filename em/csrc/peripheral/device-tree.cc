@@ -10,7 +10,7 @@ DeviceTree::DeviceTree(CPU *cpu_, Memory *mem_, phy_addr_t mmio_phy_base,
     : cpu(cpu_),
       mem(mem_)
 {
-    pb_uart = new DevicePbUart(this, mmio_phy_base + 0x10000000, 2, virt_uart_file);
+    pb_uart = new DevicePbUart(this, mmio_phy_base + 0x10000000, 31, virt_uart_file);
     flash = new Flash(this, mmio_phy_base + 0x30000000, 0x10000000, flash_image_fp);
 }
 
