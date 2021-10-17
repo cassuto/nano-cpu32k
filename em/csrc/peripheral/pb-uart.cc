@@ -5,7 +5,7 @@
 #include "device-tree.hh"
 #include "cpu.hh"
 
-//#define HAS_IRQ
+#define HAS_IRQ
 
 const phy_addr_t pb_uart_mmio_size = 0x8;
 
