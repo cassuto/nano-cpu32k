@@ -103,8 +103,8 @@ module ysyx_210479
    localparam                           CONFIG_DC_P_LINE = 6;
    localparam                           CONFIG_DC_P_SETS = 4;
    localparam                           CONFIG_DC_P_WAYS = 1;
-   localparam                           CONFIG_PHT_P_NUM = 2;
-   localparam                           CONFIG_BTB_P_NUM = 2;
+   localparam                           CONFIG_PHT_P_NUM = 3;
+   localparam                           CONFIG_BTB_P_NUM = 3;
    localparam                           CONFIG_P_IQ_DEPTH = 2;
 //   localparam                           CONFIG_ENABLE_MUL = 0;
 //   localparam                           CONFIG_ENABLE_DIV = 0;
@@ -114,8 +114,8 @@ module ysyx_210479
    localparam                           CONFIG_ENABLE_ASR = 1;
    localparam                           CONFIG_IMMU_ENABLE_UNCACHED_SEG = 1;
    localparam                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 1;
-   localparam                           CONFIG_DTLB_P_SETS = 2;
-   localparam                           CONFIG_ITLB_P_SETS = 2;
+   localparam                           CONFIG_DTLB_P_SETS = 4;
+   localparam                           CONFIG_ITLB_P_SETS = 4;
 
    localparam [CONFIG_AW-1:0]           CONFIG_PC_RST = 32'h30000000;
    localparam [`EXCP_VECT_W-1:0]        CONFIG_EITM_VECTOR = 8'h1c;
@@ -547,8 +547,8 @@ module ysyx_210479
    
    // Interrupts
    assign irqs[0] = tsc_irq;
-   assign irqs[30:1] = 30'b0;
-   assign irqs[31] = io_interrupt;
+   assign irqs[1] = io_interrupt;
+   assign irqs[31:2] = 30'b0;
        
    // AXI Slave is unused
    assign io_slave_awready = 1'b0;
