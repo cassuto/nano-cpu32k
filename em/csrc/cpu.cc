@@ -203,8 +203,6 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     rel15 = INS32_GET_BITS(insn, REL15);
     rel25 = ins32_parse_rel25(insn);
     
-    printf("pc =%#x\n", pc);
-
     switch (opcode)
     {
     case INS32_OP_AND:
