@@ -202,6 +202,8 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     simm15 = (((int16_t)uimm15) ^ 0x4000) - 0x4000; /* sign extend */
     rel15 = INS32_GET_BITS(insn, REL15);
     rel25 = ins32_parse_rel25(insn);
+    
+    printf("pc =%#x\n", pc);
 
     switch (opcode)
     {
