@@ -210,6 +210,50 @@ module ysyx_210479
    wire [AXI_USER_WIDTH-1:0] ibus_RUSER;        // From U_AXI4_ARBITER of axi4_arbiter.v
    wire                 ibus_RVALID;            // From U_AXI4_ARBITER of axi4_arbiter.v
    wire                 ibus_WREADY;            // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [AXI_ADDR_WIDTH-1:0] inner_ARADDR;      // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [1:0]           inner_ARBURST;          // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [3:0]           inner_ARCACHE;          // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [AXI_ID_WIDTH-1:0] inner_ARID;          // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [7:0]           inner_ARLEN;            // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire                 inner_ARLOCK;           // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [2:0]           inner_ARPROT;           // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [3:0]           inner_ARQOS;            // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire                 inner_ARREADY;          // From U_AXI4_reg_slice_R of axi4_buf_r.v
+   wire [3:0]           inner_ARREGION;         // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [2:0]           inner_ARSIZE;           // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [AXI_USER_WIDTH-1:0] inner_ARUSER;      // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire                 inner_ARVALID;          // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [AXI_ADDR_WIDTH-1:0] inner_AWADDR;      // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [1:0]           inner_AWBURST;          // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [3:0]           inner_AWCACHE;          // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [AXI_ID_WIDTH-1:0] inner_AWID;          // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [7:0]           inner_AWLEN;            // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire                 inner_AWLOCK;           // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [2:0]           inner_AWPROT;           // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [3:0]           inner_AWQOS;            // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire                 inner_AWREADY;          // From U_AXI4_reg_slice_W of axi4_buf_w.v
+   wire [3:0]           inner_AWREGION;         // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [2:0]           inner_AWSIZE;           // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [AXI_USER_WIDTH-1:0] inner_AWUSER;      // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire                 inner_AWVALID;          // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [AXI_ID_WIDTH-1:0] inner_BID;           // From U_AXI4_reg_slice_W of axi4_buf_w.v
+   wire                 inner_BREADY;           // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [1:0]           inner_BRESP;            // From U_AXI4_reg_slice_W of axi4_buf_w.v
+   wire [AXI_USER_WIDTH-1:0] inner_BUSER;       // From U_AXI4_reg_slice_W of axi4_buf_w.v
+   wire                 inner_BVALID;           // From U_AXI4_reg_slice_W of axi4_buf_w.v
+   wire [(1<<AXI_P_DW_BYTES)*8-1:0] inner_RDATA;// From U_AXI4_reg_slice_R of axi4_buf_r.v
+   wire [AXI_ID_WIDTH-1:0] inner_RID;           // From U_AXI4_reg_slice_R of axi4_buf_r.v
+   wire                 inner_RLAST;            // From U_AXI4_reg_slice_R of axi4_buf_r.v
+   wire                 inner_RREADY;           // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [1:0]           inner_RRESP;            // From U_AXI4_reg_slice_R of axi4_buf_r.v
+   wire [AXI_USER_WIDTH-1:0] inner_RUSER;       // From U_AXI4_reg_slice_R of axi4_buf_r.v
+   wire                 inner_RVALID;           // From U_AXI4_reg_slice_R of axi4_buf_r.v
+   wire [(1<<AXI_P_DW_BYTES)*8-1:0] inner_WDATA;// From U_AXI4_ARBITER of axi4_arbiter.v
+   wire                 inner_WLAST;            // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire                 inner_WREADY;           // From U_AXI4_reg_slice_W of axi4_buf_w.v
+   wire [(1<<AXI_P_DW_BYTES)-1:0] inner_WSTRB;  // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire [AXI_USER_WIDTH-1:0] inner_WUSER;       // From U_AXI4_ARBITER of axi4_arbiter.v
+   wire                 inner_WVALID;           // From U_AXI4_ARBITER of axi4_arbiter.v
    wire                 tsc_irq;                // From U_CORE of ncpu64k.v
    // End of automatics
    /*AUTOINPUT*/
@@ -373,7 +417,7 @@ module ysyx_210479
    /* axi4_arbiter AUTO_TEMPLATE(
       .s0_\(.*\) (ibus_\1[]),
       .s1_\(.*\) (dbus_\1[]),
-      .m_\(.*\) (io_master_@"(downcase (substring vl-name 2))"[]),
+      .m_\(.*\) (inner_@"(substring vl-name 2)"[]),
    ); */
    axi4_arbiter
       #(/*AUTOINSTPARAM*/
@@ -411,37 +455,37 @@ module ysyx_210479
        .s1_BRESP                        (dbus_BRESP[1:0]),       // Templated
        .s1_BID                          (dbus_BID[AXI_ID_WIDTH-1:0]), // Templated
        .s1_BUSER                        (dbus_BUSER[AXI_USER_WIDTH-1:0]), // Templated
-       .m_ARVALID                       (io_master_arvalid),     // Templated
-       .m_ARADDR                        (io_master_araddr[AXI_ADDR_WIDTH-1:0]), // Templated
-       .m_ARPROT                        (io_master_arprot[2:0]), // Templated
-       .m_ARID                          (io_master_arid[AXI_ID_WIDTH-1:0]), // Templated
-       .m_ARUSER                        (io_master_aruser[AXI_USER_WIDTH-1:0]), // Templated
-       .m_ARLEN                         (io_master_arlen[7:0]),  // Templated
-       .m_ARSIZE                        (io_master_arsize[2:0]), // Templated
-       .m_ARBURST                       (io_master_arburst[1:0]), // Templated
-       .m_ARLOCK                        (io_master_arlock),      // Templated
-       .m_ARCACHE                       (io_master_arcache[3:0]), // Templated
-       .m_ARQOS                         (io_master_arqos[3:0]),  // Templated
-       .m_ARREGION                      (io_master_arregion[3:0]), // Templated
-       .m_RREADY                        (io_master_rready),      // Templated
-       .m_AWVALID                       (io_master_awvalid),     // Templated
-       .m_AWADDR                        (io_master_awaddr[AXI_ADDR_WIDTH-1:0]), // Templated
-       .m_AWPROT                        (io_master_awprot[2:0]), // Templated
-       .m_AWID                          (io_master_awid[AXI_ID_WIDTH-1:0]), // Templated
-       .m_AWUSER                        (io_master_awuser[AXI_USER_WIDTH-1:0]), // Templated
-       .m_AWLEN                         (io_master_awlen[7:0]),  // Templated
-       .m_AWSIZE                        (io_master_awsize[2:0]), // Templated
-       .m_AWBURST                       (io_master_awburst[1:0]), // Templated
-       .m_AWLOCK                        (io_master_awlock),      // Templated
-       .m_AWCACHE                       (io_master_awcache[3:0]), // Templated
-       .m_AWQOS                         (io_master_awqos[3:0]),  // Templated
-       .m_AWREGION                      (io_master_awregion[3:0]), // Templated
-       .m_WVALID                        (io_master_wvalid),      // Templated
-       .m_WDATA                         (io_master_wdata[(1<<AXI_P_DW_BYTES)*8-1:0]), // Templated
-       .m_WSTRB                         (io_master_wstrb[(1<<AXI_P_DW_BYTES)-1:0]), // Templated
-       .m_WLAST                         (io_master_wlast),       // Templated
-       .m_WUSER                         (io_master_wuser[AXI_USER_WIDTH-1:0]), // Templated
-       .m_BREADY                        (io_master_bready),      // Templated
+       .m_ARVALID                       (inner_ARVALID),         // Templated
+       .m_ARADDR                        (inner_ARADDR[AXI_ADDR_WIDTH-1:0]), // Templated
+       .m_ARPROT                        (inner_ARPROT[2:0]),     // Templated
+       .m_ARID                          (inner_ARID[AXI_ID_WIDTH-1:0]), // Templated
+       .m_ARUSER                        (inner_ARUSER[AXI_USER_WIDTH-1:0]), // Templated
+       .m_ARLEN                         (inner_ARLEN[7:0]),      // Templated
+       .m_ARSIZE                        (inner_ARSIZE[2:0]),     // Templated
+       .m_ARBURST                       (inner_ARBURST[1:0]),    // Templated
+       .m_ARLOCK                        (inner_ARLOCK),          // Templated
+       .m_ARCACHE                       (inner_ARCACHE[3:0]),    // Templated
+       .m_ARQOS                         (inner_ARQOS[3:0]),      // Templated
+       .m_ARREGION                      (inner_ARREGION[3:0]),   // Templated
+       .m_RREADY                        (inner_RREADY),          // Templated
+       .m_AWVALID                       (inner_AWVALID),         // Templated
+       .m_AWADDR                        (inner_AWADDR[AXI_ADDR_WIDTH-1:0]), // Templated
+       .m_AWPROT                        (inner_AWPROT[2:0]),     // Templated
+       .m_AWID                          (inner_AWID[AXI_ID_WIDTH-1:0]), // Templated
+       .m_AWUSER                        (inner_AWUSER[AXI_USER_WIDTH-1:0]), // Templated
+       .m_AWLEN                         (inner_AWLEN[7:0]),      // Templated
+       .m_AWSIZE                        (inner_AWSIZE[2:0]),     // Templated
+       .m_AWBURST                       (inner_AWBURST[1:0]),    // Templated
+       .m_AWLOCK                        (inner_AWLOCK),          // Templated
+       .m_AWCACHE                       (inner_AWCACHE[3:0]),    // Templated
+       .m_AWQOS                         (inner_AWQOS[3:0]),      // Templated
+       .m_AWREGION                      (inner_AWREGION[3:0]),   // Templated
+       .m_WVALID                        (inner_WVALID),          // Templated
+       .m_WDATA                         (inner_WDATA[(1<<AXI_P_DW_BYTES)*8-1:0]), // Templated
+       .m_WSTRB                         (inner_WSTRB[(1<<AXI_P_DW_BYTES)-1:0]), // Templated
+       .m_WLAST                         (inner_WLAST),           // Templated
+       .m_WUSER                         (inner_WUSER[AXI_USER_WIDTH-1:0]), // Templated
+       .m_BREADY                        (inner_BREADY),          // Templated
        // Inputs
        .clk                             (clk),
        .rst                             (rst),
@@ -507,20 +551,144 @@ module ysyx_210479
        .s1_WLAST                        (dbus_WLAST),            // Templated
        .s1_WUSER                        (dbus_WUSER[AXI_USER_WIDTH-1:0]), // Templated
        .s1_BREADY                       (dbus_BREADY),           // Templated
+       .m_ARREADY                       (inner_ARREADY),         // Templated
+       .m_RVALID                        (inner_RVALID),          // Templated
+       .m_RDATA                         (inner_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]), // Templated
+       .m_RRESP                         (inner_RRESP[1:0]),      // Templated
+       .m_RLAST                         (inner_RLAST),           // Templated
+       .m_RID                           (inner_RID[AXI_ID_WIDTH-1:0]), // Templated
+       .m_RUSER                         (inner_RUSER[AXI_USER_WIDTH-1:0]), // Templated
+       .m_AWREADY                       (inner_AWREADY),         // Templated
+       .m_WREADY                        (inner_WREADY),          // Templated
+       .m_BVALID                        (inner_BVALID),          // Templated
+       .m_BRESP                         (inner_BRESP[1:0]),      // Templated
+       .m_BID                           (inner_BID[AXI_ID_WIDTH-1:0]), // Templated
+       .m_BUSER                         (inner_BUSER[AXI_USER_WIDTH-1:0])); // Templated
+
+   /* axi4_buf_r AUTO_TEMPLATE(
+      .s_\(.*\) (inner_\1[]),
+      .m_\(.*\) (io_master_@"(downcase (substring vl-name 2))"[]),
+   ); */
+   axi4_buf_r
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
+        .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),
+        .AXI_ID_WIDTH                   (AXI_ID_WIDTH),
+        .AXI_USER_WIDTH                 (AXI_USER_WIDTH))
+   U_AXI4_reg_slice_R
+      (/*AUTOINST*/
+       // Outputs
+       .s_ARREADY                       (inner_ARREADY),         // Templated
+       .s_RVALID                        (inner_RVALID),          // Templated
+       .s_RDATA                         (inner_RDATA[(1<<AXI_P_DW_BYTES)*8-1:0]), // Templated
+       .s_RRESP                         (inner_RRESP[1:0]),      // Templated
+       .s_RLAST                         (inner_RLAST),           // Templated
+       .s_RID                           (inner_RID[AXI_ID_WIDTH-1:0]), // Templated
+       .s_RUSER                         (inner_RUSER[AXI_USER_WIDTH-1:0]), // Templated
+       .m_ARVALID                       (io_master_arvalid),     // Templated
+       .m_ARADDR                        (io_master_araddr[AXI_ADDR_WIDTH-1:0]), // Templated
+       .m_ARPROT                        (io_master_arprot[2:0]), // Templated
+       .m_ARID                          (io_master_arid[AXI_ID_WIDTH-1:0]), // Templated
+       .m_ARUSER                        (io_master_aruser[AXI_USER_WIDTH-1:0]), // Templated
+       .m_ARLEN                         (io_master_arlen[7:0]),  // Templated
+       .m_ARSIZE                        (io_master_arsize[2:0]), // Templated
+       .m_ARBURST                       (io_master_arburst[1:0]), // Templated
+       .m_ARLOCK                        (io_master_arlock),      // Templated
+       .m_ARCACHE                       (io_master_arcache[3:0]), // Templated
+       .m_ARQOS                         (io_master_arqos[3:0]),  // Templated
+       .m_ARREGION                      (io_master_arregion[3:0]), // Templated
+       .m_RREADY                        (io_master_rready),      // Templated
+       // Inputs
+       .clk                             (clk),
+       .rst                             (rst),
+       .s_ARVALID                       (inner_ARVALID),         // Templated
+       .s_ARADDR                        (inner_ARADDR[AXI_ADDR_WIDTH-1:0]), // Templated
+       .s_ARPROT                        (inner_ARPROT[2:0]),     // Templated
+       .s_ARID                          (inner_ARID[AXI_ID_WIDTH-1:0]), // Templated
+       .s_ARUSER                        (inner_ARUSER[AXI_USER_WIDTH-1:0]), // Templated
+       .s_ARLEN                         (inner_ARLEN[7:0]),      // Templated
+       .s_ARSIZE                        (inner_ARSIZE[2:0]),     // Templated
+       .s_ARBURST                       (inner_ARBURST[1:0]),    // Templated
+       .s_ARLOCK                        (inner_ARLOCK),          // Templated
+       .s_ARCACHE                       (inner_ARCACHE[3:0]),    // Templated
+       .s_ARQOS                         (inner_ARQOS[3:0]),      // Templated
+       .s_ARREGION                      (inner_ARREGION[3:0]),   // Templated
+       .s_RREADY                        (inner_RREADY),          // Templated
        .m_ARREADY                       (io_master_arready),     // Templated
        .m_RVALID                        (io_master_rvalid),      // Templated
        .m_RDATA                         (io_master_rdata[(1<<AXI_P_DW_BYTES)*8-1:0]), // Templated
        .m_RRESP                         (io_master_rresp[1:0]),  // Templated
        .m_RLAST                         (io_master_rlast),       // Templated
        .m_RID                           (io_master_rid[AXI_ID_WIDTH-1:0]), // Templated
-       .m_RUSER                         (io_master_ruser[AXI_USER_WIDTH-1:0]), // Templated
+       .m_RUSER                         (io_master_ruser[AXI_USER_WIDTH-1:0])); // Templated
+   
+   /* axi4_buf_w AUTO_TEMPLATE(
+      .s_\(.*\) (inner_\1[]),
+      .m_\(.*\) (io_master_@"(downcase (substring vl-name 2))"[]),
+   ); */
+   axi4_buf_w
+      #(/*AUTOINSTPARAM*/
+        // Parameters
+        .AXI_P_DW_BYTES                 (AXI_P_DW_BYTES),
+        .AXI_ADDR_WIDTH                 (AXI_ADDR_WIDTH),
+        .AXI_ID_WIDTH                   (AXI_ID_WIDTH),
+        .AXI_USER_WIDTH                 (AXI_USER_WIDTH))
+   U_AXI4_reg_slice_W
+      (/*AUTOINST*/
+       // Outputs
+       .s_AWREADY                       (inner_AWREADY),         // Templated
+       .s_WREADY                        (inner_WREADY),          // Templated
+       .s_BVALID                        (inner_BVALID),          // Templated
+       .s_BRESP                         (inner_BRESP[1:0]),      // Templated
+       .s_BID                           (inner_BID[AXI_ID_WIDTH-1:0]), // Templated
+       .s_BUSER                         (inner_BUSER[AXI_USER_WIDTH-1:0]), // Templated
+       .m_AWVALID                       (io_master_awvalid),     // Templated
+       .m_AWADDR                        (io_master_awaddr[AXI_ADDR_WIDTH-1:0]), // Templated
+       .m_AWPROT                        (io_master_awprot[2:0]), // Templated
+       .m_AWID                          (io_master_awid[AXI_ID_WIDTH-1:0]), // Templated
+       .m_AWUSER                        (io_master_awuser[AXI_USER_WIDTH-1:0]), // Templated
+       .m_AWLEN                         (io_master_awlen[7:0]),  // Templated
+       .m_AWSIZE                        (io_master_awsize[2:0]), // Templated
+       .m_AWBURST                       (io_master_awburst[1:0]), // Templated
+       .m_AWLOCK                        (io_master_awlock),      // Templated
+       .m_AWCACHE                       (io_master_awcache[3:0]), // Templated
+       .m_AWQOS                         (io_master_awqos[3:0]),  // Templated
+       .m_AWREGION                      (io_master_awregion[3:0]), // Templated
+       .m_WVALID                        (io_master_wvalid),      // Templated
+       .m_WDATA                         (io_master_wdata[(1<<AXI_P_DW_BYTES)*8-1:0]), // Templated
+       .m_WSTRB                         (io_master_wstrb[(1<<AXI_P_DW_BYTES)-1:0]), // Templated
+       .m_WLAST                         (io_master_wlast),       // Templated
+       .m_WUSER                         (io_master_wuser[AXI_USER_WIDTH-1:0]), // Templated
+       .m_BREADY                        (io_master_bready),      // Templated
+       // Inputs
+       .clk                             (clk),
+       .rst                             (rst),
+       .s_AWVALID                       (inner_AWVALID),         // Templated
+       .s_AWADDR                        (inner_AWADDR[AXI_ADDR_WIDTH-1:0]), // Templated
+       .s_AWPROT                        (inner_AWPROT[2:0]),     // Templated
+       .s_AWID                          (inner_AWID[AXI_ID_WIDTH-1:0]), // Templated
+       .s_AWUSER                        (inner_AWUSER[AXI_USER_WIDTH-1:0]), // Templated
+       .s_AWLEN                         (inner_AWLEN[7:0]),      // Templated
+       .s_AWSIZE                        (inner_AWSIZE[2:0]),     // Templated
+       .s_AWBURST                       (inner_AWBURST[1:0]),    // Templated
+       .s_AWLOCK                        (inner_AWLOCK),          // Templated
+       .s_AWCACHE                       (inner_AWCACHE[3:0]),    // Templated
+       .s_AWQOS                         (inner_AWQOS[3:0]),      // Templated
+       .s_AWREGION                      (inner_AWREGION[3:0]),   // Templated
+       .s_WVALID                        (inner_WVALID),          // Templated
+       .s_WDATA                         (inner_WDATA[(1<<AXI_P_DW_BYTES)*8-1:0]), // Templated
+       .s_WSTRB                         (inner_WSTRB[(1<<AXI_P_DW_BYTES)-1:0]), // Templated
+       .s_WLAST                         (inner_WLAST),           // Templated
+       .s_WUSER                         (inner_WUSER[AXI_USER_WIDTH-1:0]), // Templated
+       .s_BREADY                        (inner_BREADY),          // Templated
        .m_AWREADY                       (io_master_awready),     // Templated
        .m_WREADY                        (io_master_wready),      // Templated
        .m_BVALID                        (io_master_bvalid),      // Templated
        .m_BRESP                         (io_master_bresp[1:0]),  // Templated
        .m_BID                           (io_master_bid[AXI_ID_WIDTH-1:0]), // Templated
        .m_BUSER                         (io_master_buser[AXI_USER_WIDTH-1:0])); // Templated
-
+      
    // ibus is read only
    assign ibus_AWADDR = {AXI_ADDR_WIDTH{1'b0}};
    assign ibus_AWBURST = 2'b0;
