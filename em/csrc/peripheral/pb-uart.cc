@@ -69,7 +69,10 @@ void DevicePbUart::writem8(phy_addr_t addr, uint8_t val, void *opaque)
     case 0:
     {
         if (LCR_DLAB)
+        {
             DLR = (((DLR >> 8) & 0xff) << 8) | val;
+            fprintf(stderr, "[pb-uart] Set DLR = %#x\n", DLR);
+        }
         else
         {
             if (!tree->in_difftest())
@@ -82,7 +85,10 @@ void DevicePbUart::writem8(phy_addr_t addr, uint8_t val, void *opaque)
     case 1:
     {
         if (LCR_DLAB)
+        {
             DLR = (DLR & 0xff) | (val << 8);
+            fprintf(stderr, "[pb-uart] Set DLR = %#x\n", DLR);
+        }
         else
             IER = val & 0x0f;
         break;
