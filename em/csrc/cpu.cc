@@ -191,6 +191,8 @@ CPU::step(vm_addr_t pc, bool difftest, ArchEvent *event)
     pc_nxt = pc + INSN_LEN;
     if (event)
         event->insn = insn;
+    
+    printf("pc=%#x\n", pc);
 
     /* decode and execute */
     opcode = INS32_GET_BITS(insn, OPCODE);
