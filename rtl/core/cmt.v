@@ -37,6 +37,8 @@ module cmt
    parameter                           CONFIG_DC_P_WAYS = 0,
    parameter                           CONFIG_DC_P_SETS = 0,
    parameter                           CONFIG_DC_P_LINE = 0,
+   parameter                           CONFIG_IC_P_SETS = 0,
+   parameter                           CONFIG_IC_P_LINE = 0,
    parameter                           CONFIG_P_PAGE_SIZE = 0,
    parameter                           CONFIG_DMMU_ENABLE_UNCACHED_SEG = 0,
    parameter                           CONFIG_ITLB_P_SETS = 0,
@@ -162,7 +164,7 @@ module cmt
    // ICID
    input [CONFIG_DW-1:0]               msr_icid,
    // ICINV
-   output [CONFIG_DW-1:0]              msr_icinv_nxt,
+   output [CONFIG_IC_P_SETS-1:0]       msr_icinv_line_nxt,
    output                              msr_icinv_we,
    input                               msr_icinv_ready
 );
@@ -467,6 +469,8 @@ module cmt
         .CONFIG_EALIGN_VECTOR           (CONFIG_EALIGN_VECTOR[`EXCP_VECT_W-1:0]),
         .CONFIG_ITLB_P_SETS             (CONFIG_ITLB_P_SETS),
         .CONFIG_DTLB_P_SETS             (CONFIG_DTLB_P_SETS),
+        .CONFIG_IC_P_SETS               (CONFIG_IC_P_SETS),
+        .CONFIG_IC_P_LINE               (CONFIG_IC_P_LINE),
         .CONFIG_NUM_IRQ                 (CONFIG_NUM_IRQ))
    U_EPU
       (/*AUTOINST*/
@@ -513,7 +517,7 @@ module cmt
        .msr_dmm_tlbh_idx                (msr_dmm_tlbh_idx[CONFIG_DTLB_P_SETS-1:0]),
        .msr_dmm_tlbh_nxt                (msr_dmm_tlbh_nxt[CONFIG_DW-1:0]),
        .msr_dmm_tlbh_we                 (msr_dmm_tlbh_we),
-       .msr_icinv_nxt                   (msr_icinv_nxt[CONFIG_DW-1:0]),
+       .msr_icinv_line_nxt              (msr_icinv_line_nxt[CONFIG_IC_P_SETS-1:0]),
        .msr_icinv_we                    (msr_icinv_we),
        .msr_dcinv_nxt                   (msr_dcinv_nxt[CONFIG_DW-1:0]),
        .msr_dcinv_we                    (msr_dcinv_we),

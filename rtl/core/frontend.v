@@ -84,7 +84,7 @@ module frontend
    // ICID
    output [CONFIG_DW-1:0]              msr_icid,
    // ICINV
-   input [CONFIG_DW-1:0]               msr_icinv_nxt,
+   input [CONFIG_IC_P_SETS-1:0]        msr_icinv_line_nxt,
    input                               msr_icinv_we,
    output                              msr_icinv_ready,
    // AXI Master
@@ -218,7 +218,7 @@ module frontend
        .ppn_s2                          (s1o_tlb_ppn),           // Templated
        .uncached_s2                     (s2i_uncached),          // Templated
        .kill_req_s2                     (s2i_kill_req),          // Templated
-       .msr_icinv_nxt                   (msr_icinv_nxt[CONFIG_DW-1:0]),
+       .msr_icinv_line_nxt              (msr_icinv_line_nxt[CONFIG_IC_P_SETS-1:0]),
        .msr_icinv_we                    (msr_icinv_we),
        .ibus_ARREADY                    (ibus_ARREADY),
        .ibus_RVALID                     (ibus_RVALID),

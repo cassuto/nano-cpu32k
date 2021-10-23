@@ -54,6 +54,7 @@ module rn_fl
    reg [N_PRF-1:0]                     afl_nxt;
    wire                                gs                            [IW-1:0];
    reg                                 no_free;
+   genvar i;
    integer j;
 
    // Select free PR
@@ -80,22 +81,28 @@ module rn_fl
          begin : gen_sel_2
             wire [`NCPU_PRF_AW-1:0] fl_prd_0, fl_prd_1;
             wire [N_PRF-1:0] fl_0, fl_1;
+            wire gs_0, gs_1;
             
             assign fl_0 = {fl_ff, 1'b0};
+            for(i=0;i<N_PRF;i=i+1)
+               begin : gen_fl_1
+                  assign fl_1[i] = fl_0[N_PRF-i-1]; // reverse fl_0, the encoders could be parallel
+               end
             
             priority_encoder_gs #(.P_DW(`NCPU_PRF_AW)) PENC_FL_0 (
                .din     (fl_0),
                .dout    (fl_prd_0),
-               .gs      (gs[0])
+               .gs      (gs_0)
             );
             
-            assign fl_1 = fl_0 & ~(FL_1 << fl_prd_0);
-            
-            priority_encoder_gs #(.P_DW(`NCPU_PRF_AW)) PENC_FL_1 (
+            priority_encoder_rev_gs #(.P_DW(`NCPU_PRF_AW)) PENC_FL_1 (
                .din     (fl_1),
                .dout    (fl_prd_1),
-               .gs      (gs[1])
+               .gs      (gs_1)
             );
+            
+            assign gs[0] = (gs_0);
+            assign gs[1] = (gs_1 & (fl_prd_1!=fl_prd_0));
             
             assign fl_prd = {fl_prd_1, fl_prd_0};
          end

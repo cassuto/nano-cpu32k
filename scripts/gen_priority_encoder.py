@@ -2,7 +2,7 @@ import sys
 
 P_DW_MAX = 7
 
-def gen(fn, has_gs):
+def gen(fn, has_gs, reverse):
     with open(fn,'w') as fp:
         fp.write(
 """/**@file
@@ -45,7 +45,7 @@ module priority_encoder%s
 );
 
    generate
-""" %('_gs' if has_gs else '', ', output reg gs' if has_gs else ''))
+""" %(('_rev' if reverse else '') + ('_gs' if has_gs else ''), ', output reg gs' if has_gs else ''))
 
         fp.write("      ")
         for P_DW in range(1,P_DW_MAX):
@@ -66,7 +66,7 @@ module priority_encoder%s
                 fp.write("".join(['?' for j in range(DW-i-1)]))
                 fp.write("1")
                 fp.write("".join(['0' for j in range(i)]))
-                fp.write(": dout = %d'd%d;\n" %(P_DW,i))
+                fp.write(": dout = %d'd%d;\n" %(P_DW,DW-i-1 if reverse else i))
             if has_gs:
                 fp.write("                       default: begin gs = 1'b0; dout = %d'd%d; end\n"%(P_DW, 0))
             else:
@@ -93,4 +93,4 @@ endmodule
 """)
     
 fn = sys.argv[1]
-gen(fn, fn.find('_gs.v')!=-1)
+gen(fn, fn.find('_gs.v')!=-1, fn.find('_rev_gs.v')!=-1)

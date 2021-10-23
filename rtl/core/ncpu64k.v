@@ -227,7 +227,7 @@ module ncpu64k
    wire [CONFIG_P_ISSUE_WIDTH:0] issue_push_size;// From U_RN of rn.v
    wire [(1<<CONFIG_P_ISSUE_WIDTH)-1:0] issue_ready;// From U_ISSUE of issue.v
    wire [CONFIG_DW-1:0] msr_icid;               // From U_FNT of frontend.v
-   wire [CONFIG_DW-1:0] msr_icinv_nxt;          // From U_CMT of cmt.v
+   wire [CONFIG_IC_P_SETS-1:0] msr_icinv_line_nxt;// From U_CMT of cmt.v
    wire                 msr_icinv_ready;        // From U_FNT of frontend.v
    wire                 msr_icinv_we;           // From U_CMT of cmt.v
    wire [CONFIG_ITLB_P_SETS-1:0] msr_imm_tlbh_idx;// From U_CMT of cmt.v
@@ -387,7 +387,7 @@ module ncpu64k
        .msr_imm_tlbh_idx                (msr_imm_tlbh_idx[CONFIG_ITLB_P_SETS-1:0]),
        .msr_imm_tlbh_nxt                (msr_imm_tlbh_nxt[CONFIG_DW-1:0]),
        .msr_imm_tlbh_we                 (msr_imm_tlbh_we),
-       .msr_icinv_nxt                   (msr_icinv_nxt[CONFIG_DW-1:0]),
+       .msr_icinv_line_nxt              (msr_icinv_line_nxt[CONFIG_IC_P_SETS-1:0]),
        .msr_icinv_we                    (msr_icinv_we),
        .ibus_ARREADY                    (ibus_ARREADY),
        .ibus_RVALID                     (ibus_RVALID),
@@ -711,6 +711,8 @@ module ncpu64k
         .CONFIG_DC_P_WAYS               (CONFIG_DC_P_WAYS),
         .CONFIG_DC_P_SETS               (CONFIG_DC_P_SETS),
         .CONFIG_DC_P_LINE               (CONFIG_DC_P_LINE),
+        .CONFIG_IC_P_SETS               (CONFIG_IC_P_SETS),
+        .CONFIG_IC_P_LINE               (CONFIG_IC_P_LINE),
         .CONFIG_P_PAGE_SIZE             (CONFIG_P_PAGE_SIZE),
         .CONFIG_DMMU_ENABLE_UNCACHED_SEG(CONFIG_DMMU_ENABLE_UNCACHED_SEG),
         .CONFIG_ITLB_P_SETS             (CONFIG_ITLB_P_SETS),
@@ -787,7 +789,7 @@ module ncpu64k
        .msr_imm_tlbh_idx                (msr_imm_tlbh_idx[CONFIG_ITLB_P_SETS-1:0]),
        .msr_imm_tlbh_nxt                (msr_imm_tlbh_nxt[CONFIG_DW-1:0]),
        .msr_imm_tlbh_we                 (msr_imm_tlbh_we),
-       .msr_icinv_nxt                   (msr_icinv_nxt[CONFIG_DW-1:0]),
+       .msr_icinv_line_nxt              (msr_icinv_line_nxt[CONFIG_IC_P_SETS-1:0]),
        .msr_icinv_we                    (msr_icinv_we),
        // Inputs
        .clk                             (clk),

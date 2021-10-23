@@ -53,7 +53,7 @@ module icache
    // ICID
    output [CONFIG_DW-1:0]              msr_icid,
    // ICINV
-   input [CONFIG_DW-1:0]               msr_icinv_nxt,
+   input [CONFIG_IC_P_SETS-1:0]        msr_icinv_line_nxt,
    input                               msr_icinv_we,
    output                              msr_icinv_ready,
 
@@ -121,7 +121,7 @@ module icache
    wire                                s2i_refill_get_dat;
    wire                                s2i_uncached_get_dat;
    reg [PAYLOAD_DW-1:0]                s2i_ins;
-   wire [CONFIG_AW-1:0]                s1o_op_inv_paddr;
+   wire [CONFIG_IC_P_SETS-1:0]         s1o_op_inv_line;
    wire                                s2i_uncached_inflight;
    wire                                s2i_miss_inflight;
    // Stage 2 Output / Stage 3 Input
@@ -209,7 +209,7 @@ module icache
 
    mDFF_lr # (.DW(1)) ff_s1o_valid (.CLK(clk), .RST(rst), .LOAD(p_ce), .D(1'b1), .Q(s1o_valid) );
    `mDFF_l # (.DW(CONFIG_P_PAGE_SIZE)) ff_s1o_vpo (.CLK(clk),`rst .LOAD(p_ce), .D(vpo), .Q(s1o_vpo) );
-   `mDFF_l # (.DW(CONFIG_AW)) ff_s1o_op_inv_paddr (.CLK(clk),`rst .LOAD(fsm_idle), .D(msr_icinv_nxt), .Q(s1o_op_inv_paddr) );
+   `mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s1o_op_inv_paddr (.CLK(clk),`rst .LOAD(fsm_idle), .D(msr_icinv_line_nxt), .Q(s1o_op_inv_line) );
    `mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s1o_line_addr (.CLK(clk),`rst .LOAD(p_ce), .D(s1i_line_addr), .Q(s1o_line_addr) );
    `mDFF_l # (.DW(PAYLOAD_AW)) ff_s1o_payload_addr (.CLK(clk),`rst .LOAD(p_ce), .D(s1i_payload_addr), .Q(s1o_payload_addr) );
    `mDFF_l # (.DW(CONFIG_IC_P_SETS)) ff_s2o_line_addr (.CLK(clk),`rst .LOAD(p_ce), .D(s1o_line_addr), .Q(s2o_line_addr) );
@@ -320,7 +320,7 @@ module icache
          S_BOOT:
             s1i_line_addr = fsm_boot_cnt;
          S_INVALIDATE:
-            s1i_line_addr = s1o_op_inv_paddr[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS];
+            s1i_line_addr = s1o_op_inv_line;
          S_REPLACE:
             s1i_line_addr = s2o_line_addr;
          S_RELOAD_S1O:

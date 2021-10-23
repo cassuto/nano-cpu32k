@@ -38,6 +38,8 @@ module cmt_epu
    parameter [`EXCP_VECT_W-1:0]        CONFIG_EALIGN_VECTOR = 0,
    parameter                           CONFIG_ITLB_P_SETS = 0,
    parameter                           CONFIG_DTLB_P_SETS = 0,
+   parameter                           CONFIG_IC_P_SETS = 0,
+   parameter                           CONFIG_IC_P_LINE = 0,
    parameter                           CONFIG_NUM_IRQ = 0
 )
 (
@@ -133,7 +135,7 @@ module cmt_epu
    // ICID
    input [CONFIG_DW-1:0]               msr_icid,
    // ICINV
-   output [CONFIG_DW-1:0]              msr_icinv_nxt,
+   output [CONFIG_IC_P_SETS-1:0]       msr_icinv_line_nxt,
    output                              msr_icinv_we,
    // DCID
    input [CONFIG_DW-1:0]               msr_dcid,
@@ -554,7 +556,7 @@ module cmt_epu
    // Not fire until the pipeline clock is enabled, to avoid interlock between front-end and back-end
    // and avoid repeated operation during pipeline stall.
    assign msr_icinv_we = (s1i_msr_ic_inv_we & p_ce_s1_no_icinv_stall);
-   assign msr_icinv_nxt = s1i_msr_wdat;
+   assign msr_icinv_line_nxt = s1i_msr_wdat[CONFIG_IC_P_LINE +: CONFIG_IC_P_SETS];
 
    // Commit DC
    assign msr_dcinv_we = s1i_msr_dc_inv_we;
