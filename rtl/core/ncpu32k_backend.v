@@ -95,7 +95,7 @@ module ncpu32k_backend
    output [`NCPU_AW-3:0]               flush_tgt,
    output                              stall_fnt,
    // IRQ
-   input                               irq_sync,
+   input                               irq_async,
    // From icache
    input                               icinv_stall,
    // From the frontend
@@ -550,7 +550,7 @@ module ncpu32k_backend
        .stall_fnt                       (stall_fnt),
        .stall_bck                       (stall_bck),
        .flush                           (flush),
-       .irq_sync                        (irq_sync),
+       .irq_async                        (irq_async),
        .idu_1_insn_vld                  (idu_1_insn_vld),
        .idu_1_insn                      (idu_1_insn[`NCPU_IW-1:0]),
        .idu_1_pc                        (idu_1_pc[`NCPU_AW-3:0]),

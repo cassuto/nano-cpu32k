@@ -17,15 +17,15 @@
 
 module ncpu32k_epu
 #(
-   parameter [`NCPU_AW-1:0] CONFIG_EITM_VECTOR
+   parameter [CONFIG_AW-1:0] CONFIG_EITM_VECTOR
    `PARAM_NOT_SPECIFIED ,
-   parameter [`NCPU_AW-1:0] CONFIG_EIPF_VECTOR
+   parameter [CONFIG_AW-1:0] CONFIG_EIPF_VECTOR
    `PARAM_NOT_SPECIFIED ,
-   parameter [`NCPU_AW-1:0] CONFIG_ESYSCALL_VECTOR
+   parameter [CONFIG_AW-1:0] CONFIG_ESYSCALL_VECTOR
    `PARAM_NOT_SPECIFIED ,
-   parameter [`NCPU_AW-1:0] CONFIG_EINSN_VECTOR
+   parameter [CONFIG_AW-1:0] CONFIG_EINSN_VECTOR
    `PARAM_NOT_SPECIFIED ,
-   parameter [`NCPU_AW-1:0] CONFIG_EIRQ_VECTOR
+   parameter [CONFIG_AW-1:0] CONFIG_EIRQ_VECTOR
    `PARAM_NOT_SPECIFIED
 )
 (
@@ -33,18 +33,18 @@ module ncpu32k_epu
    input                      rst_n,
    // From ISSUE
    input                      epu_AVALID,
-   input [`NCPU_AW-3:0]       epu_pc,
+   input [CONFIG_AW-3:0]       epu_pc,
    input [`NCPU_EPU_IOPW-1:0] epu_opc_bus,
-   input [`NCPU_DW-1:0]       epu_operand1,
-   input [`NCPU_DW-1:0]       epu_operand2,
-   input [`NCPU_DW-1:0]       epu_imm32,
+   input [CONFIG_DW-1:0]       epu_operand1,
+   input [CONFIG_DW-1:0]       epu_operand2,
+   input [CONFIG_DW-1:0]       epu_imm32,
    input                      epu_in_slot_1,
    // From arbiter
-   input [`NCPU_AW-3:0]       commit_pc,
+   input [CONFIG_AW-3:0]       commit_pc,
    input                      commit_EDTM,
    input                      commit_EDPF,
    input                      commit_EALIGN,
-   input [`NCPU_AW-1:0]       commit_LSA,
+   input [CONFIG_AW-1:0]       commit_LSA,
    input                      commit_ERET,
    input                      commit_ESYSCALL,
    input                      commit_EINSN,
@@ -52,15 +52,15 @@ module ncpu32k_epu
    input                      commit_EITM,
    input                      commit_EIRQ,
    input [`NCPU_WMSR_WE_DW-1:0] commit_wmsr_we,
-   input [`NCPU_DW-1:0]       commit_wmsr_dat,
+   input [CONFIG_DW-1:0]       commit_wmsr_dat,
 
    // To WRITEBACK
    output                     wb_epu_AVALID,
-   output [`NCPU_DW-1:0]      wb_epu_dout,
+   output [CONFIG_DW-1:0]      wb_epu_dout,
    output                     wb_epu_in_slot_1,
    output                     wb_epu_exc,
-   output [`NCPU_AW-3:0]      wb_epu_exc_vec,
-   output [`NCPU_DW-1:0]      wb_wmsr_dat,
+   output [CONFIG_AW-3:0]      wb_epu_exc_vec,
+   output [CONFIG_DW-1:0]      wb_wmsr_dat,
    output [`NCPU_WMSR_WE_DW-1:0] wb_wmsr_we,
    output                     wb_ERET,
    output                     wb_ESYSCALL,
@@ -69,7 +69,7 @@ module ncpu32k_epu
    output                     wb_EITM,
    output                     wb_EIRQ,
    output                     wb_E_FLUSH_TLB,
-   output [`NCPU_AW-3:0]      wb_epu_pc,
+   output [CONFIG_AW-3:0]      wb_epu_pc,
    // PSR
    input [`NCPU_PSR_DW-1:0]   msr_psr,
    input [`NCPU_PSR_DW-1:0]   msr_psr_nold,
@@ -83,10 +83,10 @@ module ncpu32k_epu
    output                     msr_psr_ire_we,
    output                     msr_exc_ent,
    // CPUID
-   input [`NCPU_DW-1:0]       msr_cpuid,
+   input [CONFIG_DW-1:0]       msr_cpuid,
    // EPC
-   input [`NCPU_DW-1:0]       msr_epc,
-   output [`NCPU_DW-1:0]      msr_epc_nxt,
+   input [CONFIG_DW-1:0]       msr_epc,
+   output [CONFIG_DW-1:0]      msr_epc_nxt,
    output                     msr_epc_we,
    // EPSR
    input [`NCPU_PSR_DW-1:0]   msr_epsr,
@@ -94,61 +94,61 @@ module ncpu32k_epu
    output [`NCPU_PSR_DW-1:0]  msr_epsr_nxt,
    output                     msr_epsr_we,
    // ELSA
-   input [`NCPU_DW-1:0]       msr_elsa,
-   output [`NCPU_DW-1:0]      msr_elsa_nxt,
+   input [CONFIG_DW-1:0]       msr_elsa,
+   output [CONFIG_DW-1:0]      msr_elsa_nxt,
    output                     msr_elsa_we,
    // COREID
-   input [`NCPU_DW-1:0]       msr_coreid,
+   input [CONFIG_DW-1:0]       msr_coreid,
    // IMMID
-   input [`NCPU_DW-1:0]       msr_immid,
+   input [CONFIG_DW-1:0]       msr_immid,
    // ITLBL
    output [`NCPU_TLB_AW-1:0]  msr_imm_tlbl_idx,
-   output [`NCPU_DW-1:0]      msr_imm_tlbl_nxt,
+   output [CONFIG_DW-1:0]      msr_imm_tlbl_nxt,
    output                     msr_imm_tlbl_we,
    // ITLBH
    output [`NCPU_TLB_AW-1:0]  msr_imm_tlbh_idx,
-   output [`NCPU_DW-1:0]      msr_imm_tlbh_nxt,
+   output [CONFIG_DW-1:0]      msr_imm_tlbh_nxt,
    output                     msr_imm_tlbh_we,
    // DMMID
-   input [`NCPU_DW-1:0]       msr_dmmid,
+   input [CONFIG_DW-1:0]       msr_dmmid,
    // DTLBL
    output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbl_idx,
-   output [`NCPU_DW-1:0]      msr_dmm_tlbl_nxt,
+   output [CONFIG_DW-1:0]      msr_dmm_tlbl_nxt,
    output                     msr_dmm_tlbl_we,
    // DTLBH
    output [`NCPU_TLB_AW-1:0]  msr_dmm_tlbh_idx,
-   output [`NCPU_DW-1:0]      msr_dmm_tlbh_nxt,
+   output [CONFIG_DW-1:0]      msr_dmm_tlbh_nxt,
    output                     msr_dmm_tlbh_we,
    // ICID
-   input [`NCPU_DW-1:0]       msr_icid,
+   input [CONFIG_DW-1:0]       msr_icid,
    // ICINV
-   output [`NCPU_DW-1:0]      msr_icinv_nxt,
+   output [CONFIG_DW-1:0]      msr_icinv_nxt,
    output                     msr_icinv_we,
    // DCID
-   input [`NCPU_DW-1:0]       msr_dcid,
+   input [CONFIG_DW-1:0]       msr_dcid,
    // DCINV
-   output [`NCPU_DW-1:0]      msr_dcinv_nxt,
+   output [CONFIG_DW-1:0]      msr_dcinv_nxt,
    output                     msr_dcinv_we,
    // DCFLS
-   output [`NCPU_DW-1:0]      msr_dcfls_nxt,
+   output [CONFIG_DW-1:0]      msr_dcfls_nxt,
    output                     msr_dcfls_we,
    // IMR
-   input [`NCPU_DW-1:0]       msr_irqc_imr,
-   output [`NCPU_DW-1:0]      msr_irqc_imr_nxt,
+   input [CONFIG_DW-1:0]       msr_irqc_imr,
+   output [CONFIG_DW-1:0]      msr_irqc_imr_nxt,
    output                     msr_irqc_imr_we,
    // IRR
-   input [`NCPU_DW-1:0]       msr_irqc_irr,
+   input [CONFIG_DW-1:0]       msr_irqc_irr,
    // TSR
-   input [`NCPU_DW-1:0]       msr_tsc_tsr,
-   output [`NCPU_DW-1:0]      msr_tsc_tsr_nxt,
+   input [CONFIG_DW-1:0]       msr_tsc_tsr,
+   output [CONFIG_DW-1:0]      msr_tsc_tsr_nxt,
    output                     msr_tsc_tsr_we,
    // TCR
-   input [`NCPU_DW-1:0]       msr_tsc_tcr,
-   output [`NCPU_DW-1:0]      msr_tsc_tcr_nxt,
+   input [CONFIG_DW-1:0]       msr_tsc_tcr,
+   output [CONFIG_DW-1:0]      msr_tsc_tcr_nxt,
    output                     msr_tsc_tcr_we
 );
    /*AUTOWIRE*/
-   wire [`NCPU_DW-1:0]        msr_addr;
+   wire [CONFIG_DW-1:0]        msr_addr;
    wire [`NCPU_MSR_BANK_AW-1:0] bank_addr;
    wire [`NCPU_MSR_BANK_OFF_AW-1:0] bank_off;
    wire                       bank_ps;
@@ -159,10 +159,10 @@ module ncpu32k_epu
    wire                       bank_dbg;
    wire                       bank_irqc;
    wire                       bank_tsc;
-   wire [`NCPU_DW-1:0]        dout_ps;
+   wire [CONFIG_DW-1:0]        dout_ps;
    wire                       msr_imm_tlbl_sel;
    wire                       msr_imm_tlbh_sel;
-   wire [`NCPU_DW-1:0]        dout_imm;
+   wire [CONFIG_DW-1:0]        dout_imm;
    wire                       msr_dmm_tlbl_sel;
    wire                       msr_dmm_tlbh_sel;
    wire                       msr_ic_id_sel;
@@ -170,20 +170,20 @@ module ncpu32k_epu
    wire                       msr_dc_id_sel;
    wire                       msr_dc_inv_sel;
    wire                       msr_dc_fls_sel;
-   wire [`NCPU_DW-1:0]        dout_dmm;
-   wire [`NCPU_DW-1:0]        dout_ic;
-   wire [`NCPU_DW-1:0]        dout_dc;
+   wire [CONFIG_DW-1:0]        dout_dmm;
+   wire [CONFIG_DW-1:0]        dout_ic;
+   wire [CONFIG_DW-1:0]        dout_dc;
    wire                       msr_irqc_imr_sel;
    wire                       msr_irqc_irr_sel;
-   wire [`NCPU_DW-1:0]        dout_irqc;
+   wire [CONFIG_DW-1:0]        dout_irqc;
    wire                       msr_tsc_tsr_sel;
    wire                       msr_tsc_tcr_sel;
-   wire [`NCPU_DW-1:0]        dout_tsc;
+   wire [CONFIG_DW-1:0]        dout_tsc;
    wire                       exc_commit;
-   wire [`NCPU_AW-3:0]        linkaddr;
+   wire [CONFIG_AW-3:0]        linkaddr;
    wire                       set_elsa_as_pc;
    wire                       set_elsa;
-   wire [`NCPU_DW-1:0]        lsa_nxt;
+   wire [CONFIG_DW-1:0]        lsa_nxt;
    wire                       epsr_rm_nobpy;
    wire                       epsr_ire_nobpy;
    wire                       epsr_imme_nobpy;
@@ -235,19 +235,19 @@ module ncpu32k_epu
    wire                       save_psr;
    genvar i;
 
-   assign msr_addr = epu_operand1 | {{`NCPU_DW-15{1'b0}}, epu_imm32[14:0]};
+   assign msr_addr = epu_operand1 | {{CONFIG_DW-15{1'b0}}, epu_imm32[14:0]};
    assign bank_addr = msr_addr[`NCPU_MSR_BANK_AW+`NCPU_MSR_BANK_OFF_AW-1:`NCPU_MSR_BANK_OFF_AW];
    assign bank_off = msr_addr[`NCPU_MSR_BANK_OFF_AW-1:0];
 
    // Readout PS
    assign dout_ps =
       (
-         ({`NCPU_DW{bank_off[`NCPU_MSR_PSR]}} & {{`NCPU_DW-`NCPU_PSR_DW{1'b0}}, msr_psr[`NCPU_PSR_DW-1:0]}) |
-         ({`NCPU_DW{bank_off[`NCPU_MSR_CPUID]}} & msr_cpuid) |
-         ({`NCPU_DW{bank_off[`NCPU_MSR_EPSR]}} & {{`NCPU_DW-`NCPU_PSR_DW{1'b0}}, msr_epsr[`NCPU_PSR_DW-1:0]}) |
-         ({`NCPU_DW{bank_off[`NCPU_MSR_EPC]}} & msr_epc) |
-         ({`NCPU_DW{bank_off[`NCPU_MSR_ELSA]}} & msr_elsa) |
-         ({`NCPU_DW{bank_off[`NCPU_MSR_COREID]}} & msr_coreid)
+         ({CONFIG_DW{bank_off[`NCPU_MSR_PSR]}} & {{CONFIG_DW-`NCPU_PSR_DW{1'b0}}, msr_psr[`NCPU_PSR_DW-1:0]}) |
+         ({CONFIG_DW{bank_off[`NCPU_MSR_CPUID]}} & msr_cpuid) |
+         ({CONFIG_DW{bank_off[`NCPU_MSR_EPSR]}} & {{CONFIG_DW-`NCPU_PSR_DW{1'b0}}, msr_epsr[`NCPU_PSR_DW-1:0]}) |
+         ({CONFIG_DW{bank_off[`NCPU_MSR_EPC]}} & msr_epc) |
+         ({CONFIG_DW{bank_off[`NCPU_MSR_ELSA]}} & msr_elsa) |
+         ({CONFIG_DW{bank_off[`NCPU_MSR_COREID]}} & msr_coreid)
       );
 
    // Readout IMM
@@ -255,7 +255,7 @@ module ncpu32k_epu
    assign msr_imm_tlbh_sel = bank_off[`NCPU_MSR_IMM_TLBSEL] & bank_off[`NCPU_MSR_IMM_TLBH_SEL];
    assign dout_imm =
       (
-         ({`NCPU_DW{~bank_off[`NCPU_MSR_IMM_TLBSEL]}} & msr_immid)
+         ({CONFIG_DW{~bank_off[`NCPU_MSR_IMM_TLBSEL]}} & msr_immid)
       );
 
    // Readout DMM
@@ -263,7 +263,7 @@ module ncpu32k_epu
    assign msr_dmm_tlbh_sel = bank_off[`NCPU_MSR_DMM_TLBSEL] & bank_off[`NCPU_MSR_DMM_TLBH_SEL];
    assign dout_dmm =
       (
-         ({`NCPU_DW{~bank_off[`NCPU_MSR_DMM_TLBSEL]}} & msr_dmmid)
+         ({CONFIG_DW{~bank_off[`NCPU_MSR_DMM_TLBSEL]}} & msr_dmmid)
       );
 
    // Readout IC
@@ -271,7 +271,7 @@ module ncpu32k_epu
    assign msr_ic_inv_sel = bank_off[`NCPU_MSR_IC_INV];
    assign dout_ic =
       (
-         ({`NCPU_DW{msr_ic_id_sel}} & msr_icid)
+         ({CONFIG_DW{msr_ic_id_sel}} & msr_icid)
       );
 
    // Readout DC
@@ -280,7 +280,7 @@ module ncpu32k_epu
    assign msr_dc_fls_sel = bank_off[`NCPU_MSR_DC_FLS];
    assign dout_dc =
       (
-         ({`NCPU_DW{msr_dc_id_sel}} & msr_dcid)
+         ({CONFIG_DW{msr_dc_id_sel}} & msr_dcid)
       );
 
    // Readout IRQC
@@ -288,8 +288,8 @@ module ncpu32k_epu
    assign msr_irqc_irr_sel = bank_off[`NCPU_MSR_IRQC_IRR];
    assign dout_irqc =
       (
-         ({`NCPU_DW{msr_irqc_imr_sel}} & msr_irqc_imr) |
-         ({`NCPU_DW{msr_irqc_irr_sel}} & msr_irqc_irr)
+         ({CONFIG_DW{msr_irqc_imr_sel}} & msr_irqc_imr) |
+         ({CONFIG_DW{msr_irqc_irr_sel}} & msr_irqc_irr)
       );
 
    // Readout TSC
@@ -297,8 +297,8 @@ module ncpu32k_epu
    assign msr_tsc_tcr_sel = bank_off[`NCPU_MSR_TSC_TCR];
    assign dout_tsc =
       (
-         ({`NCPU_DW{msr_tsc_tsr_sel}} & msr_tsc_tsr) |
-         ({`NCPU_DW{msr_tsc_tcr_sel}} & msr_tsc_tcr)
+         ({CONFIG_DW{msr_tsc_tsr_sel}} & msr_tsc_tsr) |
+         ({CONFIG_DW{msr_tsc_tcr_sel}} & msr_tsc_tcr)
       );
 
    // Decode MSR bank_addr
@@ -316,13 +316,13 @@ module ncpu32k_epu
    // Result MUX
    assign wb_epu_dout =
       (
-         ({`NCPU_DW{bank_ps}} & dout_ps) |
-         ({`NCPU_DW{bank_imm}} & dout_imm) |
-         ({`NCPU_DW{bank_dmm}} & dout_dmm) |
-         ({`NCPU_DW{bank_ic}} & dout_ic) |
-         ({`NCPU_DW{bank_dc}} & dout_dc) |
-         ({`NCPU_DW{bank_irqc}} & dout_irqc) |
-         ({`NCPU_DW{bank_tsc}} & dout_tsc)
+         ({CONFIG_DW{bank_ps}} & dout_ps) |
+         ({CONFIG_DW{bank_imm}} & dout_imm) |
+         ({CONFIG_DW{bank_dmm}} & dout_dmm) |
+         ({CONFIG_DW{bank_ic}} & dout_ic) |
+         ({CONFIG_DW{bank_dc}} & dout_dc) |
+         ({CONFIG_DW{bank_irqc}} & dout_irqc) |
+         ({CONFIG_DW{bank_tsc}} & dout_tsc)
       );
 
    assign wb_epu_exc = (epu_opc_bus[`NCPU_EPU_ESYSCALL] |
@@ -347,12 +347,12 @@ module ncpu32k_epu
    assign wb_epu_pc = epu_pc;
 
    // Assert 2105051856
-   assign wb_epu_exc_vec = ({`NCPU_AW-2{epu_opc_bus[`NCPU_EPU_ESYSCALL]}} & CONFIG_ESYSCALL_VECTOR[2 +: `NCPU_AW-2]) |
-                           ({`NCPU_AW-2{epu_opc_bus[`NCPU_EPU_ERET]}} & msr_epc[2 +: `NCPU_AW-2]) |
-                           ({`NCPU_AW-2{epu_opc_bus[`NCPU_EPU_EITM]}} & CONFIG_EITM_VECTOR[2 +: `NCPU_AW-2]) |
-                           ({`NCPU_AW-2{epu_opc_bus[`NCPU_EPU_EIPF]}} & CONFIG_EIPF_VECTOR[2 +: `NCPU_AW-2]) |
-                           ({`NCPU_AW-2{epu_opc_bus[`NCPU_EPU_EIRQ]}} & CONFIG_EIRQ_VECTOR[2 +: `NCPU_AW-2]) |
-                           ({`NCPU_AW-2{epu_opc_bus[`NCPU_EPU_EINSN]}} & CONFIG_EINSN_VECTOR[2 +: `NCPU_AW-2]);
+   assign wb_epu_exc_vec = ({CONFIG_AW-2{epu_opc_bus[`NCPU_EPU_ESYSCALL]}} & CONFIG_ESYSCALL_VECTOR[2 +: CONFIG_AW-2]) |
+                           ({CONFIG_AW-2{epu_opc_bus[`NCPU_EPU_ERET]}} & msr_epc[2 +: CONFIG_AW-2]) |
+                           ({CONFIG_AW-2{epu_opc_bus[`NCPU_EPU_EITM]}} & CONFIG_EITM_VECTOR[2 +: CONFIG_AW-2]) |
+                           ({CONFIG_AW-2{epu_opc_bus[`NCPU_EPU_EIPF]}} & CONFIG_EIPF_VECTOR[2 +: CONFIG_AW-2]) |
+                           ({CONFIG_AW-2{epu_opc_bus[`NCPU_EPU_EIRQ]}} & CONFIG_EIRQ_VECTOR[2 +: CONFIG_AW-2]) |
+                           ({CONFIG_AW-2{epu_opc_bus[`NCPU_EPU_EINSN]}} & CONFIG_EINSN_VECTOR[2 +: CONFIG_AW-2]);
 
    assign wb_epu_in_slot_1 = epu_in_slot_1;
 
@@ -460,14 +460,14 @@ module ncpu32k_epu
    // that raised the exception.
    assign linkaddr = commit_pc + 1'b1;
    assign msr_epc_nxt = commit_wmsr_epc_we ? commit_wmsr_dat :
-                        commit_ESYSCALL ? {linkaddr[`NCPU_AW-3:0],2'b0} : {commit_pc[`NCPU_AW-3:0],2'b0};
+                        commit_ESYSCALL ? {linkaddr[CONFIG_AW-3:0],2'b0} : {commit_pc[CONFIG_AW-3:0],2'b0};
    assign msr_epc_we = msr_exc_ent | commit_wmsr_epc_we;
 
    // Commit ELSA  Assert (03100705)
    assign set_elsa_as_pc = (commit_EITM | commit_EIPF | commit_EINSN);
    assign set_elsa = (set_elsa_as_pc | commit_EDTM | commit_EDPF | commit_EALIGN);
    // Let ELSA be PC if it's IMMU or EINSN exception
-   assign lsa_nxt = set_elsa_as_pc ? {commit_pc[`NCPU_AW-3:0],2'b0} : commit_LSA;
+   assign lsa_nxt = set_elsa_as_pc ? {commit_pc[CONFIG_AW-3:0],2'b0} : commit_LSA;
    // Assert (03060933)
    assign msr_elsa_nxt = set_elsa ? lsa_nxt : commit_wmsr_dat;
    assign msr_elsa_we = set_elsa | commit_wmsr_elsa_we;

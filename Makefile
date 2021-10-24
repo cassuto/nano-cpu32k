@@ -26,7 +26,7 @@ FLAGS := --top-module $(TOPLEVEL) $(DEFS) $(INCS) $(WARNS)
 
 lint:
 	@echo "==========================================================="
-	@echo "Warning: $(WARNS)"
+	@echo "! Disabled Warnings: $(WARNS)"
 	@echo "==========================================================="
 	-verilator --lint-only -Wall $(FLAGS) $(SRCS)
 

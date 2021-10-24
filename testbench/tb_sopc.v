@@ -88,8 +88,8 @@ module tb_sopc();
    // SoC
    soc_toplevel
    #(
-      //.CONFIG_BOOTM_ERST ('h0) // Boot from SDRAM directly
-      .CONFIG_BOOTM_ERST ('h02000000) // Boot from bootrom
+      .CONFIG_BOOTM_ERST ('h0) // Boot from SDRAM directly
+      //.CONFIG_BOOTM_ERST ('h02000000) // Boot from bootrom
    )
    soc
    (

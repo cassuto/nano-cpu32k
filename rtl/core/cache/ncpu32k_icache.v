@@ -267,12 +267,17 @@ endgenerate
    wire [CONFIG_IC_DW/8-1:0] line_adr_cnt_msk;
 
    generate
-      if (CONFIG_IC_DW == 64)
+      if (CONFIG_IC_DW == 64 && CONFIG_IBUS_DW == 16)
          assign line_adr_cnt_msk = {line_adr_cnt[1:0]==2'b11, line_adr_cnt[1:0]==2'b11,
                                     line_adr_cnt[1:0]==2'b10, line_adr_cnt[1:0]==2'b10,
                                     line_adr_cnt[1:0]==2'b01, line_adr_cnt[1:0]==2'b01,
                                     line_adr_cnt[1:0]==2'b00, line_adr_cnt[1:0]==2'b00};
-      else if (CONFIG_IC_DW == 32)
+      else if (CONFIG_IC_DW == 64 && CONFIG_IBUS_DW == 32)
+         assign line_adr_cnt_msk = {line_adr_cnt[0], line_adr_cnt[0],
+                                    line_adr_cnt[0], line_adr_cnt[0],
+                                    ~line_adr_cnt[0], ~line_adr_cnt[0]
+                                    ~line_adr_cnt[0], ~line_adr_cnt[0]};
+      else if (CONFIG_IC_DW == 32 && CONFIG_IBUS_DW == 16)
          assign line_adr_cnt_msk = {line_adr_cnt[0], line_adr_cnt[0],
                                     ~line_adr_cnt[0], ~line_adr_cnt[0]};
       else
