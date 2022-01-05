@@ -1,6 +1,6 @@
 # nano-cpu32k
 
-nano-cpu32k (ncpu32k) is a high-performance RISC processor core.
+`nano-cpu32k` is a high-performance RISC processor core.
 
 |  Feature  | `nano-cpu32k` |
 |:------:|:------:|
@@ -14,11 +14,11 @@ nano-cpu32k (ncpu32k) is a high-performance RISC processor core.
 | Dynamic branch prediction   | √ |
 | Synthesizable Verilog  | √ |
 | FPGA Verified  | √ |
-| Clock frequency on FPGA  | 100+MHz |
+| Clock frequency on FPGA  | >100MHz @Kintex-7 |
 
 The micro-architecture overview is shown below.
 
-![micro-arch](doc/microarch.svg)
+![micro-arch](https://github.com/cassuto/nano-cpu32k/raw/v0.2-asic/doc/microarch.svg)
 
 ## Generate Verilog
 * Install `python3`.
@@ -30,27 +30,27 @@ The micro-architecture overview is shown below.
 * Run `make build_sim` to generate the simulation program `build/emu`.
 * Run `build/emu --help` for a overview of supported options.
 
-Now run Linux:
+Run the prebuilt Linux:
 ```bash
 ./build/emu --mode=standalone -b ./prebuilt/vmlinux.bin --flash-image=./prebuilt/bsp/program/flash/trampoline-flash.bin --reset-pc=0x30000000
 ```
 
-Using  `--mode=difftest` option, you could do **differential test** between hardware implementation and C++ reference model.
+Alternatively, using the `--mode=difftest` option, you can do **differential test** between hardware implementation and C++ reference model.
 
-## Run regression testing
+## Regression testing
 
-* Run `run-test.sh`.
+* Run `run-test.sh` to test hardware design.
 
 ## Run Linux on Xilinx Kintex-7 FPGA
 
-A DDR3-based minimum SoC is available at `fpga\ddr3_alpha_soc` in the form of Vivado project.
+A DDR3-based minimum **SoC** is provided on `fpga\ddr3_alpha_soc` in the form of Vivado project.
 
-* See `fpga\ddr3_alpha_soc\PINs.xlsx` for hardware connection details.
-* Program the SPI flash with binary file `prebuilt\bsp\program\loader\vmlinux-loader.bin` starting at address 0x0.
-* Connect the RS232 serial port to your PC, set baud rate as 115200.
-* Power on, program the FPGA and then reset.
+* See `fpga\ddr3_alpha_soc\PINs.xlsx` for hardware connections.
+* Program SPI flash with binary file `prebuilt\bsp\program\loader\vmlinux-loader.bin` starting at address 0x0.
+* Connect the RS232 serial port to your PC, set baud rate as 115200 bps.
+* Download the bitstream to FPGA.
 
 ## Software resources
-* [Patches for GNU Toolchain](https://github.com/cassuto/nano-cpu32k-toolchain)
-* [Linux Kernel](https://github.com/cassuto/nano-cpu32k-linux-4.20.8)
+* [Patches for GNU Toolchain (Binutils+GCC)](https://github.com/cassuto/nano-cpu32k-toolchain)
+* [[Patches for Linux Kernel](https://github.com/cassuto/nano-cpu32k-linux-4.20.8)
 
