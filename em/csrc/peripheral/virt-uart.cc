@@ -74,6 +74,7 @@ void virt_uart_putch(char ch)
 #if defined(_WIN32) || defined(__CYGWIN__)
     WriteFile(ser, &ch, 1, NULL, NULL);
 #endif
+    putchar(ch);
 }
 
 void virt_uart_write(const char *buf)

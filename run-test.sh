@@ -2,10 +2,10 @@
 
 PRJ_ROOT=$(dirname $(readlink -f "$0"))
 BUILD_PATH=$PRJ_ROOT/build
-BIN_FOLDER=$PRJ_ROOT/bsp/prebuilt/cpu-tests
+BIN_FOLDER=$PRJ_ROOT/prebuilt/cpu-tests
 EMU_FILE=$BUILD_PATH/emu
 
-TRAMPOLINE_FILE=$PRJ_ROOT/bsp/prebuilt/program/flash/trampoline-flash.bin
+TRAMPOLINE_FILE=$PRJ_ROOT/prebuilt/bsp/program/flash/trampoline-flash.bin
 
 # Run all
 mkdir $BUILD_PATH/log 1>/dev/null 2>&1

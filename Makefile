@@ -87,6 +87,7 @@ NAME =$(shell sed '/^Name=/!d;s/.*=//' $(MYINFO_FILE))
 build: $(YSYX_TARGET)
 
 $(YSYX_TARGET): $(SRCS) $(YSYX_SRCS)
+	-@mkdir build
 	$(PYTHON3) scripts/build.py -d ./ -c $^ -I $(SRC_DIR)/core -t $(YSYX_TOPLEVEL) -p $(YSYX_PREFIX) -o $(YSYX_TARGET)
 
 generate: rtl/general/pmux.v rtl/general/pmux_v.v rtl/general/priority_encoder_gs.v rtl/general/priority_encoder_rev_gs.v
@@ -96,7 +97,7 @@ rtl/general/pmux.v rtl/general/pmux_v.v: scripts/gen_pmux.py
 rtl/general/priority_encoder_gs.v rtl/general/priority_encoder_rev_gs.v: scripts/gen_priority_encoder.py
 	$(PYTHON3) scripts/gen_priority_encoder.py $@
 
-build_sim:  # $(LIB_DRAMSIM3)
+build_sim:  $(LIB_DRAMSIM3)
 	verilator --cc -Wall --top-module $(SIM_TOPLEVEL) $(SIM_FLAGS) --build $(SIM_SRCS) $(SIM_CPPS)
 #	git add . -A --ignore-errors
 #	(echo $(NAME) && echo $(ID) && hostnamectl && date) | git commit -F - -q --author='tracer-oscpu2021 <tracer@oscpu.org>' --no-verify --allow-empty  2>&1
