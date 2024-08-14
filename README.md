@@ -1,6 +1,6 @@
 # nano-cpu32k
 
-`nano-cpu32k` is a high-performance RISC processor core.
+`nano-cpu32k` is a simple out-of-order superscalar RISC processor core.
 
 |  Feature  | `nano-cpu32k` |
 |:------:|:------:|
